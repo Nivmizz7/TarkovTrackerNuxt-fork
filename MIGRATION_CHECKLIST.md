@@ -9,8 +9,10 @@
 - [x] Firebase plugin stub added (`app/plugins/firebase.ts`) to satisfy Nuxt plugin loading while re-exporting firebase helpers.
 - [x] Nuxt Content config added (`content.config.ts`) with a default collection; warning resolved.
 - [x] Path aliases `@` and `~` mapped to `app/` in `nuxt.config.ts`.
-- [ ] Apollo client setup and GraphQL composables still need verification in Nuxt context.
-- [ ] VueFire configuration and real-time listeners still need end-to-end validation.
+- [x] Apollo client setup and GraphQL composables verified (debug page shows 11 traders, 508 tasks, 13 maps)
+- [x] Firebase Auth initialization verified (auth state tracking working, OAuth buttons visible)
+- [ ] VueFire configuration and real-time listeners still need end-to-end validation with authenticated user.
+- [ ] Game mode mapping (pvp→regular) needs to be applied globally in all GraphQL queries.
 
 ## Quick Reference - What to Migrate from TarkovTracker
 

@@ -1,7 +1,9 @@
 <template>
   <v-app-bar color="transparent" prominent elevation="0">
     <template #image>
-      <v-img gradient="to top right, rgba(45,45,35,.95), rgba(6,13,12,.95)"></v-img>
+      <v-img
+        gradient="to top right, rgba(45,45,35,.95), rgba(6,13,12,.95)"
+      ></v-img>
     </template>
     <template #prepend>
       <v-app-bar-nav-icon
@@ -11,7 +13,9 @@
         @click.stop="changeNavigationDrawer"
       ></v-app-bar-nav-icon>
     </template>
-    <v-toolbar-title>{{ t(`page.${route.name.replace('-', '_')}.title`) }}</v-toolbar-title>
+    <v-toolbar-title>{{
+      t(`page.${route.name.replace("-", "_")}.title`)
+    }}</v-toolbar-title>
     <span v-if="dataError">
       <!-- Show an icon and tooltip if we have a GraphQL error -->
       <v-tooltip activator="parent" location="left">
@@ -36,7 +40,11 @@
       </v-tooltip>
     </span>
     <template #append>
-      <v-menu v-model="state.menu" :close-on-content-click="false" location="start">
+      <v-menu
+        v-model="state.menu"
+        :close-on-content-click="false"
+        location="start"
+      >
         <template #activator="{ props }">
           <v-badge
             :content="currentGameMode.toUpperCase()"
@@ -48,44 +56,52 @@
             <v-btn icon="mdi-cog" v-bind="props"></v-btn>
           </v-badge>
         </template>
-        <overflow-menu />
+        <OverflowMenu />
       </v-menu>
     </template>
   </v-app-bar>
 </template>
 <script setup>
-  import { computed, defineAsyncComponent, reactive } from 'vue';
-  import { useAppStore } from '@/stores/app';
-  import { useTarkovStore } from '@/stores/tarkov';
-  import { useDisplay } from 'vuetify';
-  import { useRoute } from 'vue-router';
-  import { useTarkovData } from '@/composables/tarkovdata';
-  import { useI18n } from 'vue-i18n';
-  const { t } = useI18n({ useScope: 'global' });
-  const state = reactive({ menu: null });
-  const appStore = useAppStore();
-  const tarkovStore = useTarkovStore();
-  const route = useRoute();
-  const navBarIcon = computed(() => {
-    return appStore.drawerShow && appStore.drawerRail ? 'mdi-menu-open' : 'mdi-menu';
-  });
+import { computed, defineAsyncComponent, reactive } from "vue";
+import { useAppStore } from "@/stores/app";
+import { useTarkovStore } from "@/stores/tarkov";
+import { useDisplay } from "vuetify";
+import { useRoute } from "vue-router";
+import { useTarkovData } from "@/composables/tarkovdata";
+import { useI18n } from "vue-i18n";
+const { t } = useI18n({ useScope: "global" });
+const state = reactive({ menu: null });
+const appStore = useAppStore();
+const tarkovStore = useTarkovStore();
+const route = useRoute();
+const navBarIcon = computed(() => {
+  return appStore.drawerShow && appStore.drawerRail
+    ? "mdi-menu-open"
+    : "mdi-menu";
+});
 
-  const currentGameMode = computed(() => {
-    return tarkovStore.getCurrentGameMode();
-  });
+const currentGameMode = computed(() => {
+  return tarkovStore.getCurrentGameMode();
+});
 
-  const gameModeColor = computed(() => {
-    return currentGameMode.value === 'pvp' ? 'red' : 'green';
-  });
+const gameModeColor = computed(() => {
+  return currentGameMode.value === "pvp" ? "red" : "green";
+});
 
-  const OverflowMenu = defineAsyncComponent(() => import('@/features/layout/OverflowMenu'));
-  const { loading: dataLoading, error: dataError, hideoutLoading } = useTarkovData();
-  const { mdAndDown } = useDisplay();
-  function changeNavigationDrawer() {
-    if (mdAndDown.value) {
-      appStore.toggleDrawerShow();
-    } else {
-      appStore.toggleDrawerRail();
-    }
+const OverflowMenu = defineAsyncComponent(
+  () => import("@/features/layout/OverflowMenu.vue")
+);
+const {
+  loading: dataLoading,
+  error: dataError,
+  hideoutLoading,
+} = useTarkovData();
+const { mdAndDown } = useDisplay();
+function changeNavigationDrawer() {
+  if (mdAndDown.value) {
+    appStore.toggleDrawerShow();
+  } else {
+    appStore.toggleDrawerRail();
   }
+}
 </script>

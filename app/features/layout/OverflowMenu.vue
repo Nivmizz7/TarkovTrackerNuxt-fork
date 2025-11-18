@@ -18,7 +18,7 @@
           </v-list-item>
         </template>
       </v-select>
-      <display-name-input v-if="fireuser.loggedIn" />
+      <DisplayNameInput v-if="fireuser.loggedIn" />
       <v-select
         v-model="currentPMCFaction"
         prepend-icon="mdi-castle"
@@ -273,7 +273,7 @@ import { useUserStore } from "@/stores/user";
 import { useTarkovStore } from "@/stores/tarkov";
 import { fireuser } from "@/plugins/firebase";
 import type { GameMode } from "@/shared_state";
-import DisplayNameInput from "./DisplayNameInput.vue";
+// DisplayNameInput is auto-imported by Nuxt
 const userStore = useUserStore();
 const tarkovStore = useTarkovStore();
 const resetDialog = ref(false);

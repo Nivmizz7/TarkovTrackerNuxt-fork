@@ -147,9 +147,9 @@ const sortedZones = computed(() => {
     }
   }
 
-  return zones.toSorted(
-    (a, b) => polygonArea(b.zone.outline) - polygonArea(a.zone.outline)
-  );
+  return zones
+    .slice()
+    .sort((a, b) => polygonArea(b.zone.outline) - polygonArea(a.zone.outline));
 });
 
 const setFloor = (floor: string) => {

@@ -4,7 +4,12 @@
       <v-list-group value="user-account-menu">
         <template #activator="{ props: activatorProps }">
           <template v-if="isCollapsed">
-            <v-avatar v-bind="activatorProps" class="mx-auto" size="32" :class="'d-flex fake-link'">
+            <v-avatar
+              v-bind="activatorProps"
+              class="mx-auto"
+              size="32"
+              :class="'d-flex fake-link'"
+            >
               <v-img :src="avatarSrc" />
             </v-avatar>
           </template>
@@ -16,7 +21,7 @@
             ></v-list-item>
           </template>
         </template>
-        <drawer-item
+        <DrawerItem
           icon="mdi-lock"
           locale-key="logout"
           :is-collapsed="isCollapsed"
@@ -25,7 +30,7 @@
       </v-list-group>
     </template>
     <template v-else>
-      <drawer-item
+      <DrawerItem
         icon="mdi-fingerprint"
         locale-key="login"
         to="/login"
@@ -35,40 +40,46 @@
   </v-list>
 </template>
 <script setup>
-  import { fireuser, auth, signOut } from '@/plugins/firebase.client';
-  import { defineAsyncComponent, computed } from 'vue';
-  import { useUserStore } from '@/stores/user';
+import { fireuser, auth, signOut } from "@/plugins/firebase.client";
+import { defineAsyncComponent, computed } from "vue";
+import { useUserStore } from "@/stores/user";
 
-  defineProps({
-    isCollapsed: {
-      type: Boolean,
-      required: true,
-    },
-  });
-  const userStore = useUserStore();
-  const DrawerItem = defineAsyncComponent(() => import('@/features/drawer/DrawerItem'));
+defineProps({
+  isCollapsed: {
+    type: Boolean,
+    required: true,
+  },
+});
+const userStore = useUserStore();
+const DrawerItem = defineAsyncComponent(
+  () => import("@/features/drawer/DrawerItem.vue")
+);
 
-  const avatarSrc = computed(() => {
-    return userStore.getStreamerMode || !fireuser.photoURL
-      ? '/img/default-avatar.svg'
-      : fireuser.photoURL;
-  });
+const avatarSrc = computed(() => {
+  return userStore.getStreamerMode || !fireuser.photoURL
+    ? "/img/default-avatar.svg"
+    : fireuser.photoURL;
+});
 
-  const userDisplayName = computed(() => {
-    return userStore.getStreamerMode ? 'User' : fireuser.displayName;
-  });
+const userDisplayName = computed(() => {
+  return userStore.getStreamerMode ? "User" : fireuser.displayName;
+});
 
-  function logout() {
-    signOut(auth);
-  }
+function logout() {
+  signOut(auth);
+}
 </script>
 <style lang="scss" scoped>
-  :global(
-    body > div.v-overlay-container > div.allow-overflow > div.v-overlay__content > div.v-sheet
-  ) {
-    overflow-y: visible;
-  }
-  .fake-link {
-    cursor: pointer;
-  }
+:global(
+  body
+    > div.v-overlay-container
+    > div.allow-overflow
+    > div.v-overlay__content
+    > div.v-sheet
+) {
+  overflow-y: visible;
+}
+.fake-link {
+  cursor: pointer;
+}
 </style>

@@ -7,43 +7,52 @@
     :width="isRailActive ? 56 : 200"
     class="compact-nav-drawer"
   >
-    <tracker-logo :is-collapsed="isRailActive" />
+    <TrackerLogo :is-collapsed="isRailActive" />
     <v-divider class="mx-3 my-1" />
-    <drawer-account :is-collapsed="isRailActive" />
+    <DrawerAccount :is-collapsed="isRailActive" />
     <v-divider class="mx-3 my-1" />
-    <drawer-level :is-collapsed="isRailActive" />
+    <DrawerLevel :is-collapsed="isRailActive" />
     <v-divider class="mx-3 my-1" />
-    <drawer-links :is-collapsed="isRailActive" />
+    <DrawerLinks :is-collapsed="isRailActive" />
     <v-divider class="mx-3 my-1" />
-    <drawer-external-links :is-collapsed="isRailActive" />
+    <DrawerExternalLinks :is-collapsed="isRailActive" />
   </v-navigation-drawer>
 </template>
 <script setup>
-  import { defineAsyncComponent, computed } from 'vue';
-  import { useAppStore } from '@/stores/app';
-  import { useDisplay } from 'vuetify';
-  const { mdAndDown } = useDisplay();
-  const appStore = useAppStore();
+import { defineAsyncComponent, computed } from "vue";
+import { useAppStore } from "@/stores/app";
+import { useDisplay } from "vuetify";
+const { mdAndDown } = useDisplay();
+const appStore = useAppStore();
 
-  // Calculate the effective rail state
-  const isRailActive = computed(() => !mdAndDown.value && appStore.drawerRail);
+// Calculate the effective rail state
+const isRailActive = computed(() => !mdAndDown.value && appStore.drawerRail);
 
-  // Set up component loading
-  const TrackerLogo = defineAsyncComponent(() => import('@/features/drawer/TrackerLogo'));
-  const DrawerLinks = defineAsyncComponent(() => import('@/features/drawer/DrawerLinks'));
-  const DrawerAccount = defineAsyncComponent(() => import('@/features/drawer/DrawerAccount'));
-  const DrawerLevel = defineAsyncComponent(() => import('@/features/drawer/DrawerLevel'));
-  const DrawerExternalLinks = defineAsyncComponent(
-    () => import('@/features/drawer/DrawerExternalLinks')
-  );
+// Set up component loading
+// Set up component loading
+const TrackerLogo = defineAsyncComponent(
+  () => import("@/features/drawer/TrackerLogo.vue")
+);
+const DrawerLinks = defineAsyncComponent(
+  () => import("@/features/drawer/DrawerLinks.vue")
+);
+const DrawerAccount = defineAsyncComponent(
+  () => import("@/features/drawer/DrawerAccount.vue")
+);
+const DrawerLevel = defineAsyncComponent(
+  () => import("@/features/drawer/DrawerLevel.vue")
+);
+const DrawerExternalLinks = defineAsyncComponent(
+  () => import("@/features/drawer/DrawerExternalLinks.vue")
+);
 </script>
 <style lang="scss" scoped>
-  :deep(.v-list-group__items .v-list-item) {
-    padding-inline-start: 0 !important;
-    padding-left: 8px !important;
-  }
-  .compact-nav-drawer {
-    /* Remove width: auto, use fixed width for proper collapse */
-    box-sizing: border-box !important;
-  }
+:deep(.v-list-group__items .v-list-item) {
+  padding-inline-start: 0 !important;
+  padding-left: 8px !important;
+}
+.compact-nav-drawer {
+  /* Remove width: auto, use fixed width for proper collapse */
+  box-sizing: border-box !important;
+}
 </style>

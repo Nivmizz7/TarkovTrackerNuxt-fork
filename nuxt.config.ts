@@ -37,6 +37,17 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
   ],
 
+  components: [
+    {
+      path: "~/components",
+      pathPrefix: false,
+    },
+    {
+      path: "~/features",
+      pathPrefix: false,
+    },
+  ],
+
   build: {
     transpile: ["vuetify", "@vue/apollo-composable"],
   },

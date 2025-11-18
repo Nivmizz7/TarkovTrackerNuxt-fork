@@ -8,9 +8,7 @@
           bg-color="accent"
           align-tabs="center"
           show-arrows
-          @update:model-value="
-            (value: unknown) => $emit('update:activeMapView', value as string)
-          "
+          @update:model-value="handleMapViewUpdate"
         >
           <v-tab
             v-for="(map, index) in maps"
@@ -53,7 +51,11 @@ interface Emits {
 }
 
 const props = defineProps<Props>();
-defineEmits<Emits>();
+const emit = defineEmits<Emits>();
+
+const handleMapViewUpdate = (value: unknown): void => {
+  emit("update:activeMapView", value as string);
+};
 
 const getTaskTotal = (map: MapData): number => {
   const mapId = map.mergedIds?.[0] ?? map.id;

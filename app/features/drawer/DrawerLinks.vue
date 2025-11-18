@@ -1,56 +1,63 @@
 <template>
   <v-list nav bg-color="transparent" class="mx-auto">
-    <drawer-item
+    <DrawerItem
       icon="mdi-view-dashboard"
       locale-key="home"
       to="/"
       :is-collapsed="props.isCollapsed"
     >
-    </drawer-item>
-    <drawer-item
+    </DrawerItem>
+    <DrawerItem
       icon="mdi-clipboard-text-multiple"
       locale-key="tasks"
       to="/tasks"
       :is-collapsed="props.isCollapsed"
     >
-    </drawer-item>
-    <drawer-item
+    </DrawerItem>
+    <DrawerItem
       icon="mdi-list-box"
       locale-key="neededitems"
       to="/items"
       :is-collapsed="props.isCollapsed"
     >
-    </drawer-item>
-    <drawer-item
+    </DrawerItem>
+    <DrawerItem
       icon="mdi-home"
       locale-key="hideout"
       to="/hideout"
       :is-collapsed="props.isCollapsed"
     >
-    </drawer-item>
-    <drawer-item
+    </DrawerItem>
+    <DrawerItem
       v-show="fireuser.loggedIn"
       icon="mdi-account-group"
       locale-key="team"
       to="/team"
       :is-collapsed="props.isCollapsed"
     >
-    </drawer-item>
-    <drawer-item icon="mdi-api" locale-key="api" to="/api" :is-collapsed="props.isCollapsed">
-    </drawer-item>
+    </DrawerItem>
+    <DrawerItem
+      icon="mdi-api"
+      locale-key="api"
+      to="/api"
+      :is-collapsed="props.isCollapsed"
+    >
+    </DrawerItem>
   </v-list>
 </template>
 <script setup>
-  import { defineAsyncComponent } from 'vue';
-  import { fireuser } from '@/plugins/firebase.client';
+import { defineAsyncComponent } from "vue";
+import { fireuser } from "@/plugins/firebase.client";
 
-  const props = defineProps({
-    isCollapsed: {
-      type: Boolean,
-      required: true,
-    },
-  });
+const props = defineProps({
+  isCollapsed: {
+    type: Boolean,
+    required: true,
+  },
+});
 
-  const DrawerItem = defineAsyncComponent(() => import('@/features/drawer/DrawerItem'));
+const DrawerItem = defineAsyncComponent(
+  () => import("@/features/drawer/DrawerItem.vue")
+);
 </script>
 <style lang="scss" scoped></style>
