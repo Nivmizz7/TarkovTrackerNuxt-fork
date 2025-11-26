@@ -1,12 +1,15 @@
 import { onUnmounted, ref, watch } from "vue";
 import type { Store } from "pinia";
-import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import type {
+  RealtimePostgresChangesPayload,
+  RealtimeChannel,
+} from "@supabase/supabase-js";
 import {
   clearStaleState,
   safePatchStore,
   resetStore,
   devLog,
-} from "@/composables/utils/storeHelpers";
+} from "@/utils/storeHelpers";
 export interface SupabaseListenerConfig {
   store: Store;
   table: string;
@@ -27,8 +30,7 @@ export function useSupabaseListener({
   onData,
 }: SupabaseListenerConfig) {
   const { $supabase } = useNuxtApp();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const channel = ref<any>(null);
+  const channel = ref<RealtimeChannel | null>(null);
   const isSubscribed = ref(false);
   const storeIdForLogging = storeId || store.$id;
   // Initial fetch
@@ -73,7 +75,6 @@ export function useSupabaseListener({
     devLog(
       `[${storeIdForLogging}] Setting up subscription for ${table} with filter ${filter}`
     );
-    // Cast to any to avoid strict type mismatch with RealtimeChannel if versions differ slightly
     channel.value = $supabase.client
       .channel(`public:${table}:${filter}`)
       .on(
@@ -106,7 +107,8 @@ export function useSupabaseListener({
   const cleanup = () => {
     if (channel.value) {
       devLog(`[${storeIdForLogging}] Cleaning up subscription`);
-      $supabase.client.removeChannel(channel.value);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      $supabase.client.removeChannel(channel.value as any);
       channel.value = null;
       isSubscribed.value = false;
     }

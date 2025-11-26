@@ -1,82 +1,37 @@
 <template>
-  <div>
-    <v-container>
-      <v-row justify="center">
-        <v-col cols="12" sm="10" md="8" lg="6" xl="4">
-          <v-card class="auth-card elevation-8" color="rgb(18, 25, 30)">
-            <div class="auth-header">
-              <v-avatar size="72" class="mt-8 mb-3">
-                <v-icon size="48" color="grey">mdi-shield-account</v-icon>
-              </v-avatar>
-              <h2 class="text-h5 font-weight-bold mb-2">
-                Sign in to access your account
-              </h2>
-              <p class="text-body-2 text-medium-emphasis mb-6">
-                Track your progress, share with friends, and coordinate raids
-              </p>
-            </div>
-            <v-card-text class="px-6 pb-6 pt-2">
-              <v-btn
-                block
-                variant="elevated"
-                class="mb-4 auth-btn twitch-btn"
-                color="#9146FF"
-                height="50"
-                :loading="loading.twitch"
-                :disabled="loading.twitch || loading.discord"
-                @click="signInWithTwitch"
-              >
-                <div class="d-flex align-center justify-center w-100">
-                  <v-icon start color="white" class="mr-3">mdi-twitch</v-icon>
-                  <span class="text-white">Continue with Twitch</span>
-                </div>
-              </v-btn>
-              <v-btn
-                block
-                class="auth-btn discord-btn"
-                color="#5865F2"
-                height="50"
-                :loading="loading.discord"
-                :disabled="loading.twitch || loading.discord"
-                @click="signInWithDiscord"
-              >
-                <div class="d-flex align-center justify-center w-100">
-                  <v-icon start color="white" class="mr-3"
-                    >mdi-controller</v-icon
-                  >
-                  <span class="text-white">Continue with Discord</span>
-                </div>
-              </v-btn>
-            </v-card-text>
-            <div class="auth-footer px-6 py-3">
-              <div class="d-flex justify-space-between">
-                <v-btn
-                  variant="text"
-                  color="grey-lighten-1"
-                  class="text-caption text-lowercase"
-                  href="/privacy"
-                  target="_blank"
-                >
-                  Privacy Policy
-                </v-btn>
-                <v-btn
-                  variant="text"
-                  color="grey-lighten-1"
-                  class="text-caption text-lowercase"
-                  href="/terms"
-                  target="_blank"
-                >
-                  Terms of Service
-                </v-btn>
-              </div>
-            </div>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
+  <div class="w-full space-y-4">
+    <UButton
+      block
+      size="xl"
+      variant="solid"
+      class="w-full flex justify-center items-center h-12 bg-[#9146FF] hover:bg-[#9146FF]/90 text-white border-none transition-colors"
+      :loading="loading.twitch"
+      :disabled="loading.twitch || loading.discord"
+      @click="signInWithTwitch"
+    >
+      <UIcon name="i-mdi-twitch" class="mr-3 w-6 h-6 text-white shrink-0" />
+      <span class="text-white font-medium whitespace-nowrap">{{
+        $t("page.login.continue_twitch")
+      }}</span>
+    </UButton>
+
+    <UButton
+      block
+      size="xl"
+      variant="solid"
+      class="w-full flex justify-center items-center h-12 bg-[#5865F2] hover:bg-[#5865F2]/90 text-white border-none transition-colors"
+      :loading="loading.discord"
+      :disabled="loading.twitch || loading.discord"
+      @click="signInWithDiscord"
+    >
+      <UIcon name="i-mdi-controller" class="mr-3 w-6 h-6 text-white shrink-0" />
+      <span class="text-white font-medium whitespace-nowrap">{{
+        $t("page.login.continue_discord")
+      }}</span>
+    </UButton>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, nextTick } from "vue";
 import DataMigrationService from "@/utils/DataMigrationService";
 const { $supabase } = useNuxtApp();
@@ -102,7 +57,61 @@ onMounted(async () => {
 const signInWithTwitch = async () => {
   try {
     loading.value.twitch = true;
-    await $supabase.signInWithOAuth("twitch");
+
+    // Get OAuth URL - we'll handle redirect in a popup
+    const data = await $supabase.signInWithOAuth("twitch", {
+      skipBrowserRedirect: true,
+      redirectTo: `${window.location.origin}/auth/callback`,
+    });
+
+    if (data?.url) {
+      // Open popup window with specific features for OAuth
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      const popup = window.open(
+        data.url,
+        "oauth-popup",
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no`
+      );
+
+      if (popup) {
+        // Listen for messages from popup
+        const messageHandler = (event: MessageEvent) => {
+          if (
+            event.origin === window.location.origin &&
+            event.data?.type === "OAUTH_SUCCESS"
+          ) {
+            // Authentication successful - existing onAuthStateChange listener will handle session update
+            loading.value.twitch = false;
+            cleanup();
+          }
+        };
+
+        // Poll for popup closure
+        const pollTimer = setInterval(() => {
+          if (popup.closed) {
+            // User closed popup without authenticating
+            loading.value.twitch = false;
+            cleanup();
+          }
+        }, 500);
+        const cleanup = () => {
+          clearInterval(pollTimer);
+          window.removeEventListener("message", messageHandler);
+          if (popup && !popup.closed) {
+            popup.close();
+          }
+        };
+        window.addEventListener("message", messageHandler);
+      } else {
+        // Popup blocked - fallback to redirect
+        console.warn("Popup was blocked, falling back to redirect");
+        loading.value.twitch = false;
+        alert("Please allow popups for this site to use OAuth authentication.");
+      }
+    }
   } catch (error) {
     console.error("Twitch sign in error:", error);
     loading.value.twitch = false;
@@ -111,7 +120,58 @@ const signInWithTwitch = async () => {
 const signInWithDiscord = async () => {
   try {
     loading.value.discord = true;
-    await $supabase.signInWithOAuth("discord");
+    // Get OAuth URL - we'll handle redirect in a popup
+    const data = await $supabase.signInWithOAuth("discord", {
+      skipBrowserRedirect: true,
+      redirectTo: `${window.location.origin}/auth/callback`,
+    });
+    if (data?.url) {
+      // Open popup window with specific features for OAuth
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      const popup = window.open(
+        data.url,
+        "oauth-popup",
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no`
+      );
+      if (popup) {
+        // Listen for messages from popup
+        const messageHandler = (event: MessageEvent) => {
+          if (
+            event.origin === window.location.origin &&
+            event.data?.type === "OAUTH_SUCCESS"
+          ) {
+            // Authentication successful - existing onAuthStateChange listener will handle session update
+            loading.value.discord = false;
+            cleanup();
+          }
+        };
+
+        // Poll for popup closure
+        const pollTimer = setInterval(() => {
+          if (popup.closed) {
+            // User closed popup without authenticating
+            loading.value.discord = false;
+            cleanup();
+          }
+        }, 500);
+        const cleanup = () => {
+          clearInterval(pollTimer);
+          window.removeEventListener("message", messageHandler);
+          if (popup && !popup.closed) {
+            popup.close();
+          }
+        };
+        window.addEventListener("message", messageHandler);
+      } else {
+        // Popup blocked - fallback to redirect
+        console.warn("Popup was blocked, falling back to redirect");
+        loading.value.discord = false;
+        alert("Please allow popups for this site to use OAuth authentication.");
+      }
+    }
   } catch (error) {
     console.error("Discord sign in error:", error);
     loading.value.discord = false;
@@ -119,39 +179,5 @@ const signInWithDiscord = async () => {
 };
 </script>
 <style scoped>
-.auth-card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background-color: rgb(18, 25, 30);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-}
-.auth-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 0 24px;
-}
-.auth-btn {
-  letter-spacing: 0.5px;
-  text-transform: none;
-  font-weight: 500;
-  border-radius: 4px;
-}
-.github-btn {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.github-btn:hover {
-  background-color: #2c3136 !important;
-}
-.google-btn {
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-.google-btn:hover {
-  background-color: #f5f5f5 !important;
-}
-.auth-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  background-color: rgba(0, 0, 0, 0.2);
-}
+/* Custom styles removed - using Tailwind classes */
 </style>

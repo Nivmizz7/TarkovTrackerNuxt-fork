@@ -170,7 +170,7 @@ export const getters = {
     const currentData = getCurrentData(state);
     return currentData.displayName === ""
       ? null
-      : (currentData.displayName ?? null);
+      : currentData.displayName ?? null;
   },
   getObjectiveCount: (state: UserState) => (objectiveId: string) =>
     getCurrentData(state)?.taskObjectives?.[objectiveId]?.count ?? 0,

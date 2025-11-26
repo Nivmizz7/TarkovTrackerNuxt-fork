@@ -1,53 +1,38 @@
 <template>
-  <div class="team-management-page">
-    <tracker-tip :tip="{ id: 'team' }"></tracker-tip>
-    <v-container v-if="fireuser.loggedIn">
-      <v-row v-if="route?.query?.team && route?.query?.code" justify="center">
-        <v-col cols="12">
-          <team-invite></team-invite>
-        </v-col>
-      </v-row>
-      <v-row v-if="fireuser.loggedIn" justify="center">
-        <v-col v-if="systemStore.$state.team" cols="12">
-          <team-members></team-members>
-        </v-col>
-        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
-          <my-team></my-team>
-        </v-col>
-        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
-          <team-options></team-options>
-        </v-col>
-      </v-row>
-    </v-container>
+  <div class="container mx-auto px-4 py-6 space-y-4">
+    <div
+      v-if="route?.query?.team && route?.query?.code"
+      class="max-w-5xl mx-auto"
+    >
+      <TeamInvite />
+    </div>
+    <div v-if="user.loggedIn" class="max-w-6xl mx-auto grid gap-4">
+      <TeamMembers v-if="systemStore.$state.team" class="col-span-full" />
+      <div class="grid gap-4 md:grid-cols-2">
+        <MyTeam />
+        <TeamOptions />
+      </div>
+    </div>
   </div>
 </template>
 <script setup>
-// import { fireuser } from '@/plugins/firebase.client';
 import { computed, defineAsyncComponent } from "vue";
-import { useLiveData } from "@/composables/livedata";
+import { useSystemStoreWithSupabase } from "@/stores/useSystemStore";
 import { useRoute } from "vue-router";
-const TeamMembers = defineAsyncComponent(
-  () => import("@/features/team/TeamMembers")
+const TeamMembers = defineAsyncComponent(() =>
+  import("@/features/team/TeamMembers")
 );
-const TeamOptions = defineAsyncComponent(
-  () => import("@/features/team/TeamOptions")
+const TeamOptions = defineAsyncComponent(() =>
+  import("@/features/team/TeamOptions")
 );
 const MyTeam = defineAsyncComponent(() => import("@/features/team/MyTeam"));
-const TrackerTip = defineAsyncComponent(
-  () => import("@/features/ui/TrackerTip")
+const TeamInvite = defineAsyncComponent(() =>
+  import("@/features/team/TeamInvite")
 );
-const TeamInvite = defineAsyncComponent(
-  () => import("@/features/team/TeamInvite")
-);
-
 const { $supabase } = useNuxtApp();
-const { useSystemStore } = useLiveData();
-const { systemStore } = useSystemStore();
+const { systemStore } = useSystemStoreWithSupabase();
 const route = useRoute();
-
-const fireuser = computed(() => ({
+const user = computed(() => ({
   loggedIn: $supabase.user.loggedIn,
 }));
-
 </script>
-<style lang="scss" scoped></style>

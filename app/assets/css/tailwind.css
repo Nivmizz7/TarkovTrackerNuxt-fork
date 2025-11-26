@@ -1,0 +1,131 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* Tailwind v4 + Nuxt UI v4 theme tokens */
+@theme {
+  --font-sans: "Share Tech Mono", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Share Tech Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Brand (Vuetify secondary — gold accent used across the app) */
+  --color-brand-50: #f4f1ea;
+  --color-brand-100: #eae4d9;
+  --color-brand-200: #d4c9b3;
+  --color-brand-300: #bfae8d;
+  --color-brand-400: #a99366;
+  --color-brand-500: #9a8866;
+  --color-brand-600: #8c7a5c;
+  --color-brand-700: #6d5f47;
+  --color-brand-800: #4e4537;
+  --color-brand-900: #2f2b26;
+  --color-brand-950: #1a1814;
+
+  /* Accent (Vuetify accent — slate/steel tone) */
+  --color-accent-50: #e7ecef;
+  --color-accent-100: #cfd9dd;
+  --color-accent-200: #b7c6cb;
+  --color-accent-300: #9fb3b9;
+  --color-accent-400: #879fa8;
+  --color-accent-500: #6f8c96;
+  --color-accent-600: #566d78;
+  --color-accent-700: #3d505a;
+  --color-accent-800: #24343d;
+  --color-accent-900: #101b23;
+  --color-accent-950: #0b141a;
+
+  /* Surface = neutral grays (matches Vuetify background/surface scale) */
+  --color-surface-50: #f8f8f8;
+  --color-surface-100: #eaeaeb;
+  --color-surface-200: #d4d4d6;
+  --color-surface-300: #a1a1aa;
+  --color-surface-400: #71717a;
+  --color-surface-500: #52525b;
+  --color-surface-600: #3f3f46;
+  --color-surface-700: #2f2f34;
+  --color-surface-800: #1c1c1f;
+  --color-surface-900: #121212;
+  --color-surface-950: #0a0a09;
+
+  /* PvP (in-game tan color #DBD5C1) */
+  --color-pvp-50: #fefdfb;
+  --color-pvp-100: #faf7f2;
+  --color-pvp-200: #f5eee3;
+  --color-pvp-300: #ebe2d2;
+  --color-pvp-400: #dbd5c1;
+  --color-pvp-500: #c9bfaa;
+  --color-pvp-600: #b0a088;
+  --color-pvp-700: #8d7e6a;
+  --color-pvp-800: #6a5d4f;
+  --color-pvp-900: #4a4137;
+  --color-pvp-950: #2d281f;
+
+  /* PvE (in-game blue color #73ADC3) */
+  --color-pve-50: #f0f8fb;
+  --color-pve-100: #e1f1f7;
+  --color-pve-200: #c3e3ef;
+  --color-pve-300: #9dcfe3;
+  --color-pve-400: #73adc3;
+  --color-pve-500: #5a99b0;
+  --color-pve-600: #4a7f94;
+  --color-pve-700: #3d6678;
+  --color-pve-800: #2f4e5c;
+  --color-pve-900: #223742;
+  --color-pve-950: #16232a;
+
+  /* Success (brand green #2BA86A) */
+  --color-success-50: #ebf7f1;
+  --color-success-100: #d7efe3;
+  --color-success-200: #b0dfc7;
+  --color-success-300: #88cfab;
+  --color-success-400: #61c08f;
+  --color-success-500: #2ba86a;
+  --color-success-600: #238956;
+  --color-success-700: #1b6a44;
+  --color-success-800: #134b31;
+  --color-success-900: #0b2c1e;
+  --color-success-950: #06170f;
+
+  /* Custom semantic colors for Tarkov Tracker */
+  --color-complete: #114200;
+  --color-failed: #ffcccc;
+  --color-tasklink: #00acc1;
+  --color-link: #118cf7;
+  --color-enough: #001638;
+  --color-questlink: #f5f5f5;
+  --color-objectiveahead: #193011;
+  --color-objectivecomplete: #114200;
+  --color-objectiveuncomplete: #391111;
+  --color-objectiveenough: #2e455a;
+  --color-chartbase: #ffffff;
+  --color-sitebackground: #0a0a09;
+  --color-contentbackground: #181817;
+  --color-border: #1f1f1f;
+}
+
+/* Nuxt UI core tokens mapped to Tarkov Tracker theme */
+:root {
+  --ui-bg: #121212;
+  --ui-bg-muted: #0a0a09;
+  --ui-bg-elevated: #1c1c1f;
+  --ui-bg-accented: #242f35;
+  --ui-bg-inverted: #ffffff;
+
+  --ui-text: #f8f8f8;
+  --ui-text-muted: #a1a1aa;
+  --ui-text-highlighted: #9a8866;
+  --ui-text-dimmed: #71717a;
+
+  /* Force primary to branded success green */
+  --ui-primary: #2ba86a;
+  --ui-color-primary-50: var(--color-success-50);
+  --ui-color-primary-100: var(--color-success-100);
+  --ui-color-primary-200: var(--color-success-200);
+  --ui-color-primary-300: var(--color-success-300);
+  --ui-color-primary-400: var(--color-success-400);
+  --ui-color-primary-500: var(--color-success-500);
+  --ui-color-primary-600: var(--color-success-600);
+  --ui-color-primary-700: var(--color-success-700);
+  --ui-color-primary-800: var(--color-success-800);
+  --ui-color-primary-900: var(--color-success-900);
+  --ui-color-primary-950: var(--color-success-950);
+}

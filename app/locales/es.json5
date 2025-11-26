@@ -5,8 +5,6 @@
   app_bar: {
     overflow_menu: {
       language: 'Idioma',
-      reset_tips: 'Mostrar todos los consejos',
-      hide_all_tips: 'Ocultar todos los consejos',
     },
   },
   common: {
@@ -109,9 +107,13 @@
         statusdowngraded: 'Degradado {name} desde el nivel {level}',
       },
     },
+    items: {
+      title: 'Objetos Necesarios',
+    },
     neededitems: {
       title: 'Objetos Necesarios',
       loading: 'Cargando datos de tareas y escondite',
+      searchplaceholder: 'Buscar objetos...',
       neededviews: {
         all: 'Todos',
         tasks: 'Tareas',
@@ -122,6 +124,20 @@
         close: 'Cerrar',
         items_hide_non_fir: 'Ocultar objetos necesarios que no necesitan ser encontrados en incursión',
         items_show_non_fir: 'Mostrar objetos necesarios que no necesitan ser encontrados en incursión',
+      },
+    },
+    api: {
+      title: 'Documentación de la API',
+      description: 'Accede a tus datos de Tarkov Tracker de forma programática.',
+      note: 'Se requieren tokens de API para la autenticación.',
+      endpoints: {
+        title: 'Endpoints disponibles',
+        data: {
+          description: 'Recupera tus datos de progreso del juego.',
+        },
+      },
+      usage: {
+        title: 'Ejemplos de uso',
       },
     },
     settings: {
@@ -224,11 +240,17 @@
       title: 'Conectar',
     },
     api: {
-      title: 'API de TarkovTracker',
-      hero: {
-        description: 'Accede a tus datos de progreso programáticamente con nuestra API RESTful',
-        create_token: 'Crear token',
-        documentation: 'Documentación de la API',
+      title: 'Documentación de la API',
+      description: 'Accede a tus datos de Tarkov Tracker programáticamente',
+      note: 'Se requieren tokens de API para la autenticación',
+      endpoints: {
+        title: 'Endpoints disponibles',
+        data: {
+          description: 'Recupera tus datos de progreso del juego',
+        },
+      },
+      usage: {
+        title: 'Ejemplos de uso',
       },
       stats: {
         active_tokens: 'Tokens activos',
@@ -246,43 +268,6 @@
         realtime_tooltip: 'Tus datos de progreso siempre están actualizados a través de sincronización en tiempo real',
         json_api: 'API JSON',
         json_tooltip: 'Todas las respuestas están en formato JSON con estructura consistente',
-      },
-      tokens: {
-        no_tokens_title: 'Aún no hay tokens de API',
-        no_tokens_description: 'Crea tu primer token para comenzar a acceder a la API de TarkovTracker',
-        create_first_token: 'Crear tu primer token',
-        create_new_token: 'Crear nuevo token de API',
-        create_token_button: 'CREAR TOKEN',
-        close: 'Cerrar',
-        form: {
-          description_label: 'Descripción del token',
-          description_placeholder: 'ej: Tarkov Monitor, Rat Scanner, etc.',
-          description_hint: 'Elige un nombre descriptivo para identificar el propósito de este token',
-          gamemode_title: 'Modo de juego',
-          gamemode_description: 'Selecciona a qué modo de juego accederá este token. Esto no se puede cambiar después de la creación.',
-          gamemode_pvp_title: 'PvP (Estándar)',
-          gamemode_pvp_description: 'Jugabilidad estándar de Tarkov con combate PvP',
-          gamemode_pve_title: 'PvE (Cooperativo)',
-          gamemode_pve_description: 'Modo de juego cooperativo PvE',
-          permissions_title: 'Permisos del token',
-          permissions_description: 'Selecciona los permisos mínimos necesarios para tu caso de uso. Siempre puedes crear tokens adicionales con diferentes permisos.',
-          permissions_error: 'Por favor selecciona al menos un permiso para este token.',
-          selected_permissions: 'Permisos seleccionados',
-          active_info: 'Los tokens están activos inmediatamente y pueden ser revocados en cualquier momento',
-          cancel: 'Cancelar',
-          validation: {
-            required: 'Debes ingresar una descripción del token',
-            max_length: 'La descripción del token debe tener menos de 20 caracteres',
-          },
-        },
-        success: {
-          title: 'Token creado exitosamente',
-          message: 'Tu nuevo token está ahora activo y listo para usar',
-        },
-        error: {
-          title: 'Error al crear token',
-          message: 'Por favor intenta de nuevo o contacta soporte si el problema persiste',
-        },
       },
     },
     not_found: {
@@ -318,39 +303,5 @@
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
     tarkovchanges: 'Cambios en Tarkov',
-  },
-  tips: {
-    hide_tip: 'Ocultar este consejo',
-    default: {
-      title: 'Consejo',
-      description: '¡Ups! Parece que falta este consejo. Por favor, informa este error en Discord.',
-    },
-    tasks: {
-      description: 'Puedes seleccionar diferentes formas de categorizar y ver tus tareas utilizando las pestañas de abajo. Puedes expandir el panel de filtros para filtrar tareas, ordenarlas y más. Si ya tienes progreso en Tarkov, puedes ver la pestaña de tareas bloqueadas y saltar a las tareas que actualmente tienes disponibles.',
-    },
-    team: {
-      title: 'Equipo',
-      description: 'Crea un equipo para hacer un seguimiento de tu progreso con amigos. Puedes compartir una URL para que otros se unan a tu equipo. Podrás ver el progreso de tus compañeros de equipo, los objetos que necesitan y planificar incursiones juntos.',
-    },
-    welcomett3: {
-      title: '¡Bienvenido a TarkovTracker 3!',
-      description: '¡Bienvenido a la versión 3 de TarkovTracker! Esta es una reescritura completa de la versión original de TarkovTracker. Hay algunas características de calidad de vida que faltan en la versión original y se agregarán en los próximos días. Además, los datos de misiones para EFT v0.13 se agregarán tan pronto como se confirmen. Durante los primeros días, algunas misiones pueden ser inexactas o estar ausentes. Por favor, informa cualquier error que encuentres en Discord. ¡Gracias por tu paciencia!',
-    },
-    login: {
-      title: 'Iniciar sesión',
-      description: 'Solo como información, iniciar sesión no es necesario para usar TarkovTracker y hacer un seguimiento de tu progreso en el juego. La única razón para iniciar sesión es habilitar el compartir tu progreso en vivo con tus amigos y coordinar incursiones, o para mantener los datos en diferentes dispositivos o al borrar los datos del navegador. Si no planeas hacer eso, puedes seguir utilizando TarkovTracker sin iniciar sesión. Tus datos se almacenarán localmente en tu navegador.',
-    },
-    hideout: {
-      title: 'Escondite',
-      description: 'Puedes marcar el progreso para construir y mejorar tu escondite. El progreso que marques se utilizará para calcular los objetos necesarios para tu escondite.',
-    },
-    neededitems: {
-      title: 'Objetos Necesarios',
-      description: 'Aquí puedes ver los objetos que necesitarás en el futuro para tareas y mejoras del escondite. Puedes marcar los objetos a medida que los recolectas para realizar un seguimiento de cuántos más necesitas.',
-    },
-    teammembers: {
-      title: 'Miembros del Equipo',
-      description: 'Esta es la lista de los miembros de tu equipo. Puedes hacer clic en el icono del ojo para ocultar o mostrar sus tareas y objetos necesarios mientras utilizas otras partes del rastreador.',
-    },
   },
 }

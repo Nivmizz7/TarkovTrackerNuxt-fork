@@ -9,6 +9,7 @@ TarkovTracker is a Nuxt 3-based web application for tracking progress in Escape 
 ## Key Commands
 
 ### Development
+
 ```bash
 npm run dev              # Start development server on http://localhost:3000
 npm run build            # Build for production
@@ -17,6 +18,7 @@ npm install              # Install dependencies (runs postinstall: nuxt prepare)
 ```
 
 ### Code Quality
+
 ```bash
 npx eslint .             # Run ESLint on the codebase
 npx vitest               # Run tests (if configured)
@@ -35,12 +37,14 @@ npx vitest               # Run tests (if configured)
 The application uses a **three-store Pinia architecture**:
 
 1. **`stores/tarkov.ts`** (Main Store): Tracks game progress (tasks, hideout, levels, etc.) for both PvP and PvE modes
+
    - Uses `shared_state.ts` for core state structure and actions
    - Implements game mode switching with `switchGameMode(mode)`
    - Auto-migrates legacy data structures via `migrateDataIfNeeded()`
    - Syncs to Supabase `user_progress` table when authenticated
 
 2. **`stores/user.ts`** (User Preferences): UI preferences, view settings, tip visibility, streamer mode
+
    - Syncs to Supabase `user_preferences` table when authenticated
    - Does NOT store game progress data
 
@@ -51,8 +55,9 @@ The application uses a **three-store Pinia architecture**:
 
 ### Game Mode System
 
-The app supports **dual game modes** (PvP and PvE) with separate progress tracking:
+The app supports **two separate game modes** (PvP and PvE) with independent progress tracking:
 
+- **Supported modes**: `'pvp'` and `'pve'` only (no "dual" mode)
 - State structure: `{ currentGameMode: 'pvp' | 'pve', pvp: {...}, pve: {...} }`
 - Constants defined in `app/utils/constants.ts`: `GAME_MODES.PVP` and `GAME_MODES.PVE`
 - API game mode mapping: PVP → "regular", PVE → "pve" (via `API_GAME_MODES`)
@@ -62,24 +67,28 @@ The app supports **dual game modes** (PvP and PvE) with separate progress tracki
 ### Data Synchronization
 
 **Supabase Integration** (`app/composables/supabase/`):
+
 - `useSupabaseSync.ts`: Debounced two-way sync between Pinia stores and Supabase tables
 - `useSupabaseListener.ts`: Real-time listeners for team updates via Supabase realtime
 - Auth handled in `app/plugins/supabase.client.ts` with OAuth (Discord, Twitch)
 - Main tables: `user_progress`, `user_preferences`, `teams`, `team_memberships`
 
 **Migration System**:
+
 - `useDataMigration.ts`: Handles legacy data structure migrations
-- `migrateToGameModeStructure()` in `shared_state.ts`: Converts old single-mode state to dual PvP/PvE structure
+- `migrateToGameModeStructure()` in `shared_state.ts`: Converts old single-mode state to separate PvP/PvE structure
 
 ### External Data Sources
 
 **GraphQL API** (tarkov.dev):
+
 - Apollo Client configured in `app/plugins/apollo.ts`
 - Queries defined in `app/composables/api/useTarkovApi.ts`
 - Fetches: tasks, hideout stations, maps, traders, player levels
 - Data processing in `app/composables/data/` (useTaskData, useHideoutData, useMapData)
 
 **Tarkov Data System**:
+
 - `app/composables/tarkovdata.ts`: Central composable that initializes and exports all game data
 - Uses graph structures (via `graphology`) for task dependencies
 - Filters Scav Karma tasks via `EXCLUDED_SCAV_KARMA_TASKS` constant (tasks excluded until Fence Rep system is implemented)
@@ -88,6 +97,7 @@ The app supports **dual game modes** (PvP and PvE) with separate progress tracki
 ### Component Organization
 
 **Auto-imported components** from two locations:
+
 - `app/components/`: General components
 - `app/features/`: Feature-specific components (organized by domain: tasks, hideout, team, settings, etc.)
 
@@ -96,6 +106,7 @@ Components are auto-imported without path prefix (`pathPrefix: false`), so `feat
 ### Plugin System
 
 Plugins in `app/plugins/` initialize core functionality:
+
 - `apollo.ts`: GraphQL client for tarkov.dev API
 - `supabase.client.ts`: Auth and database client
 - `vuetify.client.ts`: Material Design component library
@@ -105,12 +116,14 @@ Plugins in `app/plugins/` initialize core functionality:
 ### TypeScript Configuration
 
 Aliases configured in both `nuxt.config.ts` and tsconfig:
+
 - `@/` and `~/` both resolve to `app/` directory
 - Use these aliases consistently for imports
 
 ## Important Patterns
 
 ### Accessing Supabase
+
 ```typescript
 const { $supabase } = useNuxtApp();
 // Check auth: $supabase.user.loggedIn
@@ -119,12 +132,14 @@ const { $supabase } = useNuxtApp();
 ```
 
 ### Accessing Apollo Client
+
 ```typescript
 const { $apollo } = useNuxtApp();
 // Or use composables from @vue/apollo-composable
 ```
 
 ### Game Mode Data Access
+
 ```typescript
 const store = useTarkovStore();
 const currentMode = store.currentGameMode; // 'pvp' or 'pve'
@@ -132,6 +147,7 @@ const currentData = store[currentMode]; // Access mode-specific data
 ```
 
 ### Working with Progress Store
+
 ```typescript
 const progressStore = useProgressStore();
 // Access team-wide completions
@@ -142,11 +158,13 @@ const completions = progressStore.tasksCompletions;
 ## Data Flow
 
 1. **Initial Load**:
+
    - `app.vue` calls `useTarkovData()` to fetch game data from tarkov.dev API
    - `store-initializer.ts` runs during plugin setup to hydrate stores from Supabase
    - Auth state is initialized via `supabase.client.ts` plugin
 
 2. **User Interactions**:
+
    - UI components update Pinia stores
    - `useSupabaseSync` watches for store changes (debounced)
    - Changes are automatically persisted to Supabase if authenticated
@@ -167,6 +185,7 @@ Configured for Cloudflare Pages (`nitro.preset: "cloudflare-pages"`). The build 
 ## Environment Variables
 
 Required for Supabase integration:
+
 - `VITE_SUPABASE_URL`: Supabase project URL
 - `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key
 

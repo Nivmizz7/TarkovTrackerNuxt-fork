@@ -4,8 +4,6 @@
   app_bar: {
     overflow_menu: {
       language: 'Langue',
-      reset_tips: 'Afficher les astuces',
-      hide_all_tips: 'Cacher les astuces',
     },
   },
   common: {
@@ -52,6 +50,7 @@
       show_global_tasks: 'Afficher les quêtes globales',
       hide_non_kappa_tasks: 'Cacher les quêtes  hors Kappa',
       show_non_kappa_tasks: 'Afficher les quêtes hors Kappa',
+      filterbutton: 'Filtrer',
       filters: {
         title: 'Filtres de Quêtes',
         close: 'Fermer',
@@ -59,6 +58,24 @@
         show_global_tasks: 'Afficher les quêtes globales sur la vue carte',
         hide_non_kappa_tasks: 'Cacher les quêtes hors Kappa',
         show_non_kappa_tasks: 'Afficher les quêtes hors Kappa',
+        level: 'Niveau',
+        trader: 'Marchand',
+        map: 'Carte',
+        type: 'Type',
+        reset: 'Réinitialiser',
+        apply: 'Appliquer',
+        leveloption: 'Niveau {level}',
+        typeoption: {
+          PickUp: 'Ramasser',
+          Elimination: 'Élimination',
+          Completion: 'Terminaison',
+          Exploration: 'Exploration',
+          Standing: 'Réputation',
+          Skill: 'Compétence',
+          Multi: 'Multi',
+          WeaponAssembly: 'Armurier',
+          Merchant: 'Marchand',
+        },
       },
       notasksfound: 'Aucune quête trouvée. Essayez de modifier vos filtres ou de mettre à jour votre niveau.',
       showing_all_sources: 'Afficher toutes les sources',
@@ -113,9 +130,13 @@
         statusdowngraded: 'Rétrograder {name} au niveau {level}',
       },
     },
+    items: {
+      title: 'Items requis',
+    },
     neededitems: {
       title: 'Items requis',
       loading: 'Chargement des données des items requis',
+      searchplaceholder: 'Rechercher des items...',
       neededviews: {
         all: 'Tous',
         tasks: 'Quêtes',
@@ -127,6 +148,20 @@
         close: 'Fermer',
         items_hide_non_fir: "Cacher les items requis qui n'ont pas besoin d'être trouvés en raid",
         items_show_non_fir: "Afficher les items requis qui n'ont pas besoin d'être trouvés en raid",
+      },
+    },
+    api: {
+      title: 'Documentation de l’API',
+      description: 'Accédez à vos données Tarkov Tracker de manière programmatique.',
+      note: 'Des jetons API sont nécessaires pour l’authentification.',
+      endpoints: {
+        title: 'Points de terminaison disponibles',
+        data: {
+          description: 'Récupérez vos données de progression de jeu.',
+        },
+      },
+      usage: {
+        title: "Exemples d'utilisation",
       },
     },
     settings: {
@@ -247,11 +282,17 @@
       title: 'Login',
     },
     api: {
-      title: 'API TarkovTracker',
-      hero: {
-        description: 'Accédez à vos données de progression par programmation avec notre API RESTful',
-        create_token: 'Créer un token',
-        documentation: 'Documentation API',
+      title: "Documentation de l'API",
+      description: 'Accédez à vos données Tarkov Tracker par programmation',
+      note: "Les tokens d'API sont requis pour l'authentification",
+      endpoints: {
+        title: 'Endpoints disponibles',
+        data: {
+          description: 'Récupérez vos données de progression de jeu',
+        },
+      },
+      usage: {
+        title: "Exemples d'utilisation",
       },
       stats: {
         active_tokens: 'Tokens actifs',
@@ -269,43 +310,6 @@
         realtime_tooltip: 'Vos données de progression sont toujours à jour grâce à la synchronisation en temps réel',
         json_api: 'API JSON',
         json_tooltip: 'Toutes les réponses sont au format JSON avec une structure cohérente',
-      },
-      tokens: {
-        no_tokens_title: 'Pas encore de tokens API',
-        no_tokens_description: "Créez votre premier token pour commencer à accéder à l'API TarkovTracker",
-        create_first_token: 'Créer votre premier token',
-        create_new_token: 'Créer un nouveau token API',
-        create_token_button: 'CRÉER UN TOKEN',
-        close: 'Fermer',
-        form: {
-          description_label: 'Description du token',
-          description_placeholder: 'ex: Tarkov Monitor, Rat Scanner, etc.',
-          description_hint: "Choisissez un nom descriptif pour identifier l'objectif de ce token",
-          gamemode_title: 'Mode de jeu',
-          gamemode_description: 'Sélectionnez à quel mode de jeu ce token accèdera. Cela ne peut pas être modifié après création.',
-          gamemode_pvp_title: 'PvP (Standard)',
-          gamemode_pvp_description: 'Gameplay Tarkov standard avec combat PvP',
-          gamemode_pve_title: 'PvE (Coopératif)',
-          gamemode_pve_description: 'Mode de jeu coopératif PvE',
-          permissions_title: 'Permissions du token',
-          permissions_description: "Sélectionnez les permissions minimales nécessaires pour votre cas d'usage. Vous pouvez toujours créer des tokens supplémentaires avec différentes permissions.",
-          permissions_error: 'Veuillez sélectionner au moins une permission pour ce token.',
-          selected_permissions: 'Permissions sélectionnées',
-          active_info: 'Les tokens sont immédiatement actifs et peuvent être révoqués à tout moment',
-          cancel: 'Annuler',
-          validation: {
-            required: 'Vous devez saisir une description du token',
-            max_length: 'La description du token doit faire moins de 20 caractères',
-          },
-        },
-        success: {
-          title: 'Token créé avec succès',
-          message: 'Votre nouveau token est maintenant actif et prêt à être utilisé',
-        },
-        error: {
-          title: 'Erreur lors de la création du token',
-          message: 'Veuillez réessayer ou contacter le support si le problème persiste',
-        },
       },
     },
     not_found: {
@@ -341,39 +345,5 @@
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
     tarkovchanges: 'Tarkov Changes',
-  },
-  tips: {
-    hide_tip: "Cacher l'astuce",
-    default: {
-      title: 'Astuce',
-      description: 'Oops! Cette astuce semble manquante. Veuillez signaler ce problème sur Discord.',
-    },
-    tasks: {
-      description: "Vous pouvez sélectionner différentes manières de classer et d'afficher vos tâches à l'aide des onglets ci-dessous. Vous pouvez développer le panneau de filtrage pour filtrer les tâches, les trier, etc. Si vous avez déjà progressé dans Tarkov, vous pouvez afficher l'onglet verrouillé des tâches et accéder aux tâches dont vous disposez actuellement.",
-    },
-    team: {
-      title: 'Équipe',
-      description: "Créez une équipe pour suivre vos progrès avec vos amis. Vous pouvez partager une URL pour que d'autres personnes rejoignent votre équipe. Vous pourrez voir la progression de vos coéquipiers, les objets dont ils ont besoin et planifier des raids ensemble.",
-    },
-    welcomett3: {
-      title: 'Bienvenue sur TarkovTracker 3!',
-      description: "Bienvenue dans TarkovTracker version 3 ! Il s'agit d'une réécriture complète du TarkovTracker original. De nouvelles fonctionnalités sont ajoutées à chaque wipe ! Veuillez signaler tout bug que vous trouvez sur Discord.",
-    },
-    login: {
-      title: 'Login',
-      description: "Pour information, il n'est pas nécessaire de se connecter pour utiliser TarkovTracker afin de suivre votre progression dans le jeu. La seule raison de vous connecter est de pouvoir partager vos progrès avec vos amis en direct et de coordonner des raids, ou de conserver des données sur plusieurs appareils ou en effaçant les données du navigateur. Si vous ne prévoyez pas de le faire, vous pouvez continuer à utiliser TarkovTracker sans vous connecter. Vos données seront stockées localement dans votre navigateur.",
-    },
-    hideout: {
-      title: 'Planque',
-      description: "Vous pouvez marquer les progrès vers la construction et l'amélioration de votre cachette. La progression que vous marquez sera utilisée pour calculer les éléments nécessaires à votre cachette.",
-    },
-    neededitems: {
-      title: 'Objets requis',
-      description: "Ici, vous pouvez voir les éléments dont vous aurez besoin à l'avenir pour les tâches et les mises à niveau de votre cachette. Vous pouvez marquer les éléments au fur et à mesure que vous les récupérez pour savoir combien d'autres vous avez besoin.",
-    },
-    teammembers: {
-      title: "Membre de l'équipe",
-      description: "Voici la liste des membres de votre équipe. Vous pouvez cliquer sur l'icône en forme d'œil pour masquer ou afficher leurs tâches et les éléments nécessaires pendant que vous utilisez d'autres parties du tracker.",
-    },
   },
 }

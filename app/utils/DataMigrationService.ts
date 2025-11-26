@@ -1,6 +1,9 @@
-// import { firestore, doc, getDoc, setDoc } from '@/plugins/firebase.client';
 import type { UserProgressData } from "@/shared_state";
 import type { GameMode } from "@/utils/constants";
+import {
+  DEFAULT_PMC_FACTION,
+  GAME_EDITION_STRING_VALUES,
+} from "@/utils/constants";
 // import { defaultState, migrateToGameModeStructure } from "@/shared_state";
 // Define a basic interface for the progress data structure
 export interface ProgressData {
@@ -40,7 +43,7 @@ export interface ProgressData {
 }
 const LOCAL_PROGRESS_KEY = "progress";
 /**
- * Service to handle migration of local data to a user's Firebase account
+ * Service to handle migration of local data to a user's Supabase account
  */
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export default class DataMigrationService {
@@ -431,8 +434,8 @@ export default class DataMigrationService {
       }
       const migrationData: ProgressData = {
         level: dataFromApi.playerLevel || dataFromApi.level || 1,
-        gameEdition: dataFromApi.gameEdition || "standard",
-        pmcFaction: dataFromApi.pmcFaction || "usec",
+        gameEdition: dataFromApi.gameEdition || GAME_EDITION_STRING_VALUES[0],
+        pmcFaction: dataFromApi.pmcFaction || DEFAULT_PMC_FACTION.toLowerCase(),
         displayName: dataFromApi.displayName || "",
         taskCompletions: taskCompletions,
         taskObjectives: taskObjectives,

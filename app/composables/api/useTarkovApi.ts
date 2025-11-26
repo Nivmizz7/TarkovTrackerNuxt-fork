@@ -1,36 +1,24 @@
 import { ref, computed, watch, onMounted, type ComputedRef } from "vue";
-import { useQuery, provideApolloClient } from "@vue/apollo-composable";
-import { apolloClient } from "@/plugins/apollo";
-import tarkovHideoutQuery from "@/utils/tarkovhideoutquery";
-import gql from "graphql-tag";
 import {
   useSafeLocale,
   extractLanguageCode,
 } from "@/composables/utils/i18nHelpers";
 import type {
-  LanguageQueryResult,
   TarkovDataQueryResult,
   TarkovHideoutQueryResult,
   StaticMapData,
 } from "@/types/tarkov";
 import mapsData from "./maps.json";
-import { API_GAME_MODES, GAME_MODES } from "@/utils/constants";
-
-const languageQuery = gql`
-  query GetLanguageCodes {
-    __type(name: "LanguageCode") {
-      enumValues {
-        name
-      }
-    }
-  }
-`;
-// Provide Apollo client
-provideApolloClient(apolloClient);
-// Singleton state for caching
-const isInitialized = ref(false);
-const availableLanguages = ref<string[] | null>(null);
+import {
+  API_GAME_MODES,
+  GAME_MODES,
+  API_SUPPORTED_LANGUAGES,
+  LOCALE_TO_API_MAPPING,
+} from "@/utils/constants";
+// Singleton state
+const availableLanguages = ref<string[]>([...API_SUPPORTED_LANGUAGES]);
 const staticMapData = ref<StaticMapData | null>(null);
+
 // Map data - now served locally
 let mapPromise: Promise<StaticMapData> | null = null;
 /**
@@ -49,35 +37,22 @@ async function loadStaticMaps(): Promise<StaticMapData> {
 export function useTarkovApi() {
   // Use safe locale helper to avoid i18n context issues
   const locale = useSafeLocale();
-  const languageCode = computed(() =>
-    extractLanguageCode(locale.value, availableLanguages.value || ["en"])
-  );
+  const languageCode = computed(() => {
+    // First check explicit mapping (e.g. uk -> en)
+    const mappedCode = LOCALE_TO_API_MAPPING[locale.value];
+    if (mappedCode) {
+      return mappedCode;
+    }
+    // Otherwise verify against supported languages
+    return extractLanguageCode(locale.value, availableLanguages.value);
+  });
+
   // Load static map data on mount
   onMounted(async () => {
     if (!staticMapData.value) {
       staticMapData.value = await loadStaticMaps();
     }
   });
-  // Initialize queries only once
-  if (!isInitialized.value) {
-    isInitialized.value = true;
-    // Language Query - Get available languages
-    const { onResult: onLanguageResult, onError: onLanguageError } =
-      useQuery<LanguageQueryResult>(languageQuery, null, {
-        fetchPolicy: "cache-first",
-        notifyOnNetworkStatusChange: true,
-        errorPolicy: "all",
-      });
-    onLanguageResult((result) => {
-      availableLanguages.value = result.data?.__type?.enumValues.map(
-        (enumValue: { name: string }) => enumValue.name
-      ) ?? ["en"];
-    });
-    onLanguageError((error) => {
-      console.error("Language query failed:", error);
-      availableLanguages.value = ["en"];
-    });
-  }
   return {
     availableLanguages: availableLanguages,
     languageCode,
@@ -87,6 +62,7 @@ export function useTarkovApi() {
 }
 /**
  * Composable for Tarkov main data queries (tasks, maps, traders, player levels)
+ * Uses server-side endpoint with Cloudflare Cache API for efficient edge caching
  */
 export function useTarkovDataQuery(
   gameMode: ComputedRef<string> = computed(() => GAME_MODES.PVP)
@@ -97,6 +73,11 @@ export function useTarkovDataQuery(
     const mode = gameMode.value as keyof typeof API_GAME_MODES;
     return API_GAME_MODES[mode] || API_GAME_MODES[GAME_MODES.PVP];
   });
+
+  const cacheKey = computed(
+    () => `tarkov-data-${apiLanguageCode.value}-${apiGameMode.value}`
+  );
+
   const { data, error, status, refresh } = useFetch<{
     data: TarkovDataQueryResult;
   }>("/api/tarkov/data", {
@@ -104,25 +85,23 @@ export function useTarkovDataQuery(
       lang: apiLanguageCode.value,
       gameMode: apiGameMode.value,
     })),
-    key: computed(
-      () => `tarkov-data-${apiLanguageCode.value}-${apiGameMode.value}`
-    ),
+    key: cacheKey,
+    immediate: false,
   });
 
   const result = computed(() => data.value?.data);
+
   const loading = computed(() => status.value === "pending");
-  // Watch for language and gameMode changes and refetch
+
+  // Watch for key changes (language/gamemode) and fetch
   watch(
-    [apiLanguageCode, apiGameMode],
-    ([newLang, newGameMode], [oldLang, oldGameMode]) => {
-      if (
-        (oldLang !== newLang || oldGameMode !== newGameMode) &&
-        availableLanguages.value
-      ) {
-        refresh();
-      }
-    }
+    cacheKey,
+    () => {
+      refresh();
+    },
+    { immediate: true }
   );
+
   return {
     result,
     error,
@@ -134,49 +113,47 @@ export function useTarkovDataQuery(
 }
 /**
  * Composable for Tarkov hideout data queries
+ * Now uses server-side endpoint with Cloudflare Cache API for better efficiency
  */
 export function useTarkovHideoutQuery(
   gameMode: ComputedRef<string> = computed(() => GAME_MODES.PVP)
 ) {
-  // Get language code from the API composable to ensure consistency
-  const { languageCode: apiLanguageCode } = useTarkovApi();
   // Map internal game modes to API game modes
   const apiGameMode = computed(() => {
     const mode = gameMode.value as keyof typeof API_GAME_MODES;
     return API_GAME_MODES[mode] || API_GAME_MODES[GAME_MODES.PVP];
   });
-  const { result, error, loading, refetch } = useQuery<
-    TarkovHideoutQueryResult,
-    { lang: string; gameMode: string }
-  >(
-    tarkovHideoutQuery,
-    () => ({ lang: apiLanguageCode.value, gameMode: apiGameMode.value }),
-    {
-      fetchPolicy: "cache-and-network",
-      notifyOnNetworkStatusChange: true,
-      errorPolicy: "all",
-      // Allow query to execute immediately, don't wait for availableLanguages
-      // The languageCode computed will default to 'en' if languages aren't loaded yet
-    }
-  );
-  // Watch for language and gameMode changes and refetch
+
+  const cacheKey = computed(() => `tarkov-hideout-${apiGameMode.value}`);
+
+  const { data, error, status, refresh } = useFetch<{
+    data: TarkovHideoutQueryResult;
+  }>("/api/tarkov/hideout", {
+    query: computed(() => ({
+      gameMode: apiGameMode.value,
+    })),
+    key: cacheKey,
+    immediate: false,
+  });
+
+  const result = computed(() => data.value?.data);
+
+  const loading = computed(() => status.value === "pending");
+
+  // Watch for gameMode changes
   watch(
-    [apiLanguageCode, apiGameMode],
-    ([newLang, newGameMode], [oldLang, oldGameMode]) => {
-      if (
-        (oldLang !== newLang || oldGameMode !== newGameMode) &&
-        availableLanguages.value
-      ) {
-        refetch({ lang: newLang, gameMode: newGameMode });
-      }
-    }
+    cacheKey,
+    () => {
+      refresh();
+    },
+    { immediate: true }
   );
+
   return {
     result,
     error,
     loading,
-    refetch,
-    languageCode: apiLanguageCode,
+    refetch: refresh,
     gameMode,
   };
 }

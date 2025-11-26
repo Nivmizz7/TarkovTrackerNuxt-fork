@@ -1,7 +1,7 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col cols="12">
+  <div class="container mx-auto">
+    <div class="flex flex-col gap-4">
+      <div class="w-full">
         <template
           v-if="isSvgObject(props.map?.svg) && props.map.svg.floors?.length > 0"
         >
@@ -11,17 +11,17 @@
               : []"
             :key="floorIndex"
           >
-            <v-btn
-              variant="tonal"
-              :color="floor == selectedFloor ? 'green' : ''"
+            <UButton
+              variant="solid"
+              :color="floor == selectedFloor ? 'success' : 'neutral'"
               class="mx-2"
               @click="setFloor(floor)"
-              >{{ floor.replace("_", " ") }}</v-btn
+              >{{ floor.replace("_", " ") }}</UButton
             >
           </template>
         </template>
-      </v-col>
-      <v-col cols="12">
+      </div>
+      <div class="w-full">
         <div :id="randomMapId" style="position: relative; width: 100%">
           <MapZone
             v-for="(zone, zoneLocationIndex) in sortedZones"
@@ -49,9 +49,9 @@
             </template>
           </template>
         </div>
-      </v-col>
-    </v-row>
-  </v-container>
+      </div>
+    </div>
+  </div>
 </template>
 <script setup lang="ts">
 import {
@@ -62,20 +62,17 @@ import {
   withDefaults,
   computed,
 } from "vue";
-import { v4 as uuidv4 } from "uuid";
 import * as d3 from "d3";
 import type { TarkovMap } from "~/types/tarkov";
-
 interface Props {
   map: TarkovMap;
   marks?: MapMark[];
 }
-
 type MapZoneOutline = { x: number; z: number }[];
 type MapZone = { map: { id: string }; outline: MapZoneOutline };
 type MapMarkLocation = { map: { id: string }; [key: string]: unknown };
 type MapMark = { zones: MapZone[]; possibleLocations?: MapMarkLocation[] };
-const randomMapId = ref(uuidv4());
+const randomMapId = ref(crypto.randomUUID());
 const props = withDefaults(defineProps<Props>(), {
   marks: () => [],
 });
@@ -85,7 +82,6 @@ const MapMarker = defineAsyncComponent(
 const MapZone = defineAsyncComponent(
   () => import("~/features/maps/MapZone.vue")
 );
-
 // Type guard to check if svg is an object with floors property
 const isSvgObject = (
   svg: unknown
@@ -112,18 +108,15 @@ const selectedFloor = ref<string | undefined>(
     return undefined;
   })()
 );
-
 // Cache for Factory floors to avoid refetching
 const factoryFloorsCache = ref<Map<string, Document>>(new Map());
 const isFactoryLoaded = ref(false);
-
 // trapezoidal form of the shoelace formula
 // https://en.wikipedia.org/wiki/Shoelace_formula
 const polygonArea = (points: MapZoneOutline) => {
   if (!points || points.length === 0) return 0;
   let area = 0;
   let j = points.length - 1;
-
   for (let i = 0; i < points.length; i++) {
     const currentPoint = points[i];
     const prevPoint = points[j];
@@ -132,13 +125,10 @@ const polygonArea = (points: MapZoneOutline) => {
     }
     j = i;
   }
-
   return Math.abs(area / 2);
 };
-
 const sortedZones = computed(() => {
   const zones: { zone: MapZone; mark: MapMark }[] = [];
-
   for (const mark of props.marks) {
     for (const zone of mark.zones) {
       if (zone.map.id === props.map.id) {
@@ -146,15 +136,12 @@ const sortedZones = computed(() => {
       }
     }
   }
-
   return zones
     .slice()
     .sort((a, b) => polygonArea(b.zone.outline) - polygonArea(a.zone.outline));
 });
-
 const setFloor = (floor: string) => {
   selectedFloor.value = floor;
-
   // For Factory, just toggle visibility instead of full redraw
   if (props.map.name?.toLowerCase() === "factory" && isFactoryLoaded.value) {
     updateFactoryFloorVisibility();
@@ -168,7 +155,6 @@ watch(
     // Reset cache when map changes
     factoryFloorsCache.value.clear();
     isFactoryLoaded.value = false;
-
     draw();
     // Safely update selectedFloor only if floors exist, prioritize defaultFloor
     const svg = newMap?.svg;
@@ -191,13 +177,10 @@ const draw = async () => {
       .remove();
     return;
   }
-
   const mapContainer = document.getElementById(randomMapId.value);
   if (!mapContainer) return;
-
   // Clear existing content
   d3.select(mapContainer).selectAll("svg").remove();
-
   // Check if this is Factory - handle multi-file floor stacking
   if (props.map.name?.toLowerCase() === "factory") {
     await drawFactoryFloors(mapContainer);
@@ -213,16 +196,13 @@ const drawFactoryFloors = async (mapContainer: HTMLElement) => {
     return;
   }
   const floors = svg.floors;
-
   // Create a single main SVG container (like other maps do)
   const mainSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   mainSvg.style.width = "100%";
   mainSvg.style.height = "100%";
   mainSvg.id = "factory-main-svg";
-
   // Load all floors if not cached, or use cached versions
   let viewBoxSet = false;
-
   for (let i = 0; i < floors.length; i++) {
     const floor = floors[i];
     if (!floor) continue;
@@ -234,7 +214,7 @@ const drawFactoryFloors = async (mapContainer: HTMLElement) => {
         floorSvg = factoryFloorsCache.value.get(floor);
       } else {
         // Load and cache the floor
-        floorSvg = await d3.svg(`/img/maps/Factory-${floor}.svg`);
+        floorSvg = await d3.xml(`/img/maps/Factory-${floor}.svg`);
         factoryFloorsCache.value.set(floor, floorSvg);
       }
 
@@ -247,14 +227,12 @@ const drawFactoryFloors = async (mapContainer: HTMLElement) => {
           }
           viewBoxSet = true;
         }
-
         // Create a group for this floor
         const floorGroup = document.createElementNS(
           "http://www.w3.org/2000/svg",
           "g"
         );
         floorGroup.id = floor;
-
         // Copy all children from the loaded SVG to our group
         const svgChildren = Array.from(
           floorSvg.documentElement.children
@@ -262,7 +240,6 @@ const drawFactoryFloors = async (mapContainer: HTMLElement) => {
         svgChildren.forEach((child) => {
           floorGroup.appendChild(child.cloneNode(true));
         });
-
         // Append the group to our main SVG
         mainSvg.appendChild(floorGroup);
       }
@@ -270,29 +247,22 @@ const drawFactoryFloors = async (mapContainer: HTMLElement) => {
       console.error(`Failed to load Factory floor: ${floor}`, error);
     }
   }
-
   // Append the main SVG to the container
   mapContainer.appendChild(mainSvg);
   isFactoryLoaded.value = true;
-
   // Apply initial floor visibility
   updateFactoryFloorVisibility();
 };
-
 const updateFactoryFloorVisibility = () => {
   const mapSvg = props.map?.svg;
   if (!isSvgObject(mapSvg) || !mapSvg.floors || !selectedFloor.value) return;
   const floors = mapSvg.floors;
-
   const selectedFloorIndex = floors.indexOf(selectedFloor.value);
   if (selectedFloorIndex === -1) return;
-
   const mapContainer = document.getElementById(randomMapId.value);
   if (!mapContainer) return;
-
   const svgElement = mapContainer.querySelector("#factory-main-svg");
   if (!svgElement) return;
-
   // Show floors from basement up to selected floor, hide floors above
   floors.forEach((floor: string, index: number) => {
     const floorGroup = svgElement.querySelector(`#${floor}`);
@@ -306,18 +276,15 @@ const updateFactoryFloorVisibility = () => {
     }
   });
 };
-
 const drawStandardMap = async (mapContainer: HTMLElement) => {
   // Use remote SVG files for other maps
   const mapSvgData = props.map?.svg;
   if (!isSvgObject(mapSvgData)) return;
   const svgUrl = `https://tarkovtracker.github.io/tarkovdata/maps/${mapSvgData.file}`;
-
-  const svgDoc = await d3.svg(svgUrl);
+  const svgDoc = await d3.xml(svgUrl);
   mapContainer.appendChild(svgDoc.documentElement);
   d3.select(mapContainer).select("svg").style("width", "100%");
   d3.select(mapContainer).select("svg").style("height", "100%");
-
   // Apply floor visibility logic for standard maps
   const mapSvg = props.map?.svg;
   if (
@@ -344,4 +311,3 @@ onMounted(() => {
   draw();
 });
 </script>
-<style lang="scss" scoped></style>

@@ -1,58 +1,70 @@
 <template>
-  <v-list nav bg-color="transparent" class="mx-auto">
+  <ul class="flex flex-col gap-1 px-1">
     <template v-if="isLoggedIn">
-      <v-list-group value="user-account-menu">
-        <template #activator="{ props: activatorProps }">
-          <template v-if="isCollapsed">
-            <v-avatar
-              v-bind="activatorProps"
-              class="mx-auto"
-              size="32"
-              :class="'d-flex fake-link'"
-            >
-              <v-img :src="avatarSrc" />
-            </v-avatar>
+      <UDropdownMenu
+        :items="accountItems"
+        :content="{ side: 'right', align: 'start' }"
+      >
+        <UButton
+          color="neutral"
+          variant="ghost"
+          :padded="!isCollapsed"
+          class="w-full justify-between"
+          :class="[isCollapsed ? 'justify-center px-0' : '']"
+          :ui="{ rounded: 'rounded-md', padding: { sm: 'p-2' } }"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <UAvatar
+              :src="avatarSrc"
+              size="md"
+              alt="User avatar"
+              class="shrink-0"
+            />
+            <span v-if="!isCollapsed" class="truncate">{{
+              userDisplayName
+            }}</span>
+          </div>
+          <template #trailing>
+            <UIcon
+              v-if="!isCollapsed"
+              name="i-heroicons-chevron-down-20-solid"
+              class="w-5 h-5 transition-transform duration-200"
+            />
           </template>
-          <template v-else>
-            <v-list-item
-              v-bind="activatorProps"
-              :title="userDisplayName"
-              :prepend-avatar="avatarSrc"
-            ></v-list-item>
-          </template>
-        </template>
-        <DrawerItem
-          icon="mdi-lock"
-          locale-key="logout"
-          :is-collapsed="isCollapsed"
-          @click.stop="logout"
-        />
-      </v-list-group>
+        </UButton>
+      </UDropdownMenu>
     </template>
     <template v-else>
-      <DrawerItem
-        icon="mdi-fingerprint"
-        locale-key="login"
+      <UButton
         to="/login"
-        :is-collapsed="isCollapsed"
-      />
+        icon="i-mdi-fingerprint"
+        color="neutral"
+        variant="ghost"
+        block
+        :padded="!isCollapsed"
+        :ui="{ rounded: 'rounded-md', padding: { sm: 'px-3 py-3' } }"
+        class="justify-center h-12"
+      >
+        <span v-if="!isCollapsed" class="truncate text-base font-medium">
+          {{ t("navigation_drawer.login") }}
+        </span>
+      </UButton>
     </template>
-  </v-list>
+  </ul>
 </template>
 <script setup>
-import { defineAsyncComponent, computed } from "vue";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/stores/user";
 defineProps({
   isCollapsed: {
     type: Boolean,
-    required: true,
+    default: false,
   },
 });
 const { $supabase } = useNuxtApp();
 const userStore = useUserStore();
-const DrawerItem = defineAsyncComponent(
-  () => import("@/features/drawer/DrawerItem.vue")
-);
+const { t } = useI18n();
 const isLoggedIn = computed(() => $supabase.user?.loggedIn ?? false);
 const avatarSrc = computed(() => {
   return userStore.getStreamerMode || !$supabase.user.photoURL
@@ -64,21 +76,14 @@ const userDisplayName = computed(() => {
     ? "User"
     : $supabase.user.displayName || "User";
 });
+const accountItems = computed(() => [
+  {
+    label: t("navigation_drawer.logout"),
+    icon: "i-mdi-lock",
+    onSelect: logout,
+  },
+]);
 function logout() {
   $supabase.signOut();
 }
 </script>
-<style lang="scss" scoped>
-:global(
-  body
-    > div.v-overlay-container
-    > div.allow-overflow
-    > div.v-overlay__content
-    > div.v-sheet
-) {
-  overflow-y: visible;
-}
-.fake-link {
-  cursor: pointer;
-}
-</style>

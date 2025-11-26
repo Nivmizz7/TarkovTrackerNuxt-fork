@@ -1,52 +1,67 @@
 <template>
-  <v-list nav bg-color="transparent" class="mx-auto">
+  <ul class="flex flex-col gap-1 px-1">
     <DrawerItem
-      icon="mdi-view-dashboard"
+      icon="i-heroicons-squares-2x2"
+      icon-color="brand-400"
       locale-key="home"
       to="/"
       :is-collapsed="props.isCollapsed"
     >
     </DrawerItem>
     <DrawerItem
-      icon="mdi-clipboard-text-multiple"
+      icon="i-heroicons-clipboard-document-list"
+      icon-color="accent-400"
       locale-key="tasks"
       to="/tasks"
       :is-collapsed="props.isCollapsed"
     >
     </DrawerItem>
     <DrawerItem
-      icon="mdi-list-box"
+      icon="i-heroicons-cube"
+      icon-color="brand-300"
       locale-key="neededitems"
-      to="/items"
+      to="/neededitems"
       :is-collapsed="props.isCollapsed"
     >
     </DrawerItem>
     <DrawerItem
-      icon="mdi-home"
+      icon="i-heroicons-home"
+      icon-color="accent-300"
       locale-key="hideout"
       to="/hideout"
       :is-collapsed="props.isCollapsed"
     >
     </DrawerItem>
     <DrawerItem
-      v-show="fireuser.loggedIn"
-      icon="mdi-account-group"
+      v-show="user.loggedIn"
+      icon="i-heroicons-user-group"
+      icon-color="brand-400"
       locale-key="team"
       to="/team"
       :is-collapsed="props.isCollapsed"
     >
     </DrawerItem>
     <DrawerItem
-      icon="mdi-api"
+      icon="i-heroicons-code-bracket"
+      icon-color="accent-400"
       locale-key="api"
       to="/api"
       :is-collapsed="props.isCollapsed"
     >
     </DrawerItem>
-  </v-list>
+    <DrawerItem
+      icon="i-heroicons-cog-6-tooth"
+      icon-color="surface-400"
+      locale-key="settings"
+      to="/settings"
+      :is-collapsed="props.isCollapsed"
+    >
+    </DrawerItem>
+  </ul>
 </template>
 <script setup>
-import { computed, defineAsyncComponent } from "vue";
+import { computed } from "vue";
+import DrawerItem from "@/features/drawer/DrawerItem.vue";
 const props = defineProps({
   isCollapsed: {
     type: Boolean,
@@ -54,11 +69,7 @@ const props = defineProps({
   },
 });
 const { $supabase } = useNuxtApp();
-const fireuser = computed(() => ({
+const user = computed(() => ({
   loggedIn: $supabase.user?.loggedIn ?? false,
 }));
-const DrawerItem = defineAsyncComponent(
-  () => import("@/features/drawer/DrawerItem.vue")
-);
 </script>
-<style lang="scss" scoped></style>

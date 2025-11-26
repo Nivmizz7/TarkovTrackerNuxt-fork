@@ -1,74 +1,62 @@
 <template>
-  <icon-card icon="mdi-account-group" icon-background="secondary" icon-color="white">
+  <icon-card
+    icon="mdi-account-group"
+    icon-background="secondary"
+    icon-color="white"
+  >
     <template #stat>
-      {{ $t('page.team.card.manageteam.title') }}
+      {{ $t("page.team.card.manageteam.title") }}
     </template>
     <template #content>
       <template v-if="teamMembers.length > 0">
-        <tracker-tip tip="teammembers" class="text-left"></tracker-tip>
-        <v-container>
-          <v-row>
-            <v-col
-              v-for="teammate in teamMembers"
-              :key="teammate"
-              cols="12"
-              sm="12"
-              md="6"
-              lg="4"
-              xl="4"
-            >
+        <div class="p-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div v-for="teammate in teamMembers" :key="teammate">
               <teammember-card
                 :teammember="teammate"
                 :is-team-owner-view="isCurrentUserTeamOwner"
               ></teammember-card>
-            </v-col>
-          </v-row>
-        </v-container>
+            </div>
+          </div>
+        </div>
       </template>
       <template v-else-if="teamMembers.length === 0">
-        <v-container>
-          <v-row>
-            <v-col cols="12" class="text-center">
-              {{ $t('page.team.card.manageteam.no_members') }}
-            </v-col>
-          </v-row>
-        </v-container>
+        <div class="p-4 text-center">
+          {{ $t("page.team.card.manageteam.no_members") }}
+        </div>
       </template>
       <template v-else> </template>
     </template>
   </icon-card>
 </template>
 <script setup>
-  import {
-    computed,
-    defineAsyncComponent,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    defineProps,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    watch,
-    ref,
-  } from 'vue';
-  import { useLiveData } from '@/composables/livedata';
-  // import { fireuser } from '@/plugins/firebase.client'; // TODO: Move to Cloudflare Workers
-  const IconCard = defineAsyncComponent(() => import('@/features/ui/IconCard'));
-  const TeammemberCard = defineAsyncComponent(() => import('@/features/team/TeammemberCard'));
-  const TrackerTip = defineAsyncComponent(() => import('@/features/ui/TrackerTip'));
-  const { useTeamStore: useTeamStoreFunction } = useLiveData();
-  const { teamStore } = useTeamStoreFunction();
-  const teamMembers = ref([]);
+import {
+  computed,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  defineProps,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  watch,
+  ref,
+} from "vue";
+import { useTeamStoreWithSupabase } from "@/stores/useTeamStore";
+import IconCard from "@/components/ui/IconCard.vue";
+import TeammemberCard from "@/features/team/TeammemberCard.vue";
+const { $supabase } = useNuxtApp();
+const { teamStore } = useTeamStoreWithSupabase();
+const teamMembers = ref([]);
 
-  teamStore.$subscribe((mutation, state) => {
-    if (state.members) {
-      teamMembers.value = state.members;
-    } else {
-      teamMembers.value = [];
-    }
-  });
+teamStore.$subscribe((mutation, state) => {
+  if (state.members) {
+    teamMembers.value = state.members;
+  } else {
+    teamMembers.value = [];
+  }
+});
 
-  const isCurrentUserTeamOwner = computed(() => {
-    const currentTeamOwner = teamStore.owner;
-    const currentFireUID = fireuser.uid;
-    return currentTeamOwner === currentFireUID;
-  });
+const isCurrentUserTeamOwner = computed(() => {
+  const currentTeamOwner = teamStore.owner;
+  const currentSupabaseUID = $supabase.user.id;
+  return currentTeamOwner === currentSupabaseUID;
+});
 </script>
-<style lang="scss" scoped></style>
+<style scoped></style>

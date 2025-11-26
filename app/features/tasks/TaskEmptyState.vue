@@ -1,15 +1,14 @@
 <template>
-  <v-row>
-    <v-col cols="12">
-      <v-alert icon="mdi-clipboard-search">
-        {{ t('page.tasks.notasksfound') }}
-      </v-alert>
-    </v-col>
-  </v-row>
+  <div class="w-full">
+    <UAlert
+      icon="i-mdi-clipboard-search"
+      color="primary"
+      variant="soft"
+      :title="t('page.tasks.notasksfound')"
+    />
+  </div>
 </template>
-
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n';
-
-  const { t } = useI18n({ useScope: 'global' });
+import { useI18n } from "vue-i18n";
+const { t } = useI18n({ useScope: "global" });
 </script>

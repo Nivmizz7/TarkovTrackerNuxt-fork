@@ -1,29 +1,23 @@
 <template>
-  <v-list-item
-    id="app-logo-item"
-    class="flex flex-column mt-1"
-    :ripple="false"
+  <NuxtLink
     to="/"
+    class="flex flex-col items-center mt-2 px-3 py-2 group hover:opacity-90 transition-opacity"
   >
     <div
-      :class="isCollapsed ? 'v-logo-rail' : 'v-logo-full compact-logo'"
-      style="height: auto; margin: 8px auto"
+      :class="isCollapsed ? 'w-8' : 'w-[130px]'"
+      class="transition-all duration-200 mx-auto"
     >
-      <v-img :src="logo" lazy-src="/favicon-32x32.png" />
+      <NuxtImg :src="logo" class="w-full h-auto" preload />
     </div>
-    <div v-if="!isCollapsed">
-      <div
-        class="text-subtitle1 text-center mt-1 font-weight-medium compact-site-name"
-      >
-        {{ t("site_name") }}
+    <div v-if="!isCollapsed" class="mt-2 text-center">
+      <div class="text-base font-medium leading-tight text-white">
+        TarkovTracker.org
       </div>
     </div>
-  </v-list-item>
+  </NuxtLink>
 </template>
 <script setup>
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-const { t } = useI18n({ useScope: "global" });
 const props = defineProps({
   isCollapsed: {
     type: Boolean,
@@ -36,21 +30,3 @@ const logo = computed(() => {
     : "/img/logos/tarkovtrackerlogo-light.png";
 });
 </script>
-<style lang="scss" scoped>
-:global(#app-logo-item > .v-list-item__overlay) {
-  opacity: 0 !important;
-}
-:deep(.v-logo-full),
-:deep(.compact-logo) {
-  width: 55%;
-  min-width: 50%;
-  max-width: 100px;
-}
-.compact-site-name {
-  font-size: 1.1rem !important;
-  line-height: 1.1;
-}
-:deep(.v-logo-rail) {
-  width: 32x;
-}
-</style>

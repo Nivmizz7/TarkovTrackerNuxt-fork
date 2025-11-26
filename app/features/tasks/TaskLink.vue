@@ -1,78 +1,65 @@
 <template>
-  <div class="d-flex justify-space-between align-center">
-    <router-link to="#" @click.prevent="scrollToTask">
-      <v-avatar size="1.5em" style="vertical-align: middle">
-        <v-img :src="traderAvatar" />
-      </v-avatar>
+  <div class="flex justify-between items-center">
+    <a
+      :href="props.task?.wikiLink"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="flex items-center text-blue-400 hover:text-blue-300 no-underline"
+    >
+      <div class="w-6 h-6 rounded-full overflow-hidden mr-2">
+        <img :src="traderAvatar" class="w-full h-full object-cover" />
+      </div>
       <template v-if="isFactionTask">
-        <v-avatar size="1.5em" rounded="0" style="vertical-align: middle" class="ml-2">
-          <v-img :src="factionImage" class="faction-icon" />
-        </v-avatar>
+        <div class="w-6 h-6 rounded-none ml-2">
+          <img
+            :src="factionImage"
+            class="w-full h-full object-contain invert"
+          />
+        </div>
       </template>
-      <span class="ml-2 font-weight-bold">
+      <span class="ml-2 font-bold">
         {{ props.task?.name }}
       </span>
-    </router-link>
-    <a v-if="props.showWikiLink" :href="props.task.wikiLink" target="_blank" class="wiki-link">
-      <v-row no-gutters>
-        <v-col cols="auto" class="mr-1">
-          <v-icon icon="mdi-information-outline" />
-        </v-col>
-        <v-col>
-          {{ t('page.tasks.questcard.wiki') }}
-        </v-col>
-      </v-row>
+    </a>
+    <a
+      v-if="props.showWikiLink"
+      :href="props.task.wikiLink"
+      target="_blank"
+      class="text-xs whitespace-nowrap text-blue-400 hover:text-blue-300 flex items-center"
+    >
+      <UIcon name="i-mdi-information-outline" class="w-6 h-6 mr-1" />
+      <span>{{ t("page.tasks.questcard.wiki") }}</span>
     </a>
   </div>
 </template>
 <script setup>
-  import { computed } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useTarkovData } from '@/composables/tarkovdata';
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 
-  // Define the props for the component
-  const props = defineProps({
-    task: {
-      type: Object,
-      required: true,
-    },
-    showWikiLink: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-  });
-  useTarkovData();
-  const { t } = useI18n({ useScope: 'global' });
-  // Check if there are two faction tasks for this task
-  const isFactionTask = computed(() => {
-    return props.task?.factionName != 'Any';
-  });
-  const factionImage = computed(() => {
-    return `/img/factions/${props.task.factionName}.webp`;
-  });
-  const traderAvatar = computed(() => {
-    return props.task?.trader?.imageLink;
-  });
-  const scrollToTask = () => {
-    const taskCard = document.getElementById(`task-${props.task.id}`);
-    taskCard?.scrollIntoView({
-      block: 'center',
-    });
-  };
+// Define the props for the component
+const props = defineProps({
+  task: {
+    type: Object,
+    required: true,
+  },
+  showWikiLink: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
+});
+const { t } = useI18n({ useScope: "global" });
+// Check if there are two faction tasks for this task
+const isFactionTask = computed(() => {
+  return props.task?.factionName != "Any";
+});
+const factionImage = computed(() => {
+  return `/img/factions/${props.task.factionName}.webp`;
+});
+const traderAvatar = computed(() => {
+  return props.task?.trader?.imageLink;
+});
 </script>
-<style lang="scss" scoped>
-  a:any-link {
-    color: rgba(var(--v-theme-tasklink), 1) !important;
-    text-decoration: none;
-  }
-  .faction-icon {
-    filter: invert(1);
-    max-width: 24px;
-    max-height: 24px;
-  }
-  .wiki-link {
-    font-size: 12px;
-    white-space: nowrap;
-  }
+<style scoped>
+/* Scoped styles removed - using Tailwind classes */
 </style>

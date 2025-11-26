@@ -1,0 +1,656 @@
+<template>
+  <div class="container mx-auto px-4 py-6 space-y-4">
+    <h1 class="text-2xl font-bold text-surface-50">
+      {{ $t("page.settings.title") }}
+    </h1>
+    <div class="grid gap-4 md:grid-cols-2">
+      <!-- Section 1: General Settings -->
+      <FittedCard
+        :fill-height="false"
+        icon="mdi-cog"
+        icon-color="primary"
+        highlight-color="blue"
+        class="h-full"
+      >
+        <template #title>
+          <span class="text-lg font-semibold">{{
+            $t("settings.general.title", "General Settings")
+          }}</span>
+        </template>
+        <template #content>
+          <div class="px-4 py-3 space-y-4">
+            <div class="space-y-2">
+              <p class="text-sm font-semibold text-surface-200">
+                {{ $t("settings.general.language", "Language") }}
+              </p>
+              <USelectMenu
+                v-model="selectedLocale"
+                :items="localeItems"
+                value-key="value"
+                :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
+                :ui="selectUi"
+                :ui-menu="selectMenuUi"
+              >
+                <template #leading>
+                  <UIcon
+                    name="i-mdi-translate"
+                    class="w-4 h-4 text-surface-300"
+                  />
+                </template>
+              </USelectMenu>
+            </div>
+            <div v-if="user.loggedIn" class="space-y-2">
+              <p class="text-sm font-semibold text-surface-200">
+                {{ $t("settings.general.streamer_mode", "Streamer Mode") }}
+              </p>
+              <div class="flex items-center gap-3">
+                <UCheckbox
+                  v-model="streamerMode"
+                  :disabled="
+                    Boolean(userStore.saving && userStore.saving.streamerMode)
+                  "
+                  label=""
+                />
+                <UIcon
+                  v-if="userStore.saving && userStore.saving.streamerMode"
+                  name="i-heroicons-arrow-path"
+                  class="w-4 h-4 animate-spin text-primary-500"
+                />
+                <span class="text-xs text-surface-400">
+                  {{
+                    $t(
+                      "settings.general.streamer_mode_hint",
+                      "Hides sensitive information while you're streaming."
+                    )
+                  }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </FittedCard>
+      <!-- Section 2: Game Profile -->
+      <FittedCard
+        :fill-height="false"
+        icon="mdi-controller"
+        icon-color="secondary"
+        highlight-color="secondary"
+        class="h-full"
+      >
+        <template #title>
+          <span class="text-lg font-semibold">{{
+            $t("settings.game_profile.title", "Game Profile")
+          }}</span>
+        </template>
+        <template #content>
+          <div class="px-4 py-3 space-y-4">
+            <div class="space-y-2">
+              <p class="text-sm font-semibold text-surface-200">
+                {{ $t("settings.game_profile.game_edition", "Game Edition") }}
+              </p>
+              <USelectMenu
+                v-model="selectedGameEdition"
+                :items="gameEditionOptions"
+                value-key="value"
+                :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
+                :ui="selectUi"
+                :ui-menu="selectMenuUi"
+              >
+                <template #leading>
+                  <UIcon
+                    name="i-mdi-gift-open"
+                    class="w-4 h-4 text-surface-300"
+                  />
+                </template>
+              </USelectMenu>
+            </div>
+            <div class="space-y-2">
+              <p class="text-sm font-semibold text-surface-200">
+                {{ $t("settings.game_profile.pmc_faction", "Faction") }}
+              </p>
+              <USelectMenu
+                v-model="selectedPMCFaction"
+                :items="pmcFactionOptions"
+                value-key="value"
+                :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
+                :ui="selectUi"
+                :ui-menu="selectMenuUi"
+              >
+                <template #leading>
+                  <img
+                    :src="
+                      factionImage(selectedPMCFaction) ||
+                      factionImage(pmcFactionOptions[0]?.value || 'USEC')
+                    "
+                    class="w-4 h-4 invert"
+                  />
+                </template>
+                <template #item="{ item }">
+                  <div class="flex items-center gap-2 px-2 py-1">
+                    <img
+                      :src="factionImage(item.value)"
+                      class="w-4 h-4 invert"
+                    />
+                    <span>{{ item.label }}</span>
+                  </div>
+                </template>
+              </USelectMenu>
+            </div>
+          </div>
+        </template>
+      </FittedCard>
+    </div>
+    <!-- Section 3: Data Management -->
+    <FittedCard
+      :fill-height="false"
+      icon="mdi-database"
+      icon-color="warning"
+      highlight-color="tan"
+    >
+      <template #title>
+        <span class="text-lg font-semibold">{{
+          $t("settings.data_management.title", "Data Management")
+        }}</span>
+      </template>
+      <template #title-right>
+        <UAlert
+          v-if="!user.loggedIn"
+          icon="i-mdi-information"
+          color="info"
+          variant="soft"
+          class="text-sm p-1 inline-flex items-center"
+        >
+          <template #description>
+            <span class="text-sm">
+              {{
+                $t(
+                  "settings.data_management.login_hint",
+                  "Log in to enable cloud sync and manage your progress across devices."
+                )
+              }}
+            </span>
+          </template>
+        </UAlert>
+      </template>
+      <template #content>
+        <div class="px-4 py-4 space-y-3">
+          <div class="grid gap-3 md:grid-cols-3">
+            <!-- Reset PvP Button with Modal -->
+            <UModal
+              :title="
+                $t('settings.data_management.reset_pvp_title', 'Reset PvP Data')
+              "
+              :description="
+                $t(
+                  'settings.data_management.reset_pvp_confirmation',
+                  'Are you sure you want to reset your PvP progress?'
+                )
+              "
+            >
+              <UButton
+                icon="i-mdi-shield-sword"
+                block
+                :ui="{
+                  base: 'bg-pvp-900 hover:bg-pvp-800 active:bg-pvp-700 text-pvp-200 focus-visible:ring focus-visible:ring-pvp-500'
+                }"
+              >
+                {{
+                  $t(
+                    "settings.data_management.reset_pvp_data",
+                    "Reset PvP Data"
+                  )
+                }}
+              </UButton>
+              <template #body>
+                <UAlert
+                  icon="i-mdi-alert"
+                  color="pvp"
+                  variant="subtle"
+                  :title="
+                    $t(
+                      'settings.data_management.reset_pvp_confirmation',
+                      'Are you sure you want to reset your PvP progress?'
+                    )
+                  "
+                />
+                <p class="text-sm text-surface-200 mt-4">
+                  {{
+                    $t(
+                      "settings.data_management.reset_pvp_warning",
+                      "This will permanently delete all your PvP progress including tasks, hideout, and level. Your PvE data will not be affected."
+                    )
+                  }}
+                </p>
+              </template>
+              <template #footer>
+                <div class="flex w-full items-center gap-3 pt-1">
+                  <UButton
+                    color="neutral"
+                    variant="soft"
+                    class="min-w-26 justify-center text-center"
+                  >
+                    {{
+                      $t("settings.data_management.reset_cancel", "Cancel")
+                    }}
+                  </UButton>
+                  <UButton
+                    color="error"
+                    variant="solid"
+                    class="ml-auto min-w-30 justify-center text-center"
+                    :loading="resetting"
+                    @click="resetPvPData"
+                  >
+                    {{
+                      $t(
+                        "settings.data_management.reset_confirm",
+                        "Reset PvP Data"
+                      )
+                    }}
+                  </UButton>
+                </div>
+              </template>
+            </UModal>
+
+            <!-- Reset PvE Button with Modal -->
+            <UModal
+              :title="
+                $t('settings.data_management.reset_pve_title', 'Reset PvE Data')
+              "
+              :description="
+                $t(
+                  'settings.data_management.reset_pve_confirmation',
+                  'Are you sure you want to reset your PvE progress?'
+                )
+              "
+            >
+              <UButton
+                icon="i-mdi-account-group"
+                block
+                :ui="{
+                  base: 'bg-pve-900 hover:bg-pve-800 active:bg-pve-700 text-pve-200 focus-visible:ring focus-visible:ring-pve-500'
+                }"
+              >
+                {{
+                  $t(
+                    "settings.data_management.reset_pve_data",
+                    "Reset PvE Data"
+                  )
+                }}
+              </UButton>
+              <template #body>
+                <UAlert
+                  icon="i-mdi-alert"
+                  color="pve"
+                  variant="subtle"
+                  :title="
+                    $t(
+                      'settings.data_management.reset_pve_confirmation',
+                      'Are you sure you want to reset your PvE progress?'
+                    )
+                  "
+                />
+                <p class="text-sm text-surface-200 mt-4">
+                  {{
+                    $t(
+                      "settings.data_management.reset_pve_warning",
+                      "This will permanently delete all your PvE progress including tasks, hideout, and level. Your PvP data will not be affected."
+                    )
+                  }}
+                </p>
+              </template>
+              <template #footer>
+                <div class="flex w-full items-center gap-3 pt-1">
+                  <UButton
+                    color="neutral"
+                    variant="soft"
+                    class="min-w-26fy-center text-center"
+                  >
+                    {{
+                      $t("settings.data_management.reset_cancel", "Cancel")
+                    }}
+                  </UButton>
+                  <UButton
+                    color="error"
+                    variant="solid"
+                    class="ml-auto min-w-30 justify-center text-center"
+                    :loading="resetting"
+                    @click="resetPvEData"
+                  >
+                    {{
+                      $t(
+                        "settings.data_management.reset_confirm",
+                        "Reset PvE Data"
+                      )
+                    }}
+                  </UButton>
+                </div>
+              </template>
+            </UModal>
+
+            <!-- Reset All Button with Modal -->
+            <UModal
+              :title="
+                $t('settings.data_management.reset_all_title', 'Reset All Data')
+              "
+              :description="
+                $t(
+                  'settings.data_management.reset_all_confirmation',
+                  'Are you sure you want to reset ALL your progress?'
+                )
+              "
+            >
+              <UButton
+                color="error"
+                variant="soft"
+                icon="i-mdi-delete-sweep"
+                block
+              >
+                {{
+                  $t("settings.data_management.reset_all_data", "Reset All Data")
+                }}
+              </UButton>
+              <template #body>
+                <UAlert
+                  icon="i-mdi-alert-octagon"
+                  color="error"
+                  variant="subtle"
+                  :title="
+                    $t(
+                      'settings.data_management.reset_all_confirmation',
+                      'Are you sure you want to reset ALL your progress?'
+                    )
+                  "
+                />
+                <p class="text-sm text-surface-200 mt-4">
+                  {{
+                    $t(
+                      "settings.data_management.reset_all_warning",
+                      "This will permanently delete ALL your progress for both PvP and PvE modes. This action cannot be undone!"
+                    )
+                  }}
+                </p>
+              </template>
+              <template #footer>
+                <div class="flex w-full items-center gap-3 pt-1">
+                  <UButton
+                    color="neutral"
+                    variant="soft"
+                    class="min-w-26 justify-center text-center"
+                  >
+                    {{
+                      $t("settings.data_management.reset_cancel", "Cancel")
+                    }}
+                  </UButton>
+                  <UButton
+                    color="error"
+                    variant="solid"
+                    class="ml-auto min-w-30 justify-center text-center"
+                    :loading="resetting"
+                    @click="resetAllData"
+                  >
+                    {{
+                      $t(
+                        "settings.data_management.reset_confirm",
+                        "Reset All Data"
+                      )
+                    }}
+                  </UButton>
+                </div>
+              </template>
+            </UModal>
+          </div>
+          <p class="text-xs text-center text-surface-400">
+            {{
+              $t(
+                "settings.data_management.reset_hint",
+                "Reset your progress for specific game modes or all data."
+              )
+            }}
+          </p>
+        </div>
+      </template>
+    </FittedCard>
+    <!-- Section 4: API Management -->
+    <FittedCard
+      :fill-height="false"
+      icon="mdi-api"
+      icon-color="primary"
+      highlight-color="blue"
+    >
+      <template #title>
+        <span class="text-lg font-semibold">{{
+          $t("settings.api_management.title", "API Management")
+        }}</span>
+      </template>
+      <template #title-right>
+        <UAlert
+          v-if="!user.loggedIn"
+          icon="i-mdi-lock"
+          color="warning"
+          variant="soft"
+          class="text-sm p-1 inline-flex items-center"
+        >
+          <template #description>
+            <span class="text-sm">
+              {{
+                $t(
+                  "settings.api_management.login_required",
+                  "You must be logged in to create and manage API tokens."
+                )
+              }}
+            </span>
+          </template>
+        </UAlert>
+      </template>
+      <template #content>
+        <div class="px-4 py-4 space-y-3">
+          <UButton
+            color="primary"
+            variant="soft"
+            icon="i-mdi-key-plus"
+            block
+            :disabled="!user.loggedIn"
+            @click="navigateToApiPage"
+          >
+            {{
+              $t("settings.api_management.manage_tokens", "Manage API Tokens")
+            }}
+          </UButton>
+          <p class="text-xs text-center text-surface-400">
+            {{
+              $t(
+                "settings.api_management.hint",
+                "Create and manage API tokens for third-party integrations."
+              )
+            }}
+          </p>
+        </div>
+      </template>
+    </FittedCard>
+    <!-- Section 5: Data Migration -->
+    <DataMigrationCard v-if="user.loggedIn" />
+    <!-- Section 6: Account Management -->
+    <AccountDeletionCard v-if="user.loggedIn" />
+  </div>
+</template>
+<script setup lang="ts">
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { useUserStore } from "@/stores/user";
+import { useTarkovStore } from "@/stores/tarkov";
+import { GAME_EDITIONS, PMC_FACTIONS } from "@/utils/constants";
+import FittedCard from "@/components/ui/FittedCard.vue";
+import AccountDeletionCard from "@/features/settings/AccountDeletionCard.vue";
+import DataMigrationCard from "@/features/settings/DataMigrationCard.vue";
+
+// Page meta
+definePageMeta({
+  title: "Settings",
+});
+
+// Composables
+const { $supabase } = useNuxtApp();
+const router = useRouter();
+const toast = useToast();
+const { locale, availableLocales } = useI18n({ useScope: "global" });
+const userStore = useUserStore();
+const tarkovStore = useTarkovStore();
+const selectUi = {};
+const selectMenuUi = {
+  container: "z-[9999]",
+  background: "bg-surface-900",
+  shadow: "shadow-xl",
+  rounded: "rounded-lg",
+  ring: "ring-1 ring-white/10",
+  padding: "p-1",
+  option: {
+    base: "px-3 py-2 text-sm cursor-pointer transition-colors rounded",
+    inactive: "text-surface-200 hover:bg-surface-800 hover:text-white",
+    active: "bg-surface-800 text-white",
+    selected: "bg-primary-500/10 text-primary-100 ring-1 ring-primary-500",
+  },
+};
+// Reactive state
+const resetting = ref(false);
+
+// Computed properties
+const user = computed(() => ({
+  loggedIn: $supabase.user.loggedIn,
+}));
+// Language settings
+const localeItems = computed(() => {
+  const languageNames = new Intl.DisplayNames(["en"], { type: "language" });
+  return availableLocales.map((localeCode) => ({
+    label: languageNames.of(localeCode) || localeCode.toUpperCase(),
+    value: localeCode,
+  }));
+});
+const selectedLocale = computed({
+  get() {
+    return locale.value;
+  },
+  set(newValue) {
+    if (!newValue) return;
+    locale.value = newValue;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (userStore.$state as any).localeOverride = newValue;
+  },
+});
+// Streamer mode
+const streamerMode = computed({
+  get() {
+    return userStore.getStreamerMode;
+  },
+  set(newValue) {
+    userStore.setStreamerMode(newValue);
+  },
+});
+// Game edition
+const gameEditionOptions = computed(() =>
+  GAME_EDITIONS.map((edition) => ({
+    label: edition.title,
+    value: edition.value,
+  }))
+);
+const selectedGameEdition = computed({
+  get() {
+    return tarkovStore.getGameEdition();
+  },
+  set(newValue: number) {
+    tarkovStore.setGameEdition(newValue);
+  },
+});
+// PMC Faction
+const pmcFactionOptions = computed(() =>
+  PMC_FACTIONS.map((faction) => ({
+    label: faction.title,
+    value: faction.value,
+  }))
+);
+const selectedPMCFaction = computed({
+  get() {
+    return tarkovStore.getPMCFaction();
+  },
+  set(newValue: "USEC" | "BEAR") {
+    tarkovStore.setPMCFaction(newValue);
+  },
+});
+const factionImage = (faction: string) => {
+  return `/img/factions/${faction}.webp`;
+};
+
+// Methods
+const navigateToApiPage = () => {
+  router.push("/api");
+};
+
+const resetPvPData = async () => {
+  resetting.value = true;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (tarkovStore as any).resetPvPData();
+    toast.add({
+      title: "PvP Data Reset",
+      description: "Your PvP progress has been reset successfully.",
+      color: "success",
+    });
+    // Modal will auto-close after successful action
+  } catch (error) {
+    console.error("Error resetting PvP data:", error);
+    toast.add({
+      title: "Reset Failed",
+      description: "Failed to reset PvP data. Please try again.",
+      color: "error",
+    });
+  } finally {
+    resetting.value = false;
+  }
+};
+
+const resetPvEData = async () => {
+  resetting.value = true;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (tarkovStore as any).resetPvEData();
+    toast.add({
+      title: "PvE Data Reset",
+      description: "Your PvE progress has been reset successfully.",
+      color: "success",
+    });
+    // Modal will auto-close after successful action
+  } catch (error) {
+    console.error("Error resetting PvE data:", error);
+    toast.add({
+      title: "Reset Failed",
+      description: "Failed to reset PvE data. Please try again.",
+      color: "error",
+    });
+  } finally {
+    resetting.value = false;
+  }
+};
+
+const resetAllData = async () => {
+  resetting.value = true;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (tarkovStore as any).resetAllData();
+    toast.add({
+      title: "All Data Reset",
+      description: "All your progress has been reset successfully.",
+      color: "success",
+    });
+    // Modal will auto-close after successful action
+  } catch (error) {
+    console.error("Error resetting all data:", error);
+    toast.add({
+      title: "Reset Failed",
+      description: "Failed to reset data. Please try again.",
+      color: "error",
+    });
+  } finally {
+    resetting.value = false;
+  }
+};
+</script>

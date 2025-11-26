@@ -1,57 +1,30 @@
 <template>
-  <div class="migration-steps mb-4">
-    <div class="step-item">
-      <span class="step-number">1</span>
-      <span class="step-text">
+  <div class="flex flex-col gap-3 mb-4">
+    <div class="flex items-start gap-3">
+      <span
+        class="flex items-center justify-center min-w-6 h-6 bg-primary-500 text-white rounded-full text-sm font-bold"
+        >1</span
+      >
+      <span class="pt-0.5 text-left">
         Get API token from
         <a
           href="https://tarkovtracker.io/settings"
           target="_blank"
-          class="info-link"
+          class="text-blue-400 hover:underline no-underline"
         >
           tarkovtracker.io/settings
         </a>
         (API Tokens section)
       </span>
     </div>
-    <div class="step-item">
-      <span class="step-number">2</span>
-      <span class="step-text">Paste token below to migrate your data</span>
+    <div class="flex items-start gap-3">
+      <span
+        class="flex items-center justify-center min-w-6 h-6 bg-primary-500 text-white rounded-full text-sm font-bold"
+        >2</span
+      >
+      <span class="pt-0.5 text-left"
+        >Paste token below to migrate your data</span
+      >
     </div>
   </div>
 </template>
-<style scoped>
-.migration-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.step-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-.step-number {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  background-color: rgba(var(--v-theme-primary), 1);
-  color: white;
-  border-radius: 50%;
-  font-size: 14px;
-  font-weight: bold;
-}
-.step-text {
-  padding-top: 2px;
-  text-align: left;
-}
-.info-link {
-  color: rgba(var(--v-theme-link), 1);
-  text-decoration: none;
-}
-.info-link:hover {
-  text-decoration: underline;
-}
-</style>

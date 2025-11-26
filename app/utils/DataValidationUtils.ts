@@ -1,4 +1,11 @@
 import type { ProgressData } from "./DataMigrationService";
+import {
+  DEFAULT_GAME_EDITION,
+  DEFAULT_PMC_FACTION,
+  GAME_EDITION_STRING_VALUES,
+  PMC_FACTION_VALUES_LOWERCASE,
+} from "./constants";
+
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class DataValidationUtils {
   /**
@@ -51,8 +58,8 @@ export class DataValidationUtils {
     return (
       this.hasSignificantProgress(data) ||
       (data.displayName && data.displayName.trim().length > 0) ||
-      data.gameEdition !== "standard" ||
-      data.pmcFaction !== "usec"
+      data.gameEdition !== GAME_EDITION_STRING_VALUES[0] ||
+      data.pmcFaction !== DEFAULT_PMC_FACTION.toLowerCase()
     );
   }
   /**
@@ -77,17 +84,16 @@ export class DataValidationUtils {
       ...data,
       level: Math.max(1, Math.min(79, Math.floor(data.level))),
       displayName: data.displayName?.trim().slice(0, 50) || "",
-      gameEdition: [
-        "standard",
-        "leftbehind",
-        "prepareescape",
-        "edgeofDarkness",
-      ].includes(data.gameEdition || "")
+      gameEdition: GAME_EDITION_STRING_VALUES.includes(
+        data.gameEdition as (typeof GAME_EDITION_STRING_VALUES)[number]
+      )
         ? data.gameEdition
-        : "standard",
-      pmcFaction: ["usec", "bear"].includes(data.pmcFaction || "")
+        : GAME_EDITION_STRING_VALUES[DEFAULT_GAME_EDITION - 1],
+      pmcFaction: PMC_FACTION_VALUES_LOWERCASE.includes(
+        data.pmcFaction as (typeof PMC_FACTION_VALUES_LOWERCASE)[number]
+      )
         ? data.pmcFaction
-        : "usec",
+        : DEFAULT_PMC_FACTION.toLowerCase(),
     };
   }
 }

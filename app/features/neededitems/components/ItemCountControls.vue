@@ -1,24 +1,42 @@
 <template>
-  <div class="d-flex align-center">
-    <v-btn variant="tonal" class="pa-0 ma-0" size="small" @click="$emit('decrease')">
-      <v-icon size="x-small">mdi-minus-thick</v-icon>
-    </v-btn>
-    <v-btn variant="tonal" class="pa-0 px-1 ma-0 mx-1" @click="$emit('toggle')">
+  <div class="flex items-center">
+    <UButton
+      variant="ghost"
+      color="neutral"
+      class="p-0 m-0 min-w-0"
+      size="xs"
+      @click="$emit('decrease')"
+    >
+      <UIcon name="i-mdi-minus-thick" class="w-4 h-4" />
+    </UButton>
+    <UButton
+      variant="ghost"
+      color="neutral"
+      class="px-1 mx-1 min-w-0"
+      size="xs"
+      @click="$emit('toggle')"
+    >
       {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
-    </v-btn>
-    <v-btn variant="tonal" class="pa-0 ma-0" size="small" @click="$emit('increase')">
-      <v-icon size="x-small">mdi-plus-thick</v-icon>
-    </v-btn>
+    </UButton>
+    <UButton
+      variant="ghost"
+      color="neutral"
+      class="p-0 m-0 min-w-0"
+      size="xs"
+      @click="$emit('increase')"
+    >
+      <UIcon name="i-mdi-plus-thick" class="w-4 h-4" />
+    </UButton>
   </div>
 </template>
 <script setup lang="ts">
-  defineProps<{
-    currentCount: number;
-    neededCount: number;
-  }>();
-  defineEmits<{
-    decrease: [];
-    increase: [];
-    toggle: [];
-  }>();
+defineProps<{
+  currentCount: number;
+  neededCount: number;
+}>();
+defineEmits<{
+  decrease: [];
+  increase: [];
+  toggle: [];
+}>();
 </script>

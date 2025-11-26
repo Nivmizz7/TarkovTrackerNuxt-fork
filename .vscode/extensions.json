@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "vue.volar",
+    "esbenp.prettier-vscode",
+    "apollographql.vscode-apollo"
+  ]
+}

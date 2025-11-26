@@ -1,15 +1,17 @@
 <template>
-  <v-row no-gutters>
-    <v-col
+  <div class="flex flex-col">
+    <div
       v-for="(objective, objectiveIndex) in objectives"
       :key="objectiveIndex"
-      cols="12"
-      class="py-1"
+      class="w-full py-1"
     >
       <task-objective :objective="objective" />
-    </v-col>
-    <v-col v-if="irrelevantCount > 0" cols="12" class="pa-1 hidden-objectives">
-      <v-icon size="x-small" class="mr-1">mdi-eye-off</v-icon>
+    </div>
+    <div
+      v-if="irrelevantCount > 0"
+      class="w-full p-1 opacity-50 flex items-center"
+    >
+      <UIcon name="i-mdi-eye-off" class="mr-1 w-4 h-4" />
       <i18n-t
         keypath="page.tasks.questcard.objectiveshidden"
         :plural="irrelevantCount"
@@ -18,24 +20,14 @@
         <template #count>{{ irrelevantCount }}</template>
         <template #uncompleted>{{ uncompletedIrrelevant }}</template>
       </i18n-t>
-    </v-col>
-  </v-row>
+    </div>
+  </div>
 </template>
-
 <script setup>
-  import { defineAsyncComponent } from 'vue';
-
-  const TaskObjective = defineAsyncComponent(() => import('./TaskObjective'));
-
-  defineProps({
-    objectives: { type: Array, required: true },
-    irrelevantCount: { type: Number, required: true },
-    uncompletedIrrelevant: { type: Number, required: true },
-  });
+import TaskObjective from "./TaskObjective.vue";
+defineProps({
+  objectives: { type: Array, required: true },
+  irrelevantCount: { type: Number, required: true },
+  uncompletedIrrelevant: { type: Number, required: true },
+});
 </script>
-
-<style lang="scss" scoped>
-  .hidden-objectives {
-    opacity: 0.5;
-  }
-</style>

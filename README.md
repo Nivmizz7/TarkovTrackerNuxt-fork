@@ -1,75 +1,92 @@
-# Nuxt Minimal Starter
+# TarkovTracker
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+A comprehensive Escape from Tarkov progress tracker built with Nuxt 4, featuring team collaboration, dual game mode support (PvP/PvE), and real-time synchronization via Supabase.
+
+## Features
+
+- **Dual Game Mode Support**: Track progress separately for PvP and PvE modes
+- **Team Collaboration**: Share progress with teammates in real-time
+- **Task Tracking**: Monitor quest completions and objectives
+- **Hideout Progress**: Track module upgrades and parts
+- **Player Level Progress**: Monitor leveling across different factions
+- **Real-time Sync**: Automatic synchronization via Supabase
+- **Multi-language Support**: Available in English, German, Spanish, French, Russian, and Ukrainian
+
+## Tech Stack
+
+- **Framework**: Nuxt 4 (SPA mode)
+- **UI**: Vuetify with Material Design components
+- **Styling**: Tailwind CSS v4
+- **State Management**: Pinia with three-store architecture
+- **Backend**: Supabase (authentication, database, real-time)
+- **API**: GraphQL integration with tarkov.dev
+- **Deployment**: Cloudflare Pages
 
 ## Setup
 
-Make sure to install dependencies:
+Install dependencies:
 
 ```bash
-# npm
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
+## Environment Variables
 
-Start the development server on `http://localhost:3000`:
+Create a `.env` file with the following variables:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anonymous_key
+```
+
+## Development
+
+Start the development server:
 
 ```bash
-# npm
 npm run dev
+```
 
-# pnpm
-pnpm dev
+The application will be available at `http://localhost:3000`.
 
-# yarn
-yarn dev
+## Code Quality
 
-# bun
-bun run dev
+```bash
+# Lint code
+npx eslint .
+
+# Run tests
+npx vitest
 ```
 
 ## Production
 
-Build the application for production:
+Build for production:
 
 ```bash
-# npm
 npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
 ```
 
-Locally preview production build:
+Preview production build locally:
 
 ```bash
-# npm
 npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Project Structure
+
+- `app/` - Main application source directory
+- `app/features/` - Feature-specific components organized by domain
+- `app/components/` - Global/shared UI components
+- `app/stores/` - Pinia stores for state management
+- `app/composables/` - Reusable composition functions
+- `app/pages/` - File-based routing
+- `docs/` - Project documentation and migration guides
+
+## Documentation
+
+For detailed development guidelines, architecture information, and migration progress, see the files in the `docs/` directory.
+
+## License
+
+This project is licensed under the MIT License.

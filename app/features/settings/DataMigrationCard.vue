@@ -5,63 +5,59 @@
       <p class="mb-4">
         Migrate your progress data from the old TarkovTracker site.
       </p>
-      <v-card variant="flat" class="mb-3">
-        <v-card-text>
-          <MigrationSteps />
-          <form @submit.prevent="migration.fetchWithApiToken">
-            <v-text-field
-              v-model="migration.apiToken.value"
-              label="API Token from Old Site"
-              placeholder="Paste your API token here..."
-              variant="outlined"
-              :disabled="migration.fetchingApi.value"
-              :error-messages="migration.apiError.value"
-              hide-details="auto"
-              class="mb-4"
-              :type="migration.showToken.value ? 'text' : 'password'"
-              :append-inner-icon="
-                migration.showToken.value ? 'mdi-eye-off' : 'mdi-eye'
-              "
-              autocomplete="off"
-              @click:append-inner="
-                migration.showToken.value = !migration.showToken.value
-              "
-            ></v-text-field>
-            <div class="d-flex justify-space-between align-center">
-              <div v-if="migration.fetchingApi.value">
-                <v-progress-circular
-                  indeterminate
-                  color="primary"
-                  size="24"
-                  class="mr-2"
-                ></v-progress-circular>
-                <span>Fetching data...</span>
-              </div>
-              <v-alert
-                v-else-if="migration.apiFetchSuccess.value"
-                type="success"
-                variant="tonal"
-                density="compact"
-                class="mb-0 mt-0 flex-grow-1 mr-4"
-              >
-                Data ready to import
-              </v-alert>
-              <v-spacer v-else></v-spacer>
-              <v-btn
-                color="primary"
-                :loading="migration.fetchingApi.value"
-                :disabled="
-                  !migration.apiToken.value || migration.fetchingApi.value
-                "
-                class="px-4"
-                @click="migration.fetchWithApiToken"
-              >
-                Fetch Data
-              </v-btn>
+      <div class="mb-3 bg-gray-800 rounded-lg p-4">
+        <MigrationSteps />
+        <form @submit.prevent="migration.fetchWithApiToken">
+          <UInput
+            v-model="migration.apiToken.value"
+            label="API Token from Old Site"
+            placeholder="Paste your API token here..."
+            :disabled="migration.fetchingApi.value"
+            :error="!!migration.apiError.value"
+            class="mb-4"
+            :type="migration.showToken.value ? 'text' : 'password'"
+            :ui="{ icon: { trailing: { pointer: '' } } }"
+          >
+            <template #trailing>
+              <UButton
+                color="gray"
+                variant="link"
+                icon="i-mdi-eye"
+                :padded="false"
+                @click="migration.showToken.value = !migration.showToken.value"
+              />
+            </template>
+          </UInput>
+          <div class="flex justify-between items-center">
+            <div v-if="migration.fetchingApi.value" class="flex items-center">
+              <UIcon
+                name="i-mdi-loading"
+                class="animate-spin mr-2 w-6 h-6 text-primary"
+              />
+              <span>Fetching data...</span>
             </div>
-          </form>
-        </v-card-text>
-      </v-card>
+            <UAlert
+              v-else-if="migration.apiFetchSuccess.value"
+              color="green"
+              variant="soft"
+              class="mb-0 mt-0 grow mr-4"
+              title="Data ready to import"
+            />
+            <div v-else class="grow"></div>
+            <UButton
+              color="primary"
+              :loading="migration.fetchingApi.value"
+              :disabled="
+                !migration.apiToken.value || migration.fetchingApi.value
+              "
+              class="px-4"
+              @click="migration.fetchWithApiToken"
+            >
+              Fetch Data
+            </UButton>
+          </div>
+        </form>
+      </div>
       <ImportConfirmDialog
         v-model:show="migration.confirmDialog.value"
         :data="migration.importedData.value"
@@ -77,12 +73,14 @@
           migration.showFailedTaskDetails.value = true
         "
       />
-      <v-dialog v-model="migration.showObjectivesDetails.value" max-width="500">
-        <v-card>
-          <v-card-title class="text-h6"
-            >Task Objectives Information</v-card-title
-          >
-          <v-card-text>
+      <UModal v-model="migration.showObjectivesDetails.value">
+        <UCard>
+          <template #header>
+            <div class="text-xl font-medium px-4 py-3">
+              Task Objectives Information
+            </div>
+          </template>
+          <div class="px-4 pb-4">
             <p>
               The count of {{ migration.countTaskObjectives.value }} task
               objectives represents all objective data in your import.
@@ -96,63 +94,70 @@
               This difference is normal and doesn't indicate any problem with
               your data migration.
             </p>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="primary"
-              variant="flat"
-              @click="migration.showObjectivesDetails.value = false"
-              >Close</v-btn
-            >
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-      <v-dialog v-model="migration.showFailedTaskDetails.value" max-width="500">
-        <v-card>
-          <v-card-title class="text-h6">Failed Task Details</v-card-title>
-          <v-card-text>
+          </div>
+          <template #footer>
+            <div class="flex justify-end px-4 pb-4">
+              <UButton
+                color="primary"
+                variant="solid"
+                @click="migration.showObjectivesDetails.value = false"
+              >
+                Close
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </UModal>
+      <UModal v-model="migration.showFailedTaskDetails.value">
+        <UCard>
+          <template #header>
+            <div class="text-xl font-medium px-4 py-3">Failed Task Details</div>
+          </template>
+          <div class="px-4 pb-4">
             <p>
               These tasks are marked as "failed" in your data. This typically
               happens when you chose a different quest branch or when a task
               became unavailable.
             </p>
-            <v-list density="compact">
-              <v-list-item
+            <div class="mt-2 space-y-2">
+              <div
                 v-for="task in migration.failedTasks.value"
                 :key="task.id"
+                class="border-b border-gray-700 pb-2 last:border-0"
               >
-                <v-list-item-title>
-                  Task ID: {{ task.id }}
-                  <v-chip size="small" color="red" class="ml-2">Failed</v-chip>
-                </v-list-item-title>
-                <v-list-item-subtitle>
+                <div class="flex items-center">
+                  <span>Task ID: {{ task.id }}</span>
+                  <UBadge size="xs" color="red" class="ml-2">Failed</UBadge>
+                </div>
+                <div class="text-sm text-gray-400">
                   This task will remain marked as failed after migration.
-                </v-list-item-subtitle>
-              </v-list-item>
-            </v-list>
+                </div>
+              </div>
+            </div>
             <p class="mt-3">
               <strong>Note:</strong> This is normal for tasks that are mutually
               exclusive with other tasks you've completed.
             </p>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="primary"
-              variant="flat"
-              @click="migration.showFailedTaskDetails.value = false"
-              >Close</v-btn
-            >
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+          </div>
+          <template #footer>
+            <div class="flex justify-end px-4 pb-4">
+              <UButton
+                color="primary"
+                variant="solid"
+                @click="migration.showFailedTaskDetails.value = false"
+              >
+                Close
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </UModal>
     </template>
   </fitted-card>
 </template>
 <script setup>
 import { useDataMigration } from "@/composables/useDataMigration";
-import FittedCard from "@/features/ui/FittedCard.vue";
+import FittedCard from "@/components/ui/FittedCard.vue";
 import MigrationSteps from "./MigrationSteps.vue";
 import ImportConfirmDialog from "./ImportConfirmDialog.vue";
 const migration = useDataMigration();

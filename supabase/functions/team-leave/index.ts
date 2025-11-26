@@ -1,0 +1,140 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import {
+  authenticateUser,
+  handleCorsPrefligh,
+  validateMethod,
+  validateRequiredFields,
+  createErrorResponse,
+  createSuccessResponse
+} from "../_shared/auth.ts"
+
+const LEAVE_COOLDOWN_MINUTES = 5
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  const corsResponse = handleCorsPrefligh(req)
+  if (corsResponse) return corsResponse
+
+  try {
+    // Validate HTTP method
+    const methodError = validateMethod(req, ["POST"])
+    if (methodError) return methodError
+
+    // Authenticate user
+    const authResult = await authenticateUser(req)
+    if ("error" in authResult) {
+      return createErrorResponse(authResult.error, authResult.status)
+    }
+
+    const { user, supabase } = authResult
+
+    // Parse and validate request body
+    const body = await req.json()
+    const fieldsError = validateRequiredFields(body, ["teamId"])
+    if (fieldsError) return fieldsError
+
+    const { teamId } = body
+
+    // Get user's membership in the team
+    const { data: membership, error: membershipError } = await supabase
+      .from("team_memberships")
+      .select("role, team_id")
+      .eq("team_id", teamId)
+      .eq("user_id", user.id)
+      .single()
+
+    if (membershipError || !membership) {
+      return createErrorResponse("You are not a member of this team", 404)
+    }
+
+    // Check if user is the owner
+    if (membership.role === "owner") {
+      // Check if there are other members
+      const { data: otherMembers, error: membersError } = await supabase
+        .from("team_memberships")
+        .select("user_id")
+        .eq("team_id", teamId)
+        .neq("user_id", user.id)
+
+      if (membersError) {
+        console.error("Members check failed:", membersError)
+        return createErrorResponse("Failed to check team members", 500)
+      }
+
+      if (otherMembers && otherMembers.length > 0) {
+        return createErrorResponse(
+          "Team owner cannot leave while team has other members. Transfer ownership or kick all members first.",
+          400
+        )
+      }
+
+      // If no other members, delete the entire team
+      const { error: teamDeleteError } = await supabase
+        .from("teams")
+        .delete()
+        .eq("id", teamId)
+
+      if (teamDeleteError) {
+        console.error("Team deletion failed:", teamDeleteError)
+        return createErrorResponse("Failed to delete team", 500)
+      }
+
+      return createSuccessResponse({
+        success: true,
+        message: "Team deleted successfully (owner left empty team)"
+      })
+    }
+
+    // Check cooldown period (5 minutes between leaves)
+    const cooldownTimestamp = new Date(Date.now() - LEAVE_COOLDOWN_MINUTES * 60 * 1000).toISOString()
+    const { data: recentLeaves, error: cooldownError } = await supabase
+      .from("team_events")
+      .select("created_at")
+      .eq("event_type", "member_left")
+      .eq("target_user", user.id)
+      .gte("created_at", cooldownTimestamp)
+      .limit(1)
+
+    if (!cooldownError && recentLeaves && recentLeaves.length > 0) {
+      const timeRemaining = Math.ceil(
+        (new Date(recentLeaves[0].created_at).getTime() + LEAVE_COOLDOWN_MINUTES * 60 * 1000 - Date.now()) / 1000 / 60
+      )
+      return createErrorResponse(
+        `Must wait ${timeRemaining} minute(s) before leaving another team`,
+        429
+      )
+    }
+
+    // Remove user from team
+    const { error: leaveError } = await supabase
+      .from("team_memberships")
+      .delete()
+      .eq("team_id", teamId)
+      .eq("user_id", user.id)
+
+    if (leaveError) {
+      console.error("Team leave failed:", leaveError)
+      return createErrorResponse("Failed to leave team", 500)
+    }
+
+    // Log team leave event
+    await supabase
+      .from("team_events")
+      .insert({
+        team_id: teamId,
+        event_type: "member_left",
+        target_user: user.id,
+        initiated_by: user.id,
+        created_at: new Date().toISOString()
+      })
+
+    return createSuccessResponse({
+      success: true,
+      message: "Successfully left team"
+    })
+
+  } catch (error) {
+    console.error("Team leave error:", error)
+    return createErrorResponse("Internal server error", 500)
+  }
+})

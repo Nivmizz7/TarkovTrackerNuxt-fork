@@ -1,80 +1,73 @@
 <template>
-  <v-container>
-    <v-card>
-      <v-card-title>Firebase Auth Debug Page</v-card-title>
-      <v-card-subtitle>Testing Firebase Authentication</v-card-subtitle>
-      <v-card-text>
-        <v-alert v-if="!user.loggedIn" type="warning" class="mb-4">
-          You are not logged in
-        </v-alert>
-        <v-alert v-if="user.loggedIn" type="success" class="mb-4">
-          Successfully authenticated!
-        </v-alert>
-        <div class="auth-info mb-4">
-          <h3 class="mb-3">Auth State:</h3>
-          <v-simple-table dense>
-            <tbody>
-              <tr>
-                <td><strong>Logged In:</strong></td>
-                <td>{{ user.loggedIn }}</td>
-              </tr>
-              <tr>
-                <td><strong>ID:</strong></td>
-                <td>{{ user.id || "N/A" }}</td>
-              </tr>
-              <tr>
-                <td><strong>Email:</strong></td>
-                <td>{{ user.email || "N/A" }}</td>
-              </tr>
-              <tr>
-                <td><strong>Provider:</strong></td>
-                <td>{{ user.app_metadata?.provider || "N/A" }}</td>
-              </tr>
-              <tr>
-                <td><strong>Last Sign In:</strong></td>
-                <td>{{ user.last_sign_in_at || "N/A" }}</td>
-              </tr>
-              <tr>
-                <td><strong>Created At:</strong></td>
-                <td>{{ user.created_at || "N/A" }}</td>
-              </tr>
-            </tbody>
-          </v-simple-table>
+  <div class="container mx-auto px-4 py-6 space-y-4 max-w-4xl">
+    <UCard class="bg-surface-900 border border-white/10" :ui="{ body: 'space-y-4' }">
+      <template #header>
+        <div class="space-y-1">
+          <h1 class="text-xl font-semibold text-surface-50">
+            Supabase Auth Debug Page
+          </h1>
+          <p class="text-sm text-surface-300">
+            Testing Supabase Authentication
+          </p>
         </div>
-        <v-divider class="my-4" />
-        <h3 class="mb-3">User Store State:</h3>
-        <div class="store-info mb-4">
-          <v-simple-table dense>
-            <tbody>
-              <tr>
-                <td><strong>ID from Store:</strong></td>
-                <td>{{ user.id || "N/A" }}</td>
-              </tr>
-              <tr>
-                <td><strong>Store Initialized:</strong></td>
-                <td>{{ userStore ? "Yes" : "No" }}</td>
-              </tr>
-            </tbody>
-          </v-simple-table>
+      </template>
+
+      <div class="space-y-3">
+        <UAlert
+          v-if="!user.loggedIn"
+          icon="i-mdi-alert"
+          color="warning"
+          variant="subtle"
+          :title="$t ? $t('debug.auth.not_logged_in', 'You are not logged in') : 'You are not logged in'"
+        />
+        <UAlert
+          v-else
+          icon="i-mdi-check"
+          color="success"
+          variant="subtle"
+          :title="$t ? $t('debug.auth.logged_in', 'Successfully authenticated!') : 'Successfully authenticated!'"
+        />
+
+        <div class="p-4 rounded-lg bg-surface-800/80 border border-white/5 space-y-3">
+          <h3 class="text-sm font-semibold text-surface-100">Auth State</h3>
+          <div class="text-xs grid grid-cols-1 sm:grid-cols-2 gap-2 text-surface-300">
+            <div><span class="font-semibold">Logged In:</span> {{ user.loggedIn }}</div>
+            <div><span class="font-semibold">ID:</span> {{ user.id || "N/A" }}</div>
+            <div><span class="font-semibold">Email:</span> {{ user.email || "N/A" }}</div>
+            <div><span class="font-semibold">Provider:</span> {{ user.app_metadata?.provider || "N/A" }}</div>
+            <div><span class="font-semibold">Last Sign In:</span> {{ user.last_sign_in_at || "N/A" }}</div>
+            <div><span class="font-semibold">Created At:</span> {{ user.created_at || "N/A" }}</div>
+          </div>
         </div>
-        <v-divider class="my-4" />
-        <div class="actions">
+
+        <div class="p-4 rounded-lg bg-surface-800/80 border border-white/5 space-y-3">
+          <h3 class="text-sm font-semibold text-surface-100">User Store State</h3>
+          <div class="text-xs grid grid-cols-1 sm:grid-cols-2 gap-2 text-surface-300">
+            <div><span class="font-semibold">ID from Store:</span> {{ user.id || "N/A" }}</div>
+            <div><span class="font-semibold">Store Initialized:</span> {{ userStore ? "Yes" : "No" }}</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
           <AuthButtons v-if="!user.loggedIn" />
-          <v-btn
+          <UButton
             v-if="user.loggedIn"
             color="error"
-            class="mt-2"
+            variant="soft"
+            icon="i-mdi-logout"
             @click="handleLogout"
           >
             Logout
-          </v-btn>
+          </UButton>
         </div>
-        <v-divider class="my-4" />
-        <h3 class="mb-3">Raw User Object:</h3>
-        <pre class="debug-json">{{ JSON.stringify(user, null, 2) }}</pre>
-      </v-card-text>
-    </v-card>
-  </v-container>
+
+        <div class="border-t border-white/10 pt-3 space-y-2">
+          <h3 class="text-sm font-semibold text-surface-100">Raw User Object</h3>
+          <pre class="debug-json">{{ JSON.stringify(user, null, 2) }}</pre>
+        </div>
+      </div>
+    </UCard>
+  </div>
 </template>
 <script setup lang="ts">
 import { useUserStore } from "@/stores/user";
@@ -90,12 +83,6 @@ const handleLogout = async () => {
 };
 </script>
 <style scoped>
-.auth-info,
-.store-info {
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
 .debug-json {
   max-height: 400px;
   overflow-y: auto;
@@ -103,5 +90,6 @@ const handleLogout = async () => {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 4px;
   font-size: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 </style>

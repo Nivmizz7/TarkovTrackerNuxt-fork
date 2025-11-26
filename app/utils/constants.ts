@@ -45,6 +45,26 @@ export const PMC_FACTIONS = [
   { title: "BEAR", value: "BEAR" },
 ];
 
+// Default values for game setup
+export const DEFAULT_PMC_FACTION = "USEC" as const;
+export const DEFAULT_GAME_EDITION = 1; // Standard Edition
+
+// PMC faction values for validation
+export const PMC_FACTION_VALUES = ["USEC", "BEAR"] as const;
+export const PMC_FACTION_VALUES_LOWERCASE = ["usec", "bear"] as const;
+
+// Edition IDs that unlock Cultist Circle (Unheard editions)
+export const UNHEARD_EDITION_IDS = [5, 6] as const;
+
+// Game edition string values for legacy data validation
+export const GAME_EDITION_STRING_VALUES = [
+  "standard",
+  "leftbehind",
+  "prepareescape",
+  "edgeofDarkness",
+  "unheard",
+] as const;
+
 // Map internal game modes to API game modes
 // Internal: "pvp" | "pve"
 // API: "regular" | "pve"
@@ -96,3 +116,33 @@ export const CURRENCY_ITEM_IDS = [
   "5449016a4bdc2d6f028b456f", // Roubles (RUB)
   "569668774bdc2da2298b4568", // Euros (EUR)
 ] as const;
+
+export const MANUAL_TASKS_OVERRIDE = [
+  "66058cb22cee99303f1ba067", // "Easy Money - Part 1" "req. lvl 10 but set as 20 - PVP
+];
+
+// API Language Configuration
+export const API_SUPPORTED_LANGUAGES = [
+  "cs", // Czech
+  "de", // German
+  "en", // English
+  "es", // Spanish
+  "fr", // French
+  "hu", // Hungarian
+  "it", // Italian
+  "ja", // Japanese
+  "ko", // Korean
+  "pl", // Polish
+  "pt", // Portuguese
+  "ro", // Romanian
+  "ru", // Russian
+  "sk", // Slovak
+  "tr", // Turkish
+  "zh", // Chinese
+] as const;
+
+// Mapping from frontend locale to API language code
+// Used when the API doesn't support the specific locale
+export const LOCALE_TO_API_MAPPING: Record<string, string> = {
+  uk: "en", // Ukrainian -> English (Not supported by API)
+};

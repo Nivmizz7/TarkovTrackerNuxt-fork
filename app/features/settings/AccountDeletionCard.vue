@@ -1,223 +1,292 @@
 <template>
   <div class="account-deletion-card" :class="$attrs.class">
-    <fitted-card icon="mdi-account-remove" icon-color="error">
+    <fitted-card
+      icon="mdi-account-cog"
+      icon-color="red-500"
+      highlight-color="red"
+    >
       <template #title>
-        <span class="text-error">Delete Account</span>
+        <span class="text-red-500 text-xl font-bold">Account Management</span>
       </template>
       <template #content>
-        <div class="pa-4">
-          <v-alert type="error" variant="tonal" class="mb-4" prominent>
-            <template #prepend>
-              <v-icon>mdi-alert-circle</v-icon>
-            </template>
-            <div class="text-h6 mb-2">Permanent Account Deletion</div>
-            <div class="text-body-2">
-              This action cannot be undone. All your data will be permanently
-              deleted including:
-            </div>
-            <ul class="mt-2 ml-4">
-              <li>Your progress tracking data</li>
-              <li>Team memberships and owned teams</li>
-              <li>API tokens and settings</li>
-              <li>All personal information</li>
-            </ul>
-          </v-alert>
-          <v-alert
-            v-if="hasOwnedTeams"
-            type="warning"
-            variant="tonal"
-            class="mb-4"
+        <div class="p-4">
+          <!-- Account Information (Moved to Top) -->
+          <div
+            class="mb-6 border border-gray-700 rounded-lg p-4 bg-gray-800/50"
           >
-            <template #prepend>
-              <v-icon>mdi-account-group</v-icon>
-            </template>
-            <div class="text-h6 mb-2">Team Ownership Transfer</div>
-            <div class="text-body-2">
-              You own {{ ownedTeamsCount }} team(s). Team ownership will be
-              automatically transferred to the oldest member in each team. Teams
-              without other members will be deleted.
-            </div>
-          </v-alert>
-          <v-card variant="outlined" class="mb-4">
-            <v-card-text>
-              <div class="text-subtitle-1 mb-2">Account Information</div>
-              <div class="d-flex align-center mb-2">
-                <v-icon size="16" class="mr-2">mdi-account</v-icon>
-                <span class="text-body-2"
-                  >Username: {{ $supabase.user.username || "N/A" }}</span
-                >
+            <div class="text-base font-bold mb-3">Account Information</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <div class="flex items-center mb-2">
+                  <UIcon
+                    name="i-mdi-account"
+                    class="mr-2 w-4.5 h-4.5 text-gray-400"
+                  />
+                  <span class="text-sm">
+                    <span class="text-gray-400">Username:</span>
+                    <span class="font-medium ml-1">{{
+                      $supabase.user.username || "N/A"
+                    }}</span>
+                  </span>
+                </div>
+                <div class="flex items-center mb-2">
+                  <UIcon
+                    name="i-mdi-email"
+                    class="mr-2 w-4.5 h-4.5 text-gray-400"
+                  />
+                  <span class="text-sm">
+                    <span class="text-gray-400">Email:</span>
+                    <span class="font-medium ml-1">{{
+                      $supabase.user.email || "N/A"
+                    }}</span>
+                  </span>
+                </div>
               </div>
-              <div class="d-flex align-center mb-2">
-                <v-icon size="16" class="mr-2">mdi-email</v-icon>
-                <span class="text-body-2"
-                  >Email: {{ $supabase.user.email || "N/A" }}</span
-                >
-              </div>
-              <div class="d-flex align-center mb-2">
-                <v-icon size="16" class="mr-2">mdi-login</v-icon>
-                <span class="text-body-2"
-                  >Auth Method:
-                  <v-chip
-                    size="small"
-                    :color="
-                      $supabase.user.provider === 'discord'
-                        ? 'indigo'
-                        : 'purple'
-                    "
-                    variant="flat"
-                    class="text-white"
-                  >
-                    <span>
+              <div>
+                <div class="flex items-center mb-2">
+                  <UIcon
+                    name="i-mdi-login"
+                    class="mr-2 w-4.5 h-4.5 text-gray-400"
+                  />
+                  <span class="text-sm flex items-center">
+                    <span class="text-gray-400 mr-2">Auth Method:</span>
+                    <UBadge
+                      size="xs"
+                      :color="
+                        $supabase.user.provider === 'discord'
+                          ? 'indigo'
+                          : 'purple'
+                      "
+                      variant="solid"
+                      class="text-white"
+                    >
+                      <UIcon
+                        :name="
+                          $supabase.user.provider === 'discord'
+                            ? 'i-mdi-discord'
+                            : 'i-mdi-twitch'
+                        "
+                        class="mr-1 w-4 h-4"
+                      />
                       {{
                         $supabase.user.provider
                           ? $supabase.user.provider.charAt(0).toUpperCase() +
                             $supabase.user.provider.slice(1)
                           : "Unknown"
                       }}
-                    </span>
-                  </v-chip>
-                </span>
+                    </UBadge>
+                  </span>
+                </div>
+                <div class="flex items-center">
+                  <UIcon
+                    name="i-mdi-calendar"
+                    class="mr-2 w-4.5 h-4.5 text-gray-400"
+                  />
+                  <span class="text-sm">
+                    <span class="text-gray-400">Member since:</span>
+                    <span class="font-medium ml-1">{{
+                      formatDate($supabase.user.createdAt)
+                    }}</span>
+                  </span>
+                </div>
               </div>
-              <div class="d-flex align-center mb-2">
-                <v-icon size="16" class="mr-2">mdi-identifier</v-icon>
-                <span class="text-body-2 mr-2"
-                  >Account ID: {{ $supabase.user.id }}</span
-                >
-                <v-btn
-                  size="x-small"
-                  variant="text"
-                  icon="mdi-content-copy"
-                  :color="accountIdCopied ? 'success' : 'primary'"
+            </div>
+
+            <div class="my-3 border-t border-gray-700"></div>
+
+            <div class="flex items-center">
+              <UIcon
+                name="i-mdi-identifier"
+                class="mr-2 w-4.5 h-4.5 text-gray-400"
+              />
+              <span class="text-sm text-gray-400 mr-2">Account ID:</span>
+              <code class="text-xs bg-gray-700 px-2 py-1 rounded">{{
+                $supabase.user.id
+              }}</code>
+              <UTooltip :text="accountIdCopied ? 'Copied!' : 'Copy Account ID'">
+                <UButton
+                  size="xs"
+                  variant="ghost"
+                  :icon="accountIdCopied ? 'i-mdi-check' : 'i-mdi-content-copy'"
+                  :color="accountIdCopied ? 'green' : 'primary'"
                   class="ml-1"
                   @click="copyAccountId"
-                >
-                  <v-icon size="14">{{
-                    accountIdCopied ? "mdi-check" : "mdi-content-copy"
-                  }}</v-icon>
-                  <v-tooltip activator="parent" location="top">
-                    {{ accountIdCopied ? "Copied!" : "Copy Account ID" }}
-                  </v-tooltip>
-                </v-btn>
+                />
+              </UTooltip>
+            </div>
+          </div>
+          <!-- Deletion Warning -->
+          <UAlert
+            icon="i-mdi-alert-circle"
+            color="red"
+            variant="soft"
+            class="mb-4"
+            title="Permanent Account Deletion"
+          >
+            <template #description>
+              <div class="text-sm mb-2">
+                This action cannot be undone. All your data will be permanently
+                deleted.
               </div>
-              <div class="d-flex align-center">
-                <v-icon size="16" class="mr-2">mdi-calendar</v-icon>
-                <span class="text-body-2"
-                  >Member since {{ formatDate($supabase.user.createdAt) }}</span
-                >
+              <ul class="text-sm ml-4 mb-3 list-disc">
+                <li>Your progress tracking data</li>
+                <li>Team memberships and owned teams</li>
+                <li>API tokens and settings</li>
+                <li>All personal information</li>
+              </ul>
+              <div class="text-sm font-bold">
+                This does <span class="underline">not</span> affect your Escape
+                from Tarkov account, only Tarkov Tracker data.
               </div>
-            </v-card-text>
-          </v-card>
-          <div class="text-center">
-            <v-btn
-              color="error"
-              variant="flat"
-              size="large"
-              prepend-icon="mdi-delete-forever"
+            </template>
+          </UAlert>
+          <UAlert
+            v-if="hasOwnedTeams"
+            icon="i-mdi-account-group"
+            color="orange"
+            variant="soft"
+            class="mb-4"
+            title="Team Ownership Transfer"
+          >
+            <template #description>
+              <div class="text-sm">
+                You own {{ ownedTeamsCount }} team(s). Team ownership will be
+                automatically transferred to the oldest member in each team.
+                Teams without other members will be deleted.
+              </div>
+            </template>
+          </UAlert>
+          <div class="text-center mt-6">
+            <UButton
+              color="red"
+              variant="solid"
+              size="lg"
+              icon="i-mdi-delete-forever"
               :loading="isDeleting"
               :disabled="isDeleting"
               @click="showConfirmationDialog = true"
             >
-              Delete My Account Forever
-            </v-btn>
+              Begin Account Deletion
+            </UButton>
           </div>
         </div>
       </template>
     </fitted-card>
   </div>
-  <v-dialog v-model="showConfirmationDialog" max-width="600" persistent>
-    <v-card>
-      <v-card-title class="text-h5 text-error d-flex align-center">
-        <v-icon class="mr-2" color="error">mdi-alert-circle</v-icon>
-        Confirm Account Deletion
-      </v-card-title>
-      <v-card-text class="pt-4">
-        <v-alert type="error" variant="flat" class="mb-4">
-          <div class="font-weight-bold">This action is irreversible!</div>
-          <div class="mt-1">
-            All your data will be permanently deleted and cannot be recovered.
-          </div>
-        </v-alert>
+  <UModal v-model="showConfirmationDialog" prevent-close>
+    <UCard>
+      <template #header>
+        <div
+          class="text-xl font-medium px-4 py-3 text-red-500 flex items-center"
+        >
+          <UIcon name="i-mdi-alert-circle" class="mr-2 w-6 h-6 text-red-500" />
+          Confirm Account Deletion
+        </div>
+      </template>
+      <div class="px-4 pb-4">
+        <UAlert
+          color="red"
+          variant="solid"
+          class="mb-4"
+          title="This action is irreversible!"
+          description="All your data will be permanently deleted and cannot be recovered."
+        />
         <div class="mb-4">
-          <div class="text-subtitle-1 mb-2">Security Confirmation</div>
-          <div class="text-body-2 text-medium-emphasis mb-3">
+          <div class="text-base font-medium mb-2">Security Confirmation</div>
+          <div class="text-sm text-gray-400 mb-3">
             Account deletion requires typing the exact confirmation phrase
             below. This action is permanent and cannot be undone.
           </div>
         </div>
         <div class="mb-4">
-          <div class="text-subtitle-1 mb-2">
+          <div class="text-base font-medium mb-2">
             Type "DELETE MY ACCOUNT" to confirm:
           </div>
-          <v-text-field
+          <UInput
             v-model="confirmationText"
             placeholder="DELETE MY ACCOUNT"
-            variant="outlined"
-            :error="confirmationError"
-            :error-messages="
-              confirmationError ? 'Please type exactly: DELETE MY ACCOUNT' : ''
-            "
+            :color="confirmationError ? 'red' : 'white'"
             @input="confirmationError = false"
           />
+          <div v-if="confirmationError" class="text-red-500 text-xs mt-1">
+            Please type exactly: DELETE MY ACCOUNT
+          </div>
         </div>
-        <v-alert v-if="deleteError" type="error" variant="tonal" class="mb-4">
-          {{ deleteError }}
-        </v-alert>
-      </v-card-text>
-      <v-card-actions class="pa-4">
-        <v-spacer />
-        <v-btn variant="text" :disabled="isDeleting" @click="closeDialog">
-          Cancel
-        </v-btn>
-        <v-btn
-          color="error"
-          variant="flat"
-          :loading="isDeleting"
-          :disabled="!canDelete || isDeleting"
-          @click="deleteAccount"
+        <UAlert
+          v-if="deleteError"
+          color="red"
+          variant="soft"
+          class="mb-4"
+          :title="deleteError"
+        />
+      </div>
+      <template #footer>
+        <div class="flex justify-end px-4 pb-4">
+          <UButton
+            variant="ghost"
+            color="gray"
+            :disabled="isDeleting"
+            @click="closeDialog"
+          >
+            Cancel
+          </UButton>
+          <UButton
+            color="red"
+            variant="solid"
+            :loading="isDeleting"
+            :disabled="!canDelete || isDeleting"
+            class="ml-3"
+            @click="deleteAccount"
+          >
+            Delete Account Forever
+          </UButton>
+        </div>
+      </template>
+    </UCard>
+  </UModal>
+  <UModal v-model="showSuccessDialog" prevent-close>
+    <UCard>
+      <template #header>
+        <div
+          class="text-xl font-medium px-4 py-3 text-green-500 flex items-center"
         >
-          Delete Account Forever
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-  <teleport to="body">
-    <v-dialog v-model="showSuccessDialog" max-width="500" persistent>
-      <v-card>
-        <v-card-title class="text-h5 text-success d-flex align-center">
-          <v-icon class="mr-2" color="success">mdi-check-circle</v-icon>
+          <UIcon
+            name="i-mdi-check-circle"
+            class="mr-2 w-6 h-6 text-green-500"
+          />
           Account Deleted Successfully
-        </v-card-title>
-        <v-card-text class="pt-4">
-          <div class="text-body-1 mb-3">
-            Your account and all associated data have been permanently deleted.
-          </div>
-          <div class="text-body-2 text-medium-emphasis">
-            Thank you for using TarkovTracker. You will be redirected to the
-            dashboard.
-          </div>
-        </v-card-text>
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn color="primary" variant="flat" @click="redirectToHome">
+        </div>
+      </template>
+      <div class="px-4 pb-4">
+        <div class="text-base mb-3">
+          Your account and all associated data have been permanently deleted.
+        </div>
+        <div class="text-sm text-gray-400">
+          Thank you for using TarkovTracker. You will be redirected to the
+          dashboard.
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end px-4 pb-4">
+          <UButton color="primary" variant="solid" @click="redirectToHome">
             Go to Dashboard
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </teleport>
+          </UButton>
+        </div>
+      </template>
+    </UCard>
+  </UModal>
 </template>
 <script setup>
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
-import { useLiveData } from "@/composables/livedata";
-import FittedCard from "@/features/ui/FittedCard.vue";
+import { useTeamStoreWithSupabase } from "@/stores/useTeamStore";
+import FittedCard from "@/components/ui/FittedCard.vue";
 defineOptions({
   inheritAttrs: false,
 });
 const { $supabase } = useNuxtApp();
 const router = useRouter();
-const { useTeamStore } = useLiveData();
-const { teamStore } = useTeamStore();
+const { teamStore } = useTeamStoreWithSupabase();
 const showConfirmationDialog = ref(false);
 const showSuccessDialog = ref(false);
 const confirmationText = ref("");
@@ -293,17 +362,3 @@ const redirectToHome = async () => {
   }
 };
 </script>
-<style scoped>
-.account-deletion-card {
-  border: 1px solid rgb(var(--v-theme-error));
-}
-.account-deletion-card :deep(.v-card) {
-  border-color: rgb(var(--v-theme-error));
-}
-ul {
-  list-style-type: disc;
-}
-ul li {
-  margin-bottom: 0.25rem;
-}
-</style>

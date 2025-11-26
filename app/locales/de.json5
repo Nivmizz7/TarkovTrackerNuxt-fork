@@ -4,8 +4,6 @@
   app_bar: {
     overflow_menu: {
       language: 'Language',
-      reset_tips: 'Zeige alle Tipps',
-      hide_all_tips: 'Verstecke alle Tipps',
     },
   },
   common: {
@@ -53,6 +51,7 @@
       show_global_tasks: 'Globale Aufgaben anzeigen',
       hide_non_kappa_tasks: 'Nicht-Kappa-Aufgaben ausblenden',
       show_non_kappa_tasks: 'Nicht-Kappa-Aufgaben anzeigen',
+      filterbutton: 'Filter',
       filters: {
         title: 'Aufgabenfilter',
         close: 'Schließen',
@@ -60,6 +59,24 @@
         show_global_tasks: 'Globale Aufgaben in Kartenansicht anzeigen',
         hide_non_kappa_tasks: 'Nicht-Kappa-Aufgaben ausblenden',
         show_non_kappa_tasks: 'Nicht-Kappa-Aufgaben anzeigen',
+        level: 'Level',
+        trader: 'Händler',
+        map: 'Karte',
+        type: 'Typ',
+        reset: 'Zurücksetzen',
+        apply: 'Anwenden',
+        leveloption: 'Level {level}',
+        typeoption: {
+          PickUp: 'Abholen',
+          Elimination: 'Eliminierung',
+          Completion: 'Abschluss',
+          Exploration: 'Erkundung',
+          Standing: 'Ansehen',
+          Skill: 'Fertigkeit',
+          Multi: 'Multi',
+          WeaponAssembly: 'Büchsenmacher',
+          Merchant: 'Händler',
+        },
       },
       showing_all_sources: 'zeige alle Quellen',
       loading: 'Lade Aufgaben',
@@ -112,9 +129,27 @@
         statusdowngraded: ' {name} wurde runtergestuft von Stufe {level}',
       },
     },
+    items: {
+      title: 'Zu sammelnde Gegenstände',
+    },
     neededitems: {
       title: 'Zu sammelnde Gegenstände',
       loading: 'Lade Aufgaben und Versteckdaten',
+      searchplaceholder: 'Suche Gegenstände...',
+    },
+    api: {
+      title: 'API-Dokumentation',
+      description: 'Greife programmatisch auf deine Tarkov Tracker Daten zu.',
+      note: 'API-Tokens sind für die Authentifizierung erforderlich.',
+      endpoints: {
+        title: 'Verfügbare Endpunkte',
+        data: {
+          description: 'Rufe deine Spielfortschrittsdaten ab.',
+        },
+      },
+      usage: {
+        title: 'Anwendungsbeispiele',
+      },
     },
     settings: {
       title: 'Einstellungen',
@@ -216,11 +251,17 @@
       title: 'Login',
     },
     api: {
-      title: 'TarkovTracker API',
-      hero: {
-        description: 'Zugriff auf Ihre Fortschrittsdaten programmatisch mit unserer RESTful API',
-        create_token: 'Token erstellen',
-        documentation: 'API-Dokumentation',
+      title: 'API-Dokumentation',
+      description: 'Greifen Sie programmgesteuert auf Ihre Tarkov Tracker-Daten zu',
+      note: 'API-Token sind für die Authentifizierung erforderlich',
+      endpoints: {
+        title: 'Verfügbare Endpunkte',
+        data: {
+          description: 'Rufen Sie Ihre Spielfortschrittsdaten ab',
+        },
+      },
+      usage: {
+        title: 'Anwendungsbeispiele',
       },
       stats: {
         active_tokens: 'Aktive Token',
@@ -238,43 +279,6 @@
         realtime_tooltip: 'Ihre Fortschrittsdaten sind immer aktuell durch Echtzeit-Synchronisation',
         json_api: 'JSON API',
         json_tooltip: 'Alle Antworten sind im JSON-Format mit konsistenter Struktur',
-      },
-      tokens: {
-        no_tokens_title: 'Noch keine API-Token',
-        no_tokens_description: 'Erstellen Sie Ihren ersten Token, um auf die TarkovTracker API zuzugreifen',
-        create_first_token: 'Ersten Token erstellen',
-        create_new_token: 'Neuen API-Token erstellen',
-        create_token_button: 'TOKEN ERSTELLEN',
-        close: 'Schließen',
-        form: {
-          description_label: 'Token-Beschreibung',
-          description_placeholder: 'z.B. Tarkov Monitor, Rat Scanner, etc.',
-          description_hint: 'Wählen Sie einen beschreibenden Namen, um den Zweck dieses Tokens zu identifizieren',
-          gamemode_title: 'Spielmodus',
-          gamemode_description: 'Wählen Sie, auf welchen Spielmodus dieser Token zugreifen wird. Dies kann nach der Erstellung nicht geändert werden.',
-          gamemode_pvp_title: 'PvP (Standard)',
-          gamemode_pvp_description: 'Standard Tarkov-Gameplay mit PvP-Kampf',
-          gamemode_pve_title: 'PvE (Kooperativ)',
-          gamemode_pve_description: 'PvE-Kooperations-Spielmodus',
-          permissions_title: 'Token-Berechtigungen',
-          permissions_description: 'Wählen Sie die Mindestberechtigungen für Ihren Anwendungsfall. Sie können jederzeit zusätzliche Token mit anderen Berechtigungen erstellen.',
-          permissions_error: 'Bitte wählen Sie mindestens eine Berechtigung für diesen Token.',
-          selected_permissions: 'Ausgewählte Berechtigungen',
-          active_info: 'Token sind sofort aktiv und können jederzeit widerrufen werden',
-          cancel: 'Abbrechen',
-          validation: {
-            required: 'Sie müssen eine Token-Beschreibung eingeben',
-            max_length: 'Token-Beschreibung muss weniger als 20 Zeichen haben',
-          },
-        },
-        success: {
-          title: 'Token erfolgreich erstellt',
-          message: 'Ihr neuer Token ist jetzt aktiv und einsatzbereit',
-        },
-        error: {
-          title: 'Fehler beim Erstellen des Tokens',
-          message: 'Bitte versuchen Sie es erneut oder wenden Sie sich an den Support, wenn das Problem weiterhin besteht',
-        },
       },
     },
     not_found: {
@@ -310,39 +314,5 @@
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
     tarkovchanges: 'Tarkov Changes',
-  },
-  tips: {
-    hide_tip: 'Verstecke diesen Hinweis',
-    default: {
-      title: 'Tip',
-      description: 'Oops! Hier scheint es keine Tipps zu geben, bitte melde diesen Fehler auf unseren Discord Server.',
-    },
-    tasks: {
-      description: "Du hast mehrere Möglichkeiten die Aufgaben zu sortieren, falls du schon Fortschritt erspielt hast kannst du die Aufgaben die du schon erledigt hast im 'locked' Reiter abhaken.",
-    },
-    team: {
-      title: 'Team',
-      description: 'Erstelle ein Team und verfolgt gemeinsam eure Fortschritte, du kannst die URL mit Freunden teilen um sie in dein Team einzuladen.',
-    },
-    welcomett3: {
-      title: 'Willkommen bei TarkovTracker 3!',
-      description: 'Willkommen bei TarkovTracker version 3! Das ist eine komplett überarbeitete Version vom original TarkovTracker. Es gibt einige Quality of Life Änderungen aus der vorherigen Version, die nach und nach hinzugefügt werden. Zusätzlich werden Quests aus EFT 0.13 hinzugefügt sobald sie bestätigt wurden. Die ersten paar Tage können Quests Fehlerhaft oder unvollständig sein. Bitte melde Fehler bei uns im Discord, danke für die Geduld!',
-    },
-    login: {
-      title: 'Login',
-      description: 'Ein Login ist nicht zum verfolgen deines Fortschritts nötig, jedoch wenn du ihn teilen möchtest oder auf mehreren Geräten nutzen willst. Ansonsten wird dein Fortschritt im Browser gespeichert',
-    },
-    hideout: {
-      title: 'Hideout',
-      description: 'Du kannst Fortschritt im Hideout auswählen und die benötigten Gegenstände für dein Versteck werden aktualisiert.',
-    },
-    neededitems: {
-      title: 'Zu sammelnde Gegenstände',
-      description: 'Hier kannst du sehen welche Gegenstände du in der Zukunft für Augaben oder das Versteck brauchst, bereits gefundene Gegenstände kannst du abhaken um zu sehen wie viele du noch brauchst.',
-    },
-    teammembers: {
-      title: 'Teammitglieder',
-      description: 'Dies ist eine Liste deiner Teammitglieder, du kannst auf die Icons klicken um ihre benötigten Gegenstände und Aufgaben sichtbar zu machen oder sie zu verstecken.',
-    },
   },
 }

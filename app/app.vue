@@ -1,28 +1,38 @@
 <template>
-  <v-app color="rgba(0, 0, 0, 1)">
+  <div
+    id="app"
+    class="min-h-screen flex flex-col bg-background text-surface-200 font-sans"
+  >
     <NuxtRouteAnnouncer />
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
-  </v-app>
+    <!-- Portal target for modals -->
+    <div id="modals"></div>
+  </div>
 </template>
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { useAppStore } from "@/stores/app";
+import { useUserStore } from "@/stores/user";
 import { markDataMigrated } from "@/plugins/store-initializer";
 import { useTarkovStore, initializeTarkovSync } from "@/stores/tarkov";
-import { useTarkovData } from "@/composables/tarkovdata";
+import { initializeProgressSync } from "@/stores/progress";
+import { useMetadataStore } from "@/stores/metadata";
 const { $supabase } = useNuxtApp();
-const appStore = useAppStore();
+const userStore = useUserStore();
 const { locale } = useI18n({ useScope: "global" });
-useTarkovData();
+// Initialize metadata store to fetch game data
+const metadataStore = useMetadataStore();
+metadataStore.initialize();
 onMounted(async () => {
-  if (appStore.localeOverride) {
-    locale.value = appStore.localeOverride;
+  const localeOverride = (userStore.$state as any).localeOverride;
+  if (localeOverride) {
+    locale.value = localeOverride;
   }
   if ($supabase.user.loggedIn) {
-    initializeTarkovSync();
+    await initializeTarkovSync();
+    initializeProgressSync();
   }
   const wasMigrated = sessionStorage.getItem("tarkovDataMigrated") === "true";
   if (wasMigrated && $supabase.user.loggedIn) {
@@ -38,18 +48,3 @@ onMounted(async () => {
   }
 });
 </script>
-<style lang="scss">
-.v-application {
-  [class*="text-"] {
-    font-family: "Share Tech Mono", sans-serif !important;
-    font-display: swap;
-  }
-  font-family: "Share Tech Mono", sans-serif !important;
-  font-display: swap;
-  background-color: #0A0A09 !important;
-}
-
-.v-main {
-  background-color: #0A0A09 !important;
-}
-</style>

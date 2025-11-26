@@ -1,7 +1,7 @@
 import { computed, ref, watch, nextTick } from "vue";
 import { defineStore } from "pinia";
 import { useSupabaseListener } from '@/composables/supabase/useSupabaseListener';
-import { useSystemStoreWithFirebase } from "./useSystemStore";
+import { useSystemStoreWithSupabase } from "./useSystemStore";
 import type { TeamState, TeamGetters } from "@/types/tarkov";
 import type { Store } from "pinia";
 import type { UserState } from "@/shared_state";
@@ -31,17 +31,17 @@ export const useTeamStore = defineStore<string, TeamState, TeamGetters>(
       teammates(state) {
         const currentMembers = state?.members;
       const { $supabase } = useNuxtApp();
-      const currentFireUID = $supabase.user?.id;
-        if (currentMembers && currentFireUID) {
-          return currentMembers.filter((member) => member !== currentFireUID);
+      const currentUID = $supabase.user?.id;
+        if (currentMembers && currentUID) {
+          return currentMembers.filter((member) => member !== currentUID);
         }
         return [];
       },
     },
   }
 );
-export function useTeamStoreWithFirebase() {
-  const { systemStore } = useSystemStoreWithFirebase();
+export function useTeamStoreWithSupabase() {
+  const { systemStore } = useSystemStoreWithSupabase();
   const teamStore = useTeamStore();
   const { $supabase } = useNuxtApp();
   // Computed reference to the team document based on system store
@@ -76,7 +76,7 @@ export function useTeamStoreWithFirebase() {
  * Composable for managing teammate stores dynamically
  */
 export function useTeammateStores() {
-  const { teamStore } = useTeamStoreWithFirebase();
+  const { teamStore } = useTeamStoreWithSupabase();
   const teammateStores = ref<Record<string, Store<string, UserState>>>({});
   const teammateUnsubscribes = ref<Record<string, () => void>>({});
   // Watch team state changes to manage teammate stores
@@ -85,10 +85,10 @@ export function useTeammateStores() {
     async (newState, _oldState) => {
       await nextTick();
       const { $supabase } = useNuxtApp();
-      const currentFireUID = $supabase.user?.id;
+      const currentUID = $supabase.user?.id;
       const newTeammatesArray =
         newState.members?.filter(
-          (member: string) => member !== currentFireUID
+          (member: string) => member !== currentUID
         ) || [];
       // Remove stores for teammates no longer in the team
       for (const teammate of Object.keys(teammateStores.value)) {

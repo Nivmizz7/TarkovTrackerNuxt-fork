@@ -1,34 +1,38 @@
 <template>
-  <v-row>
-    <v-col>
-      <v-text-field
+  <div class="flex items-center gap-2">
+    <div class="grow">
+      <UInput
         :model-value="modelValue"
         :label="label"
         :maxlength="maxlength"
-        :counter="counter"
         :readonly="readonly"
-        variant="outlined"
-        hide-details="auto"
+        :ui="{ wrapper: 'w-full' }"
         @update:model-value="$emit('update:modelValue', $event)"
       />
-    </v-col>
-    <v-col cols="auto">
-      <v-btn variant="outlined" class="mx-1" style="height: 100%" @click="$emit('action')">
-        <v-icon>{{ icon }}</v-icon>
-      </v-btn>
-    </v-col>
-  </v-row>
+    </div>
+    <div class="flex-none">
+      <UButton
+        variant="ghost"
+        color="gray"
+        class="h-full"
+        @click="$emit('action')"
+      >
+        <UIcon
+          :name="icon.startsWith('mdi-') ? `i-${icon}` : icon"
+          class="w-6 h-6"
+        />
+      </UButton>
+    </div>
+  </div>
 </template>
-
 <script setup>
-  defineProps({
-    modelValue: { type: String, default: '' },
-    label: { type: String, required: true },
-    icon: { type: String, required: true },
-    maxlength: { type: Number, default: undefined },
-    counter: { type: Boolean, default: false },
-    readonly: { type: Boolean, default: false },
-  });
-
-  defineEmits(['update:modelValue', 'action']);
+defineProps({
+  modelValue: { type: String, default: "" },
+  label: { type: String, required: true },
+  icon: { type: String, required: true },
+  maxlength: { type: Number, default: undefined },
+  counter: { type: Boolean, default: false },
+  readonly: { type: Boolean, default: false },
+});
+defineEmits(["update:modelValue", "action"]);
 </script>

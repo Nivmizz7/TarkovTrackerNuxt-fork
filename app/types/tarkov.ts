@@ -1,5 +1,4 @@
 import type Graph from "graphology";
-import type { ApolloError } from "@apollo/client/core";
 import type { Store, StateTree, _GettersTree } from "pinia";
 import type { Ref, ComputedRef } from "vue";
 import type { UserState } from "@/shared_state";
@@ -127,6 +126,8 @@ export interface Task {
   successors?: string[];
   parents?: string[];
   children?: string[];
+  neededBy?: string[];
+  type?: string;
 }
 export interface TarkovMap {
   id: string;
@@ -249,7 +250,7 @@ export interface TarkovDataComposable {
   lastQueryTime: Ref<number | null>;
   loading: Ref<boolean>;
   hideoutLoading: Ref<boolean>;
-  queryHideoutErrors: Ref<ApolloError | null>;
+  queryHideoutErrors: Ref<Error | null | undefined>;
   queryHideoutResults: Ref<TarkovHideoutQueryResult | null>;
   lastHideoutQueryTime: Ref<number | null>;
   hideoutStations: Ref<HideoutStation[]>;

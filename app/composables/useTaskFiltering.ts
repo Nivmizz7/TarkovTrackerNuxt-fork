@@ -1,6 +1,7 @@
 import { ref, shallowRef } from "vue";
 import { useProgressStore } from "@/stores/progress";
-import { useTarkovData } from "@/composables/tarkovdata";
+import { useMetadataStore } from "@/stores/metadata";
+import { EXCLUDED_SCAV_KARMA_TASKS } from "@/utils/constants";
 import type { Task } from "@/types/tarkov";
 interface MergedMap {
   id: string;
@@ -8,9 +9,9 @@ interface MergedMap {
 }
 export function useTaskFiltering() {
   const progressStore = useProgressStore();
-  const { tasks, disabledTasks } = useTarkovData();
+  const metadataStore = useMetadataStore();
   const reloadingTasks = ref(false);
-  const visibleTasks = shallowRef([]);
+  const visibleTasks = shallowRef<Task[]>([]);
   const mapObjectiveTypes = [
     "mark",
     "zone",
@@ -252,12 +253,12 @@ export function useTaskFiltering() {
     tasksLoading: boolean
   ) => {
     // Simple guard clauses - data should be available due to global initialization
-    if (tasksLoading || !tasks.value || !Array.isArray(disabledTasks)) {
+    if (tasksLoading || !metadataStore.tasks.length) {
       return;
     }
     reloadingTasks.value = true;
     try {
-      let visibleTaskList = JSON.parse(JSON.stringify(tasks.value));
+      let visibleTaskList = JSON.parse(JSON.stringify(metadataStore.tasks));
       // Apply primary view filter
       visibleTaskList = filterTasksByView(
         visibleTaskList,
@@ -288,5 +289,6 @@ export function useTaskFiltering() {
     calculateMapTaskTotals,
     updateVisibleTasks,
     mapObjectiveTypes,
+    disabledTasks: EXCLUDED_SCAV_KARMA_TASKS,
   };
 }

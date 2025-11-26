@@ -1,20 +1,23 @@
 <template>
-  <icon-card icon="mdi-account-group" icon-background="#242F35" icon-color="#9A8866">
+  <icon-card
+    icon="mdi-account-group"
+    icon-background="#242F35"
+    icon-color="#9A8866"
+  >
     <template #stat>
-      {{ $t('module.team_settings.title') }}
+      {{ $t("module.team_settings.title") }}
     </template>
     <template #content>
-      {{ $t('module.team_settings.description') }}
-      <v-container>
-        <v-row justify="center">
-          <v-col cols="12"> Test </v-col>
-        </v-row>
-      </v-container>
+      <div class="p-4">
+        {{ $t("module.team_settings.description") }}
+        <div class="mt-4 flex justify-center">
+          <div class="w-full">Test</div>
+        </div>
+      </div>
     </template>
   </icon-card>
 </template>
 <script setup>
-  import { defineAsyncComponent } from 'vue';
-  const IconCard = defineAsyncComponent(() => import('@/features/ui/IconCard'));
+import IconCard from "@/components/ui/IconCard.vue";
 </script>
-<style lang="scss" scoped></style>
+<style scoped></style>

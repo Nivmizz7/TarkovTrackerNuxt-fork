@@ -1,236 +1,131 @@
 <template>
-  <v-sheet rounded :class="itemCardClasses">
+  <div class="rounded h-full" :class="itemCardClasses">
     <!-- Flexbox display -->
-    <div class="fill-height">
-      <div class="d-flex flex-column align-end fill-height">
+    <div class="h-full">
+      <div class="flex flex-col items-end h-full">
         <!-- Item image -->
-        <div class="d-flex align-self-stretch item-panel">
-          <v-img
+        <div class="flex self-stretch aspect-video min-h-[138px]">
+          <ItemImage
             v-if="imageItem"
+            :image-item="imageItem"
             :src="imageItem.image512pxLink"
-            :class="itemImageClasses"
-          >
-            <template #placeholder>
-              <v-row class="fill-height ma-0" align="center" justify="center">
-                <v-progress-circular
-                  indeterminate
-                  color="grey-lighten-5"
-                ></v-progress-circular>
-              </v-row>
-            </template>
-          </v-img>
+            :is-visible="true"
+            class="w-full h-full"
+          />
         </div>
         <!-- Item name, directly below item image -->
-        <div v-if="item" class="d-flex align-self-center mt-2 mx-2">
-          <div class="text-center px-2" style="white-space: pre-line">
+        <div v-if="item" class="flex self-center mt-2 mx-2">
+          <div class="text-center px-2 whitespace-pre-line">
             {{ item.name }}
-            <v-icon v-if="props.need.foundInRaid" size="x-small"
-              >mdi-checkbox-marked-circle-outline</v-icon
-            >
+            <UIcon
+              v-if="props.need.foundInRaid"
+              name="i-mdi-checkbox-marked-circle-outline"
+              class="w-4 h-4 inline-block"
+            />
           </div>
         </div>
         <!-- Item need details -->
-        <div class="d-flex flex-column align-self-center mt-2 mx-2">
+        <div class="flex flex-col self-center mt-2 mx-2 w-full">
           <template v-if="props.need.needType == 'taskObjective'">
-            <task-link :task="relatedTask" />
-            <v-row v-if="lockedBefore > 0" no-gutters class="mb-1 mt-1 d-flex justify-center">
-              <v-col cols="auto" class="mr-1" align="center">
-                <v-icon icon="mdi-lock-open-outline" />
-              </v-col>
-              <v-col cols="auto" align="center">
-                <i18n-t keypath="page.tasks.questcard.lockedbefore" scope="global">
-                  <template #count>
-                    {{ lockedBefore }}
-                  </template>
-                </i18n-t>
-              </v-col>
-            </v-row>
-            <v-row
-              v-if="levelRequired > 0 && levelRequired > tarkovStore.playerLevel"
-              no-gutters
-              class="mb-1 mt-1 d-flex justify-center"
-            >
-              <v-col cols="auto" class="mr-1" align="center">
-                <v-icon icon="mdi-menu-right" />
-              </v-col>
-              <v-col cols="auto" align="center">
-                <i18n-t keypath="page.tasks.questcard.level" scope="global">
-                  <template #count>
-                    {{ levelRequired }}
-                  </template>
-                </i18n-t>
-              </v-col>
-            </v-row>
+            <div class="flex justify-center">
+              <task-link :task="relatedTask" />
+            </div>
+            <RequirementInfo
+              :need-type="props.need.needType"
+              :level-required="levelRequired"
+              :locked-before="lockedBefore"
+              :player-level="tarkovStore.playerLevel()"
+            />
           </template>
           <template v-else-if="props.need.needType == 'hideoutModule'">
-            <v-row dense no-gutters class="mb-1 mt-1 d-flex justify-center">
-              <v-col cols="auto" align="center">
-                <station-link :station="relatedStation" class="justify-center" />
-              </v-col>
-              <v-col cols="auto" class="ml-1">{{ props.need.hideoutModule.level }}</v-col>
-            </v-row>
-            <v-row v-if="lockedBefore > 0" no-gutters class="mb-1 mt-1 d-flex justify-center">
-              <v-col cols="auto" class="mr-1" align="center">
-                <v-icon icon="mdi-lock-open-outline" />
-              </v-col>
-              <v-col cols="auto" align="center">
-                <i18n-t keypath="page.tasks.questcard.lockedbefore" scope="global">
-                  <template #count>
-                    {{ lockedBefore }}
-                  </template>
-                </i18n-t>
-              </v-col>
-            </v-row>
-            <v-row v-if="levelRequired > 0" no-gutters class="mb-1 mt-1 d-flex justify-center">
-              <v-col cols="auto" class="mr-1" align="center">
-                <v-icon icon="mdi-menu-right" />
-              </v-col>
-              <v-col cols="auto" align="center">
-                <i18n-t keypath="page.tasks.questcard.level" scope="global">
-                  <template #count>
-                    {{ levelRequired }}
-                  </template>
-                </i18n-t>
-              </v-col>
-            </v-row>
+            <div class="flex justify-center mb-1 mt-1">
+              <div class="text-center">
+                <station-link
+                  :station="relatedStation"
+                  class="justify-center"
+                />
+              </div>
+              <div class="ml-1">{{ props.need.hideoutModule.level }}</div>
+            </div>
+            <RequirementInfo
+              :need-type="props.need.needType"
+              :level-required="levelRequired"
+              :locked-before="lockedBefore"
+              :player-level="tarkovStore.playerLevel()"
+              :related-station="relatedStation"
+              :hideout-level="props.need.hideoutModule.level"
+            />
           </template>
         </div>
         <!-- Item count actions -->
         <div
           v-if="!selfCompletedNeed"
-          class="d-flex fill-height align-self-stretch justify-space-between mt-2 mb-2 mx-2"
+          class="flex h-full self-stretch justify-center mt-2 mb-2 mx-2"
         >
-          <div class="align-self-end">
-            <v-btn variant="tonal" class="pa-0 ma-0" @click="$emit('decreaseCount')"
-              ><v-icon>mdi-minus-thick</v-icon></v-btn
-            >
-          </div>
-          <div class="mx-1 align-self-end">
-            <v-btn variant="tonal" class="pa-0 px-1 ma-0" @click="$emit('toggleCount')">
-              {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
-            </v-btn>
-          </div>
-          <div class="align-self-end">
-            <v-btn variant="tonal" class="pa-0 ma-0" @click="$emit('increaseCount')"
-              ><v-icon>mdi-plus-thick</v-icon></v-btn
-            >
-          </div>
+          <ItemCountControls
+            :current-count="currentCount"
+            :needed-count="neededCount"
+            @decrease="$emit('decreaseCount')"
+            @increase="$emit('increaseCount')"
+            @toggle="$emit('toggleCount')"
+          />
         </div>
-        <div v-else class="d-flex fill-height align-self-stretch justify-center mt-2 mb-2 mx-2">
-          <div class="align-self-end text-center">
-            <i18n-t keypath="page.neededitems.neededby" scope="global">
-              <template #users>
-                <div
-                  v-for="(userNeed, userIndex) in teamNeeds"
-                  :key="userIndex"
-                  style="white-space: pre-line"
-                >
-                  <v-icon size="x-small" class="mr-1">mdi-account-child-circle</v-icon
-                  >{{ progressStore.getDisplayName(userNeed.user) }}
-                  {{ userNeed.count.toLocaleString() }}/{{ neededCount.toLocaleString() }}
-                </div>
-              </template>
-            </i18n-t>
-          </div>
+        <div
+          v-else
+          class="flex h-full self-stretch justify-center mt-2 mb-2 mx-2"
+        >
+          <TeamNeedsDisplay
+            :team-needs="teamNeeds"
+            :needed-count="neededCount"
+          />
         </div>
       </div>
     </div>
-  </v-sheet>
+  </div>
 </template>
 <script setup>
-  import { defineAsyncComponent, computed, inject } from "vue";
-  import { useProgressStore } from "@/stores/progress";
-  import { useTarkovStore } from "@/stores/tarkov";
-  const TaskLink = defineAsyncComponent(
-    () => import("@/features/tasks/TaskLink")
-  );
-  const StationLink = defineAsyncComponent(
-    () => import("@/features/hideout/StationLink")
-  );
-  const props = defineProps({
-    need: {
-      type: Object,
-      required: true,
-    },
-  });
-  defineEmits(["increaseCount", "decreaseCount", "toggleCount"]);
-  const progressStore = useProgressStore();
-  const tarkovStore = useTarkovStore();
-  const {
-    selfCompletedNeed,
-    relatedTask,
-    relatedStation,
-    lockedBefore,
-    neededCount,
-    currentCount,
-    levelRequired,
-    item,
-    teamNeeds,
-    imageItem,
-  } = inject("neededitem");
-  const itemImageClasses = computed(() => {
-    return {
-      [`item-bg-${item.value.backgroundColor}`]: true,
-      rounded: true,
-      'elevation-2': true,
-      'item-image': true,
-      'pa-1': true,
-      'fill-height': true,
-    };
-  });
-  const itemCardClasses = computed(() => {
-    return {
-      'item-complete': selfCompletedNeed.value || currentCount.value >= neededCount.value,
-      'fill-height': true,
-    };
-  });
+import { defineAsyncComponent, computed, inject } from "vue";
+import { useTarkovStore } from "@/stores/tarkov";
+import ItemCountControls from "./components/ItemCountControls.vue";
+import ItemImage from "./components/ItemImage.vue";
+import RequirementInfo from "./components/RequirementInfo.vue";
+import TeamNeedsDisplay from "./components/TeamNeedsDisplay.vue";
+const TaskLink = defineAsyncComponent(() =>
+  import("@/features/tasks/TaskLink")
+);
+const StationLink = defineAsyncComponent(() =>
+  import("@/features/hideout/StationLink")
+);
+const props = defineProps({
+  need: {
+    type: Object,
+    required: true,
+  },
+});
+defineEmits(["increaseCount", "decreaseCount", "toggleCount"]);
+
+const tarkovStore = useTarkovStore();
+const {
+  selfCompletedNeed,
+  relatedTask,
+  relatedStation,
+  lockedBefore,
+  neededCount,
+  currentCount,
+  levelRequired,
+  item,
+  teamNeeds,
+  imageItem,
+} = inject("neededitem");
+
+const itemCardClasses = computed(() => {
+  return {
+    "bg-gradient-to-t from-complete to-surface":
+      selfCompletedNeed.value || currentCount.value >= neededCount.value,
+    "bg-gray-800": !(
+      selfCompletedNeed.value || currentCount.value >= neededCount.value
+    ),
+    "shadow-md": true,
+  };
+});
 </script>
-<style lang="scss">
-  .item-complete {
-    background: linear-gradient(
-      0deg,
-      rgba(var(--v-theme-complete), 1) 0%,
-      rgba(var(--v-theme-surface), 1) 75%
-    ) !important;
-  }
-  .item-panel {
-    aspect-ratio: 16/9;
-    min-height: 138px;
-  }
-  .item-image {
-    min-height: 90px;
-  }
-  .item-bg-violet {
-    background-color: #2c232f;
-  }
-  .item-bg-grey {
-    background-color: #1e1e1e;
-  }
-  .item-bg-yellow {
-    background-color: #343421;
-  }
-  .item-bg-orange {
-    background-color: #261d14;
-  }
-  .item-bg-green {
-    background-color: #1a2314;
-  }
-  .item-bg-red {
-    background-color: #38221f;
-  }
-  .item-bg-default {
-    background-color: #3a3c3b;
-  }
-  .item-bg-black {
-    background-color: #141614;
-  }
-  .item-bg-blue {
-    background-color: #202d32;
-  }
-  .image-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(var(--v-theme-surface-variant), 0.5);
-  }
-</style>

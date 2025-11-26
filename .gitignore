@@ -5,9 +5,17 @@
 .nitro
 .cache
 dist
+.wrangler
 
 # Node dependencies
 node_modules
+
+# AI generated files
+.factory
+.claude
+CLAUDE.md
+GEMINI.md
+AGENTS.md
 
 # Logs
 logs

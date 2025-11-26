@@ -1,72 +1,65 @@
 <template>
-  <v-container
-    class="d-flex flex-column"
-    style="min-height: calc(100vh - 250px)"
-  >
-    <tracker-tip
-      :tip="{ id: 'hideout' }"
-      style="flex: 0 0 auto"
-      class="mb-4"
-    ></tracker-tip>
-    <div class="flex-grow-0" style="margin-bottom: 16px">
-      <v-row justify="center">
-        <v-col lg="8" md="12">
-          <v-card>
-            <v-tabs
-              v-model="activePrimaryView"
-              bg-color="accent"
-              slider-color="secondary"
-              align-tabs="center"
-              show-arrows
-            >
-              <v-tab
-                v-for="(view, index) in primaryViews"
-                :key="index"
-                :value="view.view"
-                :prepend-icon="view.icon"
-              >
-                {{ view.title }}
-              </v-tab>
-            </v-tabs>
-          </v-card>
-        </v-col>
-      </v-row>
+  <div class="container mx-auto px-4 py-6 space-y-4 min-h-[calc(100vh-250px)]">
+    <div class="flex justify-center">
+      <UCard class="w-full max-w-4xl bg-surface-900 border border-white/10">
+        <div class="flex flex-wrap gap-2 justify-center">
+          <UButton
+            v-for="view in primaryViews"
+            :key="view.view"
+            :icon="`i-${view.icon}`"
+            :variant="activePrimaryView === view.view ? 'solid' : 'ghost'"
+            :color="activePrimaryView === view.view ? 'primary' : 'neutral'"
+            size="sm"
+            class="min-w-[140px] justify-center"
+            @click="activePrimaryView = view.view"
+          >
+            {{ view.title }}
+          </UButton>
+        </div>
+      </UCard>
     </div>
-    <div class="flex-grow-1">
-      <v-row v-if="hideoutLoading || isStoreLoading" justify="center">
-        <v-col cols="12" align="center">
-          <v-progress-circular
-            indeterminate
-            color="secondary"
-            class="mx-2"
-          ></v-progress-circular>
-          {{ $t("page.hideout.loading") }} <refresh-button />
-        </v-col>
-      </v-row>
-      <v-row justify="center" class="mt-2">
-        <v-col
+
+    <div>
+      <div
+        v-if="hideoutLoading || isStoreLoading"
+        class="flex flex-col items-center gap-3 text-surface-200 py-10"
+      >
+        <UIcon
+          name="i-heroicons-arrow-path"
+          class="w-8 h-8 animate-spin text-primary-500"
+        />
+        <div class="flex items-center gap-2 text-sm">
+          {{ $t("page.hideout.loading") }}
+          <RefreshButton />
+        </div>
+      </div>
+
+      <div
+        v-else-if="visibleStations.length === 0"
+        class="flex justify-center"
+      >
+        <UAlert
+          icon="i-mdi-clipboard-search"
+          color="neutral"
+          variant="soft"
+          class="max-w-xl"
+          :title="$t('page.hideout.nostationsfound')"
+        />
+      </div>
+
+      <div
+        v-else
+        class="grid gap-3 mt-2 grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+      >
+        <HideoutCard
           v-for="(hStation, hIndex) in visibleStations"
           :key="hIndex"
-          cols="12"
-          sm="12"
-          md="6"
-          lg="6"
-          xl="4"
-        >
-          <hideout-card :station="hStation" class="ma-2" />
-        </v-col>
-      </v-row>
-      <v-row
-        v-if="!hideoutLoading && !isStoreLoading && visibleStations.length == 0"
-      >
-        <v-col cols="12">
-          <v-alert icon="mdi-clipboard-search">
-            {{ $t("page.hideout.nostationsfound") }}</v-alert
-          >
-        </v-col>
-      </v-row>
+          :station="hStation"
+          class="h-full"
+        />
+      </div>
     </div>
-  </v-container>
+  </div>
 </template>
 <script setup>
 import { computed, defineAsyncComponent } from "vue";
@@ -74,14 +67,11 @@ import { useI18n } from "vue-i18n";
 import { useHideoutData } from "@/composables/data/useHideoutData";
 import { useProgressStore } from "@/stores/progress";
 import { useUserStore } from "@/stores/user";
-const TrackerTip = defineAsyncComponent(
-  () => import("@/features/ui/TrackerTip.vue")
+const HideoutCard = defineAsyncComponent(() =>
+  import("@/features/hideout/HideoutCard.vue")
 );
-const HideoutCard = defineAsyncComponent(
-  () => import("@/features/hideout/HideoutCard.vue")
-);
-const RefreshButton = defineAsyncComponent(
-  () => import("@/features/ui/RefreshButton.vue")
+const RefreshButton = defineAsyncComponent(() =>
+  import("@/components/ui/RefreshButton.vue")
 );
 const { t } = useI18n({ useScope: "global" });
 const { hideoutStations, loading: hideoutLoading } = useHideoutData();
@@ -113,17 +103,14 @@ const activePrimaryView = computed({
   get: () => userStore.getTaskPrimaryView,
   set: (value) => userStore.setTaskPrimaryView(value),
 });
-
 const isStoreLoading = computed(() => {
   try {
     // Check if hideout data is still loading
     if (hideoutLoading.value) return true;
-
     // Check if we have hideout stations data
     if (!hideoutStations.value || hideoutStations.value.length === 0) {
       return true;
     }
-
     // Check if progress store team data is ready
     if (
       !progressStore.visibleTeamStores ||
@@ -131,7 +118,6 @@ const isStoreLoading = computed(() => {
     ) {
       return true;
     }
-
     // Remove the hideoutLevels check as it creates a circular dependency
     // The hideoutLevels computed property needs both hideout stations AND team stores
     // Since we've already verified both are available above, we can proceed
@@ -148,7 +134,6 @@ const visibleStations = computed(() => {
     if (isStoreLoading.value) {
       return [];
     }
-
     const hideoutStationList = JSON.parse(
       JSON.stringify(hideoutStations.value)
     );
@@ -192,6 +177,5 @@ const visibleStations = computed(() => {
     return [];
   }
 });
-
 </script>
 <style lang="scss" scoped></style>

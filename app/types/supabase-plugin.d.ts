@@ -23,7 +23,7 @@ export interface SupabaseUser {
 export interface SupabasePlugin {
   client: SupabaseClient;
   user: SupabaseUser;
-  signInWithOAuth: (provider: "twitch" | "discord") => Promise<void>;
+  signInWithOAuth: (provider: "twitch" | "discord", options?: { skipBrowserRedirect?: boolean; redirectTo?: string }) => Promise<{ url?: string }>;
   signOut: () => Promise<void>;
 }
 declare module "#app" {

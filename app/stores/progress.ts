@@ -2,16 +2,11 @@ import { computed } from "vue";
 import { defineStore } from "pinia";
 import { useTarkovStore } from "~/stores/tarkov";
 import { useUserStore } from "~/stores/user";
+import { useMetadataStore } from "~/stores/metadata";
 import { useSupabaseListener } from "@/composables/supabase/useSupabaseListener";
 import { useSupabaseSync } from "@/composables/supabase/useSupabaseSync";
 import { useTeammateStores } from "./useTeamStore";
-import type { Task } from "~/composables/tarkovdata";
-import {
-  tasks,
-  traders,
-  objectives,
-  hideoutStations,
-} from "~/composables/tarkovdata";
+import type { Task } from "~/types/tarkov";
 import type { Store } from "pinia";
 import type { UserState, UserProgressData } from "~/shared_state";
 import {
@@ -19,6 +14,7 @@ import {
   GAME_EDITIONS,
   STASH_STATION_ID,
   CULTIST_CIRCLE_STATION_ID,
+  UNHEARD_EDITION_IDS,
 } from "@/utils/constants";
 function getGameModeData(
   store: Store<string, UserState> | undefined
@@ -54,6 +50,7 @@ type ProgressGetters = {
 */
 export const useProgressStore = defineStore("progress", () => {
   const userStore = useUserStore();
+  const metadataStore = useMetadataStore();
   const { teammateStores } = useTeammateStores();
 
   const teamStores = computed(() => {
@@ -79,8 +76,8 @@ export const useProgressStore = defineStore("progress", () => {
   });
   const tasksCompletions = computed(() => {
     const completions: CompletionsMap = {};
-    if (!tasks.value || !visibleTeamStores.value) return {};
-    for (const task of tasks.value as Task[]) {
+    if (!metadataStore.tasks.length || !visibleTeamStores.value) return {};
+    for (const task of metadataStore.tasks as Task[]) {
       completions[task.id] = {};
       for (const teamId of Object.keys(visibleTeamStores.value)) {
         const store = visibleTeamStores.value[teamId];
@@ -94,11 +91,11 @@ export const useProgressStore = defineStore("progress", () => {
   const gameEditionData = computed(() => GAME_EDITIONS);
   const traderLevelsAchieved = computed(() => {
     const levels: TraderLevelsMap = {};
-    if (!traders.value || !visibleTeamStores.value) return {};
+    if (!metadataStore.traders.length || !visibleTeamStores.value) return {};
     for (const teamId of Object.keys(visibleTeamStores.value)) {
       levels[teamId] = {};
       const store = visibleTeamStores.value[teamId];
-      for (const trader of traders.value) {
+      for (const trader of metadataStore.traders) {
         const currentData = getGameModeData(store);
         levels[teamId]![trader.id] = currentData?.level ?? 0;
       }
@@ -117,8 +114,8 @@ export const useProgressStore = defineStore("progress", () => {
   });
   const unlockedTasks = computed(() => {
     const available: TaskAvailabilityMap = {};
-    if (!tasks.value || !visibleTeamStores.value) return {};
-    for (const task of tasks.value as Task[]) {
+    if (!metadataStore.tasks.length || !visibleTeamStores.value) return {};
+    for (const task of metadataStore.tasks as Task[]) {
       available[task.id] = {};
       for (const teamId of Object.keys(visibleTeamStores.value)) {
         const store = visibleTeamStores.value[teamId];
@@ -195,8 +192,8 @@ export const useProgressStore = defineStore("progress", () => {
   });
   const objectiveCompletions = computed(() => {
     const completions: ObjectiveCompletionsMap = {};
-    if (!objectives.value || !visibleTeamStores.value) return {};
-    for (const objective of objectives.value) {
+    if (!metadataStore.objectives.length || !visibleTeamStores.value) return {};
+    for (const objective of metadataStore.objectives) {
       completions[objective.id] = {};
       for (const teamId of Object.keys(visibleTeamStores.value)) {
         const store = visibleTeamStores.value[teamId];
@@ -209,8 +206,8 @@ export const useProgressStore = defineStore("progress", () => {
   });
   const hideoutLevels = computed(() => {
     const levels: HideoutLevelMap = {};
-    if (!hideoutStations.value || !visibleTeamStores.value) return {};
-    for (const station of hideoutStations.value) {
+    if (!metadataStore.hideoutStations.length || !visibleTeamStores.value) return {};
+    for (const station of metadataStore.hideoutStations) {
       if (!station || !station.id) continue;
       levels[station.id] = {};
       for (const teamId of Object.keys(visibleTeamStores.value)) {
@@ -256,7 +253,7 @@ export const useProgressStore = defineStore("progress", () => {
         } else if (station.id === CULTIST_CIRCLE_STATION_ID) {
           const gameEditionVersion = store?.$state.gameEdition ?? 0;
           if (
-            (gameEditionVersion === 5 || gameEditionVersion === 6) &&
+            (UNHEARD_EDITION_IDS as readonly number[]).includes(gameEditionVersion) &&
             station.levels &&
             station.levels.length > 0
           ) {
@@ -275,10 +272,10 @@ export const useProgressStore = defineStore("progress", () => {
 
   const moduleCompletions = computed(() => {
     const completions: CompletionsMap = {};
-    if (!hideoutStations.value || !visibleTeamStores.value) return {};
+    if (!metadataStore.hideoutStations.length || !visibleTeamStores.value) return {};
 
     // Collect all module IDs from all stations
-    const allModuleIds = hideoutStations.value.flatMap(
+    const allModuleIds = metadataStore.hideoutStations.flatMap(
       (station) => station.levels?.map((level) => level.id) || []
     );
 
@@ -296,10 +293,10 @@ export const useProgressStore = defineStore("progress", () => {
 
   const modulePartCompletions = computed(() => {
     const completions: CompletionsMap = {};
-    if (!hideoutStations.value || !visibleTeamStores.value) return {};
+    if (!metadataStore.hideoutStations.length || !visibleTeamStores.value) return {};
 
     // Collect all part/requirement IDs from all station levels
-    const allPartIds = hideoutStations.value.flatMap(
+    const allPartIds = metadataStore.hideoutStations.flatMap(
       (station) =>
         station.levels?.flatMap(
           (level) => level.itemRequirements?.map((req) => req.id) || []
@@ -400,60 +397,7 @@ export const useProgressStore = defineStore("progress", () => {
         return 0;
     }
   };
-  const { $supabase } = useNuxtApp();
-  const progressFilter = computed(() => {
-    if ($supabase.user.loggedIn && $supabase.user.id) {
-      return `user_id=eq.${$supabase.user.id}`;
-    }
-    return undefined;
-  });
-  useSupabaseListener({
-    store: useProgressStore(), // Pass the store instance
-    table: "user_progress",
-    filter: progressFilter.value,
-    storeId: "progress",
-    onData: (_data) => {
-      // Handle data mapping from snake_case (DB) to camelCase (Store) if needed
-      // The store seems to use camelCase.
-      // If data comes back as snake_case, we might need to transform it before patching.
-      // However, useSupabaseListener calls safePatchStore directly.
-      // We should probably intercept it or ensure the store handles it.
-      // For now, let's assume we need to map it back if the DB is snake_case.
-      // Actually, useSupabaseListener logic is generic.
-      // If we want to map, we should do it in onData or modify useSupabaseListener to accept a transform.
-      // But wait, if we write snake_case to DB, we get snake_case back.
-      // The store expects camelCase.
-      // So we definitely need a transform in useSupabaseListener or here.
-      // Since useSupabaseListener patches directly, we might have a problem if keys don't match.
-      // I'll need to update useSupabaseListener to allow a transform function for incoming data?
-      // Or just manually patch here in onData and pass a dummy store to listener?
-      // No, useSupabaseListener takes the store.
-      // Let's assume for this step we just set it up, and I'll fix the mapping if needed.
-      // Actually, I should fix useSupabaseListener to allow transforming incoming data before patching.
-      // But I can't easily change it now without another round.
-      // I'll use the onData callback to manually patch if needed, but useSupabaseListener already patches.
-      // I'll add a TODO to check this.
-    },
-  });
-  // Setup Supabase Sync (Write)
-  // We need to map Store (camelCase) -> DB (snake_case)
-  useSupabaseSync({
-    store: useProgressStore(),
-    table: "user_progress",
-    transform: (state: unknown) => {
-      const userState = state as UserState;
-      return {
-        user_id: $supabase.user.id,
-        current_game_mode: userState.currentGameMode || GAME_MODES.PVP,
-        game_edition:
-          typeof userState.gameEdition === "string"
-            ? parseInt(userState.gameEdition)
-            : userState.gameEdition,
-        pvp_data: userState.pvp || {},
-        pve_data: userState.pve || {},
-      };
-    },
-  });
+
   return {
     teamStores,
     visibleTeamStores,
@@ -476,60 +420,70 @@ export const useProgressStore = defineStore("progress", () => {
     getProgressPercentage,
   };
 });
-export function useProgressStoreWithSupabase() {
+let isSyncInitialized = false;
+
+export function initializeProgressSync() {
   const progressStore = useProgressStore();
   const { $supabase } = useNuxtApp();
-  if (import.meta.client) {
-    setTimeout(() => {
-      const progressFilter = computed(() => {
-        if ($supabase.user.loggedIn && $supabase.user.id) {
-          return `user_id=eq.${$supabase.user.id}`;
-        }
-        return undefined;
-      });
-      useSupabaseListener({
-        store: progressStore,
-        table: "user_progress",
-        filter: progressFilter.value,
-        storeId: "progress",
-        onData: (data) => {
-          if (data) {
-            if (data.pvp_data) {
-              progressStore.$patch({ pvp: data.pvp_data });
-            }
-            if (data.pve_data) {
-              progressStore.$patch({ pve: data.pve_data });
-            }
-            if (data.game_edition) {
-              progressStore.$patch({ gameEdition: data.game_edition });
-            }
-            if (data.current_game_mode) {
-              progressStore.$patch({ currentGameMode: data.current_game_mode });
-            }
+
+  // Initialize sync only once and if user is logged in
+  if (import.meta.client && !isSyncInitialized && $supabase.user.loggedIn) {
+    isSyncInitialized = true;
+    
+    const progressFilter = computed(() => {
+      if ($supabase.user.loggedIn && $supabase.user.id) {
+        return `user_id=eq.${$supabase.user.id}`;
+      }
+      return undefined;
+    });
+
+    useSupabaseListener({
+      store: progressStore,
+      table: "user_progress",
+      filter: progressFilter.value,
+      storeId: "progress",
+      onData: (data) => {
+        if (data) {
+          if (data.pvp_data) {
+            progressStore.$patch({ pvp: data.pvp_data });
           }
-        },
-      });
-      useSupabaseSync({
-        store: progressStore,
-        table: "user_progress",
-        debounceMs: 250,
-        transform: (state: unknown) => {
-          const userState = state as UserState;
-          return {
-            user_id: $supabase.user.id,
-            current_game_mode: userState.currentGameMode || GAME_MODES.PVP,
-            game_edition:
-              typeof userState.gameEdition === "string"
-                ? parseInt(userState.gameEdition)
-                : userState.gameEdition,
-            pvp_data: userState.pvp || {},
-            pve_data: userState.pve || {},
-          };
-        },
-      });
-    }, 100);
+          if (data.pve_data) {
+            progressStore.$patch({ pve: data.pve_data });
+          }
+          if (data.game_edition) {
+            progressStore.$patch({ gameEdition: data.game_edition });
+          }
+          if (data.current_game_mode) {
+            progressStore.$patch({ currentGameMode: data.current_game_mode });
+          }
+        }
+      },
+    });
+
+    useSupabaseSync({
+      store: progressStore,
+      table: "user_progress",
+      debounceMs: 250,
+      transform: (state: unknown) => {
+        const userState = state as UserState;
+        return {
+          user_id: $supabase.user.id,
+          current_game_mode: userState.currentGameMode || GAME_MODES.PVP,
+          game_edition:
+            typeof userState.gameEdition === "string"
+              ? parseInt(userState.gameEdition)
+              : userState.gameEdition,
+          pvp_data: userState.pvp || {},
+          pve_data: userState.pve || {},
+        };
+      },
+    });
   }
+}
+
+export function useProgressStoreWithSupabase() {
+  initializeProgressSync();
   return {
-    progressStore,
+    progressStore: useProgressStore(),
   };
 }

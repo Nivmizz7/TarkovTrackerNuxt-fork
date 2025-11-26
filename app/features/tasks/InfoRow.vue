@@ -1,18 +1,20 @@
 <template>
-  <v-row no-gutters class="mb-1">
-    <v-col v-if="icon || $slots.icon" cols="auto" class="mr-1">
+  <div class="flex items-start mb-1">
+    <div v-if="icon || $slots.icon" class="mr-1 shrink-0">
       <slot name="icon">
-        <v-icon :icon="icon" />
+        <UIcon
+          :name="icon.startsWith('mdi-') ? `i-${icon}` : icon"
+          class="w-6 h-6"
+        />
       </slot>
-    </v-col>
-    <v-col>
+    </div>
+    <div class="grow">
       <slot />
-    </v-col>
-  </v-row>
+    </div>
+  </div>
 </template>
-
 <script setup>
-  defineProps({
-    icon: { type: String, default: '' },
-  });
+defineProps({
+  icon: { type: String, default: "" },
+});
 </script>

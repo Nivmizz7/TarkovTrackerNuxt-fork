@@ -1,167 +1,137 @@
 import { ref, computed } from "vue";
-// import { fireuser } from "@/plugins/firebase.client"; // TODO: Move to Cloudflare Workers
 import { markDataMigrated } from "@/plugins/store-initializer";
-import DataMigrationService, {
-  type ProgressData,
-} from "@/utils/DataMigrationService";
-// import { useTarkovStore } from "@/stores/tarkov";
-export type ImportedData = ProgressData;
+import type { GameMode } from "@/utils/constants";
+import DataMigrationService from "@/utils/DataMigrationService";
+// Composable to handle data migration from localStorage or old API to Supabase
 export function useDataMigration() {
-  // API migration state
-  const apiToken = ref("");
-  const apiEndpoint = ref("https://tarkovtracker.io/api/v2/progress");
-  const apiError = ref("");
-  const apiEndpointError = ref("");
-  const fetchingApi = ref(false);
-  const apiFetchSuccess = ref(false);
-  const showToken = ref(false);
-  // Import state
-  const importing = ref(false);
-  const importError = ref("");
-  const importSuccess = ref(false);
-  const confirmDialog = ref(false);
-  const importedData = ref<ProgressData | null>(null);
-  // Dialog state
-  const showObjectivesDetails = ref(false);
-  const showFailedTaskDetails = ref(false);
-  // Computed properties for data counts
-  const countCompletedTasks = computed(() => {
-    if (!importedData.value?.taskCompletions) return 0;
-    return Object.values(importedData.value.taskCompletions).filter(
-      (t) => t.complete
-    ).length;
-  });
-  const countFailedTasks = computed(() => {
-    if (!importedData.value?.taskCompletions) return 0;
-    return Object.values(importedData.value.taskCompletions).filter(
-      (t) => t.failed
-    ).length;
-  });
-  const countTaskObjectives = computed(() => {
-    if (!importedData.value?.taskObjectives) return 0;
-    return Object.keys(importedData.value.taskObjectives).length;
-  });
-  const countHideoutModules = computed(() => {
-    if (!importedData.value?.hideoutModules) return 0;
-    return Object.values(importedData.value.hideoutModules).filter(
-      (m) => m.complete
-    ).length;
-  });
-  const countHideoutParts = computed(() => {
-    if (!importedData.value?.hideoutParts) return 0;
-    return Object.keys(importedData.value.hideoutParts).length;
-  });
-  const failedTasks = computed(() => {
-    if (!importedData.value?.taskCompletions) return [];
-    return Object.entries(importedData.value.taskCompletions)
-      .filter(([_, task]) => task.failed === true)
-      .map(([id, task]) => ({ id, ...task }));
-  });
-  // API functions
-  const fetchWithApiToken = async () => {
-    fetchingApi.value = true;
-    apiError.value = "";
-    apiFetchSuccess.value = false;
-    apiEndpointError.value = "";
+  // Reactive state for migration process
+  const migrationStatus = ref("idle"); // 'idle', 'migrating', 'success', 'error'
+  const migrationMessage = ref("");
+  const migrationError = ref<Error | null>(null);
+  const isMigrating = computed(() => migrationStatus.value === "migrating");
+  const hasMigrated = computed(() => migrationStatus.value === "success");
+  const hasError = computed(() => migrationStatus.value === "error");
+  /**
+   * Attempts to migrate local data to the user's Supabase account
+   * @param {string} userId - The authenticated user's ID
+   * @returns {Promise<boolean>} - Returns true if migration was successful or not needed
+   */
+  const migrateLocalData = async (userId: string): Promise<boolean> => {
+    if (!userId) {
+      console.warn("[useDataMigration] No user ID provided for migration");
+      return false;
+    }
     try {
-      if (!apiToken.value || apiToken.value.length < 10) {
-        apiError.value = "Please enter a valid API token";
-        return;
+      migrationStatus.value = "migrating";
+      migrationMessage.value = "Checking for local data to migrate...";
+      migrationError.value = null;
+      // Check if there's local data to migrate
+      if (!DataMigrationService.hasLocalData()) {
+        migrationStatus.value = "success";
+        migrationMessage.value = "No local data to migrate.";
+        return true;
       }
-      const endpoint = apiEndpoint.value.trim();
-      try {
-        new URL(endpoint);
-      } catch {
-        apiEndpointError.value =
-          "Please enter a valid URL (must start with https://)";
-        return;
+      // Check if user already has data in Supabase
+      const hasRemoteData = await DataMigrationService.hasUserData(userId);
+      if (hasRemoteData) {
+        migrationStatus.value = "success";
+        migrationMessage.value = "User already has data in the cloud. Skipping migration.";
+        // Mark as migrated locally to prevent repeated checks
+        markDataMigrated();
+        return true;
       }
-      if (!endpoint.endsWith("/api/v2/progress")) {
-        apiEndpointError.value = "Endpoint must end with /api/v2/progress";
-        return;
+      // Proceed with migration
+      migrationMessage.value = "Migrating your progress data...";
+      const migrationSuccess = await DataMigrationService.migrateDataToUser(userId);
+      if (migrationSuccess) {
+        migrationStatus.value = "success";
+        migrationMessage.value = "Your local progress has been successfully saved to the cloud!";
+        // Mark as migrated to prevent repeated migrations
+        markDataMigrated();
+        return true;
+      } else {
+        throw new Error("Migration process reported failure");
       }
-      const data = await DataMigrationService.fetchDataWithApiToken(
-        apiToken.value,
-        endpoint
-      );
-      if (!data) {
-        apiError.value =
-          "Failed to fetch data. Please check your token, endpoint, and try again.";
-        return;
-      }
-      importedData.value = data;
-      apiFetchSuccess.value = true;
-      confirmDialog.value = true;
-    } catch (error: unknown) {
-      console.error("Error fetching data with API token:", error);
-      const errorMessage =
+    } catch (error) {
+      console.error("[useDataMigration] Migration failed:", error);
+      migrationStatus.value = "error";
+      migrationError.value = error as Error;
+      migrationMessage.value =
         error instanceof Error
           ? error.message
-          : "Unknown error occurred during fetch.";
-      apiError.value = `Error: ${errorMessage}`;
-    } finally {
-      fetchingApi.value = false;
+          : "An unknown error occurred during migration.";
+      return false;
     }
   };
-  const confirmImport = async () => {
-    importing.value = true;
-    importError.value = "";
-    try {
-      const { $supabase } = useNuxtApp();
-      if (!$supabase.user.id) {
-        importError.value = "User not logged in";
-        return;
-      }
-      const result = await DataMigrationService.importDataToUser(
-        $supabase.user.id,
-        importedData.value!,
-        "pvp" // Force PvP mode only
-      );
-      if (result) {
-        importSuccess.value = true;
-        markDataMigrated();
-        // Trigger a page reload to reinitialize stores
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } else {
-        importError.value = "Failed to import data. Please try again.";
-      }
-    } catch (error: unknown) {
-      console.error("Error during import:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      importError.value = "Error during import: " + errorMessage;
-    } finally {
-      importing.value = false;
-      confirmDialog.value = false;
+  /**
+   * Imports data from an external API token to the user's account
+   * @param {string} apiToken - The API token from the old system
+   * @param {string} userId - The authenticated user's ID
+   * @param {GameMode} targetGameMode - The game mode for the imported data
+   * @returns {Promise<boolean>} - Returns true if import was successful
+   */
+  const importFromApiToken = async (
+    apiToken: string,
+    userId: string,
+    targetGameMode?: GameMode
+  ): Promise<boolean> => {
+    if (!apiToken || !userId) {
+      console.warn("[useDataMigration] Missing API token or user ID for import");
+      return false;
     }
+    try {
+      migrationStatus.value = "migrating";
+      migrationMessage.value = "Fetching data from API token...";
+      migrationError.value = null;
+      // Fetch data using the API token
+      const importedData = await DataMigrationService.fetchDataWithApiToken(apiToken);
+      if (!importedData) {
+        throw new Error("Failed to fetch data using the provided API token");
+      }
+      // Import the data to the user's Supabase account
+      migrationMessage.value = "Saving imported data to your account...";
+      const importSuccess = await DataMigrationService.importDataToUser(
+        userId,
+        importedData,
+        targetGameMode
+      );
+      if (importSuccess) {
+        migrationStatus.value = "success";
+        migrationMessage.value = "Data successfully imported from API token!";
+        return true;
+      } else {
+        throw new Error("Import process reported failure");
+      }
+    } catch (error) {
+      console.error("[useDataMigration] Import failed:", error);
+      migrationStatus.value = "error";
+      migrationError.value = error as Error;
+      migrationMessage.value =
+        error instanceof Error
+          ? error.message
+          : "An unknown error occurred during import.";
+      return false;
+    }
+  };
+  /**
+   * Resets the migration state to idle
+   */
+  const resetMigrationState = () => {
+    migrationStatus.value = "idle";
+    migrationMessage.value = "";
+    migrationError.value = null;
   };
   return {
     // State
-    apiToken,
-    apiEndpoint,
-    apiError,
-    apiEndpointError,
-    fetchingApi,
-    apiFetchSuccess,
-    showToken,
-    importing,
-    importError,
-    importSuccess,
-    confirmDialog,
-    importedData,
-    showObjectivesDetails,
-    showFailedTaskDetails,
-    // Computed
-    countCompletedTasks,
-    countFailedTasks,
-    countTaskObjectives,
-    countHideoutModules,
-    countHideoutParts,
-    failedTasks,
-    // Methods
-    fetchWithApiToken,
-    confirmImport,
+    migrationStatus: computed(() => migrationStatus.value),
+    migrationMessage: computed(() => migrationMessage.value),
+    migrationError: computed(() => migrationError.value),
+    isMigrating,
+    hasMigrated,
+    hasError,
+    // Actions
+    migrateLocalData,
+    importFromApiToken,
+    resetMigrationState,
   };
 }

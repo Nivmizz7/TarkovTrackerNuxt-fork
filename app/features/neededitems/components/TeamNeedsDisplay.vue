@@ -5,26 +5,28 @@
         <div
           v-for="(userNeed, userIndex) in teamNeeds"
           :key="userIndex"
-          class="d-flex align-center justify-center"
+          class="flex items-center justify-center"
         >
-          <v-icon size="x-small" class="mr-1">mdi-account-child-circle</v-icon>
+          <UIcon name="i-mdi-account-child-circle" class="mr-1 w-4 h-4" />
           {{ getDisplayName(userNeed.user) }}
-          {{ userNeed.count.toLocaleString() }}/{{ neededCount.toLocaleString() }}
+          {{ userNeed.count.toLocaleString() }}/{{
+            neededCount.toLocaleString()
+          }}
         </div>
       </template>
     </i18n-t>
   </div>
 </template>
 <script setup lang="ts">
-  import { useProgressStore } from '@/stores/progress';
-  interface UserNeed {
-    user: string;
-    count: number;
-  }
-  defineProps<{
-    teamNeeds: UserNeed[];
-    neededCount: number;
-  }>();
-  const progressStore = useProgressStore();
-  const getDisplayName = (user: string) => progressStore.getDisplayName(user);
+import { useProgressStore } from "@/stores/progress";
+interface UserNeed {
+  user: string;
+  count: number;
+}
+defineProps<{
+  teamNeeds: UserNeed[];
+  neededCount: number;
+}>();
+const progressStore = useProgressStore();
+const getDisplayName = (user: string) => progressStore.getDisplayName(user);
 </script>

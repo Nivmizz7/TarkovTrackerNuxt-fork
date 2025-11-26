@@ -1,365 +1,98 @@
 <template>
-  <v-card min-width="300" class="pa-2">
-    <v-container>
-      <v-select
-        v-model="selectedGameMode"
-        prepend-icon="mdi-sword-cross"
-        density="compact"
-        :items="gameModeOptions"
-        item-title="label"
-        item-value="value"
-        :label="$t('app_bar.overflow_menu.game_mode')"
-        variant="outlined"
-        hide-details
-        class="mb-4"
+  <div
+    class="max-w-[85vw] bg-surface-900 border border-white/10 rounded-lg p-2 max-h-[80vh] overflow-y-auto"
+  >
+    <!-- Language Selection -->
+    <div class="space-y-2 min-w-0">
+      <label
+        class="text-[11px] text-surface-100 uppercase tracking-wide font-semibold"
       >
-        <template #item="{ props, item }">
-          <v-list-item v-bind="props" :prepend-icon="item.raw.icon">
-          </v-list-item>
-        </template>
-      </v-select>
-      <DisplayNameInput v-if="fireuser.loggedIn" />
-      <v-select
-        v-model="currentPMCFaction"
-        prepend-icon="mdi-castle"
-        density="compact"
-        :items="PMCFactions"
-        :label="$t('app_bar.overflow_menu.pmc_faction')"
-        variant="outlined"
-        hide-details
-        class="mb-4"
+        {{ $t("app_bar.overflow_menu.language") }}
+      </label>
+      <USelectMenu
+        v-model="currentLocale"
+        :items="localeItems"
+        value-key="value"
+        size="md"
+        class="w-full"
+        :search-input="false"
+        :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
+        highlight-on-hover
+        :ui="selectUi"
       >
-        <template #item="{ item, props }">
-          <v-list-item v-bind="props">
-            <template #prepend>
-              <v-img
-                :src="factionImage(item.value)"
-                width="1.5em"
-                class="faction-invert mr-1"
-              />
-            </template>
-          </v-list-item>
-        </template>
-        <template #prepend-inner>
-          <v-img
-            :src="factionImage(currentPMCFaction)"
-            width="1em"
-            class="faction-invert ma-1"
+        <template #leading>
+          <UIcon
+            name="i-mdi-translate"
+            class="w-4 h-4 text-surface-300 shrink-0"
           />
         </template>
-      </v-select>
-      <v-select
-        v-model="currentGameEdition"
-        prepend-icon="mdi-gift-open"
-        density="compact"
-        :items="gameEditions"
-        :label="$t('app_bar.overflow_menu.game_edition')"
-        variant="outlined"
-        hide-details
-        class="mb-4"
-      ></v-select>
-      <v-select
-        v-model="currentLocale"
-        prepend-icon="mdi-translate"
-        density="compact"
-        :items="localeItems"
-        :label="$t('app_bar.overflow_menu.language')"
-        variant="outlined"
-        hide-details
-        class="mb-4"
-      ></v-select>
-      <div v-if="fireuser.loggedIn" class="d-flex align-center mb-4">
-        <v-icon class="mr-3">mdi-eye</v-icon>
-        <v-switch
-          v-model="streamerMode"
-          :disabled="Boolean(userStore.saving && userStore.saving.streamerMode)"
-          hide-details
-          density="compact"
-          color="green"
-          base-color="error"
-          :label="$t('app_bar.overflow_menu.streamer_mode')"
-          class="flex-grow-1"
-        />
-        <v-progress-circular
-          v-if="userStore.saving && userStore.saving.streamerMode"
-          indeterminate
-          color="primary"
-          size="20"
-          class="ml-2"
-        />
-      </div>
-      <v-btn
-        v-if="!userStore.hideAllTips"
-        color="red"
-        prepend-icon="mdi-comment-question-outline"
-        class="mt-4"
-        width="100%"
-        @click="enableHideAllTips"
+      </USelectMenu>
+    </div>
+    <div class="border-t border-white/10 pt-3 mt-3">
+      <UButton
+        block
+        variant="solid"
+        color="neutral"
+        class="font-semibold"
+        :ui="{
+          base:
+            'bg-[#9A8866] hover:bg-[#8b7b5c] active:bg-[#7d6d54] text-white border border-[#7d6d54]',
+        }"
+        @click="goToSettings"
       >
-        {{ $t("app_bar.overflow_menu.hide_all_tips") }}
-      </v-btn>
-      <v-btn
-        v-if="userStore.hiddenTipCount > 0 || userStore.hideAllTips"
-        color="green"
-        prepend-icon="mdi-comment-question-outline"
-        class="mt-4"
-        width="100%"
-        @click="unhideTips"
-      >
-        {{ $t("app_bar.overflow_menu.reset_tips") }}
-      </v-btn>
-      <v-dialog v-if="fireuser.loggedIn" v-model="resetDialog">
-        <template #activator="{ props }">
-          <v-btn
-            color="warning"
-            prepend-icon="mdi-alert"
-            class="mt-4"
-            width="100%"
-            v-bind="props"
-          >
-            {{
-              $t("app_bar.overflow_menu.reset_gamemode_data", {
-                mode: selectedGameMode.toUpperCase(),
-              })
-            }}
-          </v-btn>
-        </template>
-        <v-row class="justify-center">
-          <v-col cols="auto">
-            <v-card
-              :title="$t('app_bar.overflow_menu.reset_gamemode_confirm_title')"
-              style="width: fit-content"
-            >
-              <v-card-text>
-                <v-container class="ma-0 pa-0">
-                  <v-row no-gutters>
-                    <v-col cols="12">
-                      {{
-                        $t(
-                          "app_bar.overflow_menu.reset_gamemode_confirmation",
-                          {
-                            mode: selectedGameMode.toUpperCase(),
-                          }
-                        )
-                      }}
-                    </v-col>
-                  </v-row>
-                  <v-row>
-                    <v-col cols="12" md="6">
-                      <v-btn
-                        color="red"
-                        block
-                        prepend-icon="mdi-alert"
-                        @click="
-                          tarkovStore.resetCurrentGameModeData();
-                          resetDialog = false;
-                        "
-                      >
-                        {{
-                          $t(
-                            "app_bar.overflow_menu.reset_gamemode_confirm_button",
-                            {
-                              mode: selectedGameMode.toUpperCase(),
-                            }
-                          )
-                        }}
-                      </v-btn>
-                    </v-col>
-                    <v-col cols="12" md="6">
-                      <v-btn
-                        color="primary"
-                        block
-                        @click="resetDialog = false"
-                        >{{
-                          $t(
-                            "app_bar.overflow_menu.reset_gamemode_cancel_button"
-                          )
-                        }}</v-btn
-                      >
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-dialog>
-      <v-dialog v-if="fireuser.loggedIn" v-model="fullResetDialog">
-        <template #activator="{ props }">
-          <v-btn
-            color="error"
-            prepend-icon="mdi-account-remove"
-            class="mt-4"
-            width="100%"
-            v-bind="props"
-          >
-            {{ $t("app_bar.overflow_menu.full_account_reset") }}
-          </v-btn>
-        </template>
-        <v-row class="justify-center">
-          <v-col cols="auto">
-            <v-card
-              :title="
-                $t('app_bar.overflow_menu.full_account_reset_confirm_title')
-              "
-              style="width: fit-content"
-            >
-              <v-card-text>
-                <v-container class="ma-0 pa-0">
-                  <v-row no-gutters>
-                    <v-col cols="12">
-                      <v-alert
-                        type="error"
-                        variant="tonal"
-                        class="mb-4"
-                        prepend-icon="mdi-alert-circle"
-                      >
-                        {{
-                          $t("app_bar.overflow_menu.full_account_reset_warning")
-                        }}
-                      </v-alert>
-                      {{
-                        $t(
-                          "app_bar.overflow_menu.full_account_reset_confirmation"
-                        )
-                      }}
-                    </v-col>
-                  </v-row>
-                  <v-row>
-                    <v-col cols="12" md="6">
-                      <v-btn
-                        color="error"
-                        block
-                        prepend-icon="mdi-account-remove"
-                        @click="
-                          tarkovStore.resetOnlineProfile();
-                          fullResetDialog = false;
-                        "
-                      >
-                        {{
-                          $t(
-                            "app_bar.overflow_menu.full_account_reset_confirm_button"
-                          )
-                        }}
-                      </v-btn>
-                    </v-col>
-                    <v-col cols="12" md="6">
-                      <v-btn
-                        color="primary"
-                        block
-                        @click="fullResetDialog = false"
-                        >{{
-                          $t(
-                            "app_bar.overflow_menu.full_account_reset_cancel_button"
-                          )
-                        }}</v-btn
-                      >
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-dialog>
-    </v-container>
-  </v-card>
+        {{ $t("app_bar.overflow_menu.open_settings", "Open Settings") }}
+      </UButton>
+    </div>
+  </div>
 </template>
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useAppStore } from "@/stores/app";
 import { useUserStore } from "@/stores/user";
-import { useTarkovStore } from "@/stores/tarkov";
-import {
-  GAME_EDITIONS,
-  PMC_FACTIONS,
-  GAME_MODE_OPTIONS,
-  type GameMode,
-} from "@/utils/constants";
-const { $supabase } = useNuxtApp();
-const fireuser = computed(() => ({
-  loggedIn: $supabase.user.loggedIn,
-}));
+
+// Define emits
+const emit = defineEmits(["close"]);
 const userStore = useUserStore();
-const tarkovStore = useTarkovStore();
-const resetDialog = ref(false);
-const fullResetDialog = ref(false);
-const unhideTips = () => {
-  userStore.unhideTips();
+const selectUi = {
+  // Trigger
+  base:
+    "relative group inline-flex items-center w-full rounded-md bg-surface-900 border border-white/15 text-surface-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-white/20 disabled:cursor-not-allowed disabled:opacity-75 ps-10 pe-10 h-11 cursor-pointer",
+  placeholder: "truncate text-surface-500",
+  value: "truncate pointer-events-none",
+  // Menu / items
+  content:
+    "max-h-60 min-w-[var(--reka-select-trigger-width)] min-w-[var(--reka-combobox-trigger-width)] w-[var(--reka-combobox-trigger-width)] bg-surface-900 shadow-xl rounded-md ring ring-white/10 overflow-hidden",
+  group: "p-1",
+  item:
+    "group relative flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm cursor-pointer select-none transition-colors hover:bg-surface-800 hover:text-white data-[highlighted]:bg-surface-800 data-[highlighted]:text-white",
+  itemWrapper: "flex-1 min-w-0 cursor-pointer",
+  itemLabel: "truncate",
+  itemTrailing: "ms-auto inline-flex items-center gap-1 text-primary-300",
+  itemTrailingIcon: "text-primary-300",
 };
-const enableHideAllTips = () => {
-  userStore.enableHideAllTips();
-};
-const appStore = useAppStore();
-// Game mode options
-const gameModeOptions = GAME_MODE_OPTIONS;
-const selectedGameMode = computed({
-  get() {
-    return tarkovStore.getCurrentGameMode();
-  },
-  set(newMode: GameMode) {
-    tarkovStore.switchGameMode(newMode);
-  },
-});
-// PMC Faction options
-const PMCFactions = PMC_FACTIONS;
-const factionImage = (faction: string) => {
-  return `img/factions/${faction}.webp`;
-};
-const currentPMCFaction = computed({
-  get() {
-    return tarkovStore.getPMCFaction();
-  },
-  set(newValue) {
-    tarkovStore.setPMCFaction(newValue);
-  },
-});
-const gameEditions = GAME_EDITIONS;
-const currentGameEdition = computed({
-  get() {
-    return tarkovStore.getGameEdition();
-  },
-  set(newValue) {
-    tarkovStore.setGameEdition(newValue);
-  },
-});
-const streamerMode = computed({
-  get() {
-    return userStore.getStreamerMode;
-  },
-  set(newValue) {
-    userStore.setStreamerMode(newValue);
-  },
-});
-const { availableLocales, locale } = useI18n({ useScope: "global" });
+const { locale } = useI18n({ useScope: "global" });
+// Language options - derive from available locales so it stays in sync with settings page
+const { availableLocales } = useI18n({ useScope: "global" });
 const localeItems = computed(() => {
-  return availableLocales.map((localeCode) => {
-    const languageNames = new Intl.DisplayNames([localeCode], {
-      type: "language",
-    });
-    return { title: languageNames.of(localeCode), value: localeCode };
-  });
+  const languageNames = new Intl.DisplayNames(["en"], { type: "language" });
+  return availableLocales.map((localeCode) => ({
+    label: languageNames.of(localeCode) || localeCode.toUpperCase(),
+    value: localeCode,
+  }));
 });
 const currentLocale = computed({
   get() {
-    return (
-      localeItems.value.filter(
-        (localeItem) => localeItem.value == locale.value
-      )[0] || localeItems.value[0]
-    );
+    return locale.value;
   },
-  set(newValue) {
+  set(newValue: string) {
     if (!newValue) return;
-    const localeValue =
-      typeof newValue === "string" ? newValue : newValue.value;
-    locale.value = localeValue;
-    appStore.localeOverride = localeValue;
+    locale.value = newValue;
+    // Fix eslint error by avoiding 'any' type
+    userStore.setLocaleOverride(newValue);
   },
 });
+const goToSettings = async () => {
+  await navigateTo("/settings");
+  emit("close");
+};
 </script>
-<style lang="scss" scoped>
-.faction-invert {
-  filter: invert(1);
-}
-</style>

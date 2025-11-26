@@ -1,25 +1,28 @@
 <template>
-  <v-sheet
+  <div
     v-if="tokenDataRef && !tokenDataRef.error"
-    class="pa-2"
-    color="primary"
-    :rounded="true"
+    class="p-2 bg-primary-500 rounded-lg"
   >
-    <div class="d-flex align-center mb-2">
+    <div class="flex items-center mb-2">
       <div class="mr-2">
         <b>{{ $t("page.settings.card.apitokens.note_column") }}:</b>
         {{ tokenDataRef?.note }}
       </div>
-      <v-spacer></v-spacer>
-      <v-chip
+      <div class="grow"></div>
+      <UBadge
         :color="gameModeChipColor"
-        size="small"
-        variant="tonal"
+        size="xs"
+        variant="subtle"
         class="ml-2"
       >
-        <v-icon :icon="gameModeIcon" size="small" class="mr-1"></v-icon>
+        <UIcon
+          :name="
+            gameModeIcon.startsWith('mdi-') ? `i-${gameModeIcon}` : gameModeIcon
+          "
+          class="mr-1 w-4 h-4"
+        />
         {{ gameModeDisplay }}
-      </v-chip>
+      </UBadge>
     </div>
     <div>
       <b>{{ $t("page.settings.card.apitokens.token_column") }}:</b>
@@ -53,88 +56,97 @@
         <canvas :id="props.token + '-tc'"></canvas>
       </template>
     </div>
-    <div class="mt-1">
-      <v-btn
-        variant="outlined"
-        :icon="copied ? 'mdi-check' : 'mdi-content-copy'"
-        class="mx-1"
-        :color="copied ? 'success' : 'secondary'"
-        size="x-small"
+    <div class="mt-1 flex gap-1">
+      <UButton
+        variant="ghost"
+        :icon="copied ? 'i-mdi-check' : 'i-mdi-content-copy'"
+        :color="copied ? 'green' : 'white'"
+        size="xs"
         @click="copyToken"
-      ></v-btn>
-      <v-btn
-        variant="outlined"
-        icon="mdi-qrcode"
-        class="mx-1"
-        color="secondary"
-        size="x-small"
+      />
+      <UButton
+        variant="ghost"
+        icon="i-mdi-qrcode"
+        color="white"
+        size="xs"
         @click="toggleQR"
-      ></v-btn>
-      <v-btn
-        variant="outlined"
-        icon="mdi-delete"
-        class="mx-1"
-        color="secondary"
+      />
+      <UButton
+        variant="ghost"
+        icon="i-mdi-delete"
+        color="white"
         :disabled="deleting"
         :loading="deleting"
-        size="x-small"
+        size="xs"
         @click="deleteToken"
-      ></v-btn>
+      />
     </div>
-  </v-sheet>
-  <v-sheet
+  </div>
+  <div
     v-else-if="tokenDataRef && tokenDataRef.error"
-    class="pa-2"
-    color="error"
-    :rounded="true"
+    class="p-2 bg-red-500 rounded-lg"
   >
     <div>Error loading token: {{ tokenDataRef.error }}</div>
     <div>Token ID: {{ props.token }}</div>
-  </v-sheet>
-  <v-sheet v-else class="pa-2" color="primary" :rounded="true">
-    <v-skeleton-loader type="paragraph"></v-skeleton-loader>
-  </v-sheet>
+  </div>
+  <div v-else class="p-2 bg-primary-500 rounded-lg">
+    <USkeleton class="h-20 w-full bg-primary-400" />
+  </div>
 </template>
 <script setup>
-// import { firestore, functions, doc, getDoc, httpsCallable } from '@/plugins/firebase.client'; // TODO: Move to Cloudflare Workers
+// Token functions moved to Cloudflare Workers - TODO: Implement replacement
 import { computed, nextTick, ref } from "vue";
 import QRCode from "qrcode";
 import { useUserStore } from "@/stores/user";
 import { useI18n } from "vue-i18n";
 import { GAME_MODES } from "@/utils/constants";
+import { useEdgeFunctions } from "@/composables/api/useEdgeFunctions";
+const { $supabase } = useNuxtApp();
 // Get locale for use in calculating relative time
 const { locale } = useI18n({ useScope: "global" });
-// Define the props for the component
+// Define props for component
 const props = defineProps({
   token: {
     type: String,
     required: true,
   },
 });
+// Define emits for component
+const emit = defineEmits(["tokenRevoked"]);
 const userStore = useUserStore();
-// Ref to store tokenData when retrieved from Firestore
+// Ref to store tokenData when retrieved from Supabase
 const tokenDataRef = ref(null);
-const tokenDoc = doc(firestore, "token", props.token);
-// Retrieve the data from the document then store it in tokenDataRef
-getDoc(tokenDoc)
-  .then((docSnap) => {
-    if (docSnap.exists()) {
-      tokenDataRef.value = docSnap.data();
+// Retrieve data from Supabase then store it in tokenDataRef
+const loadTokenData = async () => {
+  try {
+    const { data, error } = await $supabase.client
+      .from("tokens")
+      .select("*")
+      .eq("token_id", props.token)
+      .single();
+
+    if (error) {
+      console.error("Error loading token data:", error);
+      tokenDataRef.value = { error: "Failed to load token data" };
+    } else if (data) {
+      tokenDataRef.value = data;
     } else {
-      // Set a fallback value to prevent infinite loading
       tokenDataRef.value = { error: "Document not found" };
     }
-  })
-  .catch((_error) => {
-    // Set a fallback value to prevent infinite loading
+  } catch (_error) {
+    console.error("Error loading token data:", _error);
     tokenDataRef.value = { error: "Failed to load token data" };
-  });
-// Computed property to retrieve the timestamp of the token creation
+  }
+};
+// Load token data when component mounts
+loadTokenData();
+// Computed property to retrieve timestamp of token creation
 const tokenCreated = computed(() => {
-  if (!tokenDataRef.value?.createdAt) return Date.now();
-  return tokenDataRef.value.createdAt.toDate() || Date.now();
+  if (!tokenDataRef.value?.created_at) return Date.now();
+  // Handle Supabase timestamp format (ISO string)
+  return new Date(tokenDataRef.value.created_at).getTime() || Date.now();
 });
-// Computed property to display the permissions of the token
+// Computed property to display permissions of token
 const tokenPermissions = computed(() => {
   if (!tokenDataRef.value?.permissions) {
     return [];
@@ -177,7 +189,7 @@ const gameModeIcon = computed(() => {
       return "mdi-sword-cross";
   }
 });
-// Calculate the relative days since the token was created using Intl.RelativeTimeFormat
+// Calculate relative days since token was created using Intl.RelativeTimeFormat
 const relativeDays = computed(() => {
   if (!tokenDataRef.value?.createdAt) {
     return "N/A";
@@ -209,16 +221,18 @@ const copyToken = async () => {
   }
 };
 const deleting = ref(false);
+const { revokeToken } = useEdgeFunctions();
 const deleteToken = async () => {
-  const revokeTokenFn = httpsCallable(functions, "revokeToken");
   deleting.value = true;
   try {
-    const result = await revokeTokenFn({ token: props.token });
-    if (result.data.error) {
-      console.error("Token revocation failed:", result.data.error);
-    }
-  } catch {
-    console.error("Failed to revoke token");
+    // Call edge function to revoke token
+    const data = await revokeToken(props.token);
+    console.log("Token revoked successfully:", data);
+    // Emit event to parent to refresh token list
+    emit("tokenRevoked", props.token);
+  } catch (error) {
+    console.error("Failed to revoke token:", error);
+    throw error;
   } finally {
     deleting.value = false;
   }

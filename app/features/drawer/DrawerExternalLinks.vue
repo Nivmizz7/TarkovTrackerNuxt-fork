@@ -1,5 +1,5 @@
 <template>
-  <v-list nav bg-color="transparent" class="mx-auto">
+  <ul class="flex flex-col gap-1 px-1">
     <DrawerItem
       avatar="/img/logos/tarkovdevlogo.png"
       locale-key="tarkovdev"
@@ -28,18 +28,14 @@
       ext-link
       :is-collapsed="props.isCollapsed"
     />
-  </v-list>
+  </ul>
 </template>
 <script setup>
-import { defineAsyncComponent } from "vue";
+import DrawerItem from "@/features/drawer/DrawerItem.vue";
 const props = defineProps({
   isCollapsed: {
     type: Boolean,
     required: true,
   },
 });
-const DrawerItem = defineAsyncComponent(
-  () => import("@/features/drawer/DrawerItem.vue")
-);
 </script>
-<style lang="scss" scoped></style>

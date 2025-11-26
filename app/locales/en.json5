@@ -10,8 +10,6 @@
       game_edition: "Game Edition",
       streamer_mode: "Streamer Mode",
       language: "Language",
-      reset_tips: "Unhide all tips",
-      hide_all_tips: "Hide all tips",
       reset_gamemode_data: "Reset {mode} Data",
       reset_gamemode_confirm_title: "Confirm Reset",
       reset_gamemode_confirmation: "Are you sure you want to reset all {mode} progress? This cannot be undone.",
@@ -76,6 +74,7 @@
       show_global_tasks: "Show Global Tasks",
       hide_non_kappa_tasks: "Hide Non Kappa Tasks",
       show_non_kappa_tasks: "Show Non Kappa Tasks",
+      filterbutton: "Filter",
       filters: {
         title: "Task Filters",
         close: "Close",
@@ -83,6 +82,24 @@
         show_global_tasks: "Show global tasks on map view",
         hide_non_kappa_tasks: "Hide non-Kappa tasks",
         show_non_kappa_tasks: "Show non-Kappa tasks",
+        level: "Level",
+        trader: "Trader",
+        map: "Map",
+        type: "Type",
+        reset: "Reset",
+        apply: "Apply",
+        leveloption: "Level {level}",
+        typeoption: {
+          PickUp: "Pick Up",
+          Elimination: "Elimination",
+          Completion: "Completion",
+          Exploration: "Exploration",
+          Standing: "Standing",
+          Skill: "Skill",
+          Multi: "Multi",
+          WeaponAssembly: "Gunsmith",
+          Merchant: "Merchant",
+        },
       },
       notasksfound: "No tasks found. Try changing your filters or updating your level.",
       showing_all_sources: "Showing all sources",
@@ -138,9 +155,13 @@
         statusdowngraded: "Downgraded {name} from level {level}",
       },
     },
+    items: {
+      title: "Needed Items",
+    },
     neededitems: {
       title: "Needed Items",
       loading: "Loading task and hideout data",
+      searchplaceholder: "Search items...",
       neededviews: {
         all: "All",
         tasks: "Tasks",
@@ -152,10 +173,25 @@
         close: "Close",
         items_hide_non_fir: "Hide needed items that don't need to be found in raid",
         items_show_non_fir: "Show needed items that don't need to be found in raid",
+        empty: "No items match your search.",
+      },
+    },
+    api: {
+      title: "API Documentation",
+      description: "Access your Tarkov Tracker data programmatically.",
+      note: "API tokens are required for authentication.",
+      endpoints: {
+        title: "Available Endpoints",
+        data: {
+          description: "Retrieve your game progress data.",
+        },
+      },
+      usage: {
+        title: "Usage Examples",
       },
     },
     settings: {
-      title: "API",
+      title: "Settings",
       card: {
         apitokens: {
           title: "API Tokens",
@@ -236,13 +272,32 @@
     },
     login: {
       title: "Login",
+      subtitle: "Sign in to access your account",
+      discordbutton: "Continue with Discord",
+      githubbutton: "Continue with GitHub",
+      card_title: "Sign in to access your account",
+      card_subtitle: "Track your progress, share with friends, and coordinate raids",
+      continue_twitch: "Continue with Twitch",
+      continue_discord: "Continue with Discord",
+      privacy_policy: "Privacy Policy",
+      terms_of_service: "Terms of Service",
+    },
+    not_found: {
+      title: "Page Not Found",
+      not_found_description: "Sorry, that page could not be found!",
     },
     api: {
-      title: "TarkovTracker API",
-      hero: {
-        description: "Access your progress data programmatically with our RESTful API",
-        create_token: "Create Token",
-        documentation: "API Documentation",
+      title: "API Documentation",
+      description: "Access your Tarkov Tracker data programmatically",
+      note: "API tokens are required for authentication",
+      endpoints: {
+        title: "Available Endpoints",
+        data: {
+          description: "Retrieve your game progress data",
+        },
+      },
+      usage: {
+        title: "Usage Examples",
       },
       stats: {
         active_tokens: "Active Tokens",
@@ -261,47 +316,6 @@
         json_api: "JSON API",
         json_tooltip: "All responses are in JSON format with consistent structure",
       },
-      tokens: {
-        no_tokens_title: "No API Tokens Yet",
-        no_tokens_description: "Create your first token to start accessing the TarkovTracker API",
-        create_first_token: "Create Your First Token",
-        create_new_token: "Create New API Token",
-        create_token_button: "CREATE A TOKEN",
-        close: "Close",
-        form: {
-          description_label: "Token Description",
-          description_placeholder: "e.g., Tarkov Monitor, Rat Scanner, etc.",
-          description_hint: "Choose a descriptive name to identify this token's purpose",
-          gamemode_title: "Game Mode",
-          gamemode_description: "Select which game mode this token will access. This cannot be changed after creation.",
-          gamemode_pvp_title: "PvP (Standard)",
-          gamemode_pvp_description: "Standard Tarkov gameplay with PvP combat",
-          gamemode_pve_title: "PvE (Coop)",
-          gamemode_pve_description: "PvE cooperative gameplay mode",
-          permissions_title: "Token Permissions",
-          permissions_description: "Select the minimum permissions needed for your use case. You can always create additional tokens with different permissions.",
-          permissions_error: "Please select at least one permission for this token.",
-          selected_permissions: "Selected Permissions",
-          active_info: "Tokens are immediately active and can be revoked at any time",
-          cancel: "Cancel",
-          validation: {
-            required: "You must enter a token description",
-            max_length: "Token description must be less than 20 characters",
-          },
-        },
-        success: {
-          title: "Token Created Successfully",
-          message: "Your new token is now active and ready to use",
-        },
-        error: {
-          title: "Error Creating Token",
-          message: "Please try again or contact support if the issue persists",
-        },
-      },
-    },
-    not_found: {
-      title: "Page Not Found",
-      not_found_description: "Sorry, that page could not be found!",
     },
   },
   footer: {
@@ -336,39 +350,31 @@
     tarkovguru: "Tarkov Guru",
     tarkovchanges: "Tarkov Changes",
     tarkovmonitor: "Tarkov Monitor",
+    settings: "Settings",
   },
-  tips: {
-    hide_tip: "Hide this tip",
-    default: {
-      title: "Tip",
-      description: "Oops! This tip seems to be missing. Please report this bug on Discord.",
+  settings: {
+    title: "Settings",
+    general: {
+      title: "General Settings",
+      language: "Language",
+      streamer_mode: "Streamer Mode",
     },
-    tasks: {
-      description: "You can select different ways to categorize and view your tasks using the tabs below. You can expand the filter panel to filter tasks, sort them, and more. If you already have progress in Tarkov, you can view the locked tab of tasks and jump to the tasks you current have available.",
+    game_profile: {
+      title: "Game Profile",
+      game_edition: "Game Edition",
+      pmc_faction: "Faction",
     },
-    team: {
-      title: "Team",
-      description: "Create a team to track your progress with friends. You can share a URL for others to join your team. You will be able to see your teammates' progress, the items they need, and plan raids together.",
+    data_management: {
+      title: "Data Management",
+      reset_gamemode_data: "Reset Game Mode Data",
+      reset_confirm_title: "Confirm Reset",
+      reset_confirmation: "Are you sure you want to reset your progress for the current game mode?",
+      reset_warning: "This action cannot be undone and will permanently delete all your progress for the current game mode.",
+      reset_cancel: "Cancel",
+      reset_confirm: "Reset Data",
     },
-    welcomett3: {
-      title: "Welcome to TarkovTracker 3!",
-      description: "Welcome to TarkovTracker version 3! This is a complete rewrite of the original TarkovTracker. New features are added every wipe! Please report any bugs you find on Discord.",
-    },
-    login: {
-      title: "Login",
-      description: "You don't need to log in to use TarkovTracker. Log in only if you want to sync or share your progress. Otherwise, your data stays safely in your browser.",
-    },
-    hideout: {
-      title: "Hideout",
-      description: "You can mark off progress towards building and upgrading your hideout. The progress you mark will be used to calculate needed items for your hideout.",
-    },
-    neededitems: {
-      title: "Needed Items",
-      description: "Here you can see items that you will need in the future for tasks and hideout upgrades. You can mark off items as you collect them to keep track of how many more you need.",
-    },
-    teammembers: {
-      title: "Team Members",
-      description: "These are the list of your team members. You can click the eye icon to hide or show their tasks and needed items while you are using other parts of the tracker.",
+    danger_zone: {
+      title: "Danger Zone",
     },
   },
   generic: {

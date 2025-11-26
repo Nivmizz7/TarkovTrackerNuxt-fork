@@ -1,30 +1,31 @@
 <template>
-  <v-dialog
+  <UModal
     :model-value="props.show"
-    max-width="700"
     @update:model-value="$emit('update:show', $event)"
   >
-    <v-card>
-      <v-card-title class="text-h5 px-4 py-3">Confirm Data Import</v-card-title>
-      <v-card-text class="px-4 pb-4">
+    <UCard>
+      <template #header>
+        <div class="text-xl font-medium px-4 py-3">Confirm Data Import</div>
+      </template>
+
+      <div class="px-4 pb-4">
         <p class="mb-3">
           This will import your progress data into your PvP profile:
         </p>
         <!-- Game Mode Selection - Fixed to PvP Only -->
-        <v-card variant="flat" class="mb-4 pa-3" color="surface-variant">
-          <div class="d-flex align-center">
-            <v-icon icon="mdi-sword-cross" class="mr-2" size="small" />
-            <span class="font-weight-medium">Target Game Mode: PvP</span>
+        <div class="mb-4 p-3 bg-gray-800 rounded-lg">
+          <div class="flex items-center">
+            <UIcon name="i-mdi-sword-cross" class="mr-2 w-4 h-4" />
+            <span class="font-medium">Target Game Mode: PvP</span>
           </div>
-          <v-alert
-            type="info"
-            variant="tonal"
-            density="compact"
+          <UAlert
+            icon="i-mdi-information"
+            color="primary"
+            variant="soft"
             class="mt-3 mb-0"
-          >
-            Data will be imported to your PvP (standard multiplayer) progress
-          </v-alert>
-        </v-card>
+            title="Data will be imported to your PvP (standard multiplayer) progress"
+          />
+        </div>
         <p class="mb-4">Data to be imported:</p>
         <DataPreviewCard
           :data="data"
@@ -36,32 +37,33 @@
           @show-objectives-details="$emit('show-objectives-details')"
           @show-failed-tasks-details="$emit('show-failed-tasks-details')"
         />
-        <p class="mt-5 text-red font-weight-bold">
+        <p class="mt-5 text-red-500 font-bold">
           Warning: This action cannot be undone!
         </p>
-      </v-card-text>
-      <v-card-actions class="px-4 pb-4">
-        <v-spacer></v-spacer>
-        <v-btn
-          color="grey"
-          variant="flat"
-          class="px-4"
-          @click="$emit('cancel')"
-        >
-          Cancel
-        </v-btn>
-        <v-btn
-          color="error"
-          variant="flat"
-          :loading="importing"
-          class="ml-3 px-4"
-          @click="$emit('confirm')"
-        >
-          Confirm Import
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      </div>
+      <template #footer>
+        <div class="flex justify-end px-4 pb-4">
+          <UButton
+            color="neutral"
+            variant="solid"
+            class="px-4"
+            @click="$emit('cancel')"
+          >
+            Cancel
+          </UButton>
+          <UButton
+            color="error"
+            variant="solid"
+            :loading="importing"
+            class="ml-3 px-4"
+            @click="$emit('confirm')"
+          >
+            Confirm Import
+          </UButton>
+        </div>
+      </template>
+    </UCard>
+  </UModal>
 </template>
 <script setup lang="ts">
 const props = defineProps({

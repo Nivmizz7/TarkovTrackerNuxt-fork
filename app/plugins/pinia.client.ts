@@ -1,12 +1,12 @@
 /* eslint-disable import/no-mutable-exports */
-// import { PiniaFireswap } from "./pinia-firestore";
 import type { Pinia } from "pinia";
+import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 
 export let pinia: Pinia | undefined;
 
-export function installPiniaPlugins(_target: Pinia): void {
-  // Pinia plugins can be added here
-  // target.use(SomePlugin);
+export function installPiniaPlugins(target: Pinia): void {
+  // Install persistedstate plugin for automatic localStorage persistence
+  target.use(piniaPluginPersistedstate);
 }
 
 export default defineNuxtPlugin((nuxtApp) => {

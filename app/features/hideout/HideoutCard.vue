@@ -1,17 +1,21 @@
 <template>
-  <v-sheet
-    rounded
-    class="elevation-2 pt-2 corner-highlight-parent"
-    color="rgba(33,33,33,1)"
-  >
-    <div class="mt-n10">
-      <span class="elevation-3 corner-highlight" :class="highlightClasses">
-        <img class="pt-0" :src="stationAvatar" height="50" />
+  <div class="rounded-lg shadow-md bg-[#212121] relative overflow-visible">
+    <div>
+      <span
+        class="inline-block shadow-lg rounded-tr-lg rounded-br-lg rounded-bl-lg p-1.5"
+        :class="highlightClasses"
+      >
+        <img
+          class="pt-0 block"
+          :src="stationAvatar"
+          height="50"
+          style="height: 50px"
+        />
       </span>
-      <span class="text-left pb-0">
-        <v-sheet rounded class="px-3 py-3" style="display: inherit">
-          <span class="text-subtitle-1">{{ station.name }}</span>
-          <span class="text-caption ml-3" :hidden="upgradeDisabled">
+      <span class="text-left pb-0 inline-block align-top">
+        <div class="rounded px-3 py-3 flex items-center">
+          <span class="text-lg font-medium">{{ station.name }}</span>
+          <span class="text-xs ml-3 text-gray-400" :hidden="upgradeDisabled">
             <i18n-t
               keypath="page.hideout.stationcard.level"
               scope="global"
@@ -24,51 +28,62 @@
               </template>
             </i18n-t>
           </span>
-        </v-sheet>
+        </div>
       </span>
     </div>
-    <div v-if="currentLevel" class="text-center text-caption mt-4 mb-2 mx-2">
+    <div
+      v-if="currentLevel"
+      class="text-center text-xs mt-4 mb-2 mx-2 text-gray-300"
+    >
       {{ getStashAdjustedDescription(currentLevel.description) }}
     </div>
-    <div v-else-if="nextLevel" class="text-center text-caption mt-4 mb-2 mx-2">
+    <div
+      v-else-if="nextLevel"
+      class="text-center text-xs mt-4 mb-2 mx-2 text-gray-300"
+    >
       {{ getStashAdjustedDescription(nextLevel.description) }}
     </div>
-    <v-sheet
+    <div
       v-if="props.station.id == STASH_STATION_ID"
-      class="text-center pa-2"
-      color="secondary"
+      class="text-center p-2 bg-gray-700"
     >
-      <div>
+      <div class="mb-2 text-sm">
         {{ $t("page.hideout.stationcard.gameeditiondescription") }}
       </div>
-      <v-btn variant="tonal" to="/settings">{{
+      <UButton variant="soft" to="/settings" color="white">{{
         $t("page.hideout.stationcard.settingsbutton")
-      }}</v-btn>
-    </v-sheet>
-    <v-sheet v-if="nextLevel" color="accent" class="mb-1">
-      <div class="text-center pa-2">
-        <div class="text-subtitle-1 mb-2">
-          <v-icon class="mr-2">mdi-package-variant-closed-check</v-icon
-          >{{ $t("page.hideout.stationcard.nextlevel") }}
+      }}</UButton>
+    </div>
+    <div v-if="nextLevel" class="mb-1 bg-gray-800">
+      <div class="text-center p-2">
+        <div
+          class="text-base font-medium mb-2 flex items-center justify-center"
+        >
+          <UIcon
+            name="i-mdi-package-variant-closed-check"
+            class="mr-2 w-6 h-6"
+          />
+          {{ $t("page.hideout.stationcard.nextlevel") }}
         </div>
         <div
           v-for="(requirement, rIndex) in nextLevel.itemRequirements"
           :key="rIndex"
         >
-          <span class="d-flex align-center justify-center">
+          <span class="flex items-center justify-center">
             <tarkov-item
               :item-id="requirement.item.id"
               :item-name="requirement.item.name"
               :dev-link="requirement.item.link"
               :wiki-link="requirement.item.wikiLink"
               :count="requirement.count"
-              class="mr-2 d-inline-block"
+              class="mr-2 inline-block"
             />
           </span>
         </div>
         <div
           v-for="(requirement, rIndex) in nextLevel.stationLevelRequirements"
           :key="rIndex"
+          class="text-sm text-gray-300"
         >
           <i18n-t
             keypath="page.hideout.stationcard.requirements.station"
@@ -85,6 +100,7 @@
         <div
           v-for="(requirement, rIndex) in nextLevel.skillRequirements"
           :key="rIndex"
+          class="text-sm text-gray-300"
         >
           <i18n-t
             keypath="page.hideout.stationcard.requirements.skill"
@@ -101,6 +117,7 @@
         <div
           v-for="(requirement, rIndex) in nextLevel.traderRequirements"
           :key="rIndex"
+          class="text-sm text-gray-300"
         >
           <i18n-t
             keypath="page.hideout.stationcard.requirements.trader"
@@ -115,24 +132,25 @@
           </i18n-t>
         </div>
       </div>
-    </v-sheet>
-    <v-sheet v-if="!nextLevel" rounded color="accent" class="pa-2">
-      <div class="text-center text-subtitle-1">
-        <v-icon class="mr-2">mdi-star-check</v-icon
-        >{{ $t("page.hideout.stationcard.maxlevel") }}
-      </div>
-    </v-sheet>
-    <div class="mb-2">
-      <v-row
-        v-if="!upgradeDisabled"
-        no-gutters
-        class="align-center justify-center"
+    </div>
+    <div v-if="!nextLevel" class="p-2 rounded bg-gray-800">
+      <div
+        class="text-center text-base font-medium flex items-center justify-center text-yellow-500"
       >
-        <v-col v-if="nextLevel?.level" cols="auto" class="mx-1 my-1">
-          <v-btn
+        <UIcon name="i-mdi-star-check" class="mr-2 w-6 h-6" />
+        {{ $t("page.hideout.stationcard.maxlevel") }}
+      </div>
+    </div>
+    <div class="mb-2 p-2">
+      <div
+        v-if="!upgradeDisabled"
+        class="flex items-center justify-center flex-wrap"
+      >
+        <div v-if="nextLevel?.level" class="mx-1 my-1">
+          <UButton
             color="green"
-            variant="tonal"
-            density="comfortable"
+            variant="soft"
+            size="sm"
             class="my-1"
             @click="upgradeStation()"
           >
@@ -145,13 +163,13 @@
                 {{ nextLevel?.level }}
               </template>
             </i18n-t>
-          </v-btn>
-        </v-col>
-        <v-col v-if="currentLevel" cols="auto" class="mx-1 my-1">
-          <v-btn
+          </UButton>
+        </div>
+        <div v-if="currentLevel" class="mx-1 my-1">
+          <UButton
             color="red"
-            variant="tonal"
-            density="comfortable"
+            variant="soft"
+            size="sm"
             :disabled="downgradeDisabled"
             class="my-1"
             @click="downgradeStation()"
@@ -170,23 +188,18 @@
                 }}
               </template>
             </i18n-t>
-          </v-btn>
-        </v-col>
-      </v-row>
-      <v-row
+          </UButton>
+        </div>
+      </div>
+      <div
         v-if="upgradeDisabled"
-        no-gutters
-        class="align-center justify-center"
+        class="flex items-center justify-center flex-wrap"
       >
-        <v-col
-          v-if="currentLevel && !downgradeDisabled"
-          cols="auto"
-          class="mx-1 my-1"
-        >
-          <v-btn
+        <div v-if="currentLevel && !downgradeDisabled" class="mx-1 my-1">
+          <UButton
             color="red"
-            variant="tonal"
-            density="comfortable"
+            variant="soft"
+            size="sm"
             class="my-1"
             @click="downgradeStation()"
           >
@@ -204,41 +217,32 @@
                 }}
               </template>
             </i18n-t>
-          </v-btn>
-        </v-col>
-        <v-col
+          </UButton>
+        </div>
+        <div
           v-if="nextLevel && (!currentLevel || downgradeDisabled)"
-          cols="auto"
           class="mx-1 my-1"
         >
-          <span class="mx-3">
+          <span class="mx-3 text-sm text-gray-400">
             {{ t("page.hideout.stationcard.upgradeunavailable") }}
           </span>
-        </v-col>
-      </v-row>
+        </div>
+      </div>
     </div>
-    <v-snackbar v-model="moduleStatusUpdated" :timeout="4000" color="secondary">
-      {{ moduleStatus }}
-      <template #actions>
-        <v-btn
-          color="white"
-          variant="text"
-          @click="moduleStatusUpdated = false"
-        >
-          Close
-        </v-btn>
-      </template>
-    </v-snackbar>
-  </v-sheet>
+  </div>
 </template>
 <script setup>
-import { computed, defineAsyncComponent, ref } from "vue";
+import { computed, defineAsyncComponent } from "vue";
 import { useProgressStore } from "@/stores/progress";
-import { STASH_STATION_ID, CULTIST_CIRCLE_STATION_ID } from "@/utils/constants";
+import {
+  STASH_STATION_ID,
+  CULTIST_CIRCLE_STATION_ID,
+  UNHEARD_EDITION_IDS,
+} from "@/utils/constants";
 import { useTarkovStore } from "@/stores/tarkov";
 import { useI18n } from "vue-i18n";
-const TarkovItem = defineAsyncComponent(
-  () => import("@/features/game/TarkovItem.vue")
+const TarkovItem = defineAsyncComponent(() =>
+  import("@/features/game/TarkovItem.vue")
 );
 const props = defineProps({
   station: {
@@ -249,14 +253,13 @@ const props = defineProps({
 const progressStore = useProgressStore();
 const tarkovStore = useTarkovStore();
 const { t } = useI18n({ useScope: "global" });
+const toast = useToast();
 const highlightClasses = computed(() => {
-  const classes = {};
   if (progressStore.hideoutLevels?.[props.station.id]?.self > 0) {
-    classes["highlight-secondary"] = true;
+    return "bg-gradient-to-br from-[#7d6f55] via-[#ac9d80] to-[#9a8866]";
   } else {
-    classes["highlight-green"] = true;
+    return "bg-gradient-to-r from-[rgba(1,36,0,0.15)] via-[rgba(15,121,9,0.15)] to-[rgba(0,83,0,0.15)]";
   }
-  return classes;
 });
 const upgradeDisabled = computed(() => {
   return nextLevel.value === null;
@@ -275,12 +278,10 @@ const downgradeDisabled = computed(() => {
   if (props.station.id === CULTIST_CIRCLE_STATION_ID) {
     const editionId = tarkovStore.getGameEdition();
     // If Unheard Edition (5) or Unheard+EOD Edition (6), disable downgrade
-    return editionId === 5 || editionId === 6;
+    return UNHEARD_EDITION_IDS.includes(editionId);
   }
   return false;
 });
-const moduleStatusUpdated = ref(false);
-const moduleStatus = ref("");
 const upgradeStation = () => {
   // Store next level to a variable because it can change mid-function
   const upgradeLevel = nextLevel.value;
@@ -289,11 +290,13 @@ const upgradeStation = () => {
   upgradeLevel.itemRequirements.forEach((o) => {
     tarkovStore.setHideoutPartComplete(o.id);
   });
-  moduleStatus.value = t("page.hideout.stationcard.statusupgraded", {
-    name: props.station.name,
-    level: upgradeLevel.level,
+  toast.add({
+    title: t("page.hideout.stationcard.statusupgraded", {
+      name: props.station.name,
+      level: upgradeLevel.level,
+    }),
+    color: "green",
   });
-  moduleStatusUpdated.value = true;
 };
 const downgradeStation = () => {
   // Store current level to a variable because it can change mid-function
@@ -303,11 +306,13 @@ const downgradeStation = () => {
   downgradeLevel.itemRequirements.forEach((o) => {
     tarkovStore.setHideoutPartUncomplete(o.id);
   });
-  moduleStatus.value = t("page.hideout.stationcard.statusdowngraded", {
-    name: props.station.name,
-    level: downgradeLevel.level,
+  toast.add({
+    title: t("page.hideout.stationcard.statusdowngraded", {
+      name: props.station.name,
+      level: downgradeLevel.level,
+    }),
+    color: "red",
   });
-  moduleStatusUpdated.value = true;
 };
 const nextLevel = computed(() => {
   return (
@@ -336,7 +341,7 @@ const getStashAdjustedDescription = (description) => {
   }
   // Check if user has Unheard Edition (5) or Unheard + EOD Edition (6)
   const editionId = tarkovStore.getGameEdition();
-  const isUnheardEdition = editionId === 5 || editionId === 6;
+  const isUnheardEdition = UNHEARD_EDITION_IDS.includes(editionId);
   // For Unheard editions, show static description with 10x72
   if (isUnheardEdition) {
     return "Maximum size stash (10x72)";
@@ -344,31 +349,3 @@ const getStashAdjustedDescription = (description) => {
   return description;
 };
 </script>
-<style lang="scss" scoped>
-.corner-highlight {
-  border-right-style: solid;
-  border-right-width: 0px;
-  border-bottom-style: solid;
-  border-bottom-width: 0px;
-  margin: 0px;
-  padding: 6px;
-  background-clip: padding-box;
-  border-radius: 10px 10px 10px 0px;
-}
-.highlight-secondary {
-  background: linear-gradient(
-    135deg,
-    rgba(125, 111, 85, 1) 0%,
-    rgba(172, 157, 128, 1) 35%,
-    rgba(154, 136, 102, 1) 100%
-  );
-}
-.highlight-green {
-  background: linear-gradient(
-    90deg,
-    rgba(1, 36, 0, 0.15) 0%,
-    rgba(15, 121, 9, 0.15) 35%,
-    rgba(0, 83, 0, 0.15) 100%
-  );
-}
-</style>

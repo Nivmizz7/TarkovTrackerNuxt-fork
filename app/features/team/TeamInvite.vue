@@ -1,51 +1,44 @@
 <template>
-  <v-alert
+  <UAlert
     v-if="hasInviteInUrl && !inInviteTeam && !declined"
     color="green"
-    theme="dark"
-    icon="mdi-handshake"
-    density="compact"
-    prominent
+    variant="solid"
+    icon="i-mdi-handshake"
+    class="mb-4"
   >
-    <div class="d-flex flex-row align-center justify-space-between">
-      <div>
-        {{ $t("page.team.card.teaminvite.description") }}
+    <template #title>
+      <div class="flex flex-row items-center justify-between w-full">
+        <div>
+          {{ $t("page.team.card.teaminvite.description") }}
+        </div>
+        <div class="flex gap-2">
+          <UButton
+            color="white"
+            variant="outline"
+            :disabled="accepting"
+            :loading="accepting"
+            @click="acceptInvite"
+          >
+            {{ $t("page.team.card.teaminvite.accept") }}
+          </UButton>
+          <UButton
+            color="white"
+            variant="outline"
+            :disabled="accepting"
+            @click="declined = true"
+          >
+            {{ $t("page.team.card.teaminvite.decline") }}
+          </UButton>
+        </div>
       </div>
-      <div>
-        <v-btn
-          class="mx-1 my-1"
-          variant="outlined"
-          :disabled="accepting"
-          :loading="accepting"
-          @click="acceptInvite"
-        >
-          {{ $t("page.team.card.teaminvite.accept") }}
-        </v-btn>
-        <v-btn
-          variant="outlined"
-          :disabled="accepting"
-          @click="declined = true"
-        >
-          {{ $t("page.team.card.teaminvite.decline") }}
-        </v-btn>
-      </div>
-    </div>
-  </v-alert>
-  <v-snackbar v-model="joinTeamSnackbar" :timeout="4000" color="accent">
-    {{ joinResult }}
-    <template #actions>
-      <v-btn color="white" variant="text" @click="joinTeamSnackbar = false">
-        Close
-      </v-btn>
     </template>
-  </v-snackbar>
+  </UAlert>
 </template>
 <script setup>
 import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
-// import { auth } from '@/plugins/firebase.client';
 // import { useLiveData } from '@/composables/livedata';
-// import { getFunctions, httpsCallable } from 'firebase/functions';
+// Cloudflare functions - TODO: Implement replacement
 import { useSystemStore } from "@/stores/useSystemStore";
 
 // const router = useRouter();
@@ -53,6 +46,7 @@ import { useSystemStore } from "@/stores/useSystemStore";
 const systemStore = useSystemStore();
 // const { t } = useI18n({ useScope: "global" });
 const route = useRoute();
+const toast = useToast();
 
 // const functions = getFunctions();
 // const joinTeamCallable = httpsCallable(functions, 'joinTeam');
@@ -68,14 +62,14 @@ const inInviteTeam = computed(() => {
 });
 const declined = ref(false);
 const accepting = ref(false);
-const joinTeamSnackbar = ref(false);
-const joinResult = ref("");
 
 const acceptInvite = async () => {
   // TODO: Implement Supabase team joining logic
   console.warn("Team joining not yet implemented for Supabase");
-  joinResult.value = "Team joining is currently disabled during migration.";
-  joinTeamSnackbar.value = true;
+  toast.add({
+    title: "Team joining is currently disabled during migration.",
+    color: "orange",
+  });
 };
 </script>
-<style lang="scss" scoped></style>
+<style scoped></style>

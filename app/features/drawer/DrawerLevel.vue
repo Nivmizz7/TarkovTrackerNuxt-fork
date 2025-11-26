@@ -1,32 +1,40 @@
 <template>
-  <div class="d-flex justify-center align-center mb-2">
+  <div class="flex justify-center items-center py-2 px-3">
     <template v-if="isCollapsed">
       <div class="text-center">
-        <div style="font-size: 0.7em" class="mb-1">
-          {{ t('navigation_drawer.level') }}
+        <div class="text-[0.7em] mb-1 text-gray-400">
+          {{ t("navigation_drawer.level") }}
         </div>
-        <h1 class="rail-level-number">{{ tarkovStore.playerLevel() }}</h1>
+        <h1 class="text-2xl font-bold text-center leading-tight">
+          {{ tarkovStore.playerLevel() }}
+        </h1>
       </div>
     </template>
     <template v-else>
-      <span v-if="!mdAndDown" style="line-height: 0px">
-        <div class="crossfade">
-          <img
+      <span v-if="!mdAndDown" class="leading-none mr-1.5">
+        <div class="relative w-14 h-14 overflow-hidden group">
+          <NuxtImg
             :src="pmcFactionIcon"
-            style="max-width: 64px"
-            class="px-2 faction-icon crossfade-faction"
+            class="absolute top-0 left-0 z-20 opacity-0 mt-1.5 px-1.5 transition-opacity duration-1000 ease-in-out invert group-hover:opacity-100 max-w-[56px]"
+            width="56"
+            height="56"
           />
-          <img :src="groupIcon" style="max-width: 64px" class="crossfade-level" />
+          <NuxtImg
+            :src="groupIcon"
+            class="absolute top-0 left-0 z-10 opacity-100 transition-opacity duration-1000 ease-in-out group-hover:opacity-0 max-w-[56px]"
+            width="56"
+            height="56"
+          />
         </div>
       </span>
-      <span>
-        <div style="font-size: 0.7em" class="text-center mb-1">
-          {{ t('navigation_drawer.level') }}
+      <span class="mx-2">
+        <div class="text-[0.65em] text-center mb-0.5 text-gray-400">
+          {{ t("navigation_drawer.level") }}
         </div>
         <div class="text-center">
           <h1
             v-if="!editingLevel"
-            style="font-size: 2.5em; line-height: 0.8em; cursor: pointer"
+            class="text-[2.2em] w-[2.2em] leading-[0.85em] cursor-pointer hover:text-primary transition-colors"
             @click="startEditingLevel"
           >
             {{ tarkovStore.playerLevel() }}
@@ -37,150 +45,116 @@
             v-model.number="levelInputValue"
             type="number"
             :min="minPlayerLevel"
-            :max="maxPlayerLevelUI"
-            style="font-size: 2.5em; width: 2.5em; text-align: center"
+            :max="maxPlayerLevel"
+            class="text-[2.2em] w-[2.2em] text-center bg-transparent border-0 outline-none focus:ring-0 focus:outline-none p-0 leading-[0.85em] appearance-none"
+            @input="enforceMaxLevel"
             @blur="saveLevel"
             @keyup.enter="saveLevel"
           />
         </div>
       </span>
-      <span v-if="!mdAndDown">
+      <span class="flex flex-col ml-2">
         <div>
-          <v-btn
-            icon
-            size="small"
-            variant="plain"
-            :disabled="tarkovStore.playerLevel() >= maxPlayerLevelUI"
+          <button
+            class="p-0 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-6 h-6 transition-colors"
+            :disabled="tarkovStore.playerLevel() >= maxPlayerLevel"
             @click="incrementLevel"
           >
-            <v-icon class="ma-0" small> mdi-chevron-up </v-icon>
-          </v-btn>
+            <UIcon name="i-mdi-chevron-up" class="w-5 h-5" />
+          </button>
         </div>
         <div>
-          <v-btn
-            icon
-            size="small"
-            variant="plain"
+          <button
+            class="p-0 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-6 h-6 transition-colors"
             :disabled="tarkovStore.playerLevel() <= minPlayerLevel"
             @click="decrementLevel"
           >
-            <v-icon class="ma-0" small> mdi-chevron-down </v-icon>
-          </v-btn>
+            <UIcon name="i-mdi-chevron-down" class="w-5 h-5" />
+          </button>
         </div>
       </span>
     </template>
   </div>
-  <!-- <template v-if="mdAndDown">
-    </template>
-    <template v-else>
-      {{ tarkovStore.storeSelected }}
-    </template> -->
 </template>
 <script setup>
-  import { computed, ref, nextTick } from 'vue';
-  import { useTarkovStore } from '@/stores/tarkov';
-  import { useDisplay } from 'vuetify';
-  import { useI18n } from 'vue-i18n';
-  import { useTarkovData } from '@/composables/tarkovdata';
-  const { t } = useI18n({ useScope: 'global' });
-  const { mdAndDown } = useDisplay();
-  defineProps({
-    isCollapsed: {
-      type: Boolean,
-      required: true,
-    },
+import { computed, ref, nextTick } from "vue";
+import { useTarkovStore } from "@/stores/tarkov";
+import { useMetadataStore } from "@/stores/metadata";
+import { useBreakpoints } from "@vueuse/core";
+import { useI18n } from "vue-i18n";
+const { t } = useI18n({ useScope: "global" });
+// Define breakpoints (matching Vuetify's md breakpoint at 960px)
+const breakpoints = useBreakpoints({
+  mobile: 0,
+  md: 960,
+});
+const mdAndDown = breakpoints.smaller("md");
+defineProps({
+  isCollapsed: {
+    type: Boolean,
+    required: true,
+  },
+});
+const tarkovStore = useTarkovStore();
+const metadataStore = useMetadataStore();
+const minPlayerLevel = computed(() => metadataStore.minPlayerLevel);
+const maxPlayerLevel = computed(() => metadataStore.maxPlayerLevel);
+const playerLevels = computed(() => metadataStore.playerLevels);
+const pmcFactionIcon = computed(() => {
+  return `/img/factions/${tarkovStore.getPMCFaction()}.webp`;
+});
+const groupIcon = computed(() => {
+  const level = tarkovStore.playerLevel();
+  const entry = playerLevels.value.find((pl) => pl.level === level);
+  return entry?.levelBadgeImageLink ?? "";
+});
+// Manual level editing logic
+const editingLevel = ref(false);
+const levelInputValue = ref(tarkovStore.playerLevel());
+const levelInput = ref(null);
+function startEditingLevel() {
+  editingLevel.value = true;
+  levelInputValue.value = tarkovStore.playerLevel();
+  nextTick(() => {
+    if (levelInput.value) levelInput.value.focus();
   });
-  const tarkovStore = useTarkovStore();
-  const { minPlayerLevel, maxPlayerLevel, playerLevels } = useTarkovData();
-  // Allow setting level to maxPlayerLevel + 1
-  const maxPlayerLevelUI = computed(() => maxPlayerLevel.value + 1);
-  const pmcFactionIcon = computed(() => {
-    return `/img/factions/${tarkovStore.getPMCFaction()}.webp`;
-  });
-  const groupIcon = computed(() => {
-    const level = tarkovStore.playerLevel();
-    const entry = playerLevels.value.find((pl) => pl.level === level);
-    return entry?.levelBadgeImageLink ?? '';
-  });
-  // Manual level editing logic
-  const editingLevel = ref(false);
-  const levelInputValue = ref(tarkovStore.playerLevel());
-  const levelInput = ref(null);
-  function startEditingLevel() {
-    editingLevel.value = true;
-    levelInputValue.value = tarkovStore.playerLevel();
-    nextTick(() => {
-      if (levelInput.value) levelInput.value.focus();
-    });
+}
+function enforceMaxLevel() {
+  const currentValue = parseInt(levelInputValue.value, 10);
+  if (!isNaN(currentValue) && currentValue > maxPlayerLevel.value) {
+    levelInputValue.value = maxPlayerLevel.value;
   }
-  function saveLevel() {
-    let newLevel = parseInt(levelInputValue.value, 10);
-    if (isNaN(newLevel)) newLevel = minPlayerLevel.value;
-    newLevel = Math.max(minPlayerLevel.value, Math.min(maxPlayerLevelUI.value, newLevel));
-    tarkovStore.setLevel(newLevel);
-    editingLevel.value = false;
+}
+function saveLevel() {
+  let newLevel = parseInt(levelInputValue.value, 10);
+  if (isNaN(newLevel)) newLevel = minPlayerLevel.value;
+  newLevel = Math.max(
+    minPlayerLevel.value,
+    Math.min(maxPlayerLevel.value, newLevel)
+  );
+  tarkovStore.setLevel(newLevel);
+  editingLevel.value = false;
+}
+function incrementLevel() {
+  if (tarkovStore.playerLevel() < maxPlayerLevel.value) {
+    tarkovStore.setLevel(tarkovStore.playerLevel() + 1);
   }
-  function incrementLevel() {
-    if (tarkovStore.playerLevel() < maxPlayerLevelUI.value) {
-      tarkovStore.setLevel(tarkovStore.playerLevel() + 1);
-    }
+}
+function decrementLevel() {
+  if (tarkovStore.playerLevel() > minPlayerLevel.value) {
+    tarkovStore.setLevel(tarkovStore.playerLevel() - 1);
   }
-  function decrementLevel() {
-    if (tarkovStore.playerLevel() > minPlayerLevel.value) {
-      tarkovStore.setLevel(tarkovStore.playerLevel() - 1);
-    }
-  }
+}
 </script>
-<style lang="scss" scoped>
-  .faction-icon {
-    filter: invert(1);
-  }
-  .crossfade {
-    position: relative;
-    width: 64px;
-    height: 64px;
-    overflow: hidden;
-  }
-  .crossfade-faction {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 2;
-    opacity: 0;
-    margin-top: 8px;
-    transition: opacity 1s ease-in-out;
-  }
-  .crossfade-level {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
-    opacity: 1;
-    transition: opacity 1s ease-in-out;
-  }
-  .crossfade:hover .crossfade-faction {
-    opacity: 1;
-  }
-  .crossfade:hover .crossfade-level {
-    opacity: 0;
-  }
-  .rail-level-number {
-    font-size: 2em;
-    font-weight: bold;
-    text-align: center;
-    margin: 0;
-    padding: 0;
-    line-height: 1.2;
-  }
-</style>
 <style>
-  input[type='number']::-webkit-inner-spin-button,
-  input[type='number']::-webkit-outer-spin-button {
-    -webkit-appearance: none !important;
-    margin: 0;
-  }
-  input[type='number'] {
-    appearance: textfield !important;
-    -moz-appearance: textfield !important;
-  }
+/* Hide spin buttons for number input */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0;
+}
+input[type="number"] {
+  appearance: textfield !important;
+  -moz-appearance: textfield !important;
+}
 </style>

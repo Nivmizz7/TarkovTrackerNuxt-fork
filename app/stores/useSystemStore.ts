@@ -26,7 +26,7 @@ export const useSystemStore = defineStore<string, SystemState, SystemGetters>(
     },
   }
 );
-export function useSystemStoreWithFirebase() {
+export function useSystemStoreWithSupabase() {
   const systemStore = useSystemStore();
   const { $supabase } = useNuxtApp();
   // Computed reference to the system document
