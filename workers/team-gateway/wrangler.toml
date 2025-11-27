@@ -1,0 +1,12 @@
+name = "team-gateway"
+main = "src/index.ts"
+compatibility_date = "2025-11-27"
+
+[vars]
+# Set at deploy time:
+# SUPABASE_URL = "https://<project>.supabase.co"
+# ALLOWED_ORIGIN = "https://dev.tarkovtracker.org"
+
+[[kv_namespaces]]
+binding = "TEAM_GATEWAY_KV"
+id = "f3f56d4879694eee9b9de1e43db252d6"
