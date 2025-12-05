@@ -13,12 +13,13 @@ import type { Store } from 'pinia';
 import { useToast } from '#imports';
 /**
  * Helper to extract team ID from system store
- * Uses the userTeam getter which handles both 'team' and legacy 'team_id' fields
+ * Reads directly from state to avoid getter reactivity issues
  */
 function getTeamIdFromSystemStore(
   systemStore: ReturnType<typeof useSystemStoreWithSupabase>['systemStore']
 ): string | null {
-  return systemStore.userTeam;
+  const state = systemStore.$state as { team?: string | null; team_id?: string | null };
+  return state.team ?? state.team_id ?? null;
 }
 /**
  * Team store definition with getters for team info and members
@@ -72,10 +73,8 @@ let teamStoreInstance: TeamStoreInstance | null = null;
 export function useTeamStoreWithSupabase(): TeamStoreInstance {
   // Return cached instance if it exists
   if (teamStoreInstance) {
-    logger.debug('[TeamStore] Returning cached instance');
     return teamStoreInstance;
   }
-  logger.debug('[TeamStore] Creating new instance');
   const { systemStore } = useSystemStoreWithSupabase();
   const tarkovStore = useTarkovStore();
   const teamStore = useTeamStore();
@@ -83,16 +82,12 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
   const teamChannel = ref<RealtimeChannel | null>(null);
   // Computed reference to the team document based on system store
   const teamFilter = computed(() => {
-    // Access state directly for reactivity
     const currentSystemStateTeam = getTeamIdFromSystemStore(systemStore);
-    if (
-      $supabase.user.loggedIn &&
+    return $supabase.user?.loggedIn &&
       currentSystemStateTeam &&
       typeof currentSystemStateTeam === 'string'
-    ) {
-      return `id=eq.${currentSystemStateTeam}`;
-    }
-    return undefined;
+      ? `id=eq.${currentSystemStateTeam}`
+      : undefined;
   });
   // Custom data handler that transforms DB data before patching to store
   const handleTeamData = (data: Record<string, unknown> | null) => {
@@ -116,21 +111,8 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
       } else if ('join_code' in data && data.join_code === null) {
         transformed.joinCode = null;
       }
-      logger.debug('[TeamStore] Transforming data:', {
-        hasOwnerId: 'owner_id' in data,
-        hasJoinCode: 'join_code' in data,
-        owner: transformed.owner,
-        joinCode: transformed.joinCode,
-      });
-      // Manually patch the store with transformed data
       teamStore.$patch(transformed as Partial<TeamState>);
-      // Refresh members after team meta arrives
       void refreshMembers();
-      logger.debug('[TeamStore] After patch:', {
-        owner: teamStore.owner,
-        joinCode: teamStore.joinCode,
-        inviteCode: teamStore.inviteCode,
-      });
     } else {
       teamStore.$reset();
       teamStore.$patch((state) => {
