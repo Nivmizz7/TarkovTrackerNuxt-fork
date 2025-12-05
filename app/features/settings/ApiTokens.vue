@@ -1,10 +1,7 @@
 <template>
   <div class="space-y-4">
     <div class="flex flex-wrap items-start justify-between gap-3">
-      <div class="space-y-1">
-        <p class="text-surface-50 text-base font-semibold">
-          {{ t('page.settings.card.apitokens.title') }}
-        </p>
+      <div>
         <p class="text-surface-400 max-w-3xl text-sm">
           {{
             t('page.settings.card.apitokens.description', {
