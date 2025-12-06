@@ -85,24 +85,6 @@
             </li>
           </ul>
         </div>
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-white/60">
-            {{ t('page.tasks.questtree.rewards') }}
-          </p>
-          <ul class="mt-2 space-y-1 text-xs text-white/80">
-            <li
-              v-for="reward in rewardSummaries"
-              :key="reward.id"
-              class="rounded border border-white/5 px-2 py-1 leading-snug"
-            >
-              <span class="font-semibold text-white">{{ reward.title }}</span>
-              <span v-if="reward.meta" class="text-white/50"> · {{ reward.meta }}</span>
-            </li>
-            <li v-if="rewardSummaries.length === 0" class="text-white/50">
-              {{ t('page.tasks.questtree.no_rewards') }}
-            </li>
-          </ul>
-        </div>
       </div>
     </Transition>
   </div>
@@ -171,25 +153,6 @@
         meta: metaParts.filter(Boolean).join(' • '),
       };
     });
-  });
-
-  const rewardSummaries = computed(() => {
-    const rewards = props.task.finishRewards || [];
-    if (!rewards.length) return [];
-    return rewards
-      .map((reward, index) => {
-        if (!reward) return null;
-        const title = reward.__typename || reward.status || t('page.tasks.questtree.reward_unknown');
-        const metaParts: string[] = [];
-        if (reward.status) metaParts.push(reward.status);
-        if (reward.quest?.id) metaParts.push(`#${reward.quest.id}`);
-        return {
-          id: `${props.task.id}-reward-${index}`,
-          title,
-          meta: metaParts.filter(Boolean).join(' • '),
-        };
-      })
-      .filter((reward): reward is { id: string; title: string; meta: string } => Boolean(reward));
   });
 </script>
 <style scoped>
