@@ -4,11 +4,16 @@
     <div class="flex items-center gap-3 p-3">
       <!-- Item image -->
       <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-gray-900">
-        <img
-          v-if="groupedItem.item.image512pxLink || groupedItem.item.iconLink"
+        <GameItem
           :src="groupedItem.item.image512pxLink || groupedItem.item.iconLink"
-          :alt="groupedItem.item.name"
-          class="h-full w-full object-contain"
+          :item-name="groupedItem.item.name"
+          :wiki-link="groupedItem.item.wikiLink"
+          :dev-link="groupedItem.item.link"
+          :is-visible="true"
+          size="small"
+          simple-mode
+          fill
+          class="h-full w-full"
         />
       </div>
       <!-- Item name + Total -->
@@ -64,9 +69,10 @@
   </div>
 </template>
 <script setup lang="ts">
+  import GameItem from '@/components/ui/GameItem.vue';
   interface GroupedItem {
     itemId: string;
-    item: { id: string; name: string; iconLink?: string; image512pxLink?: string };
+    item: { id: string; name: string; iconLink?: string; image512pxLink?: string; wikiLink?: string; link?: string };
     taskFir: number;
     taskNonFir: number;
     hideoutFir: number;
