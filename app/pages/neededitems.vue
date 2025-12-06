@@ -91,7 +91,7 @@
   // Grouped item interface
   interface GroupedItem {
     itemId: string;
-    item: { id: string; name: string; iconLink?: string; image512pxLink?: string };
+    item: { id: string; name: string; iconLink?: string; image512pxLink?: string; wikiLink?: string; link?: string };
     taskFir: number;
     taskNonFir: number;
     hideoutFir: number;
@@ -246,6 +246,8 @@
             name: itemData.name,
             iconLink: itemData.iconLink,
             image512pxLink: itemData.image512pxLink,
+            wikiLink: itemData.wikiLink,
+            link: itemData.link,
           },
           taskFir: 0,
           taskNonFir: 0,

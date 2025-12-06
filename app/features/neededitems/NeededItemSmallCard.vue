@@ -21,6 +21,10 @@
           :image-item="imageItem"
           :src="imageItem.image512pxLink"
           :is-visible="true"
+          :item-name="item.name"
+          :wiki-link="item.wikiLink"
+          :dev-link="item.link"
+          :task-wiki-link="relatedTask?.wikiLink"
           size="large"
           simple-mode
           fill
