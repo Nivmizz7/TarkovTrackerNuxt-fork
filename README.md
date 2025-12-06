@@ -37,7 +37,12 @@ Copy `.env.example` to `.env` and fill in the required variables for your enviro
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anonymous_key
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+The `SUPABASE_*` values supply the team API routes (e.g., `/api/team/members`) via `runtimeConfig`, so make sure to include them locally and in production secrets.
 
 ### GitHub Issue Integration
 
