@@ -290,30 +290,23 @@
   // Sentinel refs for infinite scroll
   const listSentinel = ref<HTMLElement | null>(null);
   const gridSentinel = ref<HTMLElement | null>(null);
-  // Determine which sentinel to use based on view mode
+  // Determine which sentinel to use based on view mode and grouping
   const currentSentinel = computed(() => {
+    if (groupByItem.value) return gridSentinel.value;
     return viewMode.value === 'list' ? listSentinel.value : gridSentinel.value;
   });
-  // Enable infinite scroll
+  // Enable infinite scroll (as computed ref for reactivity)
   const infiniteScrollEnabled = computed(() => {
     return visibleCount.value < displayItems.value.length;
   });
-  // Set up infinite scroll
-  const { stop, start } = useInfiniteScroll(currentSentinel, loadMore, {
-    rootMargin: '100px',
-    threshold: 0.1,
-    enabled: infiniteScrollEnabled.value,
+  // Set up infinite scroll - pass enabled as reactive ref
+  useInfiniteScroll(currentSentinel, loadMore, {
+    rootMargin: '200px',
+    threshold: 0,
+    enabled: infiniteScrollEnabled,
   });
   // Reset visible count when search or filter changes
   watch([search, activeFilter, firFilter, groupByItem], () => {
     visibleCount.value = 20;
-  });
-  // Watch for enabled state changes to restart observer
-  watch(infiniteScrollEnabled, (newEnabled) => {
-    if (newEnabled) {
-      start();
-    } else {
-      stop();
-    }
   });
 </script>
