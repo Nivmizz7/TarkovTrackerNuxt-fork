@@ -175,6 +175,9 @@
         objectives: 'Цілі',
         objective_unknown: 'Ціль',
         no_objectives: 'Немає вказаних цілей',
+        rewards: 'Нагороди',
+        no_rewards: 'Немає нагород',
+        reward_unknown: 'Нагорода',
       },
     },
     traders: {

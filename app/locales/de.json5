@@ -175,6 +175,9 @@
         objectives: 'Ziele',
         objective_unknown: 'Ziel',
         no_objectives: 'Keine Ziele vorhanden',
+        rewards: 'Belohnungen',
+        no_rewards: 'Keine Belohnungen vorhanden',
+        reward_unknown: 'Belohnung',
       },
     },
     traders: {

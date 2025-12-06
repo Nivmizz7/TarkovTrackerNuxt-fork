@@ -153,6 +153,9 @@
         objectives: 'Objetivos',
         objective_unknown: 'Objetivo',
         no_objectives: 'Sin objetivos listados',
+        rewards: 'Recompensas',
+        no_rewards: 'Sin recompensas listadas',
+        reward_unknown: 'Recompensa',
       },
     },
     traders: {

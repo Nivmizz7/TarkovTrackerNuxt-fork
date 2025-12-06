@@ -1,5 +1,5 @@
 <template>
-  <div class="quest-node absolute rounded-xl border p-3 shadow-lg transition hover:-translate-y-0.5" :class="statusClass">
+  <div class="quest-node absolute rounded-xl border p-3 shadow-lg transition hover:-translate-y-0.5" :class="[statusClass, { 'quest-node-expanded': expanded }]">
     <div class="flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide">
       <span>{{ statusLabel }}</span>
       <span class="text-white/50">#{{ task.tarkovDataId || '—' }}</span>
@@ -54,26 +54,50 @@
       </UButton>
     </div>
     <Transition name="quest-details">
-      <div v-if="expanded" class="quest-objectives mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
-        <p class="text-xs font-semibold uppercase tracking-wide text-white/60">
-          {{ t('page.tasks.questtree.objectives') }}
-        </p>
-        <ul class="mt-2 space-y-1 text-xs text-white/80">
-          <li
-            v-for="objective in task.objectives || []"
-            :key="objective.id"
-            class="rounded border border-white/5 px-2 py-1"
-          >
-            <span class="font-semibold text-white">{{ objective.description || t('page.tasks.questtree.objective_unknown') }}</span>
-            <span v-if="objective.count" class="text-white/60">
-              - {{ objective.count }}x
-            </span>
-            <span v-if="objective.type" class="text-white/50">({{ objective.type }})</span>
-          </li>
-          <li v-if="!task.objectives || task.objectives.length === 0" class="text-white/50">
-            {{ t('page.tasks.questtree.no_objectives') }}
-          </li>
-        </ul>
+      <div
+        v-if="expanded"
+        class="quest-details mt-3 space-y-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3"
+      >
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-white/60">
+            {{ t('page.tasks.questtree.objectives') }}
+          </p>
+          <ul class="mt-2 space-y-1 text-xs text-white/80">
+            <li
+              v-for="objective in task.objectives || []"
+              :key="objective.id"
+              class="rounded border border-white/5 px-2 py-1"
+            >
+              <span class="font-semibold text-white">
+                {{ objective.description || t('page.tasks.questtree.objective_unknown') }}
+              </span>
+              <span v-if="objective.count" class="text-white/60">
+                · {{ objective.count }}x
+              </span>
+              <span v-if="objective.type" class="text-white/50">({{ objective.type }})</span>
+            </li>
+            <li v-if="!task.objectives || task.objectives.length === 0" class="text-white/50">
+              {{ t('page.tasks.questtree.no_objectives') }}
+            </li>
+          </ul>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-white/60">
+            {{ t('page.tasks.questtree.rewards') }}
+          </p>
+          <ul class="mt-2 space-y-1 text-xs text-white/80">
+            <li
+              v-for="(reward, index) in rewardSummaries"
+              :key="`${task.id}-reward-${index}`"
+              class="rounded border border-white/5 px-2 py-1"
+            >
+              {{ reward }}
+            </li>
+            <li v-if="rewardSummaries.length === 0" class="text-white/50">
+              {{ t('page.tasks.questtree.no_rewards') }}
+            </li>
+          </ul>
+        </div>
       </div>
     </Transition>
   </div>
@@ -113,12 +137,27 @@
   const toggleObjectives = () => {
     expanded.value = !expanded.value;
   };
+
+  const rewardSummaries = computed(() => {
+    return (props.task.finishRewards || [])
+      .map((reward) => {
+        if (!reward) return null;
+        const type = reward.__typename || t('page.tasks.questtree.reward_unknown');
+        const status = reward.status ? ` (${reward.status})` : '';
+        const quest = reward.quest?.id ? ` → ${reward.quest.id}` : '';
+        return `${type}${status}${quest}`.trim();
+      })
+      .filter((reward): reward is string => Boolean(reward));
+  });
 </script>
 <style scoped>
 .quest-node {
   min-height: 150px;
-  width: 220px;
+  width: 200px;
   backdrop-filter: blur(10px);
+}
+.quest-node-expanded {
+  width: 260px;
 }
 .quest-node-available {
   border-color: rgba(148, 163, 184, 0.4);
