@@ -39,6 +39,18 @@ VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anonymous_key
 ```
 
+### GitHub Issue Integration
+
+The `/report-issue` page can automatically open GitHub issues when the following server-side variables are configured (e.g. in `.env`, Cloudflare Pages secrets, etc.):
+
+```env
+GITHUB_BOT_TOKEN=ghp_your_bot_or_fine_grained_token_with_repo_scope
+GITHUB_REPO_OWNER=tarkovtracker-org
+GITHUB_REPO_NAME=tarkovtrackernuxt
+```
+
+Use a dedicated machine account such as `tarkovtrackerbot` with a classic or fine-grained token that has `repo` scope for the target repository.
+
 ## Development
 
 Start the development server:
