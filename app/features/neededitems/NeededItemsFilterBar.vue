@@ -1,23 +1,28 @@
 <template>
   <div class="mb-6 space-y-3">
     <!-- Primary Filter: ALL / TASKS / HIDEOUT (Centered) -->
-    <div class="flex items-center justify-center gap-2 rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
+    <div
+      class="flex flex-wrap items-center justify-center gap-1 overflow-x-auto rounded-lg bg-[hsl(240,5%,5%)] px-2 py-2 sm:gap-2 sm:px-4 sm:py-3"
+    >
       <UButton
         v-for="tab in filterTabs"
         :key="tab.value"
         :variant="'ghost'"
         :color="'neutral'"
-        size="md"
+        size="sm"
+        class="shrink-0 px-2 sm:px-3"
         :class="{
           'border-primary-500 rounded-none border-b-2': modelValue === tab.value,
         }"
         @click="$emit('update:modelValue', tab.value)"
       >
-        <UIcon :name="tab.icon" class="mr-2 h-5 w-5" />
-        {{ tab.label.toUpperCase() }}
+        <UIcon :name="tab.icon" class="h-4 w-4 sm:mr-1 sm:h-5 sm:w-5" />
+        <span class="hidden text-[clamp(0.625rem,2vw,0.875rem)] sm:inline">
+          {{ tab.label.toUpperCase() }}
+        </span>
         <span
           :class="[
-            'ml-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-sm font-bold text-white',
+            'ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm',
             modelValue === tab.value ? 'bg-primary-500' : 'bg-gray-600',
           ]"
         >
@@ -90,9 +95,7 @@
           <template v-if="groupByItem && ungroupedCount !== totalCount">
             {{ totalCount }} unique ({{ ungroupedCount }} total)
           </template>
-          <template v-else>
-            {{ totalCount }} {{ $t('page.neededitems.items', 'items') }}
-          </template>
+          <template v-else>{{ totalCount }} {{ $t('page.neededitems.items', 'items') }}</template>
         </UBadge>
         <div class="flex gap-1 border-l border-white/10 pl-3">
           <UButton
