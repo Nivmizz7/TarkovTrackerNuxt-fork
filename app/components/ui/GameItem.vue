@@ -10,12 +10,19 @@
     <!-- Simple image display mode (for ItemImage compatibility) -->
     <div
       v-if="simpleMode"
-      :class="['relative overflow-hidden', imageContainerClasses, { 'flex items-center justify-center': fill }]"
+      :class="[
+        'relative overflow-hidden',
+        imageContainerClasses,
+        { 'flex items-center justify-center': fill },
+      ]"
     >
       <img
         v-if="isVisible && computedImageSrc"
         :src="computedImageSrc"
-        :class="[fill ? 'max-h-full max-w-full object-contain' : 'h-full w-full object-contain', imageClasses]"
+        :class="[
+          fill ? 'max-h-full max-w-full object-contain' : 'h-full w-full object-contain',
+          imageClasses,
+        ]"
         loading="lazy"
         @error="handleImgError"
       />
@@ -268,11 +275,11 @@
     } else {
       classes.push('shrink-0');
       if (props.size === 'small') {
-        classes.push('h-16', 'w-16'); // 64px
+        classes.push('h-12 w-12 md:h-16 md:w-16'); // 48px -> 64px
       } else if (props.size === 'large') {
-        classes.push('h-28', 'w-28'); // 112px
+        classes.push('h-20 w-20 md:h-28 md:w-28'); // 80px -> 112px
       } else {
-        classes.push('h-24', 'w-24'); // 96px
+        classes.push('h-16 w-16 md:h-24 md:w-24'); // 64px -> 96px
       }
     }
     return classes;

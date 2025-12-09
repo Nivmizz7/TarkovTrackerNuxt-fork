@@ -43,12 +43,11 @@
           :title="$t('page.hideout.nostationsfound')"
         />
       </div>
-      <div v-else class="mt-2 columns-1 gap-3 space-y-3 md:columns-2 xl:columns-3">
+      <div v-else class="mt-2 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         <HideoutCard
           v-for="(hStation, hIndex) in visibleStations"
           :key="hIndex"
           :station="hStation"
-          class="mb-3 break-inside-avoid"
         />
       </div>
     </div>
@@ -128,9 +127,19 @@
       if (stationElement) {
         stationElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         // Add a brief highlight effect
-        stationElement.classList.add('ring-2', 'ring-primary-500', 'ring-offset-2', 'ring-offset-surface-900');
+        stationElement.classList.add(
+          'ring-2',
+          'ring-primary-500',
+          'ring-offset-2',
+          'ring-offset-surface-900'
+        );
         setTimeout(() => {
-          stationElement.classList.remove('ring-2', 'ring-primary-500', 'ring-offset-2', 'ring-offset-surface-900');
+          stationElement.classList.remove(
+            'ring-2',
+            'ring-primary-500',
+            'ring-offset-2',
+            'ring-offset-surface-900'
+          );
         }, 2000);
       }
     }, 100);

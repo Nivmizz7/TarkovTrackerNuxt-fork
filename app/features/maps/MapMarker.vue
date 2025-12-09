@@ -13,7 +13,7 @@
   </div>
   <div v-if="tooltipVisible" :style="tooltipStyle">
     <div class="bg-accent-800 border-surface-700 m-0 rounded border px-1 pt-2 shadow-md">
-      <task-link :task="relatedTask" show-wiki-link />
+      <task-link v-if="relatedTask" :task="relatedTask" show-wiki-link />
       <task-objective v-if="relatedObjective" :objective="relatedObjective" />
     </div>
   </div>

@@ -2,8 +2,22 @@
   <KeepAlive>
     <div class="flex h-full flex-col rounded-lg" :class="itemCardClasses">
       <!-- Item image with count badge -->
-      <div class="relative aspect-square w-full shrink-0 overflow-hidden rounded-t-lg">
-        <div class="absolute left-0 top-0 z-10">
+      <div
+        class="relative aspect-square w-full shrink-0 overflow-hidden rounded-t-lg"
+        :class="{
+          'cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]':
+            isSingleItem && !selfCompletedNeed,
+        }"
+        :title="
+          isSingleItem && !selfCompletedNeed
+            ? currentCount >= neededCount
+              ? 'Click to uncollect'
+              : 'Click to collect'
+            : undefined
+        "
+        @click="isSingleItem && !selfCompletedNeed ? $emit('toggleCount') : null"
+      >
+        <div class="absolute top-0 left-0 z-10">
           <div
             class="flex items-center gap-1 rounded-br-lg px-2 py-1 text-sm font-bold shadow-lg"
             :class="itemCountTagClasses"
@@ -34,28 +48,42 @@
       <!-- Card content -->
       <div class="flex flex-1 flex-col p-2">
         <!-- Item name -->
-        <div class="flex min-h-[40px] items-start justify-center">
-          <span class="line-clamp-2 text-center text-sm leading-snug font-medium">
+        <div class="flex min-h-10 items-start justify-center">
+          <span
+            class="line-clamp-2 text-center text-[clamp(0.7rem,2.5vw,0.875rem)] leading-snug font-medium"
+          >
             {{ item.name }}
           </span>
         </div>
         <!-- Task/Station link -->
-        <div class="flex min-h-[28px] items-center justify-center overflow-hidden">
+        <div class="flex min-h-7 w-full items-center justify-center overflow-hidden">
           <template v-if="props.need.needType == 'taskObjective'">
-            <TaskLink :task="relatedTask" class="text-xs" />
+            <TaskLink
+              :task="relatedTask"
+              compact
+              class="max-w-full text-[clamp(0.625rem,2vw,0.75rem)]"
+            />
           </template>
           <template v-else-if="props.need.needType == 'hideoutModule'">
             <StationLink
               v-if="relatedStation"
               :station="relatedStation"
-              class="text-xs"
+              compact
+              class="max-w-full text-[clamp(0.625rem,2vw,0.75rem)]"
             />
-            <span class="ml-1 text-xs text-gray-400">{{ props.need.hideoutModule.level }}</span>
+            <span class="ml-1 text-[clamp(0.625rem,2vw,0.75rem)] text-gray-400">
+              {{ props.need.hideoutModule.level }}
+            </span>
           </template>
         </div>
         <!-- Requirements (Level & Tasks Before) -->
-        <div class="flex min-h-[20px] flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-xs text-gray-400">
-          <span v-if="levelRequired > 0 && levelRequired > playerLevel" class="flex items-center gap-1">
+        <div
+          class="flex min-h-10 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[clamp(0.625rem,1.8vw,0.75rem)] text-gray-400"
+        >
+          <span
+            v-if="levelRequired > 0 && levelRequired > playerLevel"
+            class="flex items-center gap-1"
+          >
             <UIcon name="i-mdi-account" class="h-3.5 w-3.5" />
             Lvl {{ levelRequired }}
           </span>
@@ -64,8 +92,8 @@
             {{ lockedBefore }} before
           </span>
         </div>
-        <!-- Controls -->
-        <div class="mt-auto flex items-center justify-center pt-2">
+        <!-- Controls - hide for single items since clicking image toggles -->
+        <div v-if="!isSingleItem" class="mt-auto flex items-center justify-center pt-2">
           <template v-if="!selfCompletedNeed">
             <ItemCountControls
               :current-count="currentCount"
@@ -109,6 +137,8 @@
     item,
     imageItem,
   } = inject('neededitem');
+  // Simplified UI for single-quantity items
+  const isSingleItem = computed(() => neededCount.value === 1);
   const itemCardClasses = computed(() => {
     return {
       'bg-gradient-to-t from-complete to-surface':

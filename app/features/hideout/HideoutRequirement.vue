@@ -1,11 +1,12 @@
 <template>
   <div
-    class="flex items-center gap-3 rounded-lg border p-3 transition-all select-none"
+    class="flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all select-none"
     :class="[
       isComplete
         ? 'border-green-500/50 bg-green-900/20'
         : 'border-gray-700 bg-gray-800/80 hover:border-gray-600',
     ]"
+    @click="toggleComplete"
   >
     <!-- Item Icon -->
     <div class="shrink-0">
@@ -30,25 +31,24 @@
           :title="'Found in Raid required'"
         />
       </div>
-      <div class="mt-0.5 text-xs text-gray-400">
-        Required: {{ requirement.count.toLocaleString() }}
-      </div>
     </div>
     <!-- Progress Controls -->
     <div class="flex shrink-0 items-center gap-2">
       <div class="flex items-center gap-1">
         <UButton
+          v-if="requirement.count > 1"
           size="xs"
           color="neutral"
           variant="soft"
           icon="i-mdi-minus"
           :disabled="currentCount === 0"
-          @click="decrementCount"
+          @click.stop="decrementCount"
         />
         <div
-          class="min-w-[60px] cursor-pointer rounded px-1 text-center transition-colors hover:bg-gray-700/50"
-          :title="'Click to enter amount'"
-          @click="startEditing"
+          class="min-w-[50px] rounded px-1 text-center transition-colors"
+          :class="requirement.count > 1 ? 'cursor-pointer hover:bg-gray-700/50' : 'cursor-default'"
+          :title="requirement.count > 1 ? 'Click to enter amount' : ''"
+          @click="handleInputClick"
         >
           <input
             v-if="isEditing"
@@ -62,24 +62,26 @@
             @blur="finishEditing"
             @keydown.enter="finishEditing"
             @keydown.esc="cancelEditing"
+            @click.stop
           />
           <template v-else>
             <span
               class="text-sm font-bold"
               :class="isComplete ? 'text-success-400' : 'text-gray-300'"
             >
-              {{ currentCount }}
+              {{ currentCount.toLocaleString() }}
             </span>
-            <span class="text-xs text-gray-500">/{{ requirement.count }}</span>
+            <span class="text-xs text-gray-500">/{{ requirement.count.toLocaleString() }}</span>
           </template>
         </div>
         <UButton
+          v-if="requirement.count > 1"
           size="xs"
           color="neutral"
           variant="soft"
           icon="i-mdi-plus"
           :disabled="currentCount >= requirement.count"
-          @click="incrementCount"
+          @click.stop="incrementCount"
         />
       </div>
       <UIcon
@@ -87,14 +89,14 @@
         name="i-mdi-check-circle"
         class="h-6 w-6 cursor-pointer text-green-500 transition-transform hover:scale-110"
         :title="'Click to mark as incomplete'"
-        @click="toggleComplete"
+        @click.stop="toggleComplete"
       />
       <UIcon
         v-else
         name="i-mdi-circle-outline"
         class="h-6 w-6 cursor-pointer text-gray-500 transition-transform hover:scale-110"
         :title="'Click to mark as complete'"
-        @click="toggleComplete"
+        @click.stop="toggleComplete"
       />
     </div>
   </div>
@@ -159,6 +161,12 @@
   };
   const incrementCount = (): void => setCount(currentCount.value + 1);
   const decrementCount = (): void => setCount(currentCount.value - 1);
+  const handleInputClick = (event: MouseEvent) => {
+    if (requiredCount.value > 1) {
+      event.stopPropagation();
+      startEditing();
+    }
+  };
   // Manual entry functions
   const startEditing = () => {
     editValue.value = currentCount.value;
