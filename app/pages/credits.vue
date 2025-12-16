@@ -98,7 +98,6 @@
       pretitle: t('page.credits.labels.testers'),
       members: [
         { name: 'Adelia' },
-        { name: 'Chica' },
         { name: 'Dio' },
         { name: 'Giribaldi_TTV' },
         { name: 'Makujo' },
