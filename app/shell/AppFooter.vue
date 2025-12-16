@@ -84,6 +84,13 @@
             >
               {{ t('footer.privacy_policy') }}
             </router-link>
+            <span class="text-sm text-white/40">·</span>
+            <router-link
+              to="/credits"
+              class="text-primary-400 decoration-primary-400/40 hover:text-primary-300 hover:decoration-primary-300 text-sm underline underline-offset-2 transition-colors duration-150"
+            >
+              {{ t('footer.credits') }}
+            </router-link>
           </div>
         </div>
       </div>
