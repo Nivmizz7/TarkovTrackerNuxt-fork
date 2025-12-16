@@ -69,15 +69,19 @@
           </div>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-1.5">
-          <UBadge
+          <UTooltip
             v-if="(task.minPlayerLevel ?? 0) > 0"
-            size="xs"
-            color="neutral"
-            variant="soft"
-            class="text-[11px]"
+            :text="t('page.tasks.questcard.levelBadgeTooltip', { level: task.minPlayerLevel }, `Minimum player level ${task.minPlayerLevel} required to unlock this quest`)"
           >
-            {{ t('page.tasks.questcard.levelBadge', { count: task.minPlayerLevel }) }}
-          </UBadge>
+            <UBadge
+              size="xs"
+              color="neutral"
+              variant="soft"
+              class="text-[11px] cursor-help"
+            >
+              {{ t('page.tasks.questcard.levelBadge', { count: task.minPlayerLevel }) }}
+            </UBadge>
+          </UTooltip>
           <UBadge
             v-if="task?.map?.name"
             size="xs"
@@ -99,24 +103,32 @@
             <UIcon name="i-mdi-progress-check" class="h-3 w-3" />
             {{ t('page.tasks.questcard.progress', objectiveProgress) }}
           </UBadge>
-          <UBadge
+          <UTooltip
             v-if="preferencesStore.getShowRequiredLabels && task.kappaRequired"
-            size="xs"
-            color="error"
-            variant="soft"
-            class="text-[11px]"
+            :text="t('page.tasks.questcard.kappaTooltip', 'This quest is required to obtain the Kappa Secure Container')"
           >
-            {{ t('page.tasks.questcard.kappa', 'Kappa') }}
-          </UBadge>
-          <UBadge
+            <UBadge
+              size="xs"
+              color="error"
+              variant="soft"
+              class="text-[11px] cursor-help"
+            >
+              {{ t('page.tasks.questcard.kappa', 'Kappa') }}
+            </UBadge>
+          </UTooltip>
+          <UTooltip
             v-if="preferencesStore.getShowRequiredLabels && task.lightkeeperRequired"
-            size="xs"
-            color="warning"
-            variant="soft"
-            class="text-[11px]"
+            :text="t('page.tasks.questcard.lightkeeperTooltip', 'This quest is required to unlock the Lightkeeper trader')"
           >
-            {{ t('page.tasks.questcard.lightkeeper', 'Lightkeeper') }}
-          </UBadge>
+            <UBadge
+              size="xs"
+              color="warning"
+              variant="soft"
+              class="text-[11px] cursor-help"
+            >
+              {{ t('page.tasks.questcard.lightkeeper', 'Lightkeeper') }}
+            </UBadge>
+          </UTooltip>
           <!-- Menu button moved to header -->
           <UButton
             v-if="isOurFaction"
