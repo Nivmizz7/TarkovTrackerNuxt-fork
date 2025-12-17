@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "tarkovtracker-nuxt",
+      name: "TarkovTrackerNuxt-fork",
       cwd: __dirname,
       script: "/bin/bash",
       args: "-lc 'npm run dev'",
