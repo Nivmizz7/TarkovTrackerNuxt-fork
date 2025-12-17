@@ -12,7 +12,7 @@
           </div>
           <div class="flex items-center justify-center gap-2.5 lg:justify-start">
             <a
-              href="https://discord.gg/zeAP4Ng"
+              href="https://discord.gg/M8nBgA2sT6"
               target="_blank"
               rel="noopener noreferrer"
               class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#5865f2]/15 text-[#5865f2] transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#4752c4] hover:text-white hover:shadow-[0_4px_12px_rgba(88,101,242,0.4)]"
@@ -83,6 +83,13 @@
               class="text-primary-400 decoration-primary-400/40 hover:text-primary-300 hover:decoration-primary-300 text-sm underline underline-offset-2 transition-colors duration-150"
             >
               {{ t('footer.privacy_policy') }}
+            </router-link>
+            <span class="text-sm text-white/40">·</span>
+            <router-link
+              to="/credits"
+              class="text-primary-400 decoration-primary-400/40 hover:text-primary-300 hover:decoration-primary-300 text-sm underline underline-offset-2 transition-colors duration-150"
+            >
+              {{ t('footer.credits') }}
             </router-link>
           </div>
         </div>

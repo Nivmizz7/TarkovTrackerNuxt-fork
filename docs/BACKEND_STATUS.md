@@ -11,14 +11,14 @@
 
 ### Team Features
 
-- [ ] Integrate edge functions in `app/features/team/` components
-- [ ] Apply `user_system` table migration and redeploy `team-leave`
+- [x] Integrate edge functions in `app/features/team/` components
+- [x] Apply `user_system` table migration and redeploy `team-leave`
 
 ### API Tokens
 
-- [ ] `token-create` edge function
-- [ ] `token-list` edge function
-- [ ] Integrate in `app/features/settings/ApiTokens.vue`
+- [x] `token-create` edge function
+- [x] Integrate in `app/features/settings/ApiTokens.vue`
+- [x] `token-list` (Implemented via direct Supabase client access)
 
 ## Deployment Checklist
 

@@ -1,0 +1,26 @@
+name: Deploy Nuxt (prod)
+
+on:
+  push:
+    branches:
+      - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /home/niv/TarkovTrackerNuxt-fork
+            git fetch origin
+            git checkout prod
+            git pull origin prod
+            npm install
+            pm2 restart tarkovtracker-nuxt || pm2 start npm --name tarkovtracker-nuxt -- run dev
+            pm2 save

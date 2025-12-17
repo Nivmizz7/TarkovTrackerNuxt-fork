@@ -52,21 +52,26 @@
           @update:model-value="$emit('update:searchQuery', $event)"
         />
       </div>
-      <!-- Section 1: Status filters (ALL / AVAILABLE / LOCKED / COMPLETED) - minimal width -->
-      <div class="flex w-auto items-center gap-2 rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
+      <!-- Section 1: Status filters (ALL / AVAILABLE / LOCKED / COMPLETED) - scrollable on mobile -->
+      <div
+        class="flex w-auto items-center gap-1 overflow-x-auto rounded-lg bg-[hsl(240,5%,5%)] px-2 py-2 sm:gap-2 sm:px-4 sm:py-3"
+      >
         <UButton
           :variant="'ghost'"
           :color="'neutral'"
           size="sm"
+          class="shrink-0"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'all',
           }"
           @click="setSecondaryView('all')"
         >
-          <UIcon name="i-mdi-format-list-bulleted" class="mr-1 h-4 w-4" />
-          {{ t('page.tasks.secondaryviews.all', 'ALL').toUpperCase() }}
+          <UIcon name="i-mdi-format-list-bulleted" class="mr-1 hidden h-4 w-4 sm:block" />
+          <span class="text-xs sm:text-sm">
+            {{ t('page.tasks.secondaryviews.all', 'ALL').toUpperCase() }}
+          </span>
           <span
-            class="ml-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-600 px-1.5 text-sm font-bold text-white"
+            class="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm"
           >
             {{ statusCounts.all }}
           </span>
@@ -75,15 +80,18 @@
           :variant="'ghost'"
           :color="'neutral'"
           size="sm"
+          class="shrink-0"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'available',
           }"
           @click="setSecondaryView('available')"
         >
-          <UIcon name="i-mdi-clipboard-text" class="mr-1 h-4 w-4" />
-          {{ t('page.tasks.secondaryviews.available').toUpperCase() }}
+          <UIcon name="i-mdi-clipboard-text" class="mr-1 hidden h-4 w-4 sm:block" />
+          <span class="text-xs sm:text-sm">
+            {{ t('page.tasks.secondaryviews.available').toUpperCase() }}
+          </span>
           <span
-            class="bg-primary-500 ml-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-sm font-bold text-white"
+            class="bg-primary-500 ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm"
           >
             {{ statusCounts.available }}
           </span>
@@ -92,15 +100,18 @@
           :variant="'ghost'"
           :color="'neutral'"
           size="sm"
+          class="shrink-0"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'locked',
           }"
           @click="setSecondaryView('locked')"
         >
-          <UIcon name="i-mdi-lock" class="mr-1 h-4 w-4" />
-          {{ t('page.tasks.secondaryviews.locked').toUpperCase() }}
+          <UIcon name="i-mdi-lock" class="mr-1 hidden h-4 w-4 sm:block" />
+          <span class="text-xs sm:text-sm">
+            {{ t('page.tasks.secondaryviews.locked').toUpperCase() }}
+          </span>
           <span
-            class="ml-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-gray-600 px-1.5 text-sm font-bold text-white"
+            class="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-600 px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm"
           >
             {{ statusCounts.locked }}
           </span>
@@ -109,15 +120,18 @@
           :variant="'ghost'"
           :color="'neutral'"
           size="sm"
+          class="shrink-0"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'completed',
           }"
           @click="setSecondaryView('completed')"
         >
-          <UIcon name="i-mdi-check-circle" class="mr-1 h-4 w-4" />
-          {{ t('page.tasks.secondaryviews.completed').toUpperCase() }}
+          <UIcon name="i-mdi-check-circle" class="mr-1 hidden h-4 w-4 sm:block" />
+          <span class="text-xs sm:text-sm">
+            {{ t('page.tasks.secondaryviews.completed').toUpperCase() }}
+          </span>
           <span
-            class="ml-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-green-600 px-1.5 text-sm font-bold text-white"
+            class="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-green-600 px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm"
           >
             {{ statusCounts.completed }}
           </span>
@@ -218,6 +232,7 @@
             'flex flex-col items-center justify-center gap-2 rounded-lg px-3 py-3 transition-all',
             'relative w-28',
             'hover:bg-white/5',
+            'focus:ring-primary-500 focus:ring-offset-surface-900 focus:ring-2 focus:ring-offset-2 focus:outline-none',
             preferencesStore.getTaskTraderView === trader.id
               ? 'border-primary-500 border-b-2 bg-white/10'
               : 'border-b-2 border-transparent',

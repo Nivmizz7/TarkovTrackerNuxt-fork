@@ -6,7 +6,9 @@
         :title="`View ${trader.name}'s tasks`"
         @click="navigateToTraderTasks"
       >
-        <span class="bg-gradient-to-br from-brand-700 via-brand-300 to-brand-500 inline-block rounded-br-lg px-3 py-1 shadow-lg">
+        <span
+          class="from-brand-700 via-brand-300 to-brand-500 inline-block rounded-br-lg bg-linear-to-br px-3 py-1 shadow-lg"
+        >
           <img
             :src="trader.imageLink"
             :alt="trader.name"

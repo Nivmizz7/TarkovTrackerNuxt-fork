@@ -1,22 +1,25 @@
 <template>
   <div class="container mx-auto min-h-[calc(100vh-250px)] space-y-4 px-4 py-6">
     <div class="flex justify-center">
-      <UCard class="bg-surface-900 w-full max-w-4xl border border-white/10">
+      <div class="w-full max-w-4xl rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
         <div class="flex flex-wrap justify-center gap-2">
           <UButton
             v-for="view in primaryViews"
             :key="view.view"
             :icon="`i-${view.icon}`"
-            :variant="activePrimaryView === view.view ? 'solid' : 'soft'"
-            :color="activePrimaryView === view.view ? 'primary' : 'neutral'"
-            size="xl"
-            class="max-w-[300px] min-w-[160px] flex-1 justify-center"
+            :variant="'ghost'"
+            :color="'neutral'"
+            size="md"
+            class="shrink-0"
+            :class="{
+              'border-primary-500 rounded-none border-b-2': activePrimaryView === view.view,
+            }"
             @click="activePrimaryView = view.view"
           >
-            {{ view.title }}
+            <span class="text-xs sm:text-sm">{{ view.title.toUpperCase() }}</span>
             <span
               :class="[
-                'ml-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-sm font-bold text-white',
+                'ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm',
                 view.badgeColor,
               ]"
             >
@@ -24,7 +27,7 @@
             </span>
           </UButton>
         </div>
-      </UCard>
+      </div>
     </div>
     <div>
       <div v-if="isStoreLoading" class="text-surface-200 flex flex-col items-center gap-3 py-10">
@@ -43,12 +46,11 @@
           :title="$t('page.hideout.nostationsfound')"
         />
       </div>
-      <div v-else class="mt-2 columns-1 gap-3 space-y-3 md:columns-2 xl:columns-3">
+      <div v-else class="mt-2 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         <HideoutCard
           v-for="(hStation, hIndex) in visibleStations"
           :key="hIndex"
           :station="hStation"
-          class="mb-3 break-inside-avoid"
         />
       </div>
     </div>
@@ -128,9 +130,19 @@
       if (stationElement) {
         stationElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         // Add a brief highlight effect
-        stationElement.classList.add('ring-2', 'ring-primary-500', 'ring-offset-2', 'ring-offset-surface-900');
+        stationElement.classList.add(
+          'ring-2',
+          'ring-primary-500',
+          'ring-offset-2',
+          'ring-offset-surface-900'
+        );
         setTimeout(() => {
-          stationElement.classList.remove('ring-2', 'ring-primary-500', 'ring-offset-2', 'ring-offset-surface-900');
+          stationElement.classList.remove(
+            'ring-2',
+            'ring-primary-500',
+            'ring-offset-2',
+            'ring-offset-surface-900'
+          );
         }, 2000);
       }
     }, 100);

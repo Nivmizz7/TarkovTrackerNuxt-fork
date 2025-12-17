@@ -1,5 +1,12 @@
 <template>
   <div class="bg-background text-surface-200 flex min-h-screen flex-col">
+    <!-- Skip navigation link for accessibility -->
+    <a
+      href="#main-content"
+      class="focus:bg-primary-600 sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-16 focus:z-100 focus:rounded focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
+    >
+      Skip to main content
+    </a>
     <!-- Navigation Drawer (fixed) -->
     <NavDrawer />
     <!-- Application Bar (fixed header) -->
@@ -11,6 +18,7 @@
     />
     <!-- Main content area -->
     <main
+      id="main-content"
       class="flex flex-1 flex-col pt-16 transition-all duration-300 ease-in-out"
       :style="{
         marginLeft: mainMarginLeft,

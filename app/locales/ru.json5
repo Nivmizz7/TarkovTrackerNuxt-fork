@@ -368,6 +368,19 @@
         },
       },
     },
+    credits: {
+      title: 'Благодарности',
+      sections: {
+        original_creator: 'Первоначальный создатель проекта:',
+        staff: 'Команда TarkovTracker.org:',
+        beta_testers: 'Бета-тестер Nuxt:',
+      },
+      labels: {
+        creators: 'Создатели',
+        staff: 'Основная команда',
+        testers: 'Бета-тестеры',
+      },
+    },
     login: {
       title: 'Войти',
       subtitle: 'Войдите, чтобы получить доступ к своему аккаунту',
@@ -423,6 +436,7 @@
     support_tagline: 'Помогите сохранить TarkovTracker бесплатным и актуальным',
     terms_of_service: 'Условия использования',
     privacy_policy: 'Политика конфиденциальности',
+    credits: 'Благодарности',
     game_attribution: 'Игровой контент и материалы являются товарными знаками и защищены авторским правом Battlestate Games и ее лицензиаров. Все права защищены.',
     support: 'Поддержка',
     contributors: 'Участники',
@@ -450,6 +464,7 @@
     tarkovguru: 'Tarkov Guru',
     tarkovchanges: 'Tarkov Changes',
     tarkovmonitor: 'Tarkov Monitor',
+    credits: 'Благодарности',
     settings: 'Настройки',
   },
   settings: {
