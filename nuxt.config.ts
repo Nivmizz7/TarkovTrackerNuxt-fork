@@ -2,8 +2,10 @@
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
+
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const appDir = resolve(__dirname, 'app');
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   ssr: false,
@@ -39,15 +41,9 @@ export default defineNuxtConfig({
     },
   },
   routeRules: {
-    // Prerender the index page for zero-invocation loading of the SPA shell
     '/': { prerender: true },
-    // Explicit long-term caching for build assets
-    '/_nuxt/**': {
-      headers: { 'cache-control': 'public,max-age=31536000,immutable' },
-    },
-    '/_fonts/**': {
-      headers: { 'cache-control': 'public,max-age=31536000,immutable' },
-    },
+    '/_nuxt/**': { headers: { 'cache-control': 'public,max-age=31536000,immutable' } },
+    '/_fonts/**': { headers: { 'cache-control': 'public,max-age=31536000,immutable' } },
   },
   app: {
     baseURL: '/',
@@ -55,26 +51,15 @@ export default defineNuxtConfig({
     head: {
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        {
-          rel: 'preconnect',
-          href: 'https://fonts.gstatic.com',
-          crossorigin: '',
-        },
-        {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap',
-        },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap' },
       ],
     },
   },
   css: ['~/assets/css/tailwind.css'],
-  alias: {
-    '@': appDir,
-    '~': appDir,
-  },
+  alias: { '@': appDir, '~': appDir },
   modules: [
     '@nuxt/eslint',
-    // Only load test utils during local dev/test so production builds don't try to resolve devDependency
     process.env.NODE_ENV === 'development' ? '@nuxt/test-utils/module' : undefined,
     '@pinia/nuxt',
     '@nuxt/ui',
@@ -83,91 +68,44 @@ export default defineNuxtConfig({
   ui: {
     theme: {
       colors: [
-        'primary',
-        'secondary',
-        'neutral',
-        'brand',
-        'accent',
-        'pvp',
-        'pve',
-        'info',
-        'success',
-        'warning',
-        'error',
+        'primary','secondary','neutral','brand','accent','pvp','pve','info','success','warning','error'
       ],
     },
   },
   components: [
-    {
-      path: '~/components',
-      pathPrefix: false,
-    },
-    {
-      path: '~/features',
-      pathPrefix: false,
-    },
-    {
-      path: '~/shell',
-      pathPrefix: false,
-    },
+    { path: '~/components', pathPrefix: false },
+    { path: '~/features', pathPrefix: false },
+    { path: '~/shell', pathPrefix: false },
   ],
   typescript: {
     tsConfig: {
       compilerOptions: {
         baseUrl: '.',
-        paths: {
-          '@/*': ['./app/*'],
-          '~/*': ['./app/*'],
-        },
+        paths: { '@/*': ['./app/*'], '~/*': ['./app/*'] },
       },
     },
   },
-  postcss: {
-    plugins: {
-      '@tailwindcss/postcss': {},
-      autoprefixer: {},
-    },
-  },
+  postcss: { plugins: { '@tailwindcss/postcss': {}, autoprefixer: {} } },
   vite: {
     base: '/',
-      optimizeDeps: {
-      exclude: ['better-sqlite3'],
-    },
-    define: {
-      // Suppress Suspense experimental feature warning
-      __VUE_PROD_SUSPENSE__: 'false',
-    },
+    optimizeDeps: { exclude: ['better-sqlite3'] },
+    define: { __VUE_PROD_SUSPENSE__: 'false' },
     server: {
-      host: true, // écoute sur toutes les interfaces
-      port: process.env.PORT || 3156,
-      allowedHosts: ['nuxt.nivmizz7.fr'] // ajoute ton domaine ici
-  },
-  vue: {
-    // Forwarded to @vitejs/plugin-vue
-    template: {
-      compilerOptions: {
-        isCustomElement: (tag: string) => tag === 'suspense',
-      },
+      host: true,                       // écoute sur toutes les interfaces
+      port: process.env.PORT || 3156,   // port 3156
+      allowedHosts: ['nuxt.nivmizz7.fr'] // autorise ton domaine
     },
-  },
-},
-
+    vue: {
+      template: { compilerOptions: { isCustomElement: (tag: string) => tag === 'suspense' } },
+    },
     build: {
       rollupOptions: {
         output: {
           manualChunks: (id) => {
-            if (id.includes('node_modules/d3')) {
-              return 'vendor-d3';
-            }
-            if (id.includes('node_modules/graphology')) {
-              return 'vendor-graphology';
-            }
-            if (id.includes('node_modules/@supabase')) {
-              return 'vendor-supabase';
-            }
-            if (id.includes('node_modules/@nuxt/ui') || id.includes('node_modules/@vueuse')) {
-              return 'vendor-ui';
-            }
+            if (id.includes('node_modules/d3')) return 'vendor-d3';
+            if (id.includes('node_modules/graphology')) return 'vendor-graphology';
+            if (id.includes('node_modules/@supabase')) return 'vendor-supabase';
+            if (id.includes('node_modules/@nuxt/ui') || id.includes('node_modules/@vueuse')) return 'vendor-ui';
             if (
               id.includes('node_modules/vue') ||
               id.includes('node_modules/pinia') ||
@@ -175,9 +113,7 @@ export default defineNuxtConfig({
               id.includes('node_modules/ofetch') ||
               id.includes('node_modules/defu') ||
               id.includes('node_modules/h3')
-            ) {
-              return 'vendor-core';
-            }
+            ) return 'vendor-core';
           },
         },
       },
@@ -192,4 +128,4 @@ export default defineNuxtConfig({
       }),
     ],
   },
-  });
+});
