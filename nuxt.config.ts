@@ -9,10 +9,11 @@ export default defineNuxtConfig({
   ssr: false,
   srcDir: 'app',
   runtimeConfig: {
-    // Server-only (private) runtime config
-    supabaseUrl: process.env.SB_URL || process.env.SUPABASE_URL || '',
-    supabaseServiceKey: process.env.SB_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-    supabaseAnonKey: process.env.SB_ANON_KEY || process.env.SUPABASE_ANON_KEY || '',
+    github: {
+      botToken: process.env.GITHUB_BOT_TOKEN || '',
+      repoOwner: process.env.GITHUB_REPO_OWNER || 'tarkovtracker-org',
+      repoName: process.env.GITHUB_REPO_NAME || 'tarkovtrackernuxt',
+    },
     public: {
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
       teamGatewayUrl: process.env.NUXT_PUBLIC_TEAM_GATEWAY_URL || '',
@@ -184,4 +185,4 @@ export default defineNuxtConfig({
       }),
     ],
   },
-});
+  });

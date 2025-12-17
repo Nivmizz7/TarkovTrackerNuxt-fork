@@ -43,6 +43,12 @@
       :is-collapsed="props.isCollapsed"
     ></DrawerItem>
     <DrawerItem
+      avatar="/img/icons/report-bug.png"
+      locale-key="report_issue"
+      to="/report-issue"
+      :is-collapsed="props.isCollapsed"
+    ></DrawerItem>
+    <DrawerItem
       icon="i-heroicons-cog-6-tooth"
       locale-key="settings"
       to="/settings"

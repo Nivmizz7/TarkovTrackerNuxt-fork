@@ -1,28 +1,32 @@
 import { createError, defineEventHandler, getQuery, getRequestHeader } from 'h3';
-import { useRuntimeConfig } from '#imports';
-export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig(event);
-  const supabaseUrl = config.supabaseUrl as string;
-  const supabaseServiceKey = config.supabaseServiceKey as string;
-  const supabaseAnonKey = config.supabaseAnonKey as string;
-  if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
-    throw createError({
-      statusCode: 500,
-      statusMessage:
-        '[team/members] Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_ANON_KEY must all be set',
-    });
+const getSupabaseConfig = () => {
+  const url = process.env.SB_URL || process.env.SUPABASE_URL || '';
+  const serviceKey = process.env.SB_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const anonKey = process.env.SB_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+  if (!url || !serviceKey || !anonKey) {
+    throw new Error(
+      '[team/members] Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_ANON_KEY must all be set'
+    );
   }
-  const restFetch = async (path: string, init?: RequestInit) => {
-    const url = `${supabaseUrl}/rest/v1/${path}`;
+  return { url, serviceKey, anonKey };
+};
+const createRestFetch = (config: { url: string; serviceKey: string }) => {
+  return async (path: string, init?: RequestInit) => {
+    const url = `${config.url}/rest/v1/${path}`;
     const headers = {
-      apikey: supabaseServiceKey,
-      Authorization: `Bearer ${supabaseServiceKey}`,
+      apikey: config.serviceKey,
+      Authorization: `Bearer ${config.serviceKey}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...(init?.headers as Record<string, string> | undefined),
     };
     return fetch(url, { ...init, headers });
   };
+};
+export default defineEventHandler(async (event) => {
+  const { url: supabaseUrl, serviceKey: supabaseServiceKey, anonKey: supabaseAnonKey } =
+    getSupabaseConfig();
+  const restFetch = createRestFetch({ url: supabaseUrl, serviceKey: supabaseServiceKey });
   const teamId = (getQuery(event).teamId as string | undefined)?.trim();
   if (!teamId) {
     throw createError({ statusCode: 400, statusMessage: 'teamId is required' });
@@ -143,6 +147,6 @@ export default defineEventHandler(async (event) => {
         };
       });
     }
-  }
+     }
   return { members: memberIds, profiles: profileMap };
 });
