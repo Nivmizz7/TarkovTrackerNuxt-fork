@@ -1,28 +1,5 @@
 import { createError, defineEventHandler, getQuery, getRequestHeader } from 'h3';
-const getSupabaseConfig = () => {
-  const url = process.env.SB_URL || process.env.SUPABASE_URL || '';
-  const serviceKey = process.env.SB_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-  const anonKey = process.env.SB_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
-  if (!url || !serviceKey || !anonKey) {
-    throw new Error(
-      '[team/members] Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_ANON_KEY must all be set'
-    );
-  }
-  return { url, serviceKey, anonKey };
-};
-const createRestFetch = (config: { url: string; serviceKey: string }) => {
-  return async (path: string, init?: RequestInit) => {
-    const url = `${config.url}/rest/v1/${path}`;
-    const headers = {
-      apikey: config.serviceKey,
-      Authorization: `Bearer ${config.serviceKey}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...(init?.headers as Record<string, string> | undefined),
-    };
-    return fetch(url, { ...init, headers });
-  };
-};
+import { createRestFetch, fetchAuthUser, getSupabaseConfig } from '~/server/utils/supabaseAdmin';
 export default defineEventHandler(async (event) => {
   const { url: supabaseUrl, serviceKey: supabaseServiceKey, anonKey: supabaseAnonKey } =
     getSupabaseConfig();
@@ -36,17 +13,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Missing auth token' });
   }
   // Validate token -> user via auth endpoint
-  const authResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      Authorization: authHeader,
-      apikey: supabaseAnonKey,
-    },
+  const authUser = await fetchAuthUser(event, authHeader, {
+    url: supabaseUrl,
+    serviceKey: supabaseServiceKey,
+    anonKey: supabaseAnonKey,
   });
-  if (!authResp.ok) {
+  if (!authUser) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid token' });
   }
-  const user = (await authResp.json()) as { id: string };
-  const userId = user.id;
+  const userId = authUser.id;
   // Ensure caller is member
   const membershipResp = await restFetch(
     `team_memberships?team_id=eq.${teamId}&user_id=eq.${userId}&select=user_id&limit=1`
