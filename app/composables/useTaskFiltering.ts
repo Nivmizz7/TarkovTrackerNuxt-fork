@@ -1,5 +1,6 @@
 import { ref, shallowRef } from 'vue';
 import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import type { Task } from '@/types/tarkov';
 import { EXCLUDED_SCAV_KARMA_TASKS } from '@/utils/constants';
@@ -11,6 +12,7 @@ interface MergedMap {
 export function useTaskFiltering() {
   const progressStore = useProgressStore();
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   const reloadingTasks = ref(false);
   const visibleTasks = shallowRef<Task[]>([]);
   const mapObjectiveTypes = [
@@ -116,7 +118,13 @@ export function useTaskFiltering() {
         teamId,
         ...getTaskStatus(task.id, teamId),
       }));
-      if (secondaryView === 'available') {
+      if (secondaryView === 'all') {
+        // Show all tasks regardless of status
+        const usersWhoNeedTask = taskStatuses
+          .filter(({ isUnlocked, isCompleted }) => isUnlocked && !isCompleted)
+          .map(({ teamId }) => progressStore.getDisplayName(teamId));
+        tempVisibleTasks.push({ ...task, neededBy: usersWhoNeedTask });
+      } else if (secondaryView === 'available') {
         const usersWhoNeedTask = taskStatuses
           .filter(({ isUnlocked, isCompleted }) => isUnlocked && !isCompleted)
           .map(({ teamId }) => progressStore.getDisplayName(teamId));
@@ -156,6 +164,7 @@ export function useTaskFiltering() {
       totalTasks: taskList.length,
     });
     let filtered = taskList;
+    // 'all' shows all tasks regardless of status
     if (secondaryView === 'available') {
       filtered = filtered.filter((task) => {
         const isUnlocked = progressStore.unlockedTasks?.[task.id]?.[userView] === true;
@@ -173,6 +182,7 @@ export function useTaskFiltering() {
         (task) => progressStore.tasksCompletions?.[task.id]?.[userView] === true
       );
     }
+    // 'all' case: no status filtering, just filter by faction below
     // Filter by faction
     const withFaction = filtered.filter(
       (task) =>
@@ -185,6 +195,31 @@ export function useTaskFiltering() {
       faction: progressStore.playerFaction[userView],
     });
     return withFaction;
+  };
+  /**
+   * Filter tasks by type settings (Kappa, Lightkeeper, EOD, non-special)
+   * Uses OR logic: show task if it matches ANY enabled category
+   */
+  const filterTasksByTypeSettings = (taskList: Task[]): Task[] => {
+    const showKappa = !preferencesStore.getHideNonKappaTasks; // Show Kappa Required tasks
+    const showLightkeeper = preferencesStore.getShowLightkeeperTasks;
+    const showNonSpecial = preferencesStore.getShowNonSpecialTasks;
+    // EOD filter stored for future use when EOD task data is available
+    const _showEod = preferencesStore.getShowEodTasks;
+    return taskList.filter((task) => {
+      // Skip excluded tasks (Scav Karma)
+      if (EXCLUDED_SCAV_KARMA_TASKS.includes(task.id)) return false;
+      const isKappaRequired = task.kappaRequired === true;
+      const isLightkeeperRequired = task.lightkeeperRequired === true;
+      const isNonSpecial = !isKappaRequired && !isLightkeeperRequired;
+      // OR logic: show if task matches ANY enabled filter
+      // A task can be both Kappa and Lightkeeper required - show if either filter is on
+      if (isKappaRequired && showKappa) return true;
+      if (isLightkeeperRequired && showLightkeeper) return true;
+      if (isNonSpecial && showNonSpecial) return true;
+      // Task doesn't match any enabled filter
+      return false;
+    });
   };
   /**
    * Helper to extract all map locations from a task
@@ -294,6 +329,8 @@ export function useTaskFiltering() {
     reloadingTasks.value = true;
     try {
       let visibleTaskList = JSON.parse(JSON.stringify(metadataStore.tasks));
+      // Apply task type filters (Kappa, Lightkeeper, Non-special)
+      visibleTaskList = filterTasksByTypeSettings(visibleTaskList);
       // Apply primary view filter
       visibleTaskList = filterTasksByView(
         visibleTaskList,
@@ -310,10 +347,12 @@ export function useTaskFiltering() {
     }
   };
   /**
-   * Calculate task counts by status (available, locked, completed)
+   * Calculate task counts by status (all, available, locked, completed)
    */
-  const calculateStatusCounts = (userView: string) => {
-    const counts = { available: 0, locked: 0, completed: 0 };
+  const calculateStatusCounts = (
+    userView: string
+  ): { all: number; available: number; locked: number; completed: number } => {
+    const counts = { all: 0, available: 0, locked: 0, completed: 0 };
     const taskList = metadataStore.tasks;
     for (const task of taskList) {
       // Skip excluded tasks
@@ -327,6 +366,7 @@ export function useTaskFiltering() {
           return taskFaction === 'Any' || taskFaction === teamFaction;
         });
         if (relevantTeamIds.length === 0) continue;
+        counts.all++;
         const isAvailableForAny = relevantTeamIds.some((teamId) => {
           const isUnlocked = progressStore.unlockedTasks?.[task.id]?.[teamId] === true;
           const isCompleted = progressStore.tasksCompletions?.[task.id]?.[teamId] === true;
@@ -347,6 +387,7 @@ export function useTaskFiltering() {
         const taskFaction = task.factionName;
         const userFaction = progressStore.playerFaction[userView];
         if (taskFaction !== 'Any' && taskFaction !== userFaction) continue;
+        counts.all++;
         const isUnlocked = progressStore.unlockedTasks?.[task.id]?.[userView] === true;
         const isCompleted = progressStore.tasksCompletions?.[task.id]?.[userView] === true;
         if (isCompleted) {

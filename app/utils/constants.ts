@@ -1,41 +1,41 @@
 export const GAME_EDITIONS = [
   {
-    title: 'Standard Edition',
+    title: 'Standard',
     value: 1,
     traderRep: 0.0,
     defaultStashLevel: 1,
     defaultCultistCircleLevel: 0,
   },
   {
-    title: 'Left Behind Edition',
+    title: 'Left Behind',
     value: 2,
     traderRep: 0.0,
     defaultStashLevel: 2,
     defaultCultistCircleLevel: 0,
   },
   {
-    title: 'Prepare for Escape Edition',
+    title: 'Prepare for Escape',
     value: 3,
     traderRep: 0.2,
     defaultStashLevel: 3,
     defaultCultistCircleLevel: 0,
   },
   {
-    title: 'Edge of Darkness (Limited Edition)',
+    title: 'Edge of Darkness',
     value: 4,
     traderRep: 0.2,
     defaultStashLevel: 4,
     defaultCultistCircleLevel: 0,
   },
   {
-    title: 'Unheard Edition',
+    title: 'Unheard',
     value: 5,
     traderRep: 0.2,
     defaultStashLevel: 5,
     defaultCultistCircleLevel: 1,
   },
   {
-    title: 'Unheard + Edge Of Darkness (EOD) Edition',
+    title: 'Edge of Darkness + Unheard',
     value: 6,
     traderRep: 0.2,
     defaultStashLevel: 5,
@@ -209,3 +209,18 @@ export const TRADER_ORDER = [
   'voevoda', // Arena trader
   'radio-station', // Radio operator
 ] as const;
+// Sort traders by in-game order using normalizedName
+// Traders not in TRADER_ORDER are placed at the end, sorted alphabetically
+export function sortTradersByGameOrder<T extends { name: string; normalizedName?: string }>(
+  traders: T[]
+): T[] {
+  return [...traders].sort((a, b) => {
+    const aIndex = TRADER_ORDER.indexOf(a.normalizedName as (typeof TRADER_ORDER)[number]);
+    const bIndex = TRADER_ORDER.indexOf(b.normalizedName as (typeof TRADER_ORDER)[number]);
+    // Traders not in the order list go to the end, sorted alphabetically
+    if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  });
+}

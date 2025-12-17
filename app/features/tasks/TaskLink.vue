@@ -1,23 +1,31 @@
 <template>
-  <div class="flex items-center justify-between">
-    <a
-      :href="props.task?.wikiLink"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="text-primary-400 hover:text-primary-300 flex items-center no-underline"
+  <div class="flex max-w-full min-w-0 items-center justify-between overflow-hidden">
+    <router-link
+      :to="taskHref"
+      class="text-primary-400 hover:text-primary-300 flex min-w-0 items-center overflow-hidden no-underline"
+      :title="props.task?.name"
     >
-      <div class="mr-2 h-12 w-12 overflow-hidden rounded-full">
+      <div
+        class="shrink-0 overflow-hidden rounded-full"
+        :class="compact ? 'h-4 w-4 sm:h-5 sm:w-5 lg:h-8 lg:w-8' : 'h-8 w-8 lg:h-12 lg:w-12'"
+      >
         <img :src="traderAvatar" class="h-full w-full object-cover" />
       </div>
       <template v-if="isFactionTask">
-        <div class="ml-2 h-12 w-12 rounded-none">
+        <div
+          class="ml-0.5 shrink-0 rounded-none"
+          :class="compact ? 'h-4 w-4 sm:h-5 sm:w-5 lg:h-8 lg:w-8' : 'h-8 w-8 lg:h-12 lg:w-12'"
+        >
           <img :src="factionImage" class="h-full w-full object-contain invert" />
         </div>
       </template>
-      <span class="ml-2 text-xl font-bold">
+      <span
+        class="ml-1 truncate font-bold"
+        :class="compact ? 'hidden text-xs lg:inline lg:text-sm' : 'text-sm lg:text-xl'"
+      >
         {{ props.task?.name }}
       </span>
-    </a>
+    </router-link>
     <a
       v-if="props.showWikiLink"
       :href="props.task.wikiLink"
@@ -32,7 +40,6 @@
 <script setup>
   import { computed } from 'vue';
   import { useI18n } from 'vue-i18n';
-  // Define the props for the component
   const props = defineProps({
     task: {
       type: Object,
@@ -43,9 +50,13 @@
       required: false,
       default: false,
     },
+    compact: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   });
   const { t } = useI18n({ useScope: 'global' });
-  // Check if there are two faction tasks for this task
   const isFactionTask = computed(() => {
     return props.task?.factionName != 'Any';
   });
@@ -55,4 +66,5 @@
   const traderAvatar = computed(() => {
     return props.task?.trader?.imageLink;
   });
+  const taskHref = computed(() => `/tasks?task=${props.task?.id}`);
 </script>

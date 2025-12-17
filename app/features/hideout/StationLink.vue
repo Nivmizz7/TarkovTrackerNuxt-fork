@@ -4,14 +4,18 @@
     class="text-blue-400 no-underline hover:text-blue-300"
     :aria-label="`Go to ${props.station.name} card`"
   >
-    <div class="flex items-center">
+    <div class="flex max-w-full min-w-0 items-center overflow-hidden">
       <img
         :src="stationIcon"
         :alt="`${props.station.name} icon`"
-        class="max-h-8 max-w-8 align-middle"
+        class="shrink-0 align-middle"
+        :class="compact ? 'h-4 w-4 sm:h-5 sm:w-5 lg:h-8 lg:w-8' : 'h-8 w-8'"
         loading="lazy"
       />
-      <span class="ml-2 text-sm font-bold">
+      <span
+        class="ml-1 truncate font-bold"
+        :class="compact ? 'hidden text-xs lg:inline lg:text-sm' : 'text-sm'"
+      >
         {{ props.station.name }}
       </span>
     </div>
@@ -22,7 +26,8 @@
   import type { HideoutStation } from '@/types/tarkov';
   const props = defineProps<{
     station: Pick<HideoutStation, 'id' | 'name'>;
+    compact?: boolean;
   }>();
   const stationIcon = computed(() => `/img/hideout/${props.station.id}.avif`);
-  const stationHref = computed(() => `/hideout#station-${props.station.id}`);
+  const stationHref = computed(() => `/hideout?station=${props.station.id}`);
 </script>

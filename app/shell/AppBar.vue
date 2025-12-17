@@ -33,7 +33,7 @@
         >
           <button
             type="button"
-            class="focus:ring-pvp-400 inline-flex items-center gap-1 px-2 py-1.5 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
+            class="focus:ring-pvp-400 inline-flex items-center gap-0.5 px-1.5 py-1 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
             :class="pvpClasses"
             :disabled="dataLoading"
             @click="switchMode(GAME_MODES.PVP)"
@@ -41,10 +41,10 @@
             <UIcon name="i-mdi-sword-cross" class="hidden h-4 w-4 sm:block md:h-5 md:w-5" />
             PvP
           </button>
-          <div class="h-8 w-px bg-white/15" aria-hidden="true" />
+          <div class="h-6 w-px bg-white/15 sm:h-8" aria-hidden="true" />
           <button
             type="button"
-            class="focus:ring-pve-400 inline-flex items-center gap-1 px-2 py-1.5 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
+            class="focus:ring-pve-400 inline-flex items-center gap-0.5 px-1.5 py-1 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
             :class="pveClasses"
             :disabled="dataLoading"
             @click="switchMode(GAME_MODES.PVE)"

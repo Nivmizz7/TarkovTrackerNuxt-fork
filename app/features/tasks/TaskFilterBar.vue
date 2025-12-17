@@ -41,21 +41,57 @@
     </div>
     <!-- Secondary filters container - responsive stacking -->
     <div class="flex w-full flex-wrap gap-3">
-      <!-- Section 1: Status filters (AVAILABLE / LOCKED / COMPLETED) - minimal width -->
-      <div class="flex w-auto items-center gap-2 rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
+      <!-- Section 0: Search bar -->
+      <div class="flex min-w-[200px] flex-1 items-center rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
+        <UInput
+          :model-value="searchQuery"
+          :placeholder="t('page.tasks.search.placeholder', 'Search tasks...')"
+          icon="i-mdi-magnify"
+          clearable
+          class="w-full"
+          @update:model-value="$emit('update:searchQuery', $event)"
+        />
+      </div>
+      <!-- Section 1: Status filters (ALL / AVAILABLE / LOCKED / COMPLETED) - scrollable on mobile -->
+      <div
+        class="flex w-auto items-center gap-1 overflow-x-auto rounded-lg bg-[hsl(240,5%,5%)] px-2 py-2 sm:gap-2 sm:px-4 sm:py-3"
+      >
         <UButton
           :variant="'ghost'"
           :color="'neutral'"
           size="sm"
+          class="shrink-0"
+          :class="{
+            'border-primary-500 rounded-none border-b-2': secondaryView === 'all',
+          }"
+          @click="setSecondaryView('all')"
+        >
+          <UIcon name="i-mdi-format-list-bulleted" class="mr-1 hidden h-4 w-4 sm:block" />
+          <span class="text-xs sm:text-sm">
+            {{ t('page.tasks.secondaryviews.all', 'ALL').toUpperCase() }}
+          </span>
+          <span
+            class="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm"
+          >
+            {{ statusCounts.all }}
+          </span>
+        </UButton>
+        <UButton
+          :variant="'ghost'"
+          :color="'neutral'"
+          size="sm"
+          class="shrink-0"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'available',
           }"
           @click="setSecondaryView('available')"
         >
-          <UIcon name="i-mdi-clipboard-text" class="mr-1 h-4 w-4" />
-          {{ t('page.tasks.secondaryviews.available').toUpperCase() }}
+          <UIcon name="i-mdi-clipboard-text" class="mr-1 hidden h-4 w-4 sm:block" />
+          <span class="text-xs sm:text-sm">
+            {{ t('page.tasks.secondaryviews.available').toUpperCase() }}
+          </span>
           <span
-            class="bg-primary-500 ml-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-sm font-bold text-white"
+            class="bg-primary-500 ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm"
           >
             {{ statusCounts.available }}
           </span>
@@ -64,15 +100,18 @@
           :variant="'ghost'"
           :color="'neutral'"
           size="sm"
+          class="shrink-0"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'locked',
           }"
           @click="setSecondaryView('locked')"
         >
-          <UIcon name="i-mdi-lock" class="mr-1 h-4 w-4" />
-          {{ t('page.tasks.secondaryviews.locked').toUpperCase() }}
+          <UIcon name="i-mdi-lock" class="mr-1 hidden h-4 w-4 sm:block" />
+          <span class="text-xs sm:text-sm">
+            {{ t('page.tasks.secondaryviews.locked').toUpperCase() }}
+          </span>
           <span
-            class="ml-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-gray-600 px-1.5 text-sm font-bold text-white"
+            class="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-600 px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm"
           >
             {{ statusCounts.locked }}
           </span>
@@ -81,15 +120,18 @@
           :variant="'ghost'"
           :color="'neutral'"
           size="sm"
+          class="shrink-0"
           :class="{
             'border-primary-500 rounded-none border-b-2': secondaryView === 'completed',
           }"
           @click="setSecondaryView('completed')"
         >
-          <UIcon name="i-mdi-check-circle" class="mr-1 h-4 w-4" />
-          {{ t('page.tasks.secondaryviews.completed').toUpperCase() }}
+          <UIcon name="i-mdi-check-circle" class="mr-1 hidden h-4 w-4 sm:block" />
+          <span class="text-xs sm:text-sm">
+            {{ t('page.tasks.secondaryviews.completed').toUpperCase() }}
+          </span>
           <span
-            class="ml-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-green-600 px-1.5 text-sm font-bold text-white"
+            class="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-green-600 px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm"
           >
             {{ statusCounts.completed }}
           </span>
@@ -163,10 +205,7 @@
       </div>
       <!-- Section 3: Settings button - fixed width -->
       <div class="flex w-auto items-center rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
-        <UButton :variant="'ghost'" :color="'neutral'" size="sm">
-          <UIcon name="i-mdi-tune" class="mr-1 h-4 w-4" />
-          TASK SETTINGS
-        </UButton>
+        <TaskSettingsModal />
       </div>
     </div>
     <!-- Map selector (shown when MAPS is selected) -->
@@ -185,7 +224,7 @@
     </div>
     <!-- Trader selector (shown when TRADERS is selected) - Horizontal scrollable -->
     <div v-if="primaryView === 'traders' && traders.length > 0" class="w-full overflow-x-auto">
-      <div class="flex justify-center gap-3 rounded-lg bg-[hsl(240,5%,5%)] px-2 py-2">
+      <div class="flex w-max min-w-full gap-3 rounded-lg bg-[hsl(240,5%,5%)] px-2 py-2">
         <button
           v-for="trader in traders"
           :key="trader.id"
@@ -193,20 +232,23 @@
             'flex flex-col items-center justify-center gap-2 rounded-lg px-3 py-3 transition-all',
             'relative w-28',
             'hover:bg-white/5',
+            'focus:ring-primary-500 focus:ring-offset-surface-900 focus:ring-2 focus:ring-offset-2 focus:outline-none',
             preferencesStore.getTaskTraderView === trader.id
               ? 'border-primary-500 border-b-2 bg-white/10'
               : 'border-b-2 border-transparent',
           ]"
           @click="onTraderSelect({ label: trader.name, value: trader.id })"
         >
-          <div class="relative">
-            <img
-              v-if="trader.imageLink"
-              :src="trader.imageLink"
-              :alt="trader.name"
-              class="h-12 w-12 rounded-full bg-gray-800 object-cover"
-            />
-            <UIcon v-else name="i-mdi-account-circle" class="h-12 w-12 text-gray-400" />
+          <div class="relative h-12 w-12">
+            <div class="h-12 w-12 overflow-hidden rounded-full bg-gray-800">
+              <img
+                v-if="trader.imageLink"
+                :src="trader.imageLink"
+                :alt="trader.name"
+                class="h-full w-full object-cover"
+              />
+              <UIcon v-else name="i-mdi-account-circle" class="h-full w-full text-gray-400" />
+            </div>
             <span
               :class="[
                 'absolute -top-1 -right-1 inline-flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-[hsl(240,5%,5%)] px-1 text-sm font-bold text-white',
@@ -226,10 +268,17 @@
   import { computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useTaskFiltering } from '@/composables/useTaskFiltering';
+  import TaskSettingsModal from '@/features/tasks/TaskSettingsModal.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTeamStore } from '@/stores/useTeamStore';
+  defineProps<{
+    searchQuery: string;
+  }>();
+  defineEmits<{
+    'update:searchQuery': [value: string];
+  }>();
   const { t } = useI18n({ useScope: 'global' });
   const preferencesStore = usePreferencesStore();
   const metadataStore = useMetadataStore();

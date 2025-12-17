@@ -2,30 +2,25 @@
   <KeepAlive>
     <div ref="cardRef" class="mb-1 rounded" :class="itemRowClasses">
       <div class="px-3 py-2">
-        <div class="mx-0 flex flex-wrap">
-          <div
-            class="flex w-9/12 items-center p-0 md:w-1/2"
-            style="overflow: -moz-hidden-unscrollable"
-          >
+        <div class="mx-0 flex flex-nowrap items-center">
+          <div class="flex min-w-0 flex-1 items-center p-0">
             <span class="block">
               <GameItem
                 v-if="isVisible"
                 :image-item="imageItem"
                 :src="imageItem?.iconLink"
                 :is-visible="true"
-                size="medium"
+                :item-name="item.name"
+                :wiki-link="item.wikiLink"
+                :dev-link="item.link"
+                :task-wiki-link="relatedTask?.wikiLink"
+                size="small"
                 simple-mode
               />
             </span>
-            <span
-              class="ml-3 flex flex-col"
-              style="
-                -webkit-mask-image: linear-gradient(90deg, #000 100%, transparent);
-                mask-image: linear-gradient(90deg, #000 100%, transparent);
-              "
-            >
-              <span class="flex items-center text-base font-semibold">
-                {{ item.name }}
+            <span class="ml-3 flex min-w-0 flex-1 flex-col overflow-hidden">
+              <span class="flex items-center truncate text-base font-semibold">
+                <span class="truncate">{{ item.name }}</span>
                 <UIcon
                   v-if="props.need.foundInRaid"
                   name="i-mdi-checkbox-marked-circle-outline"
@@ -43,7 +38,7 @@
               </span>
             </span>
           </div>
-          <div class="flex w-3/12 flex-col items-end justify-center md:w-1/2">
+          <div class="ml-2 flex shrink-0 flex-col items-end justify-center">
             <div v-if="belowMd" class="mr-2 block">
               <UButton
                 variant="ghost"
@@ -63,6 +58,10 @@
                         :image-item="imageItem"
                         :src="imageItem.image512pxLink"
                         :is-visible="true"
+                        :item-name="item.name"
+                        :wiki-link="item.wikiLink"
+                        :dev-link="item.link"
+                        :task-wiki-link="relatedTask?.wikiLink"
                         size="large"
                         simple-mode
                       />
@@ -115,7 +114,7 @@
                     <!-- Item count actions -->
                     <div
                       v-if="!selfCompletedNeed"
-                      class="mx-2 mt-2 mb-2 flex h-full justify-center self-stretch"
+                      class="mx-2 mt-2 mb-2 flex h-full flex-col items-center justify-center self-stretch"
                     >
                       <ItemCountControls
                         :current-count="currentCount"
@@ -125,19 +124,22 @@
                         @toggle="$emit('toggleCount')"
                         @set-count="(count) => $emit('setCount', count)"
                       />
+                      <!-- Show team needs alongside controls -->
+                      <TeamNeedsDisplay
+                        v-if="teamNeeds.length > 0"
+                        :team-needs="teamNeeds"
+                        :needed-count="neededCount"
+                        class="mt-2"
+                      />
                     </div>
                     <!-- Show static count for completed parent items (Completed tab) -->
                     <div
-                      v-else-if="isParentCompleted"
+                      v-else
                       class="mx-2 mt-2 mb-2 flex h-full items-center justify-center self-stretch"
                     >
                       <span class="text-success-400 text-sm font-semibold">
                         {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
                       </span>
-                    </div>
-                    <!-- Show team needs for items where self is done but parent isn't -->
-                    <div v-else class="mx-2 mt-2 mb-2 flex h-full justify-center self-stretch">
-                      <TeamNeedsDisplay :team-needs="teamNeeds" :needed-count="neededCount" />
                     </div>
                   </div>
                 </UCard>
@@ -164,7 +166,7 @@
                   />
                 </template>
               </div>
-              <div v-if="!selfCompletedNeed" class="mr-2 flex justify-between self-center">
+              <div v-if="!selfCompletedNeed" class="mr-2 flex items-center gap-3 self-center">
                 <ItemCountControls
                   :current-count="currentCount"
                   :needed-count="neededCount"
@@ -173,19 +175,18 @@
                   @toggle="$emit('toggleCount')"
                   @set-count="(count) => $emit('setCount', count)"
                 />
+                <!-- Show team needs alongside controls -->
+                <TeamNeedsDisplay
+                  v-if="teamNeeds.length > 0"
+                  :team-needs="teamNeeds"
+                  :needed-count="neededCount"
+                />
               </div>
-              <!-- Show static count for completed parent items (Completed tab) -->
-              <div
-                v-else-if="isParentCompleted"
-                class="mr-2 flex items-center justify-center self-center"
-              >
+              <!-- Show static count for completed parent items -->
+              <div v-else class="mr-2 flex items-center justify-center self-center">
                 <span class="text-success-400 text-sm font-semibold">
                   {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
                 </span>
-              </div>
-              <!-- Show team needs for items where self is done but parent isn't -->
-              <div v-else class="mr-2 flex h-full justify-center self-stretch">
-                <TeamNeedsDisplay :team-needs="teamNeeds" :needed-count="neededCount" />
               </div>
             </div>
           </div>
@@ -216,7 +217,6 @@
   const smallDialog = ref(false);
   const {
     selfCompletedNeed,
-    isParentCompleted,
     relatedTask,
     relatedStation,
     lockedBefore,

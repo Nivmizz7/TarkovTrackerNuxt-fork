@@ -2,17 +2,25 @@
   <div
     class="group relative cursor-default"
     :class="[containerClasses, { 'h-full w-full': size !== 'small' }]"
-    @mouseenter="linkHover = true"
-    @mouseleave="linkHover = false"
     @click="handleClick"
     @contextmenu="handleContextMenu"
   >
     <!-- Simple image display mode (for ItemImage compatibility) -->
-    <div v-if="simpleMode" :class="['relative overflow-hidden', imageContainerClasses]">
+    <div
+      v-if="simpleMode"
+      :class="[
+        'relative overflow-hidden',
+        imageContainerClasses,
+        { 'flex items-center justify-center': fill },
+      ]"
+    >
       <img
         v-if="isVisible && computedImageSrc"
         :src="computedImageSrc"
-        :class="['h-full w-full object-contain', imageClasses]"
+        :class="[
+          fill ? 'max-h-full max-w-full object-contain' : 'h-full w-full object-contain',
+          imageClasses,
+        ]"
         loading="lazy"
         @error="handleImgError"
       />
@@ -29,10 +37,9 @@
     <!-- Full item display mode (for TarkovItem compatibility) -->
     <div
       v-else
-      class="flex h-full w-full items-center justify-start transition-all duration-200"
-      :class="{ 'opacity-50': linkHover && showActions }"
+      class="flex h-full w-full items-center justify-start"
     >
-      <div class="mr-2 flex items-center justify-center">
+      <div class="relative mr-2 flex items-center justify-center">
         <img
           :width="imageSize"
           :height="imageSize"
@@ -42,6 +49,34 @@
           alt="Item Icon"
           @error="handleImgError"
         />
+        <!-- Hover action buttons -->
+        <div
+          v-if="showActions && (props.devLink || props.wikiLink)"
+          class="absolute inset-0 flex items-center justify-center gap-1 rounded bg-black/70 opacity-0 transition-opacity group-hover:opacity-100"
+        >
+          <a
+            v-if="props.devLink"
+            :href="props.devLink"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center rounded p-1 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            title="View on tarkov.dev"
+            @click.stop
+          >
+            <UIcon name="i-mdi-open-in-new" class="h-4 w-4" />
+          </a>
+          <a
+            v-if="props.wikiLink"
+            :href="props.wikiLink"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center rounded p-1 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            title="View on Wiki"
+            @click.stop
+          >
+            <UIcon name="i-mdi-wikipedia" class="h-4 w-4" />
+          </a>
+        </div>
       </div>
       <!-- Counter controls for multi-item objectives -->
       <div v-if="showCounter" class="mr-2" @click.stop>
@@ -64,8 +99,6 @@
         {{ props.itemName }}
       </div>
     </div>
-    <!-- Hover actions (only in full mode) -->
-    <!-- Removed hover overlay as per request -->
     <!-- Context Menu -->
     <ContextMenu ref="contextMenu">
       <template #default="{ close }">
@@ -176,6 +209,8 @@
     showCounter?: boolean;
     currentCount?: number;
     neededCount?: number;
+    // Fill parent container (for simpleMode)
+    fill?: boolean;
     // Legacy compatibility
     imageItem?: {
       iconLink?: string;
@@ -204,6 +239,7 @@
     showCounter: false,
     currentCount: 0,
     neededCount: 1,
+    fill: false,
     imageItem: undefined,
   });
   const emit = defineEmits<{
@@ -224,7 +260,6 @@
     default: 'bg-transparent',
   } as const;
   type BackgroundKey = keyof typeof backgroundClassMap;
-  const linkHover = ref(false);
   const contextMenu = ref<InstanceType<typeof ContextMenu>>();
   // Compute image source based on available props
   const computedImageSrc = computed(() => {
@@ -256,13 +291,18 @@
     return '';
   });
   const imageContainerClasses = computed(() => {
-    const classes = ['block', 'shrink-0', 'relative', 'overflow-hidden'];
-    if (props.size === 'small') {
-      classes.push('h-16', 'w-16'); // 64px
-    } else if (props.size === 'large') {
-      classes.push('h-28', 'w-28'); // 112px
+    const classes = ['block', 'relative', 'overflow-hidden'];
+    if (props.fill) {
+      classes.push('h-full', 'w-full');
     } else {
-      classes.push('h-24', 'w-24'); // 96px
+      classes.push('shrink-0');
+      if (props.size === 'small') {
+        classes.push('h-12 w-12 md:h-16 md:w-16'); // 48px -> 64px
+      } else if (props.size === 'large') {
+        classes.push('h-20 w-20 md:h-28 md:w-28'); // 80px -> 112px
+      } else {
+        classes.push('h-16 w-16 md:h-24 md:w-24'); // 64px -> 96px
+      }
     }
     return classes;
   });

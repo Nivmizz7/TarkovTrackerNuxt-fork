@@ -7,12 +7,20 @@
       <div
         class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(var(--color-primary-500),0.1),transparent_50%)]"
       ></div>
-      <div class="relative p-8">
-        <div class="grid grid-cols-1 items-center gap-8 lg:grid-cols-3">
+      <div class="relative p-4 sm:p-6 lg:p-8">
+        <div class="grid grid-cols-1 items-center gap-6 lg:grid-cols-3 lg:gap-8">
           <!-- Main Progress Circle -->
           <div class="flex flex-col items-center justify-center">
             <div class="relative">
-              <svg class="h-48 w-48 -rotate-90 transform">
+              <svg
+                class="h-32 w-32 -rotate-90 transform md:h-48 md:w-48"
+                viewBox="0 0 192 192"
+                role="progressbar"
+                :aria-valuenow="parseFloat(totalTasksPercentage)"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                :aria-label="`Overall task completion: ${totalTasksPercentage}%`"
+              >
                 <circle
                   cx="96"
                   cy="96"
@@ -36,54 +44,56 @@
                 />
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center">
-                <div class="text-5xl font-bold text-white">{{ totalTasksPercentage }}%</div>
-                <div class="text-surface-400 text-sm tracking-wider uppercase">
+                <div class="text-3xl font-bold text-white md:text-5xl">
+                  {{ totalTasksPercentage }}%
+                </div>
+                <div class="text-surface-400 text-xs tracking-wider uppercase md:text-sm">
                   {{ $t('page.dashboard.hero.overall') }}
                 </div>
               </div>
             </div>
           </div>
           <!-- Stats Overview -->
-          <div class="space-y-6 lg:col-span-2">
+          <div class="space-y-4 lg:col-span-2 lg:space-y-6">
             <div>
-              <h1 class="mb-2 text-4xl font-bold text-white">
+              <h1 class="mb-2 text-2xl font-bold text-white md:text-4xl">
                 {{ $t('page.dashboard.hero.welcome') }}
               </h1>
-              <p class="text-surface-400 text-lg">
+              <p class="text-surface-400 text-sm md:text-lg">
                 {{ $t('page.dashboard.hero.subtitle') }}
               </p>
             </div>
             <!-- Quick Stats Grid -->
-            <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-              <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-4">
-                <div class="text-primary-400 text-3xl font-bold">
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+              <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-3 md:p-4">
+                <div class="text-primary-400 text-xl font-bold md:text-3xl">
                   {{ dashboardStats.completedTasks }}
                 </div>
-                <div class="text-surface-400 mt-1 text-xs tracking-wide uppercase">
+                <div class="text-surface-400 mt-1 text-[10px] tracking-wide uppercase md:text-xs">
                   {{ $t('page.dashboard.hero.tasksComplete') }}
                 </div>
               </div>
-              <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-4">
-                <div class="text-success-400 text-3xl font-bold">
+              <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-3 md:p-4">
+                <div class="text-success-400 text-xl font-bold md:text-3xl">
                   {{ dashboardStats.availableTasksCount }}
                 </div>
-                <div class="text-surface-400 mt-1 text-xs tracking-wide uppercase">
+                <div class="text-surface-400 mt-1 text-[10px] tracking-wide uppercase md:text-xs">
                   {{ $t('page.dashboard.hero.available') }}
                 </div>
               </div>
-              <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-4">
-                <div class="text-error-400 text-3xl font-bold">
+              <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-3 md:p-4">
+                <div class="text-error-400 text-xl font-bold md:text-3xl">
                   {{ dashboardStats.failedTasksCount }}
                 </div>
-                <div class="text-surface-400 mt-1 text-xs tracking-wide uppercase">
+                <div class="text-surface-400 mt-1 text-[10px] tracking-wide uppercase md:text-xs">
                   {{ $t('page.dashboard.hero.failed') }}
                 </div>
               </div>
-              <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-4">
-                <div class="text-warning-400 text-3xl font-bold">
+              <div class="bg-surface-800/50 border-surface-700/50 rounded-xl border p-3 md:p-4">
+                <div class="text-warning-400 text-xl font-bold md:text-3xl">
                   {{ currentLevel }}
                 </div>
-                <div class="text-surface-400 mt-1 text-xs tracking-wide uppercase">
+                <div class="text-surface-400 mt-1 text-[10px] tracking-wide uppercase md:text-xs">
                   {{ $t('page.dashboard.hero.level') }}
                 </div>
               </div>
@@ -101,7 +111,8 @@
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <!-- Tasks Progress -->
         <div
-          class="bg-surface-900 border-surface-700/30 hover:border-primary-700/50 rounded-xl border p-6 shadow-lg transition-colors"
+          class="bg-surface-900 border-surface-700/30 hover:border-primary-700/50 cursor-pointer rounded-xl border p-6 shadow-lg transition-colors"
+          @click="router.push('/tasks')"
         >
           <div class="mb-3 flex items-center justify-between">
             <div class="flex items-center">
@@ -133,7 +144,8 @@
         </div>
         <!-- Objectives Progress -->
         <div
-          class="bg-surface-900 border-surface-700/30 hover:border-info-700/50 rounded-xl border p-6 shadow-lg transition-colors"
+          class="bg-surface-900 border-surface-700/30 hover:border-info-700/50 cursor-pointer rounded-xl border p-6 shadow-lg transition-colors"
+          @click="router.push('/tasks')"
         >
           <div class="mb-3 flex items-center justify-between">
             <div class="flex items-center">
@@ -162,7 +174,8 @@
         </div>
         <!-- Task Items Progress -->
         <div
-          class="bg-surface-900 border-surface-700/30 hover:border-success-700/50 rounded-xl border p-6 shadow-lg transition-colors"
+          class="bg-surface-900 border-surface-700/30 hover:border-success-700/50 cursor-pointer rounded-xl border p-6 shadow-lg transition-colors"
+          @click="router.push('/neededitems')"
         >
           <div class="mb-3 flex items-center justify-between">
             <div class="flex items-center">
@@ -191,7 +204,8 @@
         </div>
         <!-- Kappa Progress -->
         <div
-          class="bg-surface-900 border-surface-700/30 hover:border-warning-700/50 rounded-xl border p-6 shadow-lg transition-colors"
+          class="bg-surface-900 border-surface-700/30 hover:border-warning-700/50 cursor-pointer rounded-xl border p-6 shadow-lg transition-colors"
+          @click="router.push('/tasks')"
         >
           <div class="mb-3 flex items-center justify-between">
             <div class="flex items-center">
@@ -220,7 +234,8 @@
         </div>
         <!-- Lightkeeper Progress -->
         <div
-          class="bg-surface-900 border-surface-700/30 rounded-xl border p-6 shadow-lg transition-colors hover:border-purple-700/50"
+          class="bg-surface-900 border-surface-700/30 cursor-pointer rounded-xl border p-6 shadow-lg transition-colors hover:border-purple-700/50"
+          @click="router.push('/tasks')"
         >
           <div class="mb-3 flex items-center justify-between">
             <div class="flex items-center">
@@ -263,7 +278,9 @@
         <div
           v-for="trader in traderStats"
           :key="trader.id"
-          class="bg-surface-900 border-surface-700/30 hover:border-primary-700/30 rounded-lg border p-3 shadow-sm transition-all hover:shadow-md"
+          class="bg-surface-900 border-surface-700/30 hover:border-primary-700/30 cursor-pointer rounded-lg border p-3 shadow-sm transition-all hover:shadow-md"
+          :title="`View ${trader.name}'s tasks`"
+          @click="navigateToTraderTasks(trader.id)"
         >
           <div class="mb-2 flex items-center gap-3">
             <img
@@ -449,11 +466,21 @@
 </template>
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { useRouter } from 'vue-router';
   import { useDashboardStats } from '@/composables/useDashboardStats';
+  import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   // Dashboard statistics composable
   const dashboardStats = useDashboardStats();
   const tarkovStore = useTarkovStore();
+  const router = useRouter();
+  const preferencesStore = usePreferencesStore();
+  // Navigate to tasks page filtered by trader
+  const navigateToTraderTasks = (traderId: string) => {
+    preferencesStore.setTaskPrimaryView('traders');
+    preferencesStore.setTaskTraderView(traderId);
+    router.push('/tasks');
+  };
   // Get current level
   const currentLevel = computed(() => {
     const currentMode = tarkovStore.currentGameMode;

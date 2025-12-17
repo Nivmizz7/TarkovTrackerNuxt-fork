@@ -149,27 +149,33 @@ export const useEdgeFunctions = () => {
   /**
    * Create a new team
    * @param name Team name
-   * @param password Team password
+   * @param joinCode Team join/invite code
    * @param maxMembers Maximum number of team members (2-10)
+   * @param gameMode Game mode for the team ('pvp' or 'pve')
    */
   const createTeam = async (
     name: string,
-    password: string,
-    maxMembers = 5
+    joinCode: string,
+    maxMembers = 5,
+    gameMode: GameMode = 'pvp'
   ): Promise<CreateTeamResponse> => {
+    if (!joinCode || joinCode.trim().length === 0) {
+      throw new Error('Join code cannot be empty');
+    }
     return await preferGateway<CreateTeamResponse>('create', {
       name,
-      join_code: password,
+      join_code: joinCode,
       maxMembers,
+      game_mode: gameMode,
     });
   };
   /**
    * Join an existing team
    * @param teamId The ID of the team to join
-   * @param password The team password
+   * @param joinCode The team join/invite code
    */
-  const joinTeam = async (teamId: string, password: string): Promise<JoinTeamResponse> => {
-    return await preferGateway<JoinTeamResponse>('join', { teamId, join_code: password });
+  const joinTeam = async (teamId: string, joinCode: string): Promise<JoinTeamResponse> => {
+    return await preferGateway<JoinTeamResponse>('join', { teamId, join_code: joinCode });
   };
   /**
    * Leave a team

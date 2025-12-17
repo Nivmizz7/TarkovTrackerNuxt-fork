@@ -1,11 +1,11 @@
-import { defineStore, type StoreDefinition } from 'pinia';
+import { defineStore } from 'pinia';
 import { watch } from 'vue';
 import { useSupabaseSync } from '@/composables/supabase/useSupabaseSync';
 import { pinia as pluginPinia } from '@/plugins/01.pinia.client';
 import { logger } from '@/utils/logger';
 import { useNuxtApp } from '#imports';
 // Define the state structure
-interface PreferencesState {
+export interface PreferencesState {
   streamerMode: boolean;
   teamHide: Record<string, boolean>;
   taskTeamHideAll: boolean;
@@ -25,6 +25,18 @@ interface PreferencesState {
   neededitemsStyle: string | null;
   hideoutPrimaryView?: string | null;
   localeOverride: string | null;
+  // Task filter settings
+  showNonSpecialTasks: boolean;
+  showEodTasks: boolean;
+  showLightkeeperTasks: boolean;
+  // Task appearance settings
+  showRequiredLabels: boolean;
+  showNotRequiredLabels: boolean;
+  showExperienceRewards: boolean;
+  showTaskIds: boolean;
+  showNextQuests: boolean;
+  showPreviousQuests: boolean;
+  taskCardDensity: 'comfortable' | 'compact';
   saving?: {
     streamerMode: boolean;
     hideGlobalTasks: boolean;
@@ -53,6 +65,18 @@ export const preferencesDefaultState: PreferencesState = {
   neededitemsStyle: null,
   hideoutPrimaryView: null,
   localeOverride: null,
+  // Task filter settings (all shown by default)
+  showNonSpecialTasks: true,
+  showEodTasks: true,
+  showLightkeeperTasks: true,
+  // Task appearance settings
+  showRequiredLabels: true,
+  showNotRequiredLabels: true,
+  showExperienceRewards: false,
+  showTaskIds: true,
+  showNextQuests: true,
+  showPreviousQuests: true,
+  taskCardDensity: 'compact',
   saving: {
     streamerMode: false,
     hideGlobalTasks: false,
@@ -67,58 +91,7 @@ const initialSavingState = {
   hideNonKappaTasks: false,
   itemsNeededHideNonFIR: false,
 };
-// Define getter types
-type PreferencesGetters = {
-  getStreamerMode: (state: PreferencesState) => boolean;
-  teamIsHidden: (state: PreferencesState) => (teamId: string) => boolean;
-  taskTeamAllHidden: (state: PreferencesState) => boolean;
-  itemsTeamAllHidden: (state: PreferencesState) => boolean;
-  itemsTeamNonFIRHidden: (state: PreferencesState) => boolean;
-  itemsTeamHideoutHidden: (state: PreferencesState) => boolean;
-  mapTeamAllHidden: (state: PreferencesState) => boolean;
-  getTaskPrimaryView: (state: PreferencesState) => string;
-  getTaskMapView: (state: PreferencesState) => string;
-  getTaskTraderView: (state: PreferencesState) => string;
-  getTaskSecondaryView: (state: PreferencesState) => string;
-  getTaskUserView: (state: PreferencesState) => string;
-  getNeededTypeView: (state: PreferencesState) => string;
-  itemsNeededHideNonFIR: (state: PreferencesState) => boolean;
-  getHideGlobalTasks: (state: PreferencesState) => boolean;
-  getHideNonKappaTasks: (state: PreferencesState) => boolean;
-  getNeededItemsStyle: (state: PreferencesState) => string;
-  getHideoutPrimaryView: (state: PreferencesState) => string;
-  getLocaleOverride: (state: PreferencesState) => string | null;
-};
-// Define action types
-type PreferencesActions = {
-  setStreamerMode(mode: boolean): void;
-  toggleHidden(teamId: string): void;
-  setQuestTeamHideAll(hide: boolean): void;
-  setItemsTeamHideAll(hide: boolean): void;
-  setItemsTeamHideNonFIR(hide: boolean): void;
-  setItemsTeamHideHideout(hide: boolean): void;
-  setMapTeamHideAll(hide: boolean): void;
-  setTaskPrimaryView(view: string): void;
-  setTaskMapView(view: string): void;
-  setTaskTraderView(view: string): void;
-  setTaskSecondaryView(view: string): void;
-  setTaskUserView(view: string): void;
-  setNeededTypeView(view: string): void;
-  setItemsNeededHideNonFIR(hide: boolean): void;
-  setHideGlobalTasks(hide: boolean): void;
-  setHideNonKappaTasks(hide: boolean): void;
-  setNeededItemsStyle(style: string): void;
-  setHideoutPrimaryView(view: string): void;
-  setLocaleOverride(locale: string | null): void;
-};
-// Define the store type
-type PreferencesStoreDefinition = StoreDefinition<
-  'preferences',
-  PreferencesState,
-  PreferencesGetters,
-  PreferencesActions
->;
-export const usePreferencesStore: PreferencesStoreDefinition = defineStore('preferences', {
+export const usePreferencesStore = defineStore('preferences', {
   state: (): PreferencesState => {
     const state = JSON.parse(JSON.stringify(preferencesDefaultState));
     // Always reset saving state on store creation
@@ -199,13 +172,42 @@ export const usePreferencesStore: PreferencesStoreDefinition = defineStore('pref
     getLocaleOverride: (state) => {
       return state.localeOverride ?? null;
     },
+    // Task filter getters
+    getShowNonSpecialTasks: (state) => {
+      return state.showNonSpecialTasks ?? true;
+    },
+    getShowEodTasks: (state) => {
+      return state.showEodTasks ?? true;
+    },
+    getShowLightkeeperTasks: (state) => {
+      return state.showLightkeeperTasks ?? true;
+    },
+    // Task appearance getters
+    getShowRequiredLabels: (state) => {
+      return state.showRequiredLabels ?? true;
+    },
+    getShowNotRequiredLabels: (state) => {
+      return state.showNotRequiredLabels ?? true;
+    },
+    getShowExperienceRewards: (state) => {
+      return state.showExperienceRewards ?? false;
+    },
+    getShowTaskIds: (state) => {
+      return state.showTaskIds ?? true;
+    },
+    getShowNextQuests: (state) => {
+      return state.showNextQuests ?? true;
+    },
+    getShowPreviousQuests: (state) => {
+      return state.showPreviousQuests ?? true;
+    },
+    getTaskCardDensity: (state) => {
+      return state.taskCardDensity ?? 'compact';
+    },
   },
   actions: {
     setStreamerMode(mode: boolean) {
       this.streamerMode = mode;
-      // Persistence handled automatically by plugin
-      this.saving = this.saving ?? { ...initialSavingState };
-      this.saving.streamerMode = true;
     },
     toggleHidden(teamId: string) {
       if (!this.teamHide) {
@@ -273,6 +275,38 @@ export const usePreferencesStore: PreferencesStoreDefinition = defineStore('pref
     setLocaleOverride(locale: string | null) {
       this.localeOverride = locale;
     },
+    // Task filter actions
+    setShowNonSpecialTasks(show: boolean) {
+      this.showNonSpecialTasks = show;
+    },
+    setShowEodTasks(show: boolean) {
+      this.showEodTasks = show;
+    },
+    setShowLightkeeperTasks(show: boolean) {
+      this.showLightkeeperTasks = show;
+    },
+    // Task appearance actions
+    setShowRequiredLabels(show: boolean) {
+      this.showRequiredLabels = show;
+    },
+    setShowNotRequiredLabels(show: boolean) {
+      this.showNotRequiredLabels = show;
+    },
+    setShowExperienceRewards(show: boolean) {
+      this.showExperienceRewards = show;
+    },
+    setShowTaskIds(show: boolean) {
+      this.showTaskIds = show;
+    },
+    setShowNextQuests(show: boolean) {
+      this.showNextQuests = show;
+    },
+    setShowPreviousQuests(show: boolean) {
+      this.showPreviousQuests = show;
+    },
+    setTaskCardDensity(density: 'comfortable' | 'compact') {
+      this.taskCardDensity = density;
+    },
   },
   // Enable automatic localStorage persistence
   persist: {
@@ -304,9 +338,22 @@ export const usePreferencesStore: PreferencesStoreDefinition = defineStore('pref
       'neededitemsStyle',
       'hideoutPrimaryView',
       'localeOverride',
+      // Task filter settings
+      'showNonSpecialTasks',
+      'showEodTasks',
+      'showLightkeeperTasks',
+      // Task appearance settings
+      'showRequiredLabels',
+      'showNotRequiredLabels',
+      'showExperienceRewards',
+      'showTaskIds',
+      'showNextQuests',
+      'showPreviousQuests',
+      'taskCardDensity',
     ],
   },
-}) as PreferencesStoreDefinition;
+});
+export type PreferencesStore = ReturnType<typeof usePreferencesStore>;
 // Watch for Supabase user state changing
 let stopUserWatch: (() => void) | null = null;
 if (import.meta.client) {

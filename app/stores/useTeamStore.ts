@@ -12,13 +12,34 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Store } from 'pinia';
 import { useToast } from '#imports';
 /**
- * Helper to extract team ID from system store
- * Uses the userTeam getter which handles both 'team' and legacy 'team_id' fields
+ * Helper to get current game mode
+ */
+function getCurrentGameMode(): 'pvp' | 'pve' {
+  try {
+    const tarkovStore = useTarkovStore();
+    return (tarkovStore.getCurrentGameMode?.() as 'pvp' | 'pve') || GAME_MODES.PVP;
+  } catch {
+    return GAME_MODES.PVP;
+  }
+}
+/**
+ * Helper to extract team ID from system store for the current game mode
+ * Reads directly from state to avoid getter reactivity issues
  */
 function getTeamIdFromSystemStore(
   systemStore: ReturnType<typeof useSystemStoreWithSupabase>['systemStore']
 ): string | null {
-  return systemStore.userTeam;
+  const state = systemStore.$state as {
+    team?: string | null;
+    team_id?: string | null;
+    pvp_team_id?: string | null;
+    pve_team_id?: string | null;
+  };
+  const mode = getCurrentGameMode();
+  if (mode === 'pve') {
+    return state.pve_team_id ?? state.team ?? state.team_id ?? null;
+  }
+  return state.pvp_team_id ?? state.team ?? state.team_id ?? null;
 }
 /**
  * Team store definition with getters for team info and members
@@ -72,10 +93,8 @@ let teamStoreInstance: TeamStoreInstance | null = null;
 export function useTeamStoreWithSupabase(): TeamStoreInstance {
   // Return cached instance if it exists
   if (teamStoreInstance) {
-    logger.debug('[TeamStore] Returning cached instance');
     return teamStoreInstance;
   }
-  logger.debug('[TeamStore] Creating new instance');
   const { systemStore } = useSystemStoreWithSupabase();
   const tarkovStore = useTarkovStore();
   const teamStore = useTeamStore();
@@ -83,16 +102,12 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
   const teamChannel = ref<RealtimeChannel | null>(null);
   // Computed reference to the team document based on system store
   const teamFilter = computed(() => {
-    // Access state directly for reactivity
     const currentSystemStateTeam = getTeamIdFromSystemStore(systemStore);
-    if (
-      $supabase.user.loggedIn &&
+    return $supabase.user?.loggedIn &&
       currentSystemStateTeam &&
       typeof currentSystemStateTeam === 'string'
-    ) {
-      return `id=eq.${currentSystemStateTeam}`;
-    }
-    return undefined;
+      ? `id=eq.${currentSystemStateTeam}`
+      : undefined;
   });
   // Custom data handler that transforms DB data before patching to store
   const handleTeamData = (data: Record<string, unknown> | null) => {
@@ -116,21 +131,8 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
       } else if ('join_code' in data && data.join_code === null) {
         transformed.joinCode = null;
       }
-      logger.debug('[TeamStore] Transforming data:', {
-        hasOwnerId: 'owner_id' in data,
-        hasJoinCode: 'join_code' in data,
-        owner: transformed.owner,
-        joinCode: transformed.joinCode,
-      });
-      // Manually patch the store with transformed data
       teamStore.$patch(transformed as Partial<TeamState>);
-      // Refresh members after team meta arrives
       void refreshMembers();
-      logger.debug('[TeamStore] After patch:', {
-        owner: teamStore.owner,
-        joinCode: teamStore.joinCode,
-        inviteCode: teamStore.inviteCode,
-      });
     } else {
       teamStore.$reset();
       teamStore.$patch((state) => {
@@ -203,6 +205,19 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
           } as Record<string, MemberProfile>;
         });
       })
+      .on('broadcast', { event: 'task-update' }, (payload) => {
+        const data = (payload?.payload || {}) as {
+          userId?: string;
+          gameMode?: 'pvp' | 'pve';
+          taskId?: string;
+          complete?: boolean;
+          failed?: boolean;
+        };
+        if (!data?.userId || !data?.taskId || data.userId === $supabase.user?.id) return;
+        // Emit event for teammate stores to pick up
+        logger.debug('[TeamStore] Received task-update broadcast:', data);
+        window.dispatchEvent(new CustomEvent('teammate-task-update', { detail: data }));
+      })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           void refreshMembers();
@@ -273,6 +288,46 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
           },
         } as Record<string, MemberProfile>;
       });
+    },
+    { deep: true }
+  );
+  // Track previous task completions to detect changes
+  let prevTaskCompletions: Record<string, { complete?: boolean; failed?: boolean }> = {};
+  // Watch for task completion changes and broadcast immediately
+  watch(
+    () => {
+      const mode =
+        (tarkovStore.$state.currentGameMode as 'pvp' | 'pve' | undefined) || GAME_MODES.PVP;
+      const modeState = (tarkovStore.$state as unknown as Record<string, unknown>)[mode] as {
+        taskCompletions?: Record<string, { complete?: boolean; failed?: boolean }>;
+      } | null;
+      return { mode, taskCompletions: modeState?.taskCompletions || {} };
+    },
+    (newVal) => {
+      const currentTeamId = getTeamIdFromSystemStore(systemStore);
+      if (!currentTeamId || !teamChannel.value || !$supabase.user?.id) {
+        prevTaskCompletions = { ...newVal.taskCompletions };
+        return;
+      }
+      // Find changed tasks
+      for (const [taskId, completion] of Object.entries(newVal.taskCompletions)) {
+        const prev = prevTaskCompletions[taskId];
+        if (!prev || prev.complete !== completion?.complete || prev.failed !== completion?.failed) {
+          // Broadcast the change immediately
+          void teamChannel.value.send({
+            type: 'broadcast',
+            event: 'task-update',
+            payload: {
+              userId: $supabase.user.id,
+              gameMode: newVal.mode,
+              taskId,
+              complete: completion?.complete ?? false,
+              failed: completion?.failed ?? false,
+            },
+          });
+        }
+      }
+      prevTaskCompletions = { ...newVal.taskCompletions };
     },
     { deep: true }
   );
@@ -390,6 +445,43 @@ export function useTeammateStores() {
         onData: handleTeammateData,
       });
       teammateUnsubscribes.value[teammateId] = cleanup;
+      // Listen for task-update broadcasts for this teammate
+      const handleTaskUpdate = (event: Event) => {
+        const data = (event as CustomEvent).detail as {
+          userId: string;
+          gameMode: 'pvp' | 'pve';
+          taskId: string;
+          complete: boolean;
+          failed: boolean;
+        };
+        if (data.userId !== teammateId) return;
+        // Update the teammate store with the task change
+        const modeKey = data.gameMode === 'pve' ? 'pve' : 'pvp';
+        const currentModeData = storeInstance.$state[modeKey] || {};
+        const currentCompletions =
+          (
+            currentModeData as {
+              taskCompletions?: Record<string, { complete?: boolean; failed?: boolean }>;
+            }
+          ).taskCompletions || {};
+        storeInstance.$patch({
+          [modeKey]: {
+            ...currentModeData,
+            taskCompletions: {
+              ...currentCompletions,
+              [data.taskId]: { complete: data.complete, failed: data.failed },
+            },
+          },
+        });
+        logger.debug(`[TeammateStore] Applied task-update for ${teammateId}:`, data);
+      };
+      window.addEventListener('teammate-task-update', handleTaskUpdate);
+      // Update cleanup to also remove the event listener
+      const originalCleanup = teammateUnsubscribes.value[teammateId];
+      teammateUnsubscribes.value[teammateId] = () => {
+        window.removeEventListener('teammate-task-update', handleTaskUpdate);
+        originalCleanup?.();
+      };
     } catch (error) {
       logger.error(`Error creating store for teammate ${teammateId}:`, error);
     }

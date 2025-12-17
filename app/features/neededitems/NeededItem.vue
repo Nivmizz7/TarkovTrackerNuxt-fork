@@ -1,17 +1,6 @@
 <template>
-  <template v-if="props.itemStyle == 'mediumCard'">
-    <div class="w-full p-2 sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/6">
-      <NeededItemMediumCard
-        :need="props.need"
-        @decrease-count="decreaseCount()"
-        @toggle-count="toggleCount()"
-        @increase-count="increaseCount()"
-        @set-count="setCount"
-      />
-    </div>
-  </template>
-  <template v-else-if="props.itemStyle == 'smallCard'">
-    <div class="w-auto p-1">
+  <template v-if="props.itemStyle == 'card'">
+    <div class="h-full">
       <NeededItemSmallCard
         :need="props.need"
         @decrease-count="decreaseCount()"
@@ -36,11 +25,9 @@
 <script setup>
   import { computed, defineAsyncComponent, provide } from 'vue';
   import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
-  const NeededItemMediumCard = defineAsyncComponent(
-    () => import('@/features/neededitems/NeededItemMediumCard')
-  );
   const NeededItemSmallCard = defineAsyncComponent(
     () => import('@/features/neededitems/NeededItemSmallCard')
   );
@@ -58,6 +45,7 @@
   const progressStore = useProgressStore();
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   const tasks = computed(() => metadataStore.tasks);
   const hideoutStations = computed(() => metadataStore.hideoutStations);
   const alternativeTasks = computed(() => metadataStore.alternativeTasks);
@@ -265,30 +253,55 @@
   });
   const teamNeeds = computed(() => {
     const needingUsers = [];
+    // Check if team items should be hidden based on preferences
+    if (preferencesStore.itemsTeamAllHidden) {
+      return needingUsers;
+    }
+    // Check FIR preference - if hiding non-FIR and this item is not FIR, hide team needs
+    if (preferencesStore.itemsTeamNonFIRHidden && !props.need.foundInRaid) {
+      return needingUsers;
+    }
+    // Check hideout preference - if hiding hideout items and this is a hideout module
+    if (preferencesStore.itemsTeamHideoutHidden && props.need.needType === 'hideoutModule') {
+      return needingUsers;
+    }
     if (props.need.needType == 'taskObjective') {
-      // Find all of the users that need this objective
-      Object.entries(progressStore.objectiveCompletions[props.need.id]).forEach(
-        ([user, completed]) => {
-          if (!completed && !progressStore.tasksCompletions[props.need.taskId][user]) {
-            needingUsers.push({
-              user: user,
-              count: progressStore.teamStores[user].getObjectiveCount(props.need.id),
-            });
-          }
+      // Safely get completions, defaulting to empty object
+      const objectiveCompletions = progressStore.objectiveCompletions?.[props.need.id] || {};
+      const taskCompletions = progressStore.tasksCompletions?.[props.need.taskId] || {};
+      // Find all teammates (not self) that need this objective
+      Object.entries(objectiveCompletions).forEach(([user, completed]) => {
+        // Skip self - we only want to show teammates
+        if (user === 'self') return;
+        // Skip if objective is completed or parent task is completed
+        if (completed || taskCompletions[user]) return;
+        // Get the teammate's store and count
+        const teammateStore = progressStore.teamStores?.[user];
+        if (teammateStore) {
+          needingUsers.push({
+            user: user,
+            count: teammateStore.getObjectiveCount?.(props.need.id) ?? 0,
+          });
         }
-      );
+      });
     } else if (props.need.needType == 'hideoutModule') {
-      // Find all of the users that need this module
-      Object.entries(progressStore.modulePartCompletions[props.need.id]).forEach(
-        ([user, completed]) => {
-          if (!completed) {
-            needingUsers.push({
-              user: user,
-              count: progressStore.teamStores[user].getHideoutPartCount(props.need.id),
-            });
-          }
+      // Safely get completions, defaulting to empty object
+      const partCompletions = progressStore.modulePartCompletions?.[props.need.id] || {};
+      // Find all teammates (not self) that need this module part
+      Object.entries(partCompletions).forEach(([user, completed]) => {
+        // Skip self - we only want to show teammates
+        if (user === 'self') return;
+        // Skip if part is completed
+        if (completed) return;
+        // Get the teammate's store and count
+        const teammateStore = progressStore.teamStores?.[user];
+        if (teammateStore) {
+          needingUsers.push({
+            user: user,
+            count: teammateStore.getHideoutPartCount?.(props.need.id) ?? 0,
+          });
         }
-      );
+      });
     }
     return needingUsers;
   });

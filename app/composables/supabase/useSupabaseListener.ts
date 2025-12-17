@@ -40,18 +40,23 @@ export function useSupabaseListener({
   const { $supabase } = useNuxtApp();
   const channel = ref<RealtimeChannel | null>(null);
   const isSubscribed = ref(false);
+  const hasInitiallyLoaded = ref(false);
   const storeIdForLogging = storeId || store.$id;
   // Helper to get current filter value (supports both string and ref)
   const getFilterValue = (): string | undefined => unref(filter);
   // Initial fetch
   const fetchData = async () => {
     const currentFilter = getFilterValue();
-    if (!currentFilter) return;
+    if (!currentFilter) {
+      hasInitiallyLoaded.value = true;
+      return;
+    }
     // Parse filter to get column and value
     // Expecting format "column=eq.value"
     const [column, rest] = currentFilter.split('=eq.');
     if (!column || !rest) {
       logger.error(`[${storeIdForLogging}] Invalid filter format. Expected 'col=eq.val'`);
+      hasInitiallyLoaded.value = true;
       return;
     }
     const { data, error } = await $supabase.client
@@ -62,6 +67,7 @@ export function useSupabaseListener({
     if (error && error.code !== 'PGRST116') {
       // PGRST116 is "The result contains 0 rows"
       logger.error(`[${storeIdForLogging}] Error fetching initial data:`, error);
+      hasInitiallyLoaded.value = true;
       return;
     }
     if (data) {
@@ -74,6 +80,9 @@ export function useSupabaseListener({
       resetStore(store);
       if (onData) onData(null);
     }
+    // Mark initial load as complete
+    hasInitiallyLoaded.value = true;
+    devLog(`[${storeIdForLogging}] Initial data load complete`);
   };
   const setupSubscription = () => {
     const currentFilter = getFilterValue();
@@ -125,6 +134,8 @@ export function useSupabaseListener({
       $supabase.client.removeChannel(channel.value as any);
       channel.value = null;
       isSubscribed.value = false;
+      // Note: Don't reset hasInitiallyLoaded here - it should persist as long as store has data
+      // This prevents showing loading spinner when navigating back to a page
     }
   };
   // Watch for filter changes - supports both static strings and reactive refs
@@ -148,6 +159,7 @@ export function useSupabaseListener({
   }
   return {
     isSubscribed,
+    hasInitiallyLoaded,
     cleanup,
     fetchData,
   };

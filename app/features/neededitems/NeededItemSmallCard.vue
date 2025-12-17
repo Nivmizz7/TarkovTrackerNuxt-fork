@@ -1,105 +1,112 @@
 <template>
   <KeepAlive>
-    <div class="relative h-full rounded" :class="itemCardClasses">
-      <div class="flex h-full flex-col items-end">
-        <!-- Item image -->
-        <div
-          class="relative flex aspect-square max-h-[300px] min-h-[150px] min-w-[150px] self-stretch"
-        >
-          <div style="position: absolute; left: 0px; top: 0px; z-index: 2">
-            <div
-              class="item-count-sheet flex items-center px-2 py-1 shadow-md"
-              :class="itemCountTagClasses"
-            >
-              {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
-              <UIcon
-                v-if="props.need.foundInRaid"
-                name="i-mdi-checkbox-marked-circle-outline"
-                class="ml-1 h-4 w-4"
-              />
-            </div>
+    <div class="flex h-full flex-col rounded-lg" :class="itemCardClasses">
+      <!-- Item image with count badge -->
+      <div
+        class="relative aspect-square w-full shrink-0 overflow-hidden rounded-t-lg"
+        :class="{
+          'cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]':
+            isSingleItem && !selfCompletedNeed,
+        }"
+        :title="
+          isSingleItem && !selfCompletedNeed
+            ? currentCount >= neededCount
+              ? 'Click to uncollect'
+              : 'Click to collect'
+            : undefined
+        "
+        @click="isSingleItem && !selfCompletedNeed ? $emit('toggleCount') : null"
+      >
+        <div class="absolute top-0 left-0 z-10">
+          <div
+            class="flex items-center gap-1 rounded-br-lg px-2 py-1 text-sm font-bold shadow-lg"
+            :class="itemCountTagClasses"
+          >
+            {{ currentCount }}/{{ neededCount }}
+            <UIcon
+              v-if="props.need.foundInRaid"
+              name="i-mdi-checkbox-marked-circle-outline"
+              class="h-4 w-4"
+            />
           </div>
-          <GameItem
-            v-if="imageItem"
-            :image-item="imageItem"
-            :src="imageItem.image512pxLink"
-            :is-visible="true"
-            size="large"
-            simple-mode
-            class="h-full w-full"
-          />
         </div>
-        <div class="mx-2 mt-2 flex items-center self-center">
-          <div class="px-2 text-center">
+        <GameItem
+          v-if="imageItem"
+          :image-item="imageItem"
+          :src="imageItem.image512pxLink"
+          :is-visible="true"
+          :item-name="item.name"
+          :wiki-link="item.wikiLink"
+          :dev-link="item.link"
+          :task-wiki-link="relatedTask?.wikiLink"
+          size="small"
+          simple-mode
+          fill
+          class="h-full w-full"
+        />
+      </div>
+      <!-- Card content -->
+      <div class="flex flex-1 flex-col p-2">
+        <!-- Item name -->
+        <div class="flex min-h-10 items-start justify-center">
+          <span
+            class="line-clamp-2 text-center text-[clamp(0.7rem,2.5vw,0.875rem)] leading-snug font-medium"
+          >
             {{ item.name }}
-          </div>
-          <UIcon
-            v-if="props.need.foundInRaid"
-            name="i-mdi-checkbox-marked-circle-outline"
-            class="ml-1 h-4 w-4"
-          />
+          </span>
         </div>
-        <!-- Item need details -->
-        <div class="mx-2 mt-2 flex w-full flex-col self-center">
+        <!-- Task/Station link -->
+        <div class="flex min-h-7 w-full items-center justify-center overflow-hidden">
           <template v-if="props.need.needType == 'taskObjective'">
-            <div class="flex justify-center">
-              <task-link :task="relatedTask" />
-            </div>
-            <RequirementInfo
-              :need-type="props.need.needType"
-              :level-required="levelRequired"
-              :locked-before="lockedBefore"
-              :player-level="tarkovStore.playerLevel()"
+            <TaskLink
+              :task="relatedTask"
+              compact
+              class="max-w-full text-[clamp(0.625rem,2vw,0.75rem)]"
             />
           </template>
           <template v-else-if="props.need.needType == 'hideoutModule'">
-            <div class="mt-1 mb-1 flex justify-center">
-              <div class="text-center">
-                <station-link
-                  v-if="relatedStation"
-                  :station="relatedStation"
-                  class="justify-center"
-                />
-                <span v-else class="text-sm text-gray-300">Unknown station</span>
-              </div>
-              <div class="ml-1">{{ props.need.hideoutModule.level }}</div>
-            </div>
-            <RequirementInfo
-              :need-type="props.need.needType"
-              :level-required="levelRequired"
-              :locked-before="lockedBefore"
-              :player-level="tarkovStore.playerLevel()"
-              :related-station="relatedStation"
-              :hideout-level="props.need.hideoutModule.level"
+            <StationLink
+              v-if="relatedStation"
+              :station="relatedStation"
+              compact
+              class="max-w-full text-[clamp(0.625rem,2vw,0.75rem)]"
             />
+            <span class="ml-1 text-[clamp(0.625rem,2vw,0.75rem)] text-gray-400">
+              {{ props.need.hideoutModule.level }}
+            </span>
           </template>
         </div>
-        <!-- Item count actions -->
+        <!-- Requirements (Level & Tasks Before) -->
         <div
-          v-if="!selfCompletedNeed"
-          class="mx-2 mt-2 mb-2 flex h-full justify-center self-stretch"
+          class="flex min-h-10 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[clamp(0.625rem,1.8vw,0.75rem)] text-gray-400"
         >
-          <ItemCountControls
-            :current-count="currentCount"
-            :needed-count="neededCount"
-            @decrease="$emit('decreaseCount')"
-            @increase="$emit('increaseCount')"
-            @toggle="$emit('toggleCount')"
-            @set-count="(count) => $emit('setCount', count)"
-          />
-        </div>
-        <!-- Show static count for completed parent items (Completed tab) -->
-        <div
-          v-else-if="isParentCompleted"
-          class="mx-2 mt-2 mb-2 flex h-full items-center justify-center self-stretch"
-        >
-          <span class="text-success-400 text-sm font-semibold">
-            {{ currentCount.toLocaleString() }}/{{ neededCount.toLocaleString() }}
+          <span
+            v-if="levelRequired > 0 && levelRequired > playerLevel"
+            class="flex items-center gap-1"
+          >
+            <UIcon name="i-mdi-account" class="h-3.5 w-3.5" />
+            Lvl {{ levelRequired }}
+          </span>
+          <span v-if="lockedBefore > 0" class="flex items-center gap-1">
+            <UIcon name="i-mdi-lock-outline" class="h-3.5 w-3.5" />
+            {{ lockedBefore }} before
           </span>
         </div>
-        <!-- Show team needs for items where self is done but parent isn't -->
-        <div v-else class="mx-2 mt-2 mb-2 flex h-full justify-center self-stretch">
-          <TeamNeedsDisplay :team-needs="teamNeeds" :needed-count="neededCount" />
+        <!-- Controls - hide for single items since clicking image toggles -->
+        <div v-if="!isSingleItem" class="mt-auto flex items-center justify-center pt-2">
+          <template v-if="!selfCompletedNeed">
+            <ItemCountControls
+              :current-count="currentCount"
+              :needed-count="neededCount"
+              @decrease="$emit('decreaseCount')"
+              @increase="$emit('increaseCount')"
+              @toggle="$emit('toggleCount')"
+              @set-count="(count) => $emit('setCount', count)"
+            />
+          </template>
+          <span v-else class="text-success-400 text-sm font-bold">
+            {{ currentCount }}/{{ neededCount }} ✓
+          </span>
         </div>
       </div>
     </div>
@@ -109,8 +116,6 @@
   import { computed, defineAsyncComponent, inject } from 'vue';
   import { useTarkovStore } from '@/stores/useTarkov';
   import ItemCountControls from './ItemCountControls.vue';
-  import RequirementInfo from './RequirementInfo.vue';
-  import TeamNeedsDisplay from './TeamNeedsDisplay.vue';
   const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink'));
   const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink'));
   const props = defineProps({
@@ -120,19 +125,20 @@
     },
   });
   const tarkovStore = useTarkovStore();
+  const playerLevel = computed(() => tarkovStore.playerLevel());
   const {
     selfCompletedNeed,
-    isParentCompleted,
     relatedTask,
     relatedStation,
-    lockedBefore,
     neededCount,
     currentCount,
     levelRequired,
+    lockedBefore,
     item,
-    teamNeeds,
     imageItem,
   } = inject('neededitem');
+  // Simplified UI for single-quantity items
+  const isSingleItem = computed(() => neededCount.value === 1);
   const itemCardClasses = computed(() => {
     return {
       'bg-gradient-to-t from-complete to-surface':
