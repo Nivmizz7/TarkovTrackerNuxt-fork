@@ -130,21 +130,28 @@ export default defineNuxtConfig({
   },
   vite: {
     base: '/',
-    optimizeDeps: {
+      optimizeDeps: {
       exclude: ['better-sqlite3'],
     },
     define: {
       // Suppress Suspense experimental feature warning
       __VUE_PROD_SUSPENSE__: 'false',
     },
-    vue: {
-      // Forwarded to @vitejs/plugin-vue
-      template: {
-        compilerOptions: {
-          isCustomElement: (tag: string) => tag === 'suspense',
-        },
+    server: {
+      host: true, // écoute sur toutes les interfaces
+      port: process.env.PORT || 3156,
+      allowedHosts: ['nuxt.nivmizz7.fr'] // ajoute ton domaine ici
+  },
+  vue: {
+    // Forwarded to @vitejs/plugin-vue
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag: string) => tag === 'suspense',
       },
     },
+  },
+},
+
     build: {
       rollupOptions: {
         output: {
