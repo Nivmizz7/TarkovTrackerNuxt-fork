@@ -43,7 +43,54 @@
     tasks.value.forEach((task) => {
       statusMap[task.id] = determineTaskStatus(task);
     });
-    return statusMap;
+  };
+  watch(
+    [
+      getTaskPrimaryView,
+      getTaskSecondaryView,
+      getTaskUserView,
+      getTaskMapView,
+      getTaskTraderView,
+      getHideNonKappaTasks,
+      getShowNonSpecialTasks,
+      getShowLightkeeperTasks,
+      getShowEodTasks,
+      tasksLoading,
+      tasks,
+      maps,
+      tasksCompletions,
+      unlockedTasks,
+    ],
+    () => {
+      refreshVisibleTasks();
+    },
+    { immediate: true }
+  );
+  const isLoading = computed(() => tasksLoading.value || reloadingTasks.value);
+  // Search state
+  const searchQuery = ref('');
+  // Filter tasks by search query
+  const filteredTasks = computed(() => {
+    if (!searchQuery.value.trim()) {
+      return visibleTasks.value;
+    }
+    const query = searchQuery.value.toLowerCase().trim();
+    return visibleTasks.value.filter((task) => task.name?.toLowerCase().includes(query));
+  });
+  // Pagination state for infinite scroll
+  const displayCount = ref(15);
+  const tasksSentinel = ref<HTMLElement | null>(null);
+  const focusedTaskId = ref<string | null>(null);
+  const paginatedTasks = computed(() => {
+    const baseTasks = filteredTasks.value.slice(0, displayCount.value);
+    // If there's a focused task not in the current page, prepend it
+    if (focusedTaskId.value) {
+      const focusedTask = filteredTasks.value.find((t) => t.id === focusedTaskId.value);
+      if (focusedTask && !baseTasks.some((t) => t.id === focusedTaskId.value)) {
+        return [focusedTask, ...baseTasks];
+      }
+    }
+    return baseTasks;
   });
 
   const determineTaskStatus = (task: Task): TaskStatus => {
