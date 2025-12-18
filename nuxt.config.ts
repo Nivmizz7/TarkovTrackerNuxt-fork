@@ -11,7 +11,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Server-only (private) runtime config
     supabaseUrl: process.env.SB_URL || process.env.SUPABASE_URL || '',
-    supabaseServiceKey: process.env.SB_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    supabaseServiceKey:
+      process.env.SB_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     supabaseAnonKey: process.env.SB_ANON_KEY || process.env.SUPABASE_ANON_KEY || '',
     public: {
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',

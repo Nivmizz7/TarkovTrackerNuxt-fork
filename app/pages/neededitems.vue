@@ -19,7 +19,9 @@
       </div>
       <!-- Grouped View -->
       <div v-else-if="groupByItem" class="p-2">
-        <div class="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div
+          class="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+        >
           <NeededItemGroupedCard
             v-for="(group, index) in visibleGroupedItems"
             :key="group.itemId"
@@ -42,7 +44,9 @@
       </div>
       <!-- Grid View -->
       <div v-else class="p-2">
-        <div class="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div
+          class="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+        >
           <NeededItem
             v-for="(item, index) in visibleIndividualItems"
             :key="`${item.needType}-${item.id}`"
@@ -91,7 +95,14 @@
   // Grouped item interface
   interface GroupedItem {
     itemId: string;
-    item: { id: string; name: string; iconLink?: string; image512pxLink?: string; wikiLink?: string; link?: string };
+    item: {
+      id: string;
+      name: string;
+      iconLink?: string;
+      image512pxLink?: string;
+      wikiLink?: string;
+      link?: string;
+    };
     taskFir: number;
     taskNonFir: number;
     hideoutFir: number;
@@ -219,12 +230,40 @@
     } else if (firFilter.value === 'non-fir') {
       items = items.filter((item) => !item.foundInRaid);
     }
-    // Filter by search
+    // Filter by search - searches item name, task name, and hideout station name
     if (search.value) {
+      const searchLower = search.value.toLowerCase();
       items = items.filter((item) => {
         // Some task objectives use markerItem instead of item; guard against missing objects
         const itemName = item.item?.name || (item as NeededItemTaskObjective).markerItem?.name;
-        return itemName?.toLowerCase().includes(search.value.toLowerCase());
+        if (itemName?.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        // Search by task name for task objectives
+        if (item.needType === 'taskObjective') {
+          const task = metadataStore.getTaskById((item as NeededItemTaskObjective).taskId);
+          if (task?.name?.toLowerCase().includes(searchLower)) {
+            return true;
+          }
+        }
+        // Search by hideout station name and level for hideout modules
+        if (item.needType === 'hideoutModule') {
+          const hideoutModule = (item as NeededItemHideoutModule).hideoutModule;
+          const station = metadataStore.getStationById(hideoutModule.stationId);
+          if (station?.name) {
+            // Match station name alone (e.g., "Lavatory")
+            if (station.name.toLowerCase().includes(searchLower)) {
+              return true;
+            }
+            // Match station name with level (e.g., "Lavatory 1" or "Lavatory Level 1")
+            const stationWithLevel = `${station.name} ${hideoutModule.level}`.toLowerCase();
+            const stationWithLevelText = `${station.name} level ${hideoutModule.level}`.toLowerCase();
+            if (stationWithLevel.includes(searchLower) || stationWithLevelText.includes(searchLower)) {
+              return true;
+            }
+          }
+        }
+        return false;
       });
     }
     return items;

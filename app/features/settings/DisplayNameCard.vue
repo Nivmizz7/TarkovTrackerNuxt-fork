@@ -19,7 +19,8 @@
               )
             }}
           </template>
-        </UAlert><!-- Current Game Mode Indicator -->
+        </UAlert>
+        <!-- Current Game Mode Indicator -->
         <div class="border-surface-700 bg-surface-800/30 rounded-lg border p-3">
           <div class="mb-2 flex items-center justify-between">
             <span class="text-surface-200 text-sm font-semibold">
@@ -109,7 +110,8 @@
       </div>
     </template>
   </GenericCard>
-</template><script setup lang="ts">
+</template>
+<script setup lang="ts">
   import { computed, ref, watch } from 'vue';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group flex w-full cursor-pointer items-start gap-4 rounded-md px-2 py-2 transition-colors focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 focus-within:ring-offset-surface-900"
+    class="group focus-within:ring-primary-500 focus-within:ring-offset-surface-900 flex w-full cursor-pointer items-start gap-4 rounded-md px-2 py-2 transition-colors focus-within:ring-2 focus-within:ring-offset-2"
     :class="isComplete ? 'bg-success-500/10' : 'hover:bg-white/5'"
     @click="handleRowClick"
     @mouseenter="objectiveMouseEnter()"
@@ -38,7 +38,7 @@
         <button
           v-else
           type="button"
-          class="flex h-7 w-7 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900"
+          class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 flex h-7 w-7 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           :aria-label="toggleObjectiveLabel"
           :aria-pressed="isComplete"
           :class="

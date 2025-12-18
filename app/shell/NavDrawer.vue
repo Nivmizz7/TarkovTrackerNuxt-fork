@@ -17,10 +17,12 @@
     class="border-primary-800/60 fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-[linear-gradient(180deg,rgba(18,18,20,0.96)_0%,rgba(14,14,15,0.96)_45%,rgba(12,12,13,0.97)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),inset_0_-1px_0_rgba(0,0,0,0.6),1px_0_0_rgba(0,0,0,0.55)] backdrop-blur-sm transition-all duration-300"
     :class="[sidebarWidth]"
   >
-    <div class="relative z-10 flex h-full flex-col overflow-x-hidden overflow-y-auto">
+    <div
+      class="nav-drawer-scroll relative z-10 flex h-full flex-col overflow-x-hidden overflow-y-auto"
+    >
       <NuxtLink
         to="/"
-        class="group mt-2 flex flex-col items-center px-3 py-2 transition-opacity hover:opacity-90"
+        class="group mt-1 flex flex-col items-center px-3 py-1.5 transition-opacity hover:opacity-90"
       >
         <div :class="isCollapsed ? 'w-8' : 'w-[130px]'" class="mx-auto transition-all duration-200">
           <NuxtImg
@@ -33,11 +35,11 @@
             preload
           />
         </div>
-        <div v-if="!isCollapsed" class="mt-2 text-center">
+        <div v-if="!isCollapsed" class="mt-1 text-center">
           <div class="text-base leading-tight font-medium text-white">TarkovTracker.org</div>
         </div>
       </NuxtLink>
-      <div class="bg-primary-800/40 mx-3 my-1 h-px" />
+      <div class="bg-primary-800/40 mx-3 my-0.5 h-px" />
       <ul class="flex flex-col gap-1 px-1">
         <template v-if="isLoggedIn">
           <UDropdownMenu :items="accountItems" :content="{ side: 'right', align: 'start' }">
@@ -78,9 +80,9 @@
           </UButton>
         </template>
       </ul>
-      <div class="bg-primary-800/40 mx-3 my-1 h-px" />
+      <div class="bg-primary-800/40 mx-3 my-0.5 h-px" />
       <DrawerLevel :is-collapsed="isCollapsed" />
-      <div v-if="!isCollapsed" class="my-4 flex flex-col items-center gap-2 px-4">
+      <div v-if="!isCollapsed" class="my-2 flex flex-col items-center gap-1.5 px-4">
         <button
           class="border-primary-800/50 hover:border-primary-600 w-full rounded border px-2 py-1 text-center text-xs font-medium text-white/80 transition-colors hover:text-white"
           @click="navigateToSettings"
@@ -103,11 +105,11 @@
           </button>
         </div>
       </div>
-      <div class="bg-primary-800/40 mx-3 my-1 h-px" />
+      <div class="bg-primary-800/40 mx-3 my-0.5 h-px" />
       <DrawerLinks :is-collapsed="isCollapsed" />
-      <div class="bg-primary-800/40 mx-3 my-1 h-px" />
-      <div class="flex flex-col gap-2">
-        <div v-if="!isCollapsed" class="px-4 py-1">
+      <div class="bg-primary-800/40 mx-3 my-0.5 h-px" />
+      <div class="flex flex-col gap-1">
+        <div v-if="!isCollapsed" class="px-4 py-0.5">
           <h3 class="text-xs font-semibold tracking-wider text-gray-500 uppercase">External</h3>
         </div>
         <ul class="flex flex-col gap-1 px-1">
@@ -216,7 +218,7 @@
     if (displayName && displayName.trim() !== '') {
       return displayName;
     }
-    // Fallback to auth username or 'User'
+    // Fallback to auth username or'User'
     return $supabase.user.displayName || 'User';
   });
   function logout() {
@@ -230,3 +232,13 @@
     },
   ]);
 </script>
+<style scoped>
+  /* Hide scrollbar but keep scroll functionality */
+  .nav-drawer-scroll {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  .nav-drawer-scroll::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+</style>

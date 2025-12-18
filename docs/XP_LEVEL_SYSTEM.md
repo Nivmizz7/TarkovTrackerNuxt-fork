@@ -3,10 +3,13 @@
 ## 1. Overview
 
 ### Purpose
+
 Dynamic XP calculation system with manual adjustment support for tracking player progression in Escape from Tarkov.
 
 ### Problem Statement
+
 Users need to account for untracked XP sources that the tracker cannot automatically detect:
+
 - Daily and weekly quests
 - Combat kills (PMC, Scav, bosses)
 - Survival XP bonuses
@@ -16,7 +19,9 @@ Users need to account for untracked XP sources that the tracker cannot automatic
 The current system only tracks the user's level as a manually-set integer, with no visibility into XP progress toward the next level.
 
 ### Solution: XP Offset Approach
+
 Implement an **XP Offset** system that separates calculated quest XP from user adjustments. This approach:
+
 - Automatically calculates XP from completed tracked tasks
 - Allows users to manually set their actual XP/level
 - Stores only the **difference** (offset) between calculated and actual XP
@@ -32,7 +37,7 @@ Location: [`app/stores/progressState.ts`](../app/stores/progressState.ts:43)
 
 ```typescript
 export interface UserProgressData {
-  level: number;                    // Existing: User's current level (legacy, kept for compatibility)
+  level: number; // Existing: User's current level (legacy, kept for compatibility)
   pmcFaction: 'USEC' | 'BEAR';
   displayName: string | null;
   taskObjectives: { [objectiveId: string]: TaskObjective };
@@ -42,7 +47,7 @@ export interface UserProgressData {
   traders: { [traderId: string]: TraderProgress };
   skills: { [skillName: string]: number };
   // NEW: XP offset for manual adjustment
-  xpOffset: number;  // Default: 0, can be negative or positive
+  xpOffset: number; // Default: 0, can be negative or positive
 }
 ```
 
@@ -50,12 +55,12 @@ export interface UserProgressData {
 
 These values are derived at runtime and should NOT be persisted:
 
-| Value | Description | Calculation |
-|-------|-------------|-------------|
-| `calculatedQuestXP` | Sum of XP from all completed tracked tasks | `Σ task.experience` for all completed tasks |
-| `totalXP` | User's actual total XP | `calculatedQuestXP + xpOffset` |
-| `derivedLevel` | Level determined from totalXP | Highest level where `playerLevels[level].exp <= totalXP` |
-| `xpProgress` | Progress percentage to next level | `(totalXP - currentLevelXP) / (nextLevelXP - currentLevelXP)` |
+| Value               | Description                                | Calculation                                                   |
+| ------------------- | ------------------------------------------ | ------------------------------------------------------------- |
+| `calculatedQuestXP` | Sum of XP from all completed tracked tasks | `Σ task.experience` for all completed tasks                   |
+| `totalXP`           | User's actual total XP                     | `calculatedQuestXP + xpOffset`                                |
+| `derivedLevel`      | Level determined from totalXP              | Highest level where `playerLevels[level].exp <= totalXP`      |
+| `xpProgress`        | Progress percentage to next level          | `(totalXP - currentLevelXP) / (nextLevelXP - currentLevelXP)` |
 
 ### Default State Update
 
@@ -70,7 +75,7 @@ const defaultProgressData: UserProgressData = {
   hideoutModules: {},
   traders: {},
   skills: {},
-  xpOffset: 0,// NEW: Default offset is 0
+  xpOffset: 0, // NEW: Default offset is 0
 };
 ```
 
@@ -82,26 +87,27 @@ const defaultProgressData: UserProgressData = {
 
 ```typescript
 // Total XP calculation
-totalXP = calculatedQuestXP + xpOffset
+totalXP = calculatedQuestXP + xpOffset;
 
 // When user manually sets their XP
-xpOffset = userSetXP - calculatedQuestXP
+xpOffset = userSetXP - calculatedQuestXP;
 
 // When user manually sets their level (convert level to XP first)
-xpOffset = playerLevels[userSetLevel].exp - calculatedQuestXP
+xpOffset = playerLevels[userSetLevel].exp - calculatedQuestXP;
 
 // Derive level from total XP
-derivedLevel = playerLevels.findLast(pl => pl.exp <= totalXP)?.level ?? 1
+derivedLevel = playerLevels.findLast((pl) => pl.exp <= totalXP)?.level ?? 1;
 
 // XP progress to next level (0.0 to 1.0)
-currentLevelXP = playerLevels[derivedLevel].exp
-nextLevelXP = playerLevels[derivedLevel + 1]?.exp ?? currentLevelXP
-xpProgress = (totalXP - currentLevelXP) / (nextLevelXP - currentLevelXP)
+currentLevelXP = playerLevels[derivedLevel].exp;
+nextLevelXP = playerLevels[derivedLevel + 1]?.exp ?? currentLevelXP;
+xpProgress = (totalXP - currentLevelXP) / (nextLevelXP - currentLevelXP);
 ```
 
 ### Example Scenarios
 
 **Scenario 1: Fresh Start**
+
 ```
 calculatedQuestXP = 0
 xpOffset = 0
@@ -110,6 +116,7 @@ derivedLevel = 1
 ```
 
 **Scenario 2: User completes "Debut" quest (600 XP)**
+
 ```
 calculatedQuestXP = 600
 xpOffset = 0 (unchanged)
@@ -118,6 +125,7 @@ derivedLevel = 2(if threshold is met)
 ```
 
 **Scenario 3: User manually sets XP to 5000 (has extra XP from kills)**
+
 ```
 calculatedQuestXP = 600
 xpOffset = 5000 - 600 = 4400
@@ -126,6 +134,7 @@ derivedLevel = (calculated from playerLevels)
 ```
 
 **Scenario 4: User completes another quest (800 XP)**
+
 ```
 calculatedQuestXP = 600+ 800 = 1400
 xpOffset = 4400 (unchanged)
@@ -219,6 +228,7 @@ sequenceDiagram
 ### 5.1 Store Update: `app/stores/progressState.ts`
 
 **Changes Required:**
+
 - Add `xpOffset: number` to `UserProgressData` interface
 - Add `xpOffset: 0` to `defaultProgressData`
 - Add getter: `getXpOffset`
@@ -254,7 +264,7 @@ export function useXpCalculation() {
   const calculatedQuestXP = computed(() => {
     let totalXP = 0;
     const completions = tarkovStore.getCurrentProgressData().taskCompletions;
-    
+
     for (const taskId of Object.keys(completions)) {
       if (completions[taskId]?.complete && !completions[taskId]?.failed) {
         const task = metadataStore.getTaskById(taskId);
@@ -276,7 +286,7 @@ export function useXpCalculation() {
   const derivedLevel = computed(() => {
     const levels = metadataStore.playerLevels;
     if (!levels.length) return 1;
-    
+
     let level = 1;
     for (const pl of levels) {
       if (pl.exp <= totalXP.value) {
@@ -291,13 +301,13 @@ export function useXpCalculation() {
   // XP thresholds for current and next level
   const currentLevelXP = computed(() => {
     const levels = metadataStore.playerLevels;
-    const entry = levels.find(pl => pl.level === derivedLevel.value);
+    const entry = levels.find((pl) => pl.level === derivedLevel.value);
     return entry?.exp ?? 0;
   });
 
   const nextLevelXP = computed(() => {
     const levels = metadataStore.playerLevels;
-    const entry = levels.find(pl => pl.level === derivedLevel.value + 1);
+    const entry = levels.find((pl) => pl.level === derivedLevel.value + 1);
     return entry?.exp ?? currentLevelXP.value;
   });
 
@@ -316,11 +326,12 @@ export function useXpCalculation() {
   // Actions
   function setTotalXP(xp: number) {
     const offset = xp - calculatedQuestXP.value;
-    tarkovStore.setXpOffset(offset);}
+    tarkovStore.setXpOffset(offset);
+  }
 
   function setLevel(level: number) {
     const levels = metadataStore.playerLevels;
-    const entry = levels.find(pl => pl.level === level);
+    const entry = levels.find((pl) => pl.level === level);
     if (entry) {
       setTotalXP(entry.exp);
     }
@@ -340,7 +351,7 @@ export function useXpCalculation() {
     nextLevelXP,
     xpProgress,
     xpToNextLevel,
-    
+
     // Actions
     setTotalXP,
     setLevel,
@@ -352,12 +363,14 @@ export function useXpCalculation() {
 ### 5.3 Enhanced Component: `app/features/drawer/DrawerLevel.vue`
 
 **Changes Required:**
+
 - Import and use `useXpCalculation` composable
 - Add XP progress bar (optional, controlled by preference)
 - Add XP display showing current/next level XP
 - Update level editing to use `setLevel` from composable
 
 **UI Enhancements:**
+
 ```vue
 <!-- XP Progress Bar - shown when showXpProgress preference is true -->
 <div v-if="showXpProgress" class="mt-2">
@@ -366,7 +379,7 @@ export function useXpCalculation() {
     <span>{{ formatNumber(xpToNextLevel) }} to next</span>
   </div>
   <div class="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-    <div 
+    <div
       class="h-full bg-primary transition-all duration-300"
       :style="{ width: `${xpProgress * 100}%` }"
     />
@@ -383,39 +396,37 @@ export function useXpCalculation() {
   <GenericCard title="XP Settings">
     <div class="space-y-4">
       <!-- Current XP Display -->
-      <div class="flex justify-between items-center">
+      <div class="flex items-center justify-between">
         <span>Calculated Quest XP:</span>
         <span class="font-mono">{{ formatNumber(calculatedQuestXP) }}</span>
-      </div><div class="flex justify-between items-center">
+      </div>
+      <div class="flex items-center justify-between">
         <span>XP Offset:</span>
         <span class="font-mono" :class="xpOffset >= 0 ? 'text-green-400' : 'text-red-400'">
           {{ xpOffset >= 0 ? '+' : '' }}{{ formatNumber(xpOffset) }}
         </span>
-      </div><div class="flex justify-between items-center">
+      </div>
+      <div class="flex items-center justify-between">
         <span>Total XP:</span>
         <span class="font-mono font-bold">{{ formatNumber(totalXP) }}</span>
       </div>
-      
+
       <!-- Manual XP Input -->
-      <div class="pt-4 border-t border-gray-700">
-        <label class="block text-sm mb-2">Set Total XP Manually:</label>
+      <div class="border-t border-gray-700 pt-4">
+        <label class="mb-2 block text-sm">Set Total XP Manually:</label>
         <div class="flex gap-2">
-          <input 
+          <input
             v-model.number="manualXP"
             type="number"
-            class="flex-1 bg-gray-800 rounded px-3 py-2"
+            class="flex-1 rounded bg-gray-800 px-3 py-2"
             :placeholder="totalXP.toString()"
           />
-          <button @click="applyManualXP" class="btn-primary">
-            Apply
-          </button>
+          <button @click="applyManualXP" class="btn-primary">Apply</button>
         </div>
       </div>
-      
+
       <!-- Reset Offset -->
-      <button @click="resetOffset" class="btn-secondary w-full">
-        Reset XP Offset to 0
-      </button>
+      <button @click="resetOffset" class="btn-secondary w-full">Reset XP Offset to 0</button>
     </div>
   </GenericCard>
 </template>
@@ -424,6 +435,7 @@ export function useXpCalculation() {
 ### 5.5 Preferences Update: `app/stores/usePreferences.ts`
 
 **New Preference:**
+
 ```typescript
 interface PreferencesState {
   // ... existing preferences
@@ -450,24 +462,28 @@ setShowXpProgress(show: boolean) {
 ## 6. Edge Cases
 
 ### 6.1 Negative Offset
+
 **Scenario:** User has fewer XP than calculated (e.g., they haven't actually completed all marked quests in-game).
 
 **Handling:** This is a valid scenario. The system should:
+
 - Allow negative offsets
 - Display the correct derived level
 - Show accurate progress bar
 
 ```typescript
 // Example: User marked quests complete but hasn't done them in-game
-calculatedQuestXP = 10000
-xpOffset = -5000  // User manually set XP to 5000
-totalXP = 5000    // Correct actual XP
+calculatedQuestXP = 10000;
+xpOffset = -5000; // User manually set XP to 5000
+totalXP = 5000; // Correct actual XP
 ```
 
 ### 6.2 Game Mode Switching
+
 **Scenario:** User switches between PvP and PvE modes.
 
 **Handling:** Each game mode maintains its own separate `xpOffset`:
+
 - PvP progress data has its own `xpOffset`
 - PvE progress data has its own `xpOffset`
 - Switching modes loads the appropriate offset
@@ -485,6 +501,7 @@ pve: {
 ```
 
 ### 6.3 Migration for Existing Users
+
 **Scenario:** Existing users have progress data without `xpOffset` field.
 
 **Handling:** Migration function in [`progressState.ts`](../app/stores/progressState.ts:78):
@@ -492,13 +509,13 @@ pve: {
 ```typescript
 export function migrateToGameModeStructure(legacyData: unknown): UserState {
   // ... existing migration logic
-  
+
   // Ensure xpOffset exists with default value
   const ensureXpOffset = (data: UserProgressData): UserProgressData => ({
     ...data,
     xpOffset: data.xpOffset ?? 0,
   });
-  
+
   return {
     currentGameMode: /* ... */,
     gameEdition: /* ... */,
@@ -509,23 +526,28 @@ export function migrateToGameModeStructure(legacyData: unknown): UserState {
 ```
 
 ### 6.4 Max Level Reached
+
 **Scenario:** User reaches maximum level (currently 79).
 
 **Handling:**
+
 - `xpProgress` returns 1.0 (100%)
 - `xpToNextLevel` returns 0
 - Progress bar shows full
 - Level cannot exceed max
 
 ### 6.5 Task Data Not Loaded
+
 **Scenario:** XP calculation runs before task metadata is loaded.
 
 **Handling:**
+
 - `calculatedQuestXP` returns 0 if no tasks loaded
 - `totalXP` equals `xpOffset` only
 - UI shows loading state or gracefully handles missing data
 
 ### 6.6 Supabase Sync
+
 **Scenario:** `xpOffset` needs to sync to Supabase.
 
 **Handling:** The existing sync mechanism in [`useTarkov.ts`](../app/stores/useTarkov.ts:416) already syncs the entire `pvp_data` and `pve_data` objects, which will include `xpOffset` automatically.
@@ -535,12 +557,13 @@ export function migrateToGameModeStructure(legacyData: unknown): UserState {
 ## 7. API Data Dependencies
 
 ### Task Experience Data
+
 **Source:** [`tasks[].experience`](../app/types/tarkov.ts:135)
 
 ```typescript
 interface Task {
   id: string;
-  experience?: number;  // XP reward for completing this task
+  experience?: number; // XP reward for completing this task
   // ... other fields
 }
 ```
@@ -548,12 +571,13 @@ interface Task {
 **Access:** Via `useMetadataStore().tasks` or `useMetadataStore().getTaskById(taskId)`
 
 ### Player Level Thresholds
+
 **Source:** [`playerLevels[].exp`](../app/types/tarkov.ts:177)
 
 ```typescript
 interface PlayerLevel {
-  level: number;              // Level number (1-79)
-  exp: number;                // Cumulative XP required to reach this level
+  level: number; // Level number (1-79)
+  exp: number; // Cumulative XP required to reach this level
   levelBadgeImageLink: string;
 }
 ```
@@ -561,12 +585,13 @@ interface PlayerLevel {
 **Access:** Via `useMetadataStore().playerLevels`
 
 **Example Data:**
+
 ```json
 [
-  { "level": 1, "exp": 0},
+  { "level": 1, "exp": 0 },
   { "level": 2, "exp": 1000 },
   { "level": 3, "exp": 4017 },
-  { "level": 4, "exp": 8432 },
+  { "level": 4, "exp": 8432 }
   // ... continues to level 79
 ]
 ```
@@ -579,26 +604,26 @@ flowchart TD
         A[tarkov.dev API]B[tasks with experience]
         C[playerLevels with exp thresholds]
     end
-    
+
     subgraph Stores
         D[useMetadataStore]
         E[useTarkovStore]
         F[taskCompletions]
         G[xpOffset]
     end
-    
+
     subgraph Composable
         H[useXpCalculation]
         I[calculatedQuestXP]
         J[totalXP]
         K[derivedLevel]
     end
-    
+
     subgraph UI
         L[DrawerLevel]
         M[XpSettingsCard]
     end
-    
+
     A --> B
     A --> C
     B --> D
@@ -676,3 +701,4 @@ describe('XP System Integration', () => {
     // Assert: offset is restored from localStorage/Supabase
   });
 });
+```

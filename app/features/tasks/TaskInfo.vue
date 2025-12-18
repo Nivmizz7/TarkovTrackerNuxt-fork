@@ -27,9 +27,11 @@
         <!-- Previous Task(s) links (immediate parents only) -->
         <div v-if="preferencesStore.getShowPreviousQuests && parentTasks.length" class="mb-1">
           <div class="flex items-start text-sm text-gray-400">
-            <UIcon name="i-mdi-arrow-left" class="mr-1 mt-0.5 h-4 w-4 shrink-0" />
+            <UIcon name="i-mdi-arrow-left" class="mt-0.5 mr-1 h-4 w-4 shrink-0" />
             <div>
-              <span class="text-gray-500">{{ t('page.tasks.questcard.previoustasks', 'Previous Task(s):') }}</span>
+              <span class="text-gray-500">
+                {{ t('page.tasks.questcard.previoustasks', 'Previous Task(s):') }}
+              </span>
               <div class="flex flex-col">
                 <router-link
                   v-for="parent in parentTasks"
@@ -57,9 +59,11 @@
         <!-- Next Quest(s) links (immediate children only) -->
         <div v-if="preferencesStore.getShowNextQuests && childTasks.length" class="mb-1">
           <div class="flex items-start text-sm text-gray-400">
-            <UIcon name="i-mdi-arrow-right" class="mr-1 mt-0.5 h-4 w-4 shrink-0" />
+            <UIcon name="i-mdi-arrow-right" class="mt-0.5 mr-1 h-4 w-4 shrink-0" />
             <div>
-              <span class="text-gray-500">{{ t('page.tasks.questcard.nexttasks', 'Next Task(s):') }}</span>
+              <span class="text-gray-500">
+                {{ t('page.tasks.questcard.nexttasks', 'Next Task(s):') }}
+              </span>
               <div class="flex flex-col">
                 <router-link
                   v-for="child in childTasks"
@@ -128,7 +132,7 @@
         />
         <ContextMenuItem
           v-if="selectedTask?.wikiLink"
-          icon="i-mdi-wikipedia"
+          icon="/img/logos/wikilogo.webp"
           label="View Task on Wiki"
           @click="
             openTaskWiki();

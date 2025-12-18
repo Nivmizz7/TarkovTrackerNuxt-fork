@@ -1,4 +1,13 @@
-import { type ComputedRef, computed, isRef, onMounted, onUnmounted, type Ref, ref, watch } from 'vue';
+import {
+  type ComputedRef,
+  computed,
+  isRef,
+  onMounted,
+  onUnmounted,
+  type Ref,
+  ref,
+  watch,
+} from 'vue';
 export function useInfiniteScroll(
   sentinelRef: Ref<HTMLElement | null> | ComputedRef<HTMLElement | null>,
   onLoadMore: () => void,

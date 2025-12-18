@@ -245,7 +245,7 @@
     neededitems: {
       title: 'Needed Items',
       loading: 'Loading task and hideout data',
-      searchplaceholder: 'Search items...',
+      searchplaceholder: 'Search items, tasks, or hideout stations...',
       neededviews: {
         all: 'All',
         tasks: 'Tasks',

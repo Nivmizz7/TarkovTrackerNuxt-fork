@@ -17,13 +17,15 @@
         />
       </div>
       <!-- Item name + Total -->
-      <div class="flex-1 min-w-0">
-        <div class="line-clamp-2 text-sm font-semibold leading-tight">
+      <div class="min-w-0 flex-1">
+        <div class="line-clamp-2 text-sm leading-tight font-semibold">
           {{ groupedItem.item.name }}
         </div>
         <div class="mt-1 flex items-center gap-1">
           <span class="text-xs text-gray-400">Total:</span>
-          <span class="text-lg font-bold text-primary-400">{{ formatNumber(groupedItem.total) }}</span>
+          <span class="text-primary-400 text-lg font-bold">
+            {{ formatNumber(groupedItem.total) }}
+          </span>
         </div>
       </div>
     </div>
@@ -37,14 +39,19 @@
         </div>
         <div class="flex gap-3">
           <div v-if="groupedItem.taskFir > 0" class="flex items-center gap-1">
-            <UIcon name="i-mdi-checkbox-marked-circle" class="h-3 w-3 text-success-400" />
-            <span class="font-semibold text-success-400">{{ groupedItem.taskFir }}</span>
+            <UIcon name="i-mdi-checkbox-marked-circle" class="text-success-400 h-3 w-3" />
+            <span class="text-success-400 font-semibold">{{ groupedItem.taskFir }}</span>
           </div>
           <div v-if="groupedItem.taskNonFir > 0" class="flex items-center gap-1">
             <UIcon name="i-mdi-checkbox-blank-circle-outline" class="h-3 w-3 text-gray-400" />
             <span class="font-semibold text-white">{{ groupedItem.taskNonFir }}</span>
           </div>
-          <span v-if="groupedItem.taskFir === 0 && groupedItem.taskNonFir === 0" class="text-gray-500">-</span>
+          <span
+            v-if="groupedItem.taskFir === 0 && groupedItem.taskNonFir === 0"
+            class="text-gray-500"
+          >
+            -
+          </span>
         </div>
       </div>
       <!-- Hideout section -->
@@ -55,14 +62,19 @@
         </div>
         <div class="flex gap-3">
           <div v-if="groupedItem.hideoutFir > 0" class="flex items-center gap-1">
-            <UIcon name="i-mdi-checkbox-marked-circle" class="h-3 w-3 text-success-400" />
-            <span class="font-semibold text-success-400">{{ groupedItem.hideoutFir }}</span>
+            <UIcon name="i-mdi-checkbox-marked-circle" class="text-success-400 h-3 w-3" />
+            <span class="text-success-400 font-semibold">{{ groupedItem.hideoutFir }}</span>
           </div>
           <div v-if="groupedItem.hideoutNonFir > 0" class="flex items-center gap-1">
             <UIcon name="i-mdi-checkbox-blank-circle-outline" class="h-3 w-3 text-gray-400" />
             <span class="font-semibold text-white">{{ groupedItem.hideoutNonFir }}</span>
           </div>
-          <span v-if="groupedItem.hideoutFir === 0 && groupedItem.hideoutNonFir === 0" class="text-gray-500">-</span>
+          <span
+            v-if="groupedItem.hideoutFir === 0 && groupedItem.hideoutNonFir === 0"
+            class="text-gray-500"
+          >
+            -
+          </span>
         </div>
       </div>
     </div>
@@ -72,7 +84,14 @@
   import GameItem from '@/components/ui/GameItem.vue';
   interface GroupedItem {
     itemId: string;
-    item: { id: string; name: string; iconLink?: string; image512pxLink?: string; wikiLink?: string; link?: string };
+    item: {
+      id: string;
+      name: string;
+      iconLink?: string;
+      image512pxLink?: string;
+      wikiLink?: string;
+      link?: string;
+    };
     taskFir: number;
     taskNonFir: number;
     hideoutFir: number;

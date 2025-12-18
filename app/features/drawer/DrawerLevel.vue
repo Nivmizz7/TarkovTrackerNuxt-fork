@@ -12,32 +12,34 @@
     </template>
     <template v-else>
       <!-- Card container for expanded state -->
-      <div class="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 backdrop-blur-sm">
-        <div class="flex items-center gap-1">
-          <span class="mr-1.5 leading-none">
-            <div class="group relative h-14 w-14 overflow-hidden">
+      <div
+        class="w-full overflow-hidden rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 backdrop-blur-sm"
+      >
+        <div class="flex min-w-0 items-center gap-1">
+          <span class="mr-1 shrink-0 leading-none">
+            <div class="group relative h-12 w-12 overflow-hidden">
               <NuxtImg
                 :src="pmcFactionIcon"
-                class="absolute top-0 left-0 z-20 mt-1.5 max-w-[56px] px-1.5 opacity-0 invert transition-opacity duration-1000 ease-in-out group-hover:opacity-100"
-                width="56"
-                height="56"
+                class="absolute top-0 left-0 z-20 mt-1 max-w-[48px] px-1 opacity-0 invert transition-opacity duration-1000 ease-in-out group-hover:opacity-100"
+                width="48"
+                height="48"
               />
               <NuxtImg
                 :src="groupIcon"
-                class="absolute top-0 left-0 z-10 max-w-[56px] opacity-100 transition-opacity duration-1000 ease-in-out group-hover:opacity-0"
-                width="56"
-                height="56"
+                class="absolute top-0 left-0 z-10 max-w-[48px] opacity-100 transition-opacity duration-1000 ease-in-out group-hover:opacity-0"
+                width="48"
+                height="48"
               />
             </div>
           </span>
-          <span class="mx-0.5">
-            <div class="mb-0.5 text-center text-[0.65em] text-gray-300">
+          <span class="mx-0.5 min-w-0 flex-1">
+            <div class="mb-0.5 text-center text-[0.65rem] text-gray-300">
               {{ t('navigation_drawer.level') }}
             </div>
             <div class="text-center">
               <h1
                 v-if="!editingLevel"
-                class="hover:text-primary w-[2.2em] cursor-pointer text-[2.2em] leading-[0.85em] transition-colors"
+                class="hover:text-primary mx-auto w-11 cursor-pointer text-[2rem] leading-[0.85] transition-colors"
                 @click="startEditingLevel"
               >
                 {{ tarkovStore.playerLevel() }}
@@ -49,14 +51,14 @@
                 type="number"
                 :min="minPlayerLevel"
                 :max="maxPlayerLevel"
-                class="w-[2.2em] appearance-none border-0 bg-transparent p-0 text-center text-[2.2em] leading-[0.85em] outline-none focus:ring-0 focus:outline-none"
+                class="mx-auto w-11 appearance-none border-0 bg-transparent p-0 text-center text-[2rem] leading-[0.85] outline-none focus:ring-0 focus:outline-none"
                 @input="enforceMaxLevel"
                 @blur="saveLevel"
                 @keyup.enter="saveLevel"
               />
             </div>
           </span>
-          <span class="ml-1 flex flex-col items-center gap-1">
+          <span class="ml-0.5 flex shrink-0 flex-col items-center gap-0.5">
             <button
               class="flex h-6 w-6 cursor-pointer items-center justify-center p-0 text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               :disabled="tarkovStore.playerLevel() >= maxPlayerLevel"
@@ -79,12 +81,14 @@
         </div>
         <!-- XP Progress Display -->
         <div
-          class="mt-2 cursor-pointer rounded border border-white/5 bg-white/[0.02] px-2 py-1.5 transition-all hover:border-primary/30 hover:bg-white/[0.04]"
+          class="hover:border-primary/30 mt-1.5 cursor-pointer rounded border border-white/5 bg-white/[0.02] px-2 py-1 transition-all hover:bg-white/[0.04]"
           @click="navigateToSettings"
         >
-          <div class="mb-1 flex items-center justify-between text-[0.65em]">
+          <div class="mb-0.5 flex items-center justify-between text-[0.6rem]">
             <span class="text-gray-400">{{ formatNumber(xpCalculation.totalXP.value) }} XP</span>
-            <span class="text-gray-500">{{ formatNumber(xpCalculation.xpToNextLevel.value) }} needed</span>
+            <span class="text-gray-500">
+              {{ formatNumber(xpCalculation.xpToNextLevel.value) }} needed
+            </span>
           </div>
           <div class="h-1 overflow-hidden rounded-full bg-gray-800">
             <div

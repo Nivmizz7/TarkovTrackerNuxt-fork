@@ -26,7 +26,7 @@
           class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           <div
-            v-for="skill in allGameSkills"
+            v-for="skill in visibleSkills"
             :key="skill.name"
             class="border-surface-700 bg-surface-800/30 rounded-lg border p-3"
           >
@@ -127,8 +127,20 @@
             </div>
           </div>
         </div>
+        <div v-if="hasShowAllToggle" class="flex justify-center pt-2">
+          <UButton
+            :label="
+              showAllSkills
+                ? $t('settings.skills.show_less', 'Show less')
+                : $t('settings.skills.show_all', 'Show all')
+            "
+            variant="soft"
+            color="neutral"
+            @click="showAllSkills = !showAllSkills"
+          />
+        </div>
         <!-- No Skills State -->
-        <div v-else class="text-surface-400 py-6 text-center text-sm">
+        <div v-if="allGameSkills.length === 0" class="text-surface-400 py-6 text-center text-sm">
           {{ $t('settings.skills.no_skills', 'No skills found in game data.') }}
         </div>
       </div>
@@ -136,12 +148,43 @@
   </GenericCard>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
+  import { computed, ref } from 'vue';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { useSkillCalculation } from '@/composables/useSkillCalculation';
   const skillCalculation = useSkillCalculation();
   // All game skills with metadata
   const allGameSkills = computed(() => skillCalculation.allGameSkills.value);
+  const showAllSkills = ref(false);
+  const breakpoints = useBreakpoints(breakpointsTailwind);
+  const columnsPerRow = computed(() => {
+    if (breakpoints.greaterOrEqual('xl').value) return 4;
+    if (breakpoints.greaterOrEqual('lg').value) return 3;
+    if (breakpoints.greaterOrEqual('sm').value) return 2;
+    return 1;
+  });
+  const lastRequiredLevelIndex = computed(() => {
+    const skills = allGameSkills.value;
+    for (let index = skills.length - 1; index >= 0; index -= 1) {
+      if ((skills[index]?.requiredLevels?.length ?? 0) > 0) return index;
+    }
+    return -1;
+  });
+  const collapsedVisibleCount = computed(() => {
+    const total = allGameSkills.value.length;
+    const lastRequiredIndex = lastRequiredLevelIndex.value;
+    if (total === 0) return 0;
+    if (lastRequiredIndex < 0) return total;
+    const rawCount = lastRequiredIndex + 1;
+    return Math.min(total, Math.ceil(rawCount / columnsPerRow.value) * columnsPerRow.value);
+  });
+  const hasShowAllToggle = computed(() => {
+    return collapsedVisibleCount.value < allGameSkills.value.length;
+  });
+  const visibleSkills = computed(() => {
+    if (showAllSkills.value) return allGameSkills.value;
+    return allGameSkills.value.slice(0, collapsedVisibleCount.value);
+  });
   // Helper: Format skill name (capitalize, handle special cases)
   const formatSkillName = (skillName: string): string => {
     return skillName

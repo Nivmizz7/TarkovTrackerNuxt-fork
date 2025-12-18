@@ -32,7 +32,7 @@
       target="_blank"
       class="text-primary-400 hover:text-primary-300 flex items-center text-xs whitespace-nowrap"
     >
-      <UIcon name="i-mdi-information-outline" class="mr-1 h-6 w-6" />
+      <img src="/img/logos/wikilogo.webp" alt="Wiki" class="mr-1 h-6 w-6" />
       <span>{{ t('page.tasks.questcard.wiki') }}</span>
     </a>
   </div>

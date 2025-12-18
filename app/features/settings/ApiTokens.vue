@@ -351,11 +351,13 @@
       description: value.description,
     }))
   );
-  const gameModes = computed(() => GAME_MODE_OPTIONS.map((mode) => ({
-    label: mode.label,
-    value: mode.value as GameMode,
-    description: mode.description,
-  })));
+  const gameModes = computed(() =>
+    GAME_MODE_OPTIONS.map((mode) => ({
+      label: mode.label,
+      value: mode.value as GameMode,
+      description: mode.description,
+    }))
+  );
   const canSubmit = computed(
     () => userLoggedIn.value && selectedPermissions.value.length > 0 && !!selectedGameMode.value
   );

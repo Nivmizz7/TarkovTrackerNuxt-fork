@@ -1,22 +1,25 @@
 <template>
   <KeepAlive>
-    <div class="flex h-full flex-col rounded-lg" :class="itemCardClasses">
-      <!-- Item image with count badge -->
-      <div
-        class="relative aspect-square w-full shrink-0 overflow-hidden rounded-t-lg"
-        :class="{
-          'cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]':
+    <div
+      class="flex h-full flex-col rounded-lg"
+      :class="[
+        itemCardClasses,
+        {
+          'cursor-pointer transition-all hover:ring-2 hover:ring-primary-400 hover:ring-opacity-50 active:scale-[0.98]':
             isSingleItem && !selfCompletedNeed,
-        }"
-        :title="
-          isSingleItem && !selfCompletedNeed
-            ? currentCount >= neededCount
-              ? 'Click to uncollect'
-              : 'Click to collect'
-            : undefined
-        "
-        @click="isSingleItem && !selfCompletedNeed ? $emit('toggleCount') : null"
-      >
+        },
+      ]"
+      :title="
+        isSingleItem && !selfCompletedNeed
+          ? currentCount >= neededCount
+            ? 'Click to uncollect'
+            : 'Click to collect'
+          : undefined
+      "
+      @click="isSingleItem && !selfCompletedNeed ? $emit('toggleCount') : null"
+    >
+      <!-- Item image with count badge -->
+      <div class="relative aspect-square w-full shrink-0 overflow-hidden rounded-t-lg">
         <div class="absolute top-0 left-0 z-10">
           <div
             class="flex items-center gap-1 rounded-br-lg px-2 py-1 text-sm font-bold shadow-lg"

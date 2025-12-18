@@ -35,7 +35,12 @@
         >
           <UCard class="bg-surface-900/95 w-full max-w-xl border border-white/10 shadow-2xl">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <span class="text-sm sm:text-base" role="status" aria-live="polite" aria-atomic="true">
+              <span
+                class="text-sm sm:text-base"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
                 {{ taskStatus }}
               </span>
               <div class="flex flex-1 justify-end gap-2">
@@ -48,12 +53,7 @@
                 >
                   {{ t('page.tasks.questcard.undo') }}
                 </UButton>
-                <UButton
-                  size="xs"
-                  variant="ghost"
-                  color="secondary"
-                  @click="closeNotification"
-                >
+                <UButton size="xs" variant="ghost" color="secondary" @click="closeNotification">
                   {{ t('page.tasks.filters.close') }}
                 </UButton>
               </div>

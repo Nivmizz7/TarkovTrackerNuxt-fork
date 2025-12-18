@@ -33,11 +33,7 @@
       </template>
       <template v-else-if="props.need.needType == 'hideoutModule'">
         <div class="flex items-center justify-center text-center">
-          <station-link
-            v-if="relatedStation"
-            :station="relatedStation"
-            class="justify-center"
-          />
+          <station-link v-if="relatedStation" :station="relatedStation" class="justify-center" />
           <span v-else class="text-sm text-gray-300">Unknown station</span>
           <span class="ml-1 text-sm">{{ props.need.hideoutModule.level }}</span>
         </div>
@@ -53,7 +49,7 @@
       />
     </div>
     <!-- Item count actions - pushed to bottom -->
-    <div class="mt-auto flex flex-col items-center justify-center px-2 pb-2 pt-1">
+    <div class="mt-auto flex flex-col items-center justify-center px-2 pt-1 pb-2">
       <template v-if="!selfCompletedNeed">
         <ItemCountControls
           :current-count="currentCount"

@@ -125,7 +125,10 @@ export function useSkillCalculation() {
           }
           skillsMap.get(skillName)!.requiredByTasks.push(taskName);
           // Track unique required levels
-          if (requiredLevel > 0 && !skillsMap.get(skillName)!.requiredLevels.includes(requiredLevel)) {
+          if (
+            requiredLevel > 0 &&
+            !skillsMap.get(skillName)!.requiredLevels.includes(requiredLevel)
+          ) {
             skillsMap.get(skillName)!.requiredLevels.push(requiredLevel);
           }
         }

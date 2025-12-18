@@ -56,7 +56,7 @@
               :aria-label="t('page.tasks.questcard.viewOnWiki', 'View on Wiki')"
               @click.stop
             >
-              <UIcon name="i-mdi-wikipedia" aria-hidden="true" class="h-5 w-5" />
+              <img src="/img/logos/wikilogo.webp" alt="Wiki" aria-hidden="true" class="h-5 w-5" />
             </a>
             <a
               :href="tarkovDevTaskUrl"
@@ -67,7 +67,7 @@
               :aria-label="t('page.tasks.questcard.viewOnTarkovDev', 'View on tarkov.dev')"
               @click.stop
             >
-              <UIcon name="i-mdi-open-in-new" aria-hidden="true" class="h-5 w-5" />
+              <img src="/img/logos/tarkovdevlogo.webp" alt="tarkov.dev" aria-hidden="true" class="h-5 w-5" />
             </a>
           </div>
         </div>
@@ -518,7 +518,7 @@
         />
         <ContextMenuItem
           v-if="task.wikiLink"
-          icon="i-mdi-wikipedia"
+          icon="/img/logos/wikilogo.webp"
           :label="t('page.tasks.questcard.viewTaskOnWiki', 'View task on Wiki')"
           @click="
             openTaskWiki();
@@ -531,7 +531,7 @@
     <ContextMenu ref="itemContextMenu">
       <template #default="{ close }">
         <ContextMenuItem
-          icon="i-mdi-open-in-new"
+          icon="/img/logos/tarkovdevlogo.webp"
           :label="t('page.tasks.questcard.viewOnTarkovDev', 'View on tarkov.dev')"
           @click="
             openItemOnTarkovDev();
@@ -539,7 +539,7 @@
           "
         />
         <ContextMenuItem
-          icon="i-mdi-wikipedia"
+          icon="/img/logos/wikilogo.webp"
           :label="t('page.tasks.questcard.viewOnWiki', 'View on Wiki')"
           @click="
             openItemOnWiki();

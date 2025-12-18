@@ -231,7 +231,10 @@
         systemStore.$patch({
           [teamIdColumn]: membership.team_id,
         } as Partial<SystemState>);
-        showNotification(`You are already in a ${currentGameMode.toUpperCase()} team. Leave your current team first.`, 'error');
+        showNotification(
+          `You are already in a ${currentGameMode.toUpperCase()} team. Leave your current team first.`,
+          'error'
+        );
         loading.value.createTeam = false;
         return;
       }

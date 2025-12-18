@@ -125,7 +125,7 @@
       <div class="my-1 border-t border-gray-700" />
       <ContextMenuItem
         v-if="requirement.item.link"
-        icon="i-mdi-open-in-new"
+        icon="/img/logos/tarkovdevlogo.webp"
         label="View on tarkov.dev"
         @click="
           openTarkovDev();
@@ -134,7 +134,7 @@
       />
       <ContextMenuItem
         v-if="requirement.item.wikiLink"
-        icon="i-mdi-wikipedia"
+        icon="/img/logos/wikilogo.webp"
         label="View on Wiki"
         @click="
           openWiki();

@@ -35,11 +35,8 @@
       </div>
     </div>
     <!-- Full item display mode (for TarkovItem compatibility) -->
-    <div
-      v-else
-      class="flex h-full w-full items-center justify-start"
-    >
-      <div class="relative mr-2 flex items-center justify-center">
+    <div v-else class="relative flex h-full w-full items-center justify-start">
+      <div class="mr-2 flex shrink-0 items-center justify-center">
         <img
           :width="imageSize"
           :height="imageSize"
@@ -49,34 +46,6 @@
           alt="Item Icon"
           @error="handleImgError"
         />
-        <!-- Hover action buttons -->
-        <div
-          v-if="showActions && (props.devLink || props.wikiLink)"
-          class="absolute inset-0 flex items-center justify-center gap-1 rounded bg-black/70 opacity-0 transition-opacity group-hover:opacity-100"
-        >
-          <a
-            v-if="props.devLink"
-            :href="props.devLink"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center justify-center rounded p-1 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
-            title="View on tarkov.dev"
-            @click.stop
-          >
-            <UIcon name="i-mdi-open-in-new" class="h-4 w-4" />
-          </a>
-          <a
-            v-if="props.wikiLink"
-            :href="props.wikiLink"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center justify-center rounded p-1 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
-            title="View on Wiki"
-            @click.stop
-          >
-            <UIcon name="i-mdi-wikipedia" class="h-4 w-4" />
-          </a>
-        </div>
       </div>
       <!-- Counter controls for multi-item objectives -->
       <div v-if="showCounter" class="mr-2" @click.stop>
@@ -98,6 +67,34 @@
       >
         {{ props.itemName }}
       </div>
+      <!-- Hover action buttons - covers entire row -->
+      <div
+        v-if="showActions && (props.devLink || props.wikiLink)"
+        class="absolute inset-0 flex items-center justify-center gap-2 rounded bg-black/80 opacity-0 transition-opacity group-hover:opacity-100"
+      >
+        <a
+          v-if="props.devLink"
+          :href="props.devLink"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+          title="View on tarkov.dev"
+          @click.stop
+        >
+          <img src="/img/logos/tarkovdevlogo.webp" alt="tarkov.dev" class="h-5 w-5" />
+        </a>
+        <a
+          v-if="props.wikiLink"
+          :href="props.wikiLink"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+          title="View on Wiki"
+          @click.stop
+        >
+          <img src="/img/logos/wikilogo.webp" alt="Wiki" class="h-5 w-5" />
+        </a>
+      </div>
     </div>
     <!-- Context Menu -->
     <ContextMenu ref="contextMenu">
@@ -105,7 +102,7 @@
         <!-- Task Options -->
         <template v-if="props.taskWikiLink">
           <ContextMenuItem
-            icon="i-mdi-wikipedia"
+            icon="/img/logos/wikilogo.webp"
             :label="`View Task on Wiki`"
             @click="
               openTaskWiki();
@@ -120,7 +117,7 @@
         <!-- Item Options -->
         <ContextMenuItem
           v-if="props.itemName && props.wikiLink"
-          icon="i-mdi-wikipedia"
+          icon="/img/logos/wikilogo.webp"
           :label="`View ${props.itemName} on Wiki`"
           @click="
             openWikiLink();
@@ -129,7 +126,7 @@
         />
         <ContextMenuItem
           v-if="props.itemName && props.devLink"
-          icon="i-mdi-web"
+          icon="/img/logos/tarkovdevlogo.webp"
           :label="`View ${props.itemName} on Tarkov.dev`"
           @click="
             openTarkovDevLink();
@@ -139,7 +136,7 @@
         <template v-if="!props.itemName">
           <ContextMenuItem
             v-if="props.wikiLink"
-            icon="i-mdi-wikipedia"
+            icon="/img/logos/wikilogo.webp"
             label="View on Wiki"
             @click="
               openWikiLink();
@@ -148,7 +145,7 @@
           />
           <ContextMenuItem
             v-if="props.devLink"
-            icon="i-mdi-web"
+            icon="/img/logos/tarkovdevlogo.webp"
             label="View on Tarkov.dev"
             @click="
               openTarkovDevLink();
@@ -198,7 +195,7 @@
     taskWikiLink?: string | null;
     // Display options
     count?: number | null;
-    size?: 'small' | 'medium' | 'large';
+    size?: 'xs' | 'small' | 'medium' | 'large';
     simpleMode?: boolean;
     showActions?: boolean;
     isVisible?: boolean;
@@ -275,6 +272,8 @@
   // Compute display properties based on size
   const imageSize = computed(() => {
     switch (props.size) {
+      case 'xs':
+        return 32;
       case 'small':
         return 64;
       case 'large':
@@ -296,7 +295,9 @@
       classes.push('h-full', 'w-full');
     } else {
       classes.push('shrink-0');
-      if (props.size === 'small') {
+      if (props.size === 'xs') {
+        classes.push('h-8 w-8'); // 32px - compact inline display
+      } else if (props.size === 'small') {
         classes.push('h-12 w-12 md:h-16 md:w-16'); // 48px -> 64px
       } else if (props.size === 'large') {
         classes.push('h-20 w-20 md:h-28 md:w-28'); // 80px -> 112px
