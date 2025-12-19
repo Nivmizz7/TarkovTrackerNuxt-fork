@@ -144,10 +144,15 @@ export function useSupabaseListener({
     filterSource,
     (newFilter) => {
       cleanup();
-      if (newFilter) {
-        fetchData();
-        setupSubscription();
+      if (!newFilter) {
+        resetStore(store);
+        if (onData) onData(null);
+        hasInitiallyLoaded.value = true;
+        return;
       }
+      hasInitiallyLoaded.value = false;
+      fetchData();
+      setupSubscription();
     },
     { immediate: true }
   );
