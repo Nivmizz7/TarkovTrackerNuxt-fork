@@ -378,12 +378,17 @@
       sections: {
         original_creator: 'Créateur original du projet :',
         staff: 'Équipe de TarkovTracker.org :',
-        beta_testers: 'Testeur bêta Nuxt :',
+        support_members: 'Membres du support :',
+        beta_testers: 'Nuxt - Testeurs de bêta fermée :',
       },
       labels: {
         creators: 'Créateurs',
         staff: 'Équipe principale',
+        support: 'Support',
         testers: 'Testeurs bêta',
+      },
+      notes: {
+        alphabetical: 'Classés par ordre alphabétique ; l’ordre ne reflète pas la contribution.',
       },
     },
     login: {
