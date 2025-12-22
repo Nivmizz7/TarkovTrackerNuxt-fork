@@ -372,6 +372,28 @@ html {
 
 /* Legacy effect utilities moved from scoped SFC styles */
 @layer utilities {
+  /* Holiday candy cane progress bar effect */
+  .candy-cane {
+    background: repeating-linear-gradient(
+      45deg,
+      #dc2626,
+      #dc2626 10px,
+      #fafafa 10px,
+      #fafafa 20px
+    ) !important;
+    background-size: 200% 100%;
+    animation: candy-cane-move 2s linear infinite;
+  }
+
+  @keyframes candy-cane-move {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 56px 0;
+    }
+  }
+
   .scanline {
     animation: scanline 8s linear infinite;
   }

@@ -40,6 +40,8 @@ export interface PreferencesState {
   taskCardDensity: 'comfortable' | 'compact';
   // XP and Level settings
   useAutomaticLevelCalculation: boolean;
+  // Holiday effects
+  enableHolidayEffects: boolean;
   saving?: {
     streamerMode: boolean;
     hideGlobalTasks: boolean;
@@ -82,6 +84,8 @@ export const preferencesDefaultState: PreferencesState = {
   taskCardDensity: 'compact',
   // XP and Level settings
   useAutomaticLevelCalculation: false,
+  // Holiday effects (enabled by default during holiday season)
+  enableHolidayEffects: true,
   saving: {
     streamerMode: false,
     hideGlobalTasks: false,
@@ -212,6 +216,9 @@ export const usePreferencesStore = defineStore('preferences', {
     getUseAutomaticLevelCalculation: (state) => {
       return state.useAutomaticLevelCalculation ?? false;
     },
+    getEnableHolidayEffects: (state) => {
+      return state.enableHolidayEffects ?? true;
+    },
   },
   actions: {
     setStreamerMode(mode: boolean) {
@@ -318,6 +325,9 @@ export const usePreferencesStore = defineStore('preferences', {
     setUseAutomaticLevelCalculation(use: boolean) {
       this.useAutomaticLevelCalculation = use;
     },
+    setEnableHolidayEffects(enable: boolean) {
+      this.enableHolidayEffects = enable;
+    },
   },
   // Enable automatic localStorage persistence
   persist: {
@@ -362,6 +372,7 @@ export const usePreferencesStore = defineStore('preferences', {
       'showPreviousQuests',
       'taskCardDensity',
       'useAutomaticLevelCalculation',
+      'enableHolidayEffects',
     ],
   },
 });

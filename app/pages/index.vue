@@ -137,7 +137,12 @@
           </div>
           <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
             <div
-              class="from-primary-600 to-primary-400 absolute inset-y-0 left-0 rounded-full bg-linear-to-r transition-all duration-1000 ease-out"
+              class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
+              :class="
+                holidayEffectsEnabled
+                  ? 'candy-cane'
+                  : 'from-primary-600 to-primary-400 bg-linear-to-r'
+              "
               :style="{ width: `${totalTasksPercentage}%` }"
             ></div>
           </div>
@@ -167,7 +172,12 @@
           </div>
           <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
             <div
-              class="from-info-600 to-info-400 absolute inset-y-0 left-0 rounded-full bg-linear-to-r transition-all duration-1000 ease-out"
+              class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
+              :class="
+                holidayEffectsEnabled
+                  ? 'candy-cane'
+                  : 'from-info-600 to-info-400 bg-linear-to-r'
+              "
               :style="{ width: `${totalObjectivesPercentage}%` }"
             ></div>
           </div>
@@ -197,7 +207,12 @@
           </div>
           <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
             <div
-              class="from-success-600 to-success-400 absolute inset-y-0 left-0 rounded-full bg-linear-to-r transition-all duration-1000 ease-out"
+              class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
+              :class="
+                holidayEffectsEnabled
+                  ? 'candy-cane'
+                  : 'from-success-600 to-success-400 bg-linear-to-r'
+              "
               :style="{ width: `${totalTaskItemsPercentage}%` }"
             ></div>
           </div>
@@ -227,7 +242,12 @@
           </div>
           <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
             <div
-              class="from-warning-600 to-warning-400 absolute inset-y-0 left-0 rounded-full bg-linear-to-r transition-all duration-1000 ease-out"
+              class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
+              :class="
+                holidayEffectsEnabled
+                  ? 'candy-cane'
+                  : 'from-warning-600 to-warning-400 bg-linear-to-r'
+              "
               :style="{ width: `${totalKappaTasksPercentage}%` }"
             ></div>
           </div>
@@ -261,7 +281,12 @@
           </div>
           <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
             <div
-              class="absolute inset-y-0 left-0 rounded-full bg-linear-to-r from-purple-600 to-purple-400 transition-all duration-1000 ease-out"
+              class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
+              :class="
+                holidayEffectsEnabled
+                  ? 'candy-cane'
+                  : 'bg-linear-to-r from-purple-600 to-purple-400'
+              "
               :style="{ width: `${totalLightkeeperTasksPercentage}%` }"
             ></div>
           </div>
@@ -300,7 +325,12 @@
           </div>
           <div class="bg-surface-800 relative h-1.5 overflow-hidden rounded-full">
             <div
-              class="from-primary-600 to-primary-400 absolute inset-y-0 left-0 rounded-full bg-linear-to-r transition-all duration-700 ease-out"
+              class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+              :class="
+                holidayEffectsEnabled
+                  ? 'candy-cane'
+                  : 'from-primary-600 to-primary-400 bg-linear-to-r'
+              "
               :style="{ width: `${trader.percentage}%` }"
             ></div>
           </div>
@@ -478,6 +508,10 @@
   const tarkovStore = useTarkovStore();
   const router = useRouter();
   const preferencesStore = usePreferencesStore();
+
+  // Holiday effects
+  const holidayEffectsEnabled = computed(() => preferencesStore.getEnableHolidayEffects);
+
   // Navigate to tasks page filtered by trader
   const navigateToTraderTasks = (traderId: string) => {
     preferencesStore.setTaskPrimaryView('traders');

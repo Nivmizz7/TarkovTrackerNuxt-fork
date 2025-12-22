@@ -24,7 +24,10 @@
         to="/"
         class="group mt-1 flex flex-col items-center px-3 py-1.5 transition-opacity hover:opacity-90"
       >
-        <div :class="isCollapsed ? 'w-8' : 'w-[130px]'" class="mx-auto transition-all duration-200">
+        <div
+          :class="isCollapsed ? 'w-8' : 'w-[130px]'"
+          class="relative mx-auto transition-all duration-200"
+        >
           <NuxtImg
             :src="
               isCollapsed
