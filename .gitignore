@@ -13,6 +13,7 @@ node_modules
 # AI generated files
 .factory
 .claude
+claude.md
 CLAUDE.md
 GEMINI.md
 AGENTS.md
