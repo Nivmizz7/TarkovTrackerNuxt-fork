@@ -16,37 +16,6 @@
               <h3 class="text-lg font-semibold">
                 {{ t('page.tasks.settings.title', 'Task Settings') }}
               </h3>
-              <div
-                class="mt-1 flex gap-4 text-sm text-gray-400"
-                role="tablist"
-                :aria-label="t('page.tasks.settings.tabs.label', 'Task settings sections')"
-              >
-                <button
-                  :id="filtersTabId"
-                  type="button"
-                  role="tab"
-                  :aria-selected="activeTab === 'filters'"
-                  :aria-controls="filtersPanelId"
-                  :class="['hover:text-white', activeTab === 'filters' ? 'text-primary-400' : '']"
-                  @click="activeTab = 'filters'"
-                >
-                  {{ t('page.tasks.settings.tabs.filters', 'TASK FILTERS') }}
-                </button>
-                <button
-                  :id="appearanceTabId"
-                  type="button"
-                  role="tab"
-                  :aria-selected="activeTab === 'appearance'"
-                  :aria-controls="appearancePanelId"
-                  :class="[
-                    'hover:text-white',
-                    activeTab === 'appearance' ? 'text-primary-400' : '',
-                  ]"
-                  @click="activeTab = 'appearance'"
-                >
-                  {{ t('page.tasks.settings.tabs.appearance', 'APPEARANCE') }}
-                </button>
-              </div>
             </div>
             <UButton
               variant="ghost"
@@ -58,120 +27,80 @@
             />
           </div>
         </template>
-        <!-- TASK FILTERS Section -->
-        <div
-          v-show="activeTab === 'filters'"
-          :id="filtersPanelId"
-          role="tabpanel"
-          :aria-labelledby="filtersTabId"
-          tabindex="0"
-          class="space-y-2"
-        >
-          <p class="text-primary-400 mb-3 text-xs font-semibold tracking-wide uppercase">
-            {{ t('page.tasks.settings.tabs.filters', 'TASK FILTERS') }}
-          </p>
-          <SettingsToggle
-            :model-value="showGlobalTasks"
-            :label="labelShowGlobalTasks"
-            :tooltip="tooltipShowGlobalTasks"
-            @update:model-value="preferencesStore.setHideGlobalTasks(!$event)"
-          />
-          <SettingsToggle
-            v-model="showNonSpecialTasks"
-            :label="labelShowNonSpecialTasks"
-            :tooltip="tooltipShowNonSpecialTasks"
-          />
-          <SettingsToggle
-            :model-value="showKappaTasks"
-            :label="labelShowKappaTasks"
-            :tooltip="tooltipShowKappaTasks"
-            @update:model-value="preferencesStore.setHideNonKappaTasks(!$event)"
-          />
-          <SettingsToggle
-            v-model="showEodTasks"
-            :label="labelShowEodTasks"
-            :tooltip="tooltipShowEodTasks"
-          />
-          <SettingsToggle
-            v-model="showLightkeeperTasks"
-            :label="labelShowLightkeeperTasks"
-            :tooltip="tooltipShowLightkeeperTasks"
-          />
-        </div>
-        <!-- APPEARANCE Section -->
-        <div
-          v-show="activeTab === 'appearance'"
-          :id="appearancePanelId"
-          role="tabpanel"
-          :aria-labelledby="appearanceTabId"
-          tabindex="0"
-          class="space-y-2"
-        >
-          <p class="text-primary-400 mb-3 text-xs font-semibold tracking-wide uppercase">
-            {{ t('page.tasks.settings.tabs.appearance', 'APPEARANCE') }}
-          </p>
-          <div
-            class="flex items-center justify-between rounded-md border border-white/10 bg-white/5 px-3 py-2"
-          >
-            <div class="min-w-0">
-              <div class="text-sm text-gray-200">
-                {{ t('page.tasks.settings.appearance.density', 'Density') }}
-              </div>
-              <div class="mt-0.5 text-xs text-gray-500">
-                {{
-                  t('page.tasks.settings.appearance.densityHint', 'Compact is best for trackers')
-                }}
-              </div>
+        <div class="space-y-6">
+          <!-- TASK FILTERS Section -->
+          <section class="space-y-2">
+            <div>
+              <p class="text-primary-400 text-xs font-semibold tracking-wide uppercase">
+                {{ t('page.tasks.settings.tabs.filters', 'TASK FILTERS') }}
+              </p>
+              <p class="mt-1 text-xs text-gray-500">
+                {{ t('page.tasks.settings.filters.hint', 'Control which tasks appear.') }}
+              </p>
             </div>
-            <div class="flex shrink-0 items-center gap-1">
-              <UButton
-                size="xs"
-                color="neutral"
-                :variant="taskCardDensity === 'comfortable' ? 'solid' : 'ghost'"
-                @click="taskCardDensity = 'comfortable'"
-              >
-                {{ t('page.tasks.settings.appearance.densityComfortable', 'Comfortable') }}
-              </UButton>
-              <UButton
-                size="xs"
-                color="neutral"
-                :variant="taskCardDensity === 'compact' ? 'solid' : 'ghost'"
-                @click="taskCardDensity = 'compact'"
-              >
-                {{ t('page.tasks.settings.appearance.densityCompact', 'Compact') }}
-              </UButton>
+            <SettingsToggle
+              v-model="showNonSpecialTasks"
+              :label="labelShowNonSpecialTasks"
+              :tooltip="tooltipShowNonSpecialTasks"
+            />
+            <SettingsToggle
+              :model-value="showKappaTasks"
+              :label="labelShowKappaTasks"
+              :tooltip="tooltipShowKappaTasks"
+              @update:model-value="preferencesStore.setHideNonKappaTasks(!$event)"
+            />
+            <SettingsToggle
+              v-model="showEodTasks"
+              :label="labelShowEodTasks"
+              :tooltip="tooltipShowEodTasks"
+            />
+            <SettingsToggle
+              v-model="showLightkeeperTasks"
+              :label="labelShowLightkeeperTasks"
+              :tooltip="tooltipShowLightkeeperTasks"
+            />
+          </section>
+          <!-- APPEARANCE Section -->
+          <section class="space-y-2">
+            <div>
+              <p class="text-primary-400 text-xs font-semibold tracking-wide uppercase">
+                {{ t('page.tasks.settings.tabs.appearance', 'APPEARANCE') }}
+              </p>
+              <p class="mt-1 text-xs text-gray-500">
+                {{ t('page.tasks.settings.appearance.hint', 'Tune how task cards look.') }}
+              </p>
             </div>
-          </div>
-          <SettingsToggle
-            v-model="showRequiredLabels"
-            :label="labelShowRequiredLabels"
-            :tooltip="tooltipShowRequiredLabels"
-          />
-          <SettingsToggle
-            v-model="showNotRequiredLabels"
-            :label="labelShowNotRequiredLabels"
-            :tooltip="tooltipShowNotRequiredLabels"
-          />
-          <SettingsToggle
-            v-model="showExperienceRewards"
-            :label="labelShowExperienceRewards"
-            :tooltip="tooltipShowExperienceRewards"
-          />
-          <SettingsToggle
-            v-model="showTaskIds"
-            :label="labelShowTaskIds"
-            :tooltip="tooltipShowTaskIds"
-          />
-          <SettingsToggle
-            v-model="showNextQuests"
-            :label="labelShowNextQuests"
-            :tooltip="tooltipShowNextQuests"
-          />
-          <SettingsToggle
-            v-model="showPreviousQuests"
-            :label="labelShowPreviousQuests"
-            :tooltip="tooltipShowPreviousQuests"
-          />
+            <SettingsToggle
+              v-model="showRequiredLabels"
+              :label="labelShowRequiredLabels"
+              :tooltip="tooltipShowRequiredLabels"
+            />
+            <SettingsToggle
+              v-model="showNotRequiredLabels"
+              :label="labelShowNotRequiredLabels"
+              :tooltip="tooltipShowNotRequiredLabels"
+            />
+            <SettingsToggle
+              v-model="showExperienceRewards"
+              :label="labelShowExperienceRewards"
+              :tooltip="tooltipShowExperienceRewards"
+            />
+            <SettingsToggle
+              v-model="showTaskIds"
+              :label="labelShowTaskIds"
+              :tooltip="tooltipShowTaskIds"
+            />
+            <SettingsToggle
+              v-model="showNextQuests"
+              :label="labelShowNextQuests"
+              :tooltip="tooltipShowNextQuests"
+            />
+            <SettingsToggle
+              v-model="showPreviousQuests"
+              :label="labelShowPreviousQuests"
+              :tooltip="tooltipShowPreviousQuests"
+            />
+          </section>
         </div>
       </UCard>
     </template>
@@ -185,21 +114,7 @@
   const { t } = useI18n({ useScope: 'global' });
   const preferencesStore = usePreferencesStore();
   const isOpen = ref(false);
-  const activeTab = ref<'filters' | 'appearance'>('filters');
-  const filtersTabId = 'task-settings-tab-filters';
-  const appearanceTabId = 'task-settings-tab-appearance';
-  const filtersPanelId = 'task-settings-panel-filters';
-  const appearancePanelId = 'task-settings-panel-appearance';
   // Labels and tooltips (defined in script to avoid template quoting issues)
-  const labelShowGlobalTasks = computed(() =>
-    t('page.tasks.settings.filters.showGlobalTasks', 'Show global tasks on map view')
-  );
-  const tooltipShowGlobalTasks = computed(() =>
-    t(
-      'page.tasks.settings.filters.showGlobalTasksTooltip',
-      'Show tasks that are not specific to any map when viewing tasks by map'
-    )
-  );
   const labelShowNonSpecialTasks = computed(() =>
     t(
       'page.tasks.settings.filters.showNonSpecialTasks',
@@ -297,7 +212,6 @@
     )
   );
   // Task filter preferences (inverted for show/hide semantics)
-  const showGlobalTasks = computed(() => !preferencesStore.getHideGlobalTasks);
   const showKappaTasks = computed(() => !preferencesStore.getHideNonKappaTasks);
   // New filter preferences with two-way binding
   const showNonSpecialTasks = computed({
@@ -336,9 +250,5 @@
   const showPreviousQuests = computed({
     get: () => preferencesStore.getShowPreviousQuests,
     set: (value) => preferencesStore.setShowPreviousQuests(value),
-  });
-  const taskCardDensity = computed({
-    get: () => preferencesStore.getTaskCardDensity,
-    set: (value) => preferencesStore.setTaskCardDensity(value),
   });
 </script>

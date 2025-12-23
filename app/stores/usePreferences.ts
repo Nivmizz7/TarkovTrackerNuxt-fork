@@ -77,7 +77,7 @@ export const preferencesDefaultState: PreferencesState = {
   // Task appearance settings
   showRequiredLabels: true,
   showNotRequiredLabels: true,
-  showExperienceRewards: false,
+  showExperienceRewards: true,
   showTaskIds: true,
   showNextQuests: true,
   showPreviousQuests: true,
@@ -199,7 +199,7 @@ export const usePreferencesStore = defineStore('preferences', {
       return state.showNotRequiredLabels ?? true;
     },
     getShowExperienceRewards: (state) => {
-      return state.showExperienceRewards ?? false;
+      return state.showExperienceRewards ?? true;
     },
     getShowTaskIds: (state) => {
       return state.showTaskIds ?? true;
