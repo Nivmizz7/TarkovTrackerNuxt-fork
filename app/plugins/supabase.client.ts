@@ -1,6 +1,7 @@
-import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { reactive } from 'vue';
 import { logger } from '@/utils/logger';
+import { hydrateUserFromSession } from '@/utils/userHydration';
 type SupabaseUser = {
   id: string | null;
   loggedIn: boolean;
@@ -73,53 +74,8 @@ export default defineNuxtPlugin(() => {
     createdAt: null,
     provider: null,
   });
-  const updateUserState = (sessionUser: User | null) => {
-    if (sessionUser) {
-      const provider = sessionUser.app_metadata?.provider || null;
-      user.id = sessionUser.id;
-      user.loggedIn = true;
-      user.email = sessionUser.email || null;
-      user.provider = provider;
-      if (provider === 'discord') {
-        user.username =
-          sessionUser.user_metadata?.full_name ||
-          sessionUser.user_metadata?.name?.split('#')[0] ||
-          sessionUser.user_metadata?.custom_claims?.global_name ||
-          sessionUser.email?.split('@')[0] ||
-          null;
-        user.displayName = user.username;
-      } else if (provider === 'twitch') {
-        user.username =
-          sessionUser.user_metadata?.preferred_username ||
-          sessionUser.user_metadata?.name ||
-          sessionUser.email?.split('@')[0] ||
-          null;
-        user.displayName = sessionUser.user_metadata?.full_name || user.username;
-      } else {
-        user.username = sessionUser.user_metadata?.name || sessionUser.email?.split('@')[0] || null;
-        user.displayName = sessionUser.user_metadata?.full_name || user.username;
-      }
-      const avatarUrl =
-        sessionUser.user_metadata?.avatar_url || sessionUser.user_metadata?.picture || null;
-      user.avatarUrl = avatarUrl;
-      user.photoURL = avatarUrl;
-      user.lastLoginAt = sessionUser.last_sign_in_at || null;
-      user.createdAt = sessionUser.created_at || null;
-    } else {
-      user.id = null;
-      user.loggedIn = false;
-      user.email = null;
-      user.displayName = null;
-      user.username = null;
-      user.avatarUrl = null;
-      user.photoURL = null;
-      user.lastLoginAt = null;
-      user.createdAt = null;
-      user.provider = null;
-    }
-  };
   supabase.auth.getSession().then(({ data: { session } }) => {
-    updateUserState(session?.user || null);
+    hydrateUserFromSession(user, session?.user || null);
     // Clean up OAuth hash after session is established
     if (session && window.location.hash.includes('access_token')) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -127,7 +83,7 @@ export default defineNuxtPlugin(() => {
     }
   });
   supabase.auth.onAuthStateChange((_event, session) => {
-    updateUserState(session?.user || null);
+    hydrateUserFromSession(user, session?.user || null);
     // Clean up OAuth hash on auth state change
     if (session && window.location.hash.includes('access_token')) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);

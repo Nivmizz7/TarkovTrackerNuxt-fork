@@ -2,7 +2,7 @@
  * Composable for calling Supabase Edge Functions
  * Provides typed methods for common edge function operations
  */
-import type { UpdateProgressPayload } from '@/types/api';
+import type { PurgeCacheResponse } from '@/types/edge';
 import type {
   CreateTeamResponse,
   JoinTeamResponse,
@@ -131,22 +131,6 @@ export const useEdgeFunctions = () => {
     return result;
   };
   /**
-   * Update user progress for a specific game mode
-   * @param gameMode The game mode (pvp or pve)
-   * @param progressData The progress data to update
-   */
-  const updateProgress = async (gameMode: GameMode, progressData: UpdateProgressPayload) => {
-    const { data, error } = await $supabase.client.functions.invoke('progress-update', {
-      body: { gameMode, progressData },
-      method: 'POST',
-    });
-    if (error) {
-      logger.error('[EdgeFunctions] Progress update failed:', error);
-      throw error;
-    }
-    return data;
-  };
-  /**
    * Create a new team
    * @param name Team name
    * @param joinCode Team join/invite code
@@ -243,9 +227,18 @@ export const useEdgeFunctions = () => {
       }
     }
   };
+  /**
+   * Purge Cloudflare cache (admin only)
+   * @param purgeType Type of cache purge: 'all' for entire zone, 'tarkov-data' for game data only
+   */
+  const purgeCache = async (
+    purgeType: 'all' | 'tarkov-data' = 'tarkov-data'
+  ): Promise<PurgeCacheResponse> => {
+    return await callSupabaseFunction<PurgeCacheResponse>('admin-cache-purge', {
+      purgeType,
+    });
+  };
   return {
-    // Progress management
-    updateProgress,
     // Team management
     createTeam,
     joinTeam,
@@ -255,5 +248,7 @@ export const useEdgeFunctions = () => {
     // API token management
     createToken,
     revokeToken,
+    // Admin functions
+    purgeCache,
   };
 };

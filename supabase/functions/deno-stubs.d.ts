@@ -1,15 +1,17 @@
-declare const Deno: {
-  env: {
+// Deno global namespace stub for VS Code TypeScript
+declare namespace Deno {
+  export interface Env {
     get(key: string): string | undefined
+    set(key: string, value: string): void
+    delete(key: string): void
+    toObject(): Record<string, string>
   }
-}
+  export const env: Env
 
-declare module "@supabase/supabase-js" {
-  export type SupabaseClient = unknown
-  export function createClient(
-    url: string,
-    key: string
-  ): SupabaseClient
+  export function serve(
+    handler: (req: Request) => Response | Promise<Response>,
+    options?: { port?: number; hostname?: string }
+  ): void
 }
 
 declare module "https://deno.land/std@0.168.0/http/server.ts" {
@@ -17,15 +19,7 @@ declare module "https://deno.land/std@0.168.0/http/server.ts" {
     handler: (req: Request) => Response | Promise<Response>
   ): void
 }
-declare module "std/http/server" {
-  export function serve(
-    handler: (req: Request) => Response | Promise<Response>
-  ): void
-}
 
-declare module "https://esm.sh/@supabase/supabase-js@2" {
-  export * from "@supabase/supabase-js"
-}
 declare module "shared/auth" {
   export function authenticateUser(req: Request): Promise<{ user: { id: string }; supabase: unknown } | { error: string; status: number }>
   export function handleCorsPreflight(req: Request): Response | null
