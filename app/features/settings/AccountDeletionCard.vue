@@ -105,15 +105,35 @@
                     <UIcon name="i-mdi-account" class="mr-2 h-4.5 w-4.5 text-gray-400" />
                     <span class="text-sm">
                       <span class="text-gray-400">Username:</span>
-                      <span class="ml-1 font-medium">{{ $supabase.user.username || 'N/A' }}</span>
+                      <span class="ml-1 font-medium font-mono">{{ maskedUsername }}</span>
                     </span>
+                    <AppTooltip :text="showUsername ? 'Hide' : 'Show'">
+                      <UButton
+                        size="xs"
+                        variant="ghost"
+                        :icon="showUsername ? 'i-mdi-eye-off' : 'i-mdi-eye'"
+                        color="neutral"
+                        class="ml-1"
+                        @click="showUsername = !showUsername"
+                      />
+                    </AppTooltip>
                   </div>
                   <div class="mb-2 flex items-center">
                     <UIcon name="i-mdi-email" class="mr-2 h-4.5 w-4.5 text-gray-400" />
                     <span class="text-sm">
                       <span class="text-gray-400">Email:</span>
-                      <span class="ml-1 font-medium">{{ $supabase.user.email || 'N/A' }}</span>
+                      <span class="ml-1 font-medium font-mono">{{ maskedEmail }}</span>
                     </span>
+                    <AppTooltip :text="showEmail ? 'Hide' : 'Show'">
+                      <UButton
+                        size="xs"
+                        variant="ghost"
+                        :icon="showEmail ? 'i-mdi-eye-off' : 'i-mdi-eye'"
+                        color="neutral"
+                        class="ml-1"
+                        @click="showEmail = !showEmail"
+                      />
+                    </AppTooltip>
                   </div>
                 </div>
                 <div>
@@ -142,7 +162,17 @@
               <div class="flex items-center">
                 <UIcon name="i-mdi-identifier" class="mr-2 h-4.5 w-4.5 text-gray-400" />
                 <span class="mr-2 text-sm text-gray-400">Account ID:</span>
-                <code class="rounded bg-gray-700 px-2 py-1 text-xs">{{ $supabase.user.id }}</code>
+                <code class="rounded bg-gray-700 px-2 py-1 text-xs">{{ maskedAccountId }}</code>
+                <AppTooltip :text="showAccountId ? 'Hide' : 'Show'">
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    :icon="showAccountId ? 'i-mdi-eye-off' : 'i-mdi-eye'"
+                    color="neutral"
+                    class="ml-1"
+                    @click="showAccountId = !showAccountId"
+                  />
+                </AppTooltip>
                 <AppTooltip :text="accountIdCopied ? 'Copied!' : 'Copy Account ID'">
                   <UButton
                     size="xs"
@@ -313,6 +343,39 @@
   const deleteError = ref('');
   const isDeleting = ref(false);
   const accountIdCopied = ref(false);
+  // Visibility toggles for sensitive data (hidden by default)
+  const showUsername = ref(false);
+  const showEmail = ref(false);
+  const showAccountId = ref(false);
+  // Masked display computed properties
+  const maskedUsername = computed(() => {
+    const username = $supabase?.user?.username;
+    if (!username) return 'N/A';
+    if (showUsername.value) return username;
+    // Show first 2 chars + asterisks
+    if (username.length <= 3) return '***';
+    return username.slice(0, 2) + '***';
+  });
+  const maskedEmail = computed(() => {
+    const email = $supabase?.user?.email;
+    if (!email) return 'N/A';
+    if (showEmail.value) return email;
+    // Show first 2 chars + asterisks + domain
+    const atIndex = email.indexOf('@');
+    if (atIndex <= 0) return '***';
+    const localPart = email.slice(0, atIndex);
+    const domain = email.slice(atIndex);
+    const visibleChars = Math.min(2, localPart.length);
+    return localPart.slice(0, visibleChars) + '***' + domain;
+  });
+  const maskedAccountId = computed(() => {
+    const id = $supabase?.user?.id;
+    if (!id) return 'N/A';
+    if (showAccountId.value) return id;
+    // Show asterisks + last 4 chars
+    if (id.length <= 4) return '***';
+    return '***' + id.slice(-4);
+  });
   const isLoggedIn = computed(() => {
     return Boolean($supabase?.user?.loggedIn);
   });
