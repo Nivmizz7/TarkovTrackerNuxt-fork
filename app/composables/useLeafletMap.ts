@@ -215,7 +215,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     }
     // Create new SVG overlay using svgBounds if available
     const bounds = getSvgOverlayBounds(svgConfig);
-    svgLayer.value = L.svgOverlay(svgElement, bounds);
+    svgLayer.value = L.svgOverlay(svgElement, bounds, { pane: 'mapBackground' });
     if (mapInstance.value) {
       svgLayer.value.addTo(mapInstance.value);
       // Apply floor visibility if there are multiple floors in a single SVG
@@ -334,9 +334,15 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       // Create map instance with custom CRS
       const mapOptions = getLeafletMapOptions(leaflet.value, validSvgConfig);
       mapInstance.value = leaflet.value.map(containerRef.value, mapOptions);
+
+      // Create a custom pane for the map background to ensure it stays behind markers
+      const backgroundPane = mapInstance.value.createPane('mapBackground');
+      backgroundPane.style.zIndex = '200'; // Below overlayPane (400) and markerPane (600)
+
       // Set initial view using map bounds
       const bounds = getLeafletBounds(validSvgConfig);
       mapInstance.value.fitBounds(bounds);
+      
       // Set initial floor
       if (validSvgConfig) {
         selectedFloor.value =
@@ -345,11 +351,14 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
           validSvgConfig.floors[validSvgConfig.floors.length - 1] ||
           '';
       }
-      // Load SVG overlay FIRST so it's below markers
+      
+      // Load SVG overlay
       await loadMapSvg();
-      // Create layer groups for markers AFTER SVG so they appear on top
+      
+      // Create layer groups for markers
       objectiveLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
       extractLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
+      
       // Setup idle detection
       if (enableIdleDetection && mapInstance.value) {
         mapInstance.value.on('movestart', resetIdleTimer);
