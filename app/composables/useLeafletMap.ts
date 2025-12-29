@@ -2,6 +2,7 @@
  * Composable for managing Leaflet map instances for Tarkov maps.
  * Handles map initialization, SVG overlay loading, floor switching, and layer management.
  */
+import { useDebounceFn } from '@vueuse/core';
 import {
   ref,
   shallowRef,
@@ -336,15 +337,12 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       // Create map instance with custom CRS
       const mapOptions = getLeafletMapOptions(leaflet.value, validSvgConfig);
       mapInstance.value = leaflet.value.map(containerRef.value, mapOptions);
-
       // Create a custom pane for the map background to ensure it stays behind markers
       const backgroundPane = mapInstance.value.createPane('mapBackground');
       backgroundPane.style.zIndex = '200'; // Below overlayPane (400) and markerPane (600)
-
       // Set initial view using map bounds
       const bounds = getLeafletBounds(validSvgConfig);
       mapInstance.value.fitBounds(bounds);
-      
       // Set initial floor
       if (validSvgConfig) {
         selectedFloor.value =
@@ -353,14 +351,11 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
           validSvgConfig.floors[validSvgConfig.floors.length - 1] ||
           '';
       }
-      
       // Load SVG overlay
       await loadMapSvg();
-      
       // Create layer groups for markers
       objectiveLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
       extractLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
-      
       // Setup idle detection
       if (enableIdleDetection && mapInstance.value) {
         mapInstance.value.on('movestart', resetIdleTimer);
@@ -373,17 +368,21 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     } finally {
       isLoading.value = false;
     }
-
     // Setup resize observer
     if (containerRef.value) {
-      resizeObserver = new ResizeObserver(() => {
+      const handleResize = useDebounceFn(() => {
         if (mapInstance.value) {
-          mapInstance.value.invalidateSize();
+          mapInstance.value.invalidateSize({ animate: false });
           // Optional: re-fit bounds if needed, or just invalidate size
           // refreshView(); // calling refreshView would re-fit bounds
         }
-      });
-      resizeObserver.observe(containerRef.value);
+      }, 100);
+      try {
+        resizeObserver = new ResizeObserver(handleResize);
+        resizeObserver.observe(containerRef.value);
+      } catch (error) {
+        logger.error('Failed to initialize ResizeObserver:', error);
+      }
     }
   }
   /**
