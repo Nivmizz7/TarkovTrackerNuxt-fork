@@ -1,6 +1,6 @@
 <template>
   <div
-    class="quest-node absolute rounded-lg border px-3 py-2 shadow-lg transition-transform duration-150 hover:-translate-y-0.5"
+    class="quest-node absolute flex items-center justify-center rounded-lg border px-3 py-2 text-center shadow-lg transition-transform duration-150 hover:-translate-y-0.5"
     :class="statusClass"
     :style="nodeStyle"
   >
@@ -16,7 +16,7 @@
     >
       {{ t('page.tasks.questtree.lightkeeper', 'Lightkeeper') }}
     </div>
-    <p class="line-clamp-2 text-center text-xs font-semibold text-white">
+    <p class="line-clamp-2 text-xs font-semibold text-white">
       {{ task.name || t('page.tasks.questtree.unknown_name', 'Unknown task') }}
     </p>
   </div>
