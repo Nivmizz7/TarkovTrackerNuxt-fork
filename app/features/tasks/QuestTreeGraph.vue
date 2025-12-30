@@ -74,9 +74,9 @@
 
   const NODE_WIDTH = 160;
   const NODE_HEIGHT = 70;
-  const H_SPACING = 220;
-  const V_SPACING = 180;
-  const CANVAS_PADDING = 120;
+  const H_SPACING = 280;
+  const V_SPACING = 90;
+  const CANVAS_PADDING = 80;
 
   interface PositionedNode {
     key: string;
