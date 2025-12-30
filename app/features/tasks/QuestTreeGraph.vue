@@ -72,11 +72,11 @@
   import type { TaskTreeNode } from '@/composables/useQuestTree';
   import type { Task } from '@/types/tarkov';
 
-  const NODE_WIDTH = 200;
-  const NODE_HEIGHT = 120;
-  const H_SPACING = 160;
-  const V_SPACING = 120;
-  const CANVAS_PADDING = 80;
+  const NODE_WIDTH = 160;
+  const NODE_HEIGHT = 70;
+  const H_SPACING = 220;
+  const V_SPACING = 180;
+  const CANVAS_PADDING = 120;
 
   interface PositionedNode {
     key: string;

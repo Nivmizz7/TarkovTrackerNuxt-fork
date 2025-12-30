@@ -1,10 +1,33 @@
 <template>
-  <QuestTreeGraph
-    :nodes="questTreeRoots"
-    :task-statuses="taskStatusMap"
-    @finish="markTaskComplete"
-    @cancel="markTaskUncomplete"
-  />
+  <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+    <QuestTreeGraph
+      :nodes="questTreeRoots"
+      :task-statuses="taskStatusMap"
+      @finish="markTaskComplete"
+      @cancel="markTaskUncomplete"
+    />
+    <div class="rounded-2xl border border-white/10 bg-surface-900/70 p-4">
+      <div class="mb-3 text-sm font-semibold text-gray-200">Quetes disponibles</div>
+      <div v-if="activeUserView === 'all'" class="text-xs text-gray-400">
+        Selectionne un joueur pour valider les quetes.
+      </div>
+      <div v-else-if="availableTasks.length === 0" class="text-xs text-gray-400">
+        Aucune quete disponible.
+      </div>
+      <div v-else class="space-y-2">
+        <div
+          v-for="task in availableTasks"
+          :key="task.id"
+          class="flex items-center justify-between gap-2"
+        >
+          <span class="text-xs text-gray-200">{{ task.name ?? 'Task' }}</span>
+          <UButton size="xs" color="primary" variant="solid" @click="markTaskComplete(task.id)">
+            Valider
+          </UButton>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -39,6 +62,13 @@
       statusMap[task.id] = determineTaskStatus(task);
     });
     return statusMap;
+  });
+
+  const availableTasks = computed(() => {
+    if (activeUserView.value === 'all') return [];
+    return props.tasks
+      .filter((task) => taskStatusMap.value[task.id] === 'available')
+      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
   });
 
   const determineTaskStatus = (task: Task): TaskStatus => {
