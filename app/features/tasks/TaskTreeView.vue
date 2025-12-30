@@ -1,26 +1,41 @@
 <template>
   <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
     <QuestTreeGraph
+      ref="graphRef"
       :nodes="questTreeRoots"
       :task-statuses="taskStatusMap"
       @finish="markTaskComplete"
       @cancel="markTaskUncomplete"
+      @select="goToTask"
     />
     <div class="rounded-2xl border border-white/10 bg-surface-900/70 p-4">
       <div class="mb-3 text-sm font-semibold text-gray-200">Quetes disponibles</div>
+      <UInput
+        v-model="searchQuery"
+        placeholder="Rechercher..."
+        icon="i-mdi-magnify"
+        size="sm"
+        class="mb-3"
+      />
       <div v-if="activeUserView === 'all'" class="text-xs text-gray-400">
         Selectionne un joueur pour valider les quetes.
       </div>
-      <div v-else-if="availableTasks.length === 0" class="text-xs text-gray-400">
+      <div v-else-if="filteredAvailableTasks.length === 0" class="text-xs text-gray-400">
         Aucune quete disponible.
       </div>
       <div v-else class="space-y-2">
         <div
-          v-for="task in availableTasks"
+          v-for="task in filteredAvailableTasks"
           :key="task.id"
           class="flex items-center justify-between gap-2"
         >
-          <span class="text-xs text-gray-200">{{ task.name ?? 'Task' }}</span>
+          <button
+            type="button"
+            class="text-left text-xs text-gray-200 hover:text-white"
+            @click="focusTaskInTree(task.id)"
+          >
+            {{ task.name ?? 'Task' }}
+          </button>
           <UButton size="xs" color="primary" variant="solid" @click="markTaskComplete(task.id)">
             Valider
           </UButton>
@@ -32,7 +47,8 @@
 
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
+  import { useRouter } from 'vue-router';
   import { buildQuestTree } from '@/composables/useQuestTree';
   import QuestTreeGraph from '@/features/tasks/QuestTreeGraph.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
@@ -51,6 +67,9 @@
   const { tasksCompletions, unlockedTasks, playerFaction, visibleTeamStores } =
     storeToRefs(progressStore);
   const tarkovStore = useTarkovStore();
+  const router = useRouter();
+  const graphRef = ref<{ focusTask: (taskId: string) => void } | null>(null);
+  const searchQuery = ref('');
 
   const activeUserView = computed(() => preferencesStore.getTaskUserView);
 
@@ -69,6 +88,14 @@
     return props.tasks
       .filter((task) => taskStatusMap.value[task.id] === 'available')
       .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+  });
+
+  const filteredAvailableTasks = computed(() => {
+    if (!searchQuery.value.trim()) return availableTasks.value;
+    const query = searchQuery.value.toLowerCase();
+    return availableTasks.value.filter((task) =>
+      (task.name ?? '').toLowerCase().includes(query)
+    );
   });
 
   const determineTaskStatus = (task: Task): TaskStatus => {
@@ -187,5 +214,14 @@
         'setTaskObjectiveUncomplete'
       );
     }
+  };
+
+  const focusTaskInTree = (taskId: string) => {
+    graphRef.value?.focusTask(taskId);
+  };
+
+  const goToTask = (taskId: string) => {
+    preferencesStore.setTaskPrimaryView('all');
+    router.push({ path: '/tasks', query: { task: taskId } });
   };
 </script>

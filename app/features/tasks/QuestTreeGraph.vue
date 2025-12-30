@@ -24,56 +24,58 @@
       </div>
     </div>
     <div
-      class="quest-tree-canvas rounded-3xl border border-white/5 bg-surface-900/70 p-6"
+      class="quest-tree-canvas relative rounded-3xl border border-white/5 bg-surface-900/70 p-6"
       :class="isPanning ? 'cursor-grabbing' : 'cursor-grab'"
     >
       <div v-if="!hasNodes" class="flex flex-col items-center gap-3 py-12 text-center text-white/60">
         <UIcon name="i-mdi-source-branch-off" class="h-10 w-10 text-white/30" />
         <p>{{ t('page.tasks.questtree.empty', 'No quest data available.') }}</p>
       </div>
-      <div
-        v-else
-        ref="scrollRef"
-        class="quest-tree-scroll relative overflow-auto"
-        @mousedown="onMainMouseDown"
-        @mousemove="onMainMouseMove"
-        @mouseup="onMainMouseUp"
-        @mouseleave="onMainMouseUp"
-      >
+      <div v-else class="relative">
         <div
-          class="quest-tree-stage relative"
-          :style="{
-            width: `${graphWidth}px`,
-            height: `${graphHeight}px`,
-          }"
+          ref="scrollRef"
+          class="quest-tree-scroll relative overflow-auto"
+          @mousedown="onMainMouseDown"
+          @mousemove="onMainMouseMove"
+          @mouseup="onMainMouseUp"
+          @mouseleave="onMainMouseUp"
         >
-          <svg
-            class="pointer-events-none absolute inset-0"
-            :width="graphWidth"
-            :height="graphHeight"
-            fill="none"
+          <div
+            class="quest-tree-stage relative"
+            :style="{
+              width: `${graphWidth}px`,
+              height: `${graphHeight}px`,
+            }"
           >
-            <path
-              v-for="edge in edges"
-              :key="edge.key"
-              :d="edge.path"
-              stroke="rgba(255,255,255,0.25)"
-              stroke-width="2"
-              stroke-linecap="round"
+            <svg
+              class="pointer-events-none absolute inset-0"
+              :width="graphWidth"
+              :height="graphHeight"
+              fill="none"
+            >
+              <path
+                v-for="edge in edges"
+                :key="edge.key"
+                :d="edge.path"
+                stroke="rgba(255,255,255,0.25)"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+            <QuestTreeNodeCard
+              v-for="node in positionedNodes"
+              :key="node.key"
+              :task="node.task"
+              :status="taskStatus(node.task.id)"
+              :node-style="node.style"
+              @finish="emit('finish', $event)"
+              @cancel="emit('cancel', $event)"
+              @select="emit('select', $event)"
             />
-          </svg>
-          <QuestTreeNodeCard
-            v-for="node in positionedNodes"
-            :key="node.key"
-            :task="node.task"
-            :status="taskStatus(node.task.id)"
-            :node-style="node.style"
-            @finish="emit('finish', $event)"
-            @cancel="emit('cancel', $event)"
-          />
+          </div>
         </div>
         <div
-          class="quest-tree-mini absolute right-4 top-4 rounded-lg border border-white/10 bg-surface-900/90 p-2 shadow-lg"
+          class="quest-tree-mini absolute right-4 top-4 z-10 rounded-lg border border-white/10 bg-surface-900/90 p-3 shadow-lg"
         >
           <svg
             :width="preview.width"
@@ -89,7 +91,7 @@
               y="0"
               :width="preview.width"
               :height="preview.height"
-              fill="rgba(15,23,42,0.85)"
+              fill="rgba(15,23,42,0.9)"
             />
             <path
               v-for="edge in edges"
@@ -107,8 +109,8 @@
               :y="node.y * preview.scale"
               :width="NODE_WIDTH * preview.scale"
               :height="NODE_HEIGHT * preview.scale"
-              rx="2"
-              ry="2"
+              rx="3"
+              ry="3"
               fill="rgba(255,255,255,0.3)"
             />
             <rect
@@ -152,7 +154,7 @@
     path: string;
   }
 
-  const emit = defineEmits(['finish', 'cancel']);
+  const emit = defineEmits(['finish', 'cancel', 'select']);
 
   const props = defineProps<{
     nodes: TaskTreeNode[];
@@ -174,6 +176,15 @@
   const edges = computed(() => layout.value.edges);
   const graphWidth = computed(() => layout.value.width);
   const graphHeight = computed(() => layout.value.height);
+  const nodeByTaskId = computed(() => {
+    const map = new Map<string, { x: number; y: number }>();
+    positionedNodes.value.forEach((node) => {
+      if (!map.has(node.task.id)) {
+        map.set(node.task.id, { x: node.x, y: node.y });
+      }
+    });
+    return map;
+  });
   const getViewportRect = (scale: number) => {
     return {
       x: scrollState.value.left * scale,
@@ -184,16 +195,14 @@
   };
 
   const preview = computed(() => {
-    const maxWidth = 360;
-    const maxHeight = 240;
-    const minWidth = 200;
-    const minHeight = 140;
-    let scale = Math.min(maxWidth / graphWidth.value, maxHeight / graphHeight.value, 1);
-    scale = Math.max(
-      scale,
-      Math.min(minWidth / graphWidth.value, 1),
-      Math.min(minHeight / graphHeight.value, 1)
-    );
+    const maxWidth = 520;
+    const maxHeight = 360;
+    const minWidth = 280;
+    const minHeight = 200;
+    const baseScale = Math.min(maxWidth / graphWidth.value, maxHeight / graphHeight.value, 1);
+    let scale = Math.min(baseScale * 0.75, baseScale);
+    const minScale = Math.min(minWidth / graphWidth.value, minHeight / graphHeight.value, baseScale);
+    if (scale < minScale) scale = minScale;
     const width = Math.min(maxWidth, graphWidth.value * scale);
     const height = Math.min(maxHeight, graphHeight.value * scale);
     const viewport = getViewportRect(scale);
@@ -319,6 +328,17 @@
     el.scrollTop = Math.max(0, Math.min(targetTop, graphHeight.value - el.clientHeight));
   };
 
+  const focusTask = (taskId: string) => {
+    const el = scrollRef.value;
+    const coords = nodeByTaskId.value.get(taskId);
+    if (!el || !coords) return;
+    const targetLeft = coords.x - el.clientWidth / 2 + NODE_WIDTH / 2;
+    const targetTop = coords.y - el.clientHeight / 2 + NODE_HEIGHT / 2;
+    el.scrollLeft = Math.max(0, Math.min(targetLeft, graphWidth.value - el.clientWidth));
+    el.scrollTop = Math.max(0, Math.min(targetTop, graphHeight.value - el.clientHeight));
+    updateScrollState();
+  };
+
   const onPreviewPointerDown = (event: PointerEvent) => {
     isPreviewDragging.value = true;
     (event.currentTarget as SVGElement).setPointerCapture(event.pointerId);
@@ -390,6 +410,8 @@
     window.removeEventListener('resize', updateScrollState);
     window.removeEventListener('pointerup', onGlobalPointerUp);
   });
+
+  defineExpose({ focusTask });
 </script>
 <style scoped>
 .quest-tree-header {
