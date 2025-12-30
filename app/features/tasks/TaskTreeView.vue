@@ -1,66 +1,42 @@
 <template>
-  <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-    <div class="h-[70vh] overflow-x-auto overflow-y-auto rounded-lg bg-surface-900/60 p-4">
-      <div class="flex min-w-max items-start gap-6">
-        <div
-          v-for="column in columns"
-          :key="column.depth"
-          class="flex min-w-[180px] flex-col gap-2"
+  <div class="rounded-lg bg-surface-900/60 p-4">
+    <div class="space-y-2">
+      <button
+        v-for="node in orderedNodes"
+        :key="node.taskId"
+        type="button"
+        class="flex items-start gap-2 text-left text-xs text-gray-200"
+        @click="goToTask(node.taskId)"
+      >
+        <span
+          class="relative mt-0.5 h-4 w-4 shrink-0 rounded-sm border"
+          :class="statusColorClass(node.taskId)"
+          :style="{ marginLeft: `${node.depth * 16}px` }"
         >
-          <button
-            v-for="taskId in column.taskIds"
-            :key="taskId"
-            type="button"
-            class="flex items-center gap-2 text-left text-xs text-gray-200"
+          <span
+            v-if="isLightkeeperTask(node.taskId)"
+            class="absolute -left-1 -top-1 rounded-sm bg-white px-0.5 text-[9px] font-bold text-black"
           >
-            <span class="relative h-4 w-4 shrink-0 rounded-sm border" :class="statusColorClass(taskId)">
-              <span
-                v-if="isLightkeeperTask(taskId)"
-                class="absolute -left-1 -top-1 rounded-sm bg-white px-0.5 text-[9px] font-bold text-black"
-              >
-                K
-              </span>
-              <span
-                v-if="isKappaTask(taskId)"
-                class="absolute -right-1 -top-1 rounded-sm bg-white px-0.5 text-[9px] font-bold text-black"
-              >
-                K
-              </span>
-            </span>
-            <span class="leading-tight">
-              {{ tasksById.get(taskId)?.name ?? 'Task' }}
-            </span>
-          </button>
-        </div>
-      </div>
-    </div>
-    <div class="h-[70vh] overflow-y-auto rounded-lg bg-surface-900/60 p-4">
-      <div class="mb-3 text-sm font-semibold text-gray-200">Quetes disponibles</div>
-      <div v-if="userView === 'all'" class="text-xs text-gray-400">
-        Selectionne un joueur pour valider les quetes.
-      </div>
-      <div v-else-if="availableTasks.length === 0" class="text-xs text-gray-400">
-        Aucune quete disponible.
-      </div>
-      <div v-else class="space-y-2">
-        <div
-          v-for="task in availableTasks"
-          :key="task.id"
-          class="flex items-center justify-between gap-2"
-        >
-          <span class="text-xs text-gray-200">{{ task.name ?? 'Task' }}</span>
-          <UButton size="xs" color="primary" variant="solid" @click="completeTask(task)">
-            Valider
-          </UButton>
-        </div>
-      </div>
+            K
+          </span>
+          <span
+            v-if="isKappaTask(node.taskId)"
+            class="absolute -right-1 -top-1 rounded-sm bg-white px-0.5 text-[9px] font-bold text-black"
+          >
+            K
+          </span>
+        </span>
+        <span class="leading-tight">
+          {{ tasksById.get(node.taskId)?.name ?? 'Task' }}
+        </span>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
-  import { useTaskActions } from '@/composables/useTaskActions';
+  import { computed } from 'vue';
+  import { useRouter } from 'vue-router';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
@@ -70,31 +46,14 @@
     tasks: Task[];
   }>();
 
-  const emit = defineEmits<{
-    'on-task-action': [
-      event: {
-        taskId: string;
-        taskName: string;
-        action: string;
-        undoKey?: string;
-        statusKey?: string;
-      },
-    ];
-  }>();
-
   const preferencesStore = usePreferencesStore();
   const progressStore = useProgressStore();
   const metadataStore = useMetadataStore();
+  const router = useRouter();
   const userView = computed(() => preferencesStore.getTaskUserView);
   const teamIds = computed(() => Object.keys(progressStore.visibleTeamStores || {}));
   const tasksById = computed(() => new Map(props.tasks.map((task) => [task.id, task])));
   const lightkeeperTraderId = computed(() => metadataStore.getTraderByName('lightkeeper')?.id);
-
-  const actionTask = ref<Task | null>(null);
-  const { markTaskComplete } = useTaskActions(
-    () => actionTask.value as Task,
-    (payload) => emit('on-task-action', payload)
-  );
 
   const statusById = computed(() => {
     const statuses = new Map<string, 'locked' | 'available' | 'inprogress' | 'completed'>();
@@ -152,16 +111,6 @@
     return statuses;
   });
 
-  const availableTasks = computed(() => {
-    if (userView.value === 'all') return [];
-    return props.tasks
-      .filter((task) => {
-        const status = statusById.value.get(task.id);
-        return status === 'available' || status === 'inprogress';
-      })
-      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
-  });
-
   const statusColorClass = (taskId: string) => {
     const status = statusById.value.get(taskId);
     if (status === 'available') return 'bg-emerald-500 border-emerald-300';
@@ -205,21 +154,36 @@
     return depth;
   });
 
-  const columns = computed(() => {
-    const columnsMap = new Map<number, string[]>();
-    const taskName = (taskId: string) => tasksById.value.get(taskId)?.name ?? '';
+  const orderedNodes = computed(() => {
+    const childMap = new Map<string, string[]>();
     props.tasks.forEach((task) => {
-      const depth = depthMap.value.get(task.id) ?? 0;
-      const list = columnsMap.get(depth) ?? [];
-      list.push(task.id);
-      columnsMap.set(depth, list);
+      const children = (task.children ?? []).filter((childId) => tasksById.value.has(childId));
+      children.sort((a, b) => (tasksById.value.get(a)?.name ?? '').localeCompare(
+        tasksById.value.get(b)?.name ?? ''
+      ));
+      childMap.set(task.id, children);
     });
-    return [...columnsMap.entries()]
-      .sort(([a], [b]) => a - b)
-      .map(([depth, taskIds]) => ({
-        depth,
-        taskIds: taskIds.sort((a, b) => taskName(a).localeCompare(taskName(b))),
-      }));
+    const roots = props.tasks.filter((task) => {
+      const parents = (task.parents ?? []).filter((parentId) => tasksById.value.has(parentId));
+      return parents.length === 0;
+    });
+    roots.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+    const ordered: Array<{ taskId: string; depth: number }> = [];
+    const visited = new Set<string>();
+    const walk = (taskId: string, depth: number) => {
+      if (visited.has(taskId)) return;
+      visited.add(taskId);
+      ordered.push({ taskId, depth });
+      const children = childMap.get(taskId) ?? [];
+      children.forEach((childId) => walk(childId, depth + 1));
+    };
+    roots.forEach((root) => walk(root.id, 0));
+    props.tasks.forEach((task) => {
+      if (!visited.has(task.id)) {
+        walk(task.id, 0);
+      }
+    });
+    return ordered;
   });
 
   const isTaskInProgress = (task: Task, teamId: string) => {
@@ -243,9 +207,8 @@
     return task.trader?.name?.toLowerCase() === 'lightkeeper';
   };
 
-  const completeTask = (task: Task) => {
-    if (userView.value === 'all') return;
-    actionTask.value = task;
-    markTaskComplete();
+  const goToTask = (taskId: string) => {
+    preferencesStore.setTaskPrimaryView('all');
+    router.push({ path: '/tasks', query: { task: taskId } });
   };
 </script>
