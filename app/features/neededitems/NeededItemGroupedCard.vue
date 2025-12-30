@@ -43,10 +43,13 @@
       </div>
     </div>
     <!-- Breakdown grid -->
-    <div class="grid grid-cols-2 gap-px border-t border-white/10 bg-white/5 text-xs">
+    <div
+      class="gap-px border-t border-white/10 bg-white/5 text-xs"
+      :class="activeFilter === 'tasks' || activeFilter === 'hideout' ? '' : 'grid grid-cols-2'"
+    >
       <!-- Tasks section -->
-      <div class="bg-gray-800 p-2">
-        <div class="mb-1.5 flex items-center gap-1 text-gray-400">
+      <div v-if="activeFilter !== 'hideout'" class="bg-gray-800 p-2">
+        <div v-if="activeFilter === 'all' || activeFilter === 'completed'" class="mb-1.5 flex items-center gap-1 text-gray-400">
           <UIcon name="i-mdi-clipboard-list" class="h-3.5 w-3.5" />
           <span class="font-medium">Tasks</span>
         </div>
@@ -104,8 +107,8 @@
         </div>
       </div>
       <!-- Hideout section -->
-      <div class="bg-gray-800 p-2">
-        <div class="mb-1.5 flex items-center gap-1 text-gray-400">
+      <div v-if="activeFilter !== 'tasks'" class="bg-gray-800 p-2">
+        <div v-if="activeFilter === 'all' || activeFilter === 'completed'" class="mb-1.5 flex items-center gap-1 text-gray-400">
           <UIcon name="i-mdi-home" class="h-3.5 w-3.5" />
           <span class="font-medium">Hideout</span>
         </div>
@@ -191,6 +194,7 @@
   }
   const props = defineProps<{
     groupedItem: GroupedItem;
+    activeFilter?: 'all' | 'tasks' | 'hideout' | 'completed';
   }>();
   const itemId = computed(() => props.groupedItem.itemId);
   const isComplete = computed(() => {
