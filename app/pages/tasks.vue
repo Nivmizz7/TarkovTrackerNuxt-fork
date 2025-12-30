@@ -5,6 +5,17 @@
       <div v-else>
         <!-- Task Filter Bar -->
         <TaskFilterBar v-model:search-query="searchQuery" />
+        <div v-if="!isTreeView" class="mb-6 mt-3 flex justify-center">
+          <UButton
+            size="lg"
+            color="primary"
+            variant="solid"
+            class="w-full max-w-xl px-6 py-4 text-base font-semibold sm:text-lg"
+            @click="switchToTreeView"
+          >
+            Passez en mode arbre
+          </UButton>
+        </div>
         <!-- Map Display (shown when MAPS view is selected) -->
         <div v-if="showMapDisplay" class="mb-6">
           <div class="bg-surface-800/50 rounded-lg p-4">
@@ -36,15 +47,20 @@
         <div v-if="filteredTasks.length === 0" class="py-6">
           <TaskEmptyState />
         </div>
-        <div v-else class="space-y-4" data-testid="task-list">
-          <TaskCard
-            v-for="task in paginatedTasks"
-            :key="task.id"
-            :task="task"
-            @on-task-action="onTaskAction"
-          />
-          <!-- Sentinel for infinite scroll -->
-          <div v-if="displayCount < filteredTasks.length" ref="tasksSentinel" class="h-1" />
+        <div v-else>
+          <div v-if="isTreeView" class="space-y-4" data-testid="task-tree">
+            <TaskTreeView :tasks="filteredTasks" @on-task-action="onTaskAction" />
+          </div>
+          <div v-else class="space-y-4" data-testid="task-list">
+            <TaskCard
+              v-for="task in paginatedTasks"
+              :key="task.id"
+              :task="task"
+              @on-task-action="onTaskAction"
+            />
+            <!-- Sentinel for infinite scroll -->
+            <div v-if="displayCount < filteredTasks.length" ref="tasksSentinel" class="h-1" />
+          </div>
         </div>
       </div>
     </div>
@@ -103,6 +119,7 @@
   import TaskCard from '@/features/tasks/TaskCard.vue';
   import TaskEmptyState from '@/features/tasks/TaskEmptyState.vue';
   import TaskLoadingState from '@/features/tasks/TaskLoadingState.vue';
+  import TaskTreeView from '@/features/tasks/TaskTreeView.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
@@ -161,6 +178,10 @@
   const showMapDisplay = computed(() => {
     return getTaskPrimaryView.value === 'maps' && getTaskMapView.value !== 'all';
   });
+  const isTreeView = computed(() => getTaskPrimaryView.value === 'tree');
+  const switchToTreeView = () => {
+    preferencesStore.setTaskPrimaryView('tree');
+  };
   const selectedMapData = computed(() => {
     const mapId = getTaskMapView.value;
     if (!mapId || mapId === 'all') return null;
@@ -341,7 +362,9 @@
     }
   };
   // Setup infinite scroll
-  const infiniteScrollEnabled = computed(() => displayCount.value < filteredTasks.value.length);
+  const infiniteScrollEnabled = computed(
+    () => !isTreeView.value && displayCount.value < filteredTasks.value.length
+  );
   const { stop: _stopInfiniteScroll, start: _startInfiniteScroll } = useInfiniteScroll(
     tasksSentinel,
     loadMoreTasks,
