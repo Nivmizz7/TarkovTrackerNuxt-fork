@@ -34,7 +34,7 @@
           </defs>
           <path
             v-for="edge in edges"
-            :key="edge.id"
+            :key="edge.key"
             :d="edge.path"
             stroke="rgba(148,163,184,0.7)"
             stroke-width="1.5"
@@ -114,6 +114,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { useRouter } from 'vue-router';
+  import { buildQuestTree, type TaskTreeNode } from '@/composables/useQuestTree';
   import { useTaskActions } from '@/composables/useTaskActions';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
@@ -146,10 +147,10 @@
   const tasksById = computed(() => new Map(props.tasks.map((task) => [task.id, task])));
   const lightkeeperTraderId = computed(() => metadataStore.getTraderByName('lightkeeper')?.id);
   const NODE_WIDTH = 240;
-  const NODE_HEIGHT = 52;
-  const COLUMN_GAP = 160;
-  const ROW_GAP = 40;
-  const PADDING = 48;
+  const NODE_HEIGHT = 60;
+  const H_SPACING = 200;
+  const V_SPACING = 140;
+  const CANVAS_PADDING = 100;
   const isPanning = ref(false);
   const panStart = ref({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
@@ -215,13 +216,6 @@
     return statuses;
   });
 
-  const statusColorClass = (taskId: string) => {
-    const status = statusById.value.get(taskId);
-    if (status === 'available') return 'bg-emerald-500 border-emerald-300';
-    if (status === 'inprogress' || status === 'completed') return 'bg-gray-500 border-gray-300';
-    return 'bg-red-500 border-red-300';
-  };
-
   const statusBgClass = (taskId: string) => {
     const status = statusById.value.get(taskId);
     if (status === 'available') return 'bg-emerald-700/60';
@@ -237,147 +231,114 @@
     return 'bg-red-400/70';
   };
 
-  const childrenMap = computed(() => {
-    const childMap = new Map<string, string[]>();
-    props.tasks.forEach((task) => {
-      const children = (task.children ?? []).filter((childId) => tasksById.value.has(childId));
-      children.sort((a, b) => (tasksById.value.get(a)?.name ?? '').localeCompare(
-        tasksById.value.get(b)?.name ?? ''
-      ));
-      childMap.set(task.id, children);
-    });
-    return childMap;
-  });
-
-  type TreeNode = {
+  interface PositionedNode {
     key: string;
     taskId: string;
-    children: TreeNode[];
-    units?: number;
-  };
+    x: number;
+    y: number;
+  }
 
-  const roots = computed(() => {
-    const rootIds: string[] = [];
-    const allIds = new Set(props.tasks.map((task) => task.id));
-    props.tasks.forEach((task) => {
-      const parents = (task.parents ?? []).filter((parentId) => allIds.has(parentId));
-      if (parents.length === 0) {
-        rootIds.push(task.id);
-      }
-    });
-    const reachable = new Set<string>();
-    const walk = (taskId: string) => {
-      if (reachable.has(taskId)) return;
-      reachable.add(taskId);
-      const children = childrenMap.value.get(taskId) ?? [];
-      children.forEach((childId) => walk(childId));
-    };
-    rootIds.forEach((rootId) => walk(rootId));
-    props.tasks.forEach((task) => {
-      if (!reachable.has(task.id)) {
-        rootIds.push(task.id);
-      }
-    });
-    return rootIds;
-  });
+  interface EdgePath {
+    key: string;
+    path: string;
+  }
 
-  const buildTree = (taskId: string, path: Set<string>, nextKey: () => string): TreeNode | null => {
-    if (path.has(taskId)) return null;
-    const node: TreeNode = { key: nextKey(), taskId, children: [] };
-    const children = childrenMap.value.get(taskId) ?? [];
-    const nextPath = new Set(path);
-    nextPath.add(taskId);
-    children.forEach((childId) => {
-      const child = buildTree(childId, nextPath, nextKey);
-      if (child) node.children.push(child);
-    });
-    return node;
-  };
+  const treeRoots = computed(() => buildQuestTree(props.tasks, props.tasks));
 
-  const computeUnits = (node: TreeNode): number => {
-    if (!node.children.length) {
-      node.units = 1;
-      return 1;
-    }
-    const total = node.children.reduce((sum, child) => sum + computeUnits(child), 0);
-    node.units = total;
-    return total;
-  };
-
-  const layout = computed(() => {
-    const nodes: Array<{ key: string; taskId: string; x: number; y: number }> = [];
-    const edges: Array<{ id: string; from: string; to: string }> = [];
-    const unitHeight = NODE_HEIGHT + ROW_GAP;
-    const TREE_GAP = 80;
-    let yOffset = PADDING;
-    let maxX = 0;
-    let maxY = 0;
-    let counter = 0;
-    const nextKey = () => `node-${counter++}`;
-
-    const layoutNode = (node: TreeNode, depth: number, yStart: number): number => {
-      const units = node.units ?? 1;
-      const blockHeight = units * unitHeight - ROW_GAP;
-      const nodeY = yStart + Math.max(0, (blockHeight - NODE_HEIGHT) / 2);
-      const x = PADDING + depth * (NODE_WIDTH + COLUMN_GAP);
-      nodes.push({ key: node.key, taskId: node.taskId, x, y: nodeY });
-      maxX = Math.max(maxX, x + NODE_WIDTH);
-      maxY = Math.max(maxY, nodeY + NODE_HEIGHT);
-
-      let childY = yStart;
-      node.children.forEach((child) => {
-        edges.push({ id: `${node.key}-${child.key}`, from: node.key, to: child.key });
-        const childHeight = (child.units ?? 1) * unitHeight - ROW_GAP;
-        layoutNode(child, depth + 1, childY);
-        childY += childHeight + ROW_GAP;
-      });
-      return yStart + blockHeight;
-    };
-
-    roots.value.forEach((rootId) => {
-      const tree = buildTree(rootId, new Set(), nextKey);
-      if (!tree) return;
-      computeUnits(tree);
-      const treeBottom = layoutNode(tree, 0, yOffset);
-      yOffset = treeBottom + TREE_GAP;
-      maxY = Math.max(maxY, treeBottom);
-    });
-
-    return {
-      nodes,
-      edges,
-      width: maxX + PADDING,
-      height: maxY + PADDING,
-    };
-  });
-
+  const layout = computed(() => buildLayout(treeRoots.value));
   const nodes = computed(() => layout.value.nodes);
-  const nodePositions = computed(() => {
-    const map = new Map<string, { x: number; y: number }>();
-    layout.value.nodes.forEach((node) => {
-      map.set(node.key, { x: node.x, y: node.y });
-    });
-    return map;
-  });
+  const edges = computed(() => layout.value.edges);
   const canvasWidth = computed(() => layout.value.width);
   const canvasHeight = computed(() => layout.value.height);
 
-  const edges = computed(() => {
-    const paths: Array<{ id: string; path: string }> = [];
-    layout.value.edges.forEach((edge) => {
-      const parent = nodePositions.value.get(edge.from);
-      const child = nodePositions.value.get(edge.to);
-      if (!parent || !child) return;
-      const startX = parent.x + NODE_WIDTH;
-      const startY = parent.y + NODE_HEIGHT / 2;
-      const endX = child.x;
-      const endY = child.y + NODE_HEIGHT / 2;
-      const midX = startX + (endX - startX) / 2;
-      const path = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
-      paths.push({ id: edge.id, path });
-    });
-    return paths;
-  });
+  function buildLayout(nodes: TaskTreeNode[]) {
+    const nodeDepth = new WeakMap<TaskTreeNode, number>();
+    const nodeOrder = new WeakMap<TaskTreeNode, number>();
+    let currentOrder = 0;
+    let maxDepth = 0;
+    let maxOrder = 0;
+
+    const assignOrder = (node: TaskTreeNode, depth: number, lineage: Set<TaskTreeNode>) => {
+      if (lineage.has(node)) {
+        const existingOrder = nodeOrder.get(node);
+        if (existingOrder !== undefined) return existingOrder;
+        nodeOrder.set(node, currentOrder);
+        return currentOrder;
+      }
+      nodeDepth.set(node, depth);
+      maxDepth = Math.max(maxDepth, depth);
+      const childLineage = new Set(lineage);
+      childLineage.add(node);
+
+      if (!node.children.length) {
+        const order = currentOrder++;
+        nodeOrder.set(node, order);
+        maxOrder = Math.max(maxOrder, order);
+        return order;
+      }
+      const childOrders = node.children.map((child) => assignOrder(child, depth + 1, childLineage));
+      if (childOrders.length === 0) {
+        const order = currentOrder++;
+        nodeOrder.set(node, order);
+        maxOrder = Math.max(maxOrder, order);
+        return order;
+      }
+      const minOrder = Math.min(...childOrders);
+      const maxChildOrder = Math.max(...childOrders);
+      const order = (minOrder + maxChildOrder) / 2;
+      nodeOrder.set(node, order);
+      maxOrder = Math.max(maxOrder, order);
+      return order;
+    };
+
+    nodes.forEach((node) => assignOrder(node, 0, new Set()));
+
+    const positioned: PositionedNode[] = [];
+    const edgePaths: EdgePath[] = [];
+
+    const toCoords = (node: TaskTreeNode) => {
+      const depth = nodeDepth.get(node) ?? 0;
+      const order = nodeOrder.get(node) ?? 0;
+      const x = depth * (NODE_WIDTH + H_SPACING) + CANVAS_PADDING;
+      const y = order * (NODE_HEIGHT + V_SPACING) + CANVAS_PADDING;
+      return { x, y };
+    };
+
+    const traverse = (node: TaskTreeNode, keyPrefix: string) => {
+      const coords = toCoords(node);
+      positioned.push({
+        key: `${keyPrefix}-${node.task.id}`,
+        taskId: node.task.id,
+        x: coords.x,
+        y: coords.y,
+      });
+      node.children.forEach((child, index) => {
+        const childCoords = toCoords(child);
+        const path = buildEdgePath(coords, childCoords);
+        edgePaths.push({
+          key: `${node.task.id}-${child.task.id}-${index}-${keyPrefix}`,
+          path,
+        });
+        traverse(child, `${keyPrefix}-${index}`);
+      });
+    };
+
+    nodes.forEach((node, index) => traverse(node, `root-${index}`));
+
+    const width = (maxDepth + 1) * (NODE_WIDTH + H_SPACING) + CANVAS_PADDING * 2;
+    const height = (maxOrder + 1) * (NODE_HEIGHT + V_SPACING) + CANVAS_PADDING * 2;
+
+    return { nodes: positioned, edges: edgePaths, width, height };
+  }
+
+  function buildEdgePath(from: { x: number; y: number }, to: { x: number; y: number }): string {
+    const startX = from.x + NODE_WIDTH;
+    const startY = from.y + NODE_HEIGHT / 2;
+    const endX = to.x;
+    const endY = to.y + NODE_HEIGHT / 2;
+    const offset = (endX - startX) / 2;
+    return `M ${startX} ${startY} C ${startX + offset} ${startY}, ${endX - offset} ${endY}, ${endX} ${endY}`;
+  }
 
   const isTaskInProgress = (task: Task, teamId: string) => {
     if (!task.objectives?.length) return false;
