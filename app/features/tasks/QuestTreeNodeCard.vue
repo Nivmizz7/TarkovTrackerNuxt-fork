@@ -16,7 +16,7 @@
     >
       {{ t('page.tasks.questtree.lightkeeper', 'Lightkeeper') }}
     </div>
-    <p class="line-clamp-2 text-xs font-semibold text-white">
+    <p class="line-clamp-2 text-center text-xs font-semibold text-white">
       {{ task.name || t('page.tasks.questtree.unknown_name', 'Unknown task') }}
     </p>
   </div>
