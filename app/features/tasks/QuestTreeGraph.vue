@@ -73,7 +73,7 @@
           />
         </div>
         <div
-          class="quest-tree-mini absolute right-4 top-4 rounded-lg border border-white/10 bg-surface-900/80 p-2"
+          class="quest-tree-mini absolute right-4 top-4 rounded-lg border border-white/10 bg-surface-900/90 p-2 shadow-lg"
         >
           <svg
             :width="preview.width"
@@ -84,14 +84,20 @@
             @pointerup.stop="onPreviewPointerUp"
             @pointerleave.stop="onPreviewPointerUp"
           >
-            <rect x="0" y="0" :width="preview.width" :height="preview.height" fill="transparent" />
+            <rect
+              x="0"
+              y="0"
+              :width="preview.width"
+              :height="preview.height"
+              fill="rgba(15,23,42,0.85)"
+            />
             <path
               v-for="edge in edges"
               :key="edge.key"
               :d="edge.path"
               :transform="previewTransform"
-              stroke="rgba(255,255,255,0.18)"
-              stroke-width="1"
+              stroke="rgba(255,255,255,0.35)"
+              stroke-width="1.2"
               fill="none"
             />
             <rect
@@ -103,7 +109,7 @@
               :height="NODE_HEIGHT * preview.scale"
               rx="2"
               ry="2"
-              fill="rgba(255,255,255,0.15)"
+              fill="rgba(255,255,255,0.3)"
             />
             <rect
               :x="preview.viewport.x"
@@ -111,8 +117,8 @@
               :width="preview.viewport.width"
               :height="preview.viewport.height"
               fill="none"
-              stroke="rgba(255,255,255,0.8)"
-              stroke-width="1.5"
+              stroke="rgba(255,255,255,0.95)"
+              stroke-width="2"
             />
           </svg>
         </div>
@@ -178,11 +184,18 @@
   };
 
   const preview = computed(() => {
-    const maxWidth = 220;
-    const maxHeight = 140;
-    const scale = Math.min(maxWidth / graphWidth.value, maxHeight / graphHeight.value, 1);
-    const width = graphWidth.value * scale;
-    const height = graphHeight.value * scale;
+    const maxWidth = 360;
+    const maxHeight = 240;
+    const minWidth = 200;
+    const minHeight = 140;
+    let scale = Math.min(maxWidth / graphWidth.value, maxHeight / graphHeight.value, 1);
+    scale = Math.max(
+      scale,
+      Math.min(minWidth / graphWidth.value, 1),
+      Math.min(minHeight / graphHeight.value, 1)
+    );
+    const width = Math.min(maxWidth, graphWidth.value * scale);
+    const height = Math.min(maxHeight, graphHeight.value * scale);
     const viewport = getViewportRect(scale);
     return {
       width,
@@ -358,7 +371,9 @@
   };
 
   onMounted(() => {
-    updateScrollState();
+    requestAnimationFrame(() => {
+      updateScrollState();
+    });
     const el = scrollRef.value;
     if (el) {
       el.addEventListener('scroll', updateScrollState, { passive: true });
