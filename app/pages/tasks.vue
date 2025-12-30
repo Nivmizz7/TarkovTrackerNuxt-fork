@@ -5,15 +5,15 @@
       <div v-else>
         <!-- Task Filter Bar -->
         <TaskFilterBar v-model:search-query="searchQuery" />
-        <div v-if="!isTreeView" class="mb-6 mt-3 flex justify-center">
+        <div class="mb-6 mt-3 flex justify-center">
           <UButton
             size="lg"
             color="primary"
             variant="solid"
             class="w-full max-w-xl px-6 py-4 text-base font-semibold sm:text-lg"
-            @click="switchToTreeView"
+            @click="toggleTreeView"
           >
-            Passez en mode arbre
+            {{ isTreeView ? 'Repasser en mode classique' : 'Passez en mode arbre' }}
           </UButton>
         </div>
         <!-- Map Display (shown when MAPS view is selected) -->
@@ -49,7 +49,7 @@
         </div>
         <div v-else>
           <div v-if="isTreeView" class="space-y-4" data-testid="task-tree">
-            <TaskTreeView :tasks="filteredTasks" @on-task-action="onTaskAction" />
+            <TaskTreeView :tasks="treeTasks" @on-task-action="onTaskAction" />
           </div>
           <div v-else class="space-y-4" data-testid="task-list">
             <TaskCard
@@ -125,6 +125,7 @@
   import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
   import type { Task, TaskObjective } from '@/types/tarkov';
+  import { EXCLUDED_SCAV_KARMA_TASKS } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   // Lazy load LeafletMap for performance
   const LeafletMapComponent = defineAsyncComponent(() => import('@/features/maps/LeafletMap.vue'));
@@ -179,7 +180,12 @@
     return getTaskPrimaryView.value === 'maps' && getTaskMapView.value !== 'all';
   });
   const isTreeView = computed(() => getTaskPrimaryView.value === 'tree');
-  const switchToTreeView = () => {
+  const lastClassicView = ref(getTaskPrimaryView.value === 'tree' ? 'all' : getTaskPrimaryView.value);
+  const toggleTreeView = () => {
+    if (isTreeView.value) {
+      preferencesStore.setTaskPrimaryView(lastClassicView.value || 'all');
+      return;
+    }
     preferencesStore.setTaskPrimaryView('tree');
   };
   const selectedMapData = computed(() => {
@@ -328,6 +334,15 @@
     },
     { immediate: true }
   );
+  watch(
+    getTaskPrimaryView,
+    (view) => {
+      if (view !== 'tree') {
+        lastClassicView.value = view;
+      }
+    },
+    { immediate: true }
+  );
   const isLoading = computed(
     () => !metadataStore.hasInitialized || tasksLoading.value || reloadingTasks.value
   );
@@ -340,6 +355,16 @@
     }
     const query = searchQuery.value.toLowerCase().trim();
     return visibleTasks.value.filter((task) => task.name?.toLowerCase().includes(query));
+  });
+  const treeTasks = computed(() => {
+    const baseTasks = (metadataStore.tasks || []).filter(
+      (task) => !EXCLUDED_SCAV_KARMA_TASKS.includes(task.id)
+    );
+    if (!searchQuery.value.trim()) {
+      return baseTasks;
+    }
+    const query = searchQuery.value.toLowerCase().trim();
+    return baseTasks.filter((task) => task.name?.toLowerCase().includes(query));
   });
   // Pagination state for infinite scroll
   const displayCount = ref(15);
