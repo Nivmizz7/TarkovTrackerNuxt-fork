@@ -82,6 +82,17 @@
     },
     tasks: {
       title: 'Завдання',
+      questtree: {
+        title: 'Дерево квестів',
+        legend_context: 'Залежності та огляд прогресу.',
+        legend_available: 'Доступно',
+        legend_locked: 'Заблоковано',
+        legend_completed: 'Завершено',
+        empty: 'Дані про квести недоступні.',
+        unknown_name: 'Невідомий квест',
+        kappa: 'Каппа',
+        lightkeeper: 'Лайткіпер',
+      },
       primaryviews: {
         all: 'Усі',
         maps: 'Карти',
