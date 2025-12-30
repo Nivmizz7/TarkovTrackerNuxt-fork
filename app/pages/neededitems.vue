@@ -27,6 +27,7 @@
             v-for="(group, index) in visibleGroupedItems"
             :key="group.itemId"
             :grouped-item="group"
+            :active-filter="activeFilter"
             :data-index="index"
           />
         </div>
@@ -332,7 +333,8 @@
       // Get current count for this specific need (capped at needed)
       let needCurrentCount = 0;
       if (need.needType === 'taskObjective') {
-        needCurrentCount = Math.min(tarkovStore.getObjectiveCount(need.id), count);
+        const objectiveCount = tarkovStore.getObjectiveCount(need.id);
+        needCurrentCount = Math.min(objectiveCount ?? 0, count);
         if (need.foundInRaid) {
           group.taskFir += count;
           group.taskFirCurrent += needCurrentCount;
@@ -341,7 +343,8 @@
           group.taskNonFirCurrent += needCurrentCount;
         }
       } else {
-        needCurrentCount = Math.min(tarkovStore.getHideoutPartCount(need.id), count);
+        const hideoutPartCount = tarkovStore.getHideoutPartCount(need.id);
+        needCurrentCount = Math.min(hideoutPartCount ?? 0, count);
         if (need.foundInRaid) {
           group.hideoutFir += count;
           group.hideoutFirCurrent += needCurrentCount;
