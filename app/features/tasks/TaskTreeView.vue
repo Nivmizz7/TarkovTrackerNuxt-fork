@@ -1,35 +1,45 @@
 <template>
-  <div class="rounded-lg bg-surface-900/60 p-4">
-    <div class="space-y-2">
-      <button
-        v-for="node in orderedNodes"
-        :key="node.taskId"
-        type="button"
-        class="flex items-start gap-2 text-left text-xs text-gray-200"
-        @click="goToTask(node.taskId)"
+  <div class="overflow-x-auto rounded-lg bg-surface-900/60 p-4">
+    <div class="flex min-w-max items-start gap-6">
+      <div
+        v-for="column in columns"
+        :key="column.depth"
+        class="flex min-w-[220px] flex-col gap-3"
       >
-        <span
-          class="relative mt-0.5 h-4 w-4 shrink-0 rounded-sm border"
-          :class="statusColorClass(node.taskId)"
-          :style="{ marginLeft: `${node.depth * 16}px` }"
+        <div
+          v-for="taskId in column.taskIds"
+          :key="taskId"
+          class="rounded-md bg-surface-900/80 px-2.5 py-2"
         >
-          <span
-            v-if="isLightkeeperTask(node.taskId)"
-            class="absolute -left-1 -top-1 rounded-sm bg-white px-0.5 text-[9px] font-bold text-black"
+          <button
+            type="button"
+            class="flex items-start gap-2 text-left text-xs text-gray-200"
+            @click="goToTask(taskId)"
           >
-            K
-          </span>
-          <span
-            v-if="isKappaTask(node.taskId)"
-            class="absolute -right-1 -top-1 rounded-sm bg-white px-0.5 text-[9px] font-bold text-black"
-          >
-            K
-          </span>
-        </span>
-        <span class="leading-tight">
-          {{ tasksById.get(node.taskId)?.name ?? 'Task' }}
-        </span>
-      </button>
+            <span class="relative mt-0.5 h-4 w-4 shrink-0 rounded-sm border" :class="statusColorClass(taskId)">
+              <span
+                v-if="isLightkeeperTask(taskId)"
+                class="absolute -left-1 -top-1 rounded-sm bg-white px-0.5 text-[9px] font-bold text-black"
+              >
+                K
+              </span>
+              <span
+                v-if="isKappaTask(taskId)"
+                class="absolute -right-1 -top-1 rounded-sm bg-white px-0.5 text-[9px] font-bold text-black"
+              >
+                K
+              </span>
+            </span>
+            <span class="leading-tight">
+              {{ tasksById.get(taskId)?.name ?? 'Task' }}
+            </span>
+          </button>
+          <div v-if="childrenMap.get(taskId)?.length" class="mt-2 text-[11px] text-gray-400">
+            <span class="mr-1 text-gray-500">-></span>
+            <span>{{ formatChildren(taskId) }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -154,7 +164,7 @@
     return depth;
   });
 
-  const orderedNodes = computed(() => {
+  const childrenMap = computed(() => {
     const childMap = new Map<string, string[]>();
     props.tasks.forEach((task) => {
       const children = (task.children ?? []).filter((childId) => tasksById.value.has(childId));
@@ -163,27 +173,24 @@
       ));
       childMap.set(task.id, children);
     });
-    const roots = props.tasks.filter((task) => {
-      const parents = (task.parents ?? []).filter((parentId) => tasksById.value.has(parentId));
-      return parents.length === 0;
-    });
-    roots.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
-    const ordered: Array<{ taskId: string; depth: number }> = [];
-    const visited = new Set<string>();
-    const walk = (taskId: string, depth: number) => {
-      if (visited.has(taskId)) return;
-      visited.add(taskId);
-      ordered.push({ taskId, depth });
-      const children = childMap.get(taskId) ?? [];
-      children.forEach((childId) => walk(childId, depth + 1));
-    };
-    roots.forEach((root) => walk(root.id, 0));
+    return childMap;
+  });
+
+  const columns = computed(() => {
+    const columnsMap = new Map<number, string[]>();
+    const taskName = (taskId: string) => tasksById.value.get(taskId)?.name ?? '';
     props.tasks.forEach((task) => {
-      if (!visited.has(task.id)) {
-        walk(task.id, 0);
-      }
+      const depth = depthMap.value.get(task.id) ?? 0;
+      const list = columnsMap.get(depth) ?? [];
+      list.push(task.id);
+      columnsMap.set(depth, list);
     });
-    return ordered;
+    return [...columnsMap.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([depth, taskIds]) => ({
+        depth,
+        taskIds: taskIds.sort((a, b) => taskName(a).localeCompare(taskName(b))),
+      }));
   });
 
   const isTaskInProgress = (task: Task, teamId: string) => {
@@ -210,5 +217,12 @@
   const goToTask = (taskId: string) => {
     preferencesStore.setTaskPrimaryView('all');
     router.push({ path: '/tasks', query: { task: taskId } });
+  };
+
+  const formatChildren = (taskId: string) => {
+    const children = childrenMap.value.get(taskId) ?? [];
+    return children
+      .map((childId) => tasksById.value.get(childId)?.name ?? 'Task')
+      .join(', ');
   };
 </script>
