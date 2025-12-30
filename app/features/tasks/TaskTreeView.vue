@@ -1,73 +1,112 @@
 <template>
-  <div
-    ref="canvasRef"
-    class="min-h-[70vh] w-full overflow-auto rounded-2xl border border-white/10 bg-surface-900/70 p-4"
-    tabindex="0"
-    @click="focusCanvas"
-    @keydown="onKeyScroll"
-  >
-    <div class="relative" :style="{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }">
-      <svg
-        class="pointer-events-none absolute inset-0"
-        :width="canvasWidth"
-        :height="canvasHeight"
-        role="presentation"
-        aria-hidden="true"
-      >
-        <defs>
-          <marker
-            id="arrowhead"
-            markerWidth="8"
-            markerHeight="6"
-            refX="7"
-            refY="3"
-            orient="auto"
+  <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+    <div
+      ref="canvasRef"
+      class="min-h-[70vh] w-full overflow-auto rounded-2xl border border-white/10 bg-surface-900/70 p-4"
+      :class="isPanning ? 'cursor-grabbing' : 'cursor-grab'"
+      tabindex="0"
+      @click="focusCanvas"
+      @keydown="onKeyScroll"
+      @mousedown="onMouseDown"
+      @mousemove="onMouseMove"
+      @mouseup="onMouseUp"
+      @mouseleave="onMouseUp"
+    >
+      <div class="relative" :style="{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }">
+        <svg
+          class="pointer-events-none absolute inset-0"
+          :width="canvasWidth"
+          :height="canvasHeight"
+          role="presentation"
+          aria-hidden="true"
+        >
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="8"
+              markerHeight="6"
+              refX="7"
+              refY="3"
+              orient="auto"
+            >
+              <polygon points="0 0, 8 3, 0 6" fill="rgba(148,163,184,0.8)" />
+            </marker>
+          </defs>
+          <path
+            v-for="edge in edges"
+            :key="edge.id"
+            :d="edge.path"
+            stroke="rgba(148,163,184,0.7)"
+            stroke-width="1.5"
+            fill="none"
+            marker-end="url(#arrowhead)"
+          />
+        </svg>
+        <div
+          v-for="node in nodes"
+          :key="node.taskId"
+          class="absolute rounded-lg shadow-sm"
+          :style="{
+            left: `${node.x}px`,
+            top: `${node.y}px`,
+            width: `${NODE_WIDTH}px`,
+            height: `${NODE_HEIGHT}px`,
+          }"
+        >
+          <div
+            class="relative flex h-full w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-xs text-white transition hover:brightness-110"
+            :class="statusBgClass(node.taskId)"
           >
-            <polygon points="0 0, 8 3, 0 6" fill="rgba(148,163,184,0.8)" />
-          </marker>
-        </defs>
-        <path
-          v-for="edge in edges"
-          :key="edge.id"
-          :d="edge.path"
-          stroke="rgba(148,163,184,0.7)"
-          stroke-width="1.5"
-          fill="none"
-          marker-end="url(#arrowhead)"
-        />
-      </svg>
-      <button
-        v-for="node in nodes"
-        :key="node.taskId"
-        type="button"
-        class="absolute flex items-start gap-2 rounded-lg px-3 py-2 text-left text-xs text-white shadow-sm transition hover:brightness-110"
-        :class="statusBgClass(node.taskId)"
-        :style="{
-          left: `${node.x}px`,
-          top: `${node.y}px`,
-          width: `${NODE_WIDTH}px`,
-          height: `${NODE_HEIGHT}px`,
-        }"
-        @click="goToTask(node.taskId)"
-      >
-        <span class="relative mt-0.5 h-4 w-4 shrink-0 rounded-sm border" :class="statusColorClass(node.taskId)">
-          <span
-            v-if="isLightkeeperTask(node.taskId)"
-            class="absolute -left-1 -top-1 rounded-sm bg-white px-0.5 text-[9px] font-bold text-black"
-          >
-            K
-          </span>
-          <span
-            v-if="isKappaTask(node.taskId)"
-            class="absolute -right-1 -top-1 rounded-sm bg-white px-0.5 text-[9px] font-bold text-black"
-          >
-            K
-          </span>
-        </span>
-        <span class="leading-tight">
-          {{ tasksById.get(node.taskId)?.name ?? 'Task' }}
-        </span>
-      </button>
+            <div
+              v-if="isKappaTask(node.taskId)"
+              class="absolute left-0 right-0 top-0 rounded-t-lg bg-black/70 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
+            >
+              Kappa
+            </div>
+            <div
+              v-if="isLightkeeperTask(node.taskId)"
+              class="absolute bottom-0 left-0 right-0 rounded-b-lg bg-black/70 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
+            >
+              Lightkeeper
+            </div>
+            <button
+              type="button"
+              class="mt-0.5 h-4 w-4 shrink-0 rounded-sm border border-white/70 bg-white/10"
+              :class="validationSquareClass(node.taskId)"
+              :aria-label="`Valider ${tasksById.get(node.taskId)?.name ?? 'Task'}`"
+              @click.stop="completeTask(node.taskId)"
+            />
+            <button
+              type="button"
+              class="flex-1 text-left leading-tight"
+              @click="goToTask(node.taskId)"
+            >
+              {{ tasksById.get(node.taskId)?.name ?? 'Task' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-surface-900/70 p-4">
+      <div class="mb-3 text-sm font-semibold text-gray-200">Quetes disponibles</div>
+      <div v-if="userView === 'all'" class="text-xs text-gray-400">
+        Selectionne un joueur pour valider les quetes.
+      </div>
+      <div v-else-if="availableTasks.length === 0" class="text-xs text-gray-400">
+        Aucune quete disponible.
+      </div>
+      <div v-else class="space-y-2">
+        <div
+          v-for="task in availableTasks"
+          :key="task.id"
+          class="flex items-center justify-between gap-2"
+        >
+          <span class="text-xs text-gray-200">{{ task.name ?? 'Task' }}</span>
+          <UButton size="xs" color="primary" variant="solid" @click="completeTask(task.id)">
+            Valider
+          </UButton>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -75,6 +114,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { useRouter } from 'vue-router';
+  import { useTaskActions } from '@/composables/useTaskActions';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
@@ -82,6 +122,18 @@
 
   const props = defineProps<{
     tasks: Task[];
+  }>();
+
+  const emit = defineEmits<{
+    'on-task-action': [
+      event: {
+        taskId: string;
+        taskName: string;
+        action: string;
+        undoKey?: string;
+        statusKey?: string;
+      },
+    ];
   }>();
 
   const preferencesStore = usePreferencesStore();
@@ -98,6 +150,14 @@
   const COLUMN_GAP = 90;
   const ROW_GAP = 16;
   const PADDING = 24;
+  const isPanning = ref(false);
+  const panStart = ref({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+
+  const actionTask = ref<Task | null>(null);
+  const { markTaskComplete } = useTaskActions(
+    () => actionTask.value as Task,
+    (payload) => emit('on-task-action', payload)
+  );
 
   const statusById = computed(() => {
     const statuses = new Map<string, 'locked' | 'available' | 'inprogress' | 'completed'>();
@@ -167,6 +227,14 @@
     if (status === 'available') return 'bg-emerald-700/60';
     if (status === 'inprogress' || status === 'completed') return 'bg-gray-700/60';
     return 'bg-red-700/60';
+  };
+
+  const validationSquareClass = (taskId: string) => {
+    const status = statusById.value.get(taskId);
+    if (status === 'available') return 'bg-emerald-400/80';
+    if (status === 'inprogress') return 'bg-gray-300/70';
+    if (status === 'completed') return 'bg-gray-500/60';
+    return 'bg-red-400/70';
   };
 
   const depthMap = computed(() => {
@@ -310,6 +378,26 @@
     router.push({ path: '/tasks', query: { task: taskId } });
   };
 
+  const availableTasks = computed(() => {
+    if (userView.value === 'all') return [];
+    return props.tasks
+      .filter((task) => {
+        const status = statusById.value.get(task.id);
+        return status === 'available' || status === 'inprogress';
+      })
+      .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+  });
+
+  const completeTask = (taskId: string) => {
+    if (userView.value === 'all') return;
+    const status = statusById.value.get(taskId);
+    if (status !== 'available' && status !== 'inprogress') return;
+    const task = tasksById.value.get(taskId);
+    if (!task) return;
+    actionTask.value = task;
+    markTaskComplete();
+  };
+
   const onKeyScroll = (event: KeyboardEvent) => {
     if (!canvasRef.value) return;
     const step = 120;
@@ -330,5 +418,29 @@
 
   const focusCanvas = () => {
     canvasRef.value?.focus();
+  };
+
+  const onMouseDown = (event: MouseEvent) => {
+    if (!canvasRef.value || event.button !== 1) return;
+    isPanning.value = true;
+    panStart.value = {
+      x: event.clientX,
+      y: event.clientY,
+      scrollLeft: canvasRef.value.scrollLeft,
+      scrollTop: canvasRef.value.scrollTop,
+    };
+    event.preventDefault();
+  };
+
+  const onMouseMove = (event: MouseEvent) => {
+    if (!isPanning.value || !canvasRef.value) return;
+    const dx = event.clientX - panStart.value.x;
+    const dy = event.clientY - panStart.value.y;
+    canvasRef.value.scrollLeft = panStart.value.scrollLeft - dx;
+    canvasRef.value.scrollTop = panStart.value.scrollTop - dy;
+  };
+
+  const onMouseUp = () => {
+    isPanning.value = false;
   };
 </script>

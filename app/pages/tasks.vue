@@ -49,7 +49,7 @@
         </div>
         <div v-else>
           <div v-if="isTreeView" class="space-y-4" data-testid="task-tree">
-            <TaskTreeView :tasks="treeTasks" />
+            <TaskTreeView :tasks="treeTasks" @on-task-action="onTaskAction" />
           </div>
           <div v-else class="space-y-4" data-testid="task-list">
             <TaskCard
