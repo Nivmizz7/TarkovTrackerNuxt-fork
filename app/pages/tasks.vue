@@ -163,7 +163,7 @@
   });
   // Determines if completed objectives should be rendered on the component map
   const shouldShowCompletedObjectives = computed(() => {
-    return ['completed', 'all'].includes(getTaskSecondaryView.value as string);
+    return ['completed', 'all'].includes(getTaskSecondaryView.value);
   });
   const selectedMapData = computed(() => {
     const mapId = getTaskMapView.value;
