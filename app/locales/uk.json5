@@ -395,6 +395,7 @@
       continue_twitch: 'Продовжити з Twitch',
       continue_discord: 'Продовжити з Discord',
       continue_google: 'Продовжити з Google',
+      continue_github: 'Продовжити з GitHub',
       privacy_policy: 'Політика конфіденційності',
       terms_of_service: 'Умови використання',
     },
