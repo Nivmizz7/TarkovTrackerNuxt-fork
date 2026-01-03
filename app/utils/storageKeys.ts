@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
 export const LEGACY_STORAGE_KEYS = {
   progress: 'progress',
   preferences: 'preferences',
+  user: 'user',
   progressBackupPrefix: 'progress_backup_',
   adminLastPurge: 'tt:admin:last-purge',
   sessionDataMigrated: 'tarkovDataMigrated',
