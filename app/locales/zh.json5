@@ -277,23 +277,6 @@
         empty: '无匹配搜索结果',
       },
     },
-    api: {
-      title: 'API文档',
-      description: '通过编程方式访问你的塔科夫追踪者数据',
-      note: '接口调用需API令牌验证身份',
-      tokens_moved_title: 'API令牌在设置中管理',
-      tokens_moved_description: '前往 设置→API令牌 创建和撤销令牌，本页面仅保留接口文档及端点详情',
-      tokens_moved_action: '打开设置',
-      endpoints: {
-        title: '可用接口端点',
-        data: {
-          description: '获取你的游戏进度数据',
-        },
-      },
-      usage: {
-        title: '使用示例',
-      },
-    },
     settings: {
       title: '设置',
       card: {
@@ -453,6 +436,9 @@
       title: '隐私政策',
     },
     api: {
+      tokens_moved_title: 'API令牌在设置中管理',
+      tokens_moved_description: '前往 设置→API令牌 创建和撤销令牌，本页面仅保留接口文档及端点详情',
+      tokens_moved_action: '打开设置',
       title: 'API文档',
       description: '通过编程方式访问你的塔科夫追踪者数据',
       note: '接口调用需 API 令牌验证身份',
