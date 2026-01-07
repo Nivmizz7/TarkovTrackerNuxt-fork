@@ -108,7 +108,7 @@
       key: 'beta_testers',
       pretitle: t('page.credits.labels.testers'),
       members: sortMembers([
-        { name: 'Adelia' },
+        { name: 'Adelia', avatar: githubAvatar('adealia'), link: githubProfile('adealia') },
         { name: 'Dio' },
         { name: 'GanjaManNL' },
         { name: 'Giribaldi_TTV' },
