@@ -1,7 +1,7 @@
 name: Feature Request
 description: Suggest a new feature or major addition
 title: "[Feature]: "
-labels: ["type:feature", "status:inbox"]
+labels: ["feature"]
 body:
   - type: markdown
     attributes:
@@ -29,21 +29,19 @@ body:
   - type: dropdown
     id: area
     attributes:
-      label: Area
-      description: Which area would this feature affect?
+      label: Technical Area
+      description: Which technical system would this feature involve? (Maintainers will add area labels during triage)
       multiple: true
       options:
-        - Tasks/Quests
-        - Hideout
-        - Maps
-        - Team Features
-        - Traders
-        - Needed Items
-        - Settings
-        - API
-        - Other
+        - UI/Frontend (Vue components, pages, styling)
+        - API (Server routes, workers, endpoints)
+        - Database (Supabase, queries, schema)
+        - Auth (Login, permissions, sessions)
+        - Realtime (Team sync, broadcasts)
+        - i18n (Translations)
+        - Not Sure
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: alternatives

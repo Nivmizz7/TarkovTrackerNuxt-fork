@@ -9,6 +9,8 @@ This guide describes how to set up and use the TarkovTracker GitHub Project boar
 | Column | Icon | Description | Automation |
 |--------|------|-------------|------------|
 | **Inbox** | 📥 | New issues awaiting triage | Auto-add newly created issues |
+| **Waiting for Info** | ❓ | Need clarification from reporter | Manual move during triage |
+| **Blocked** | 🚫 | Waiting on external dependency | Manual move when blocked |
 | **Backlog** | 📋 | Triaged, not yet prioritized for active work | Manual move after triage |
 | **Todo** | 📝 | Ready to work on, prioritized | Manual move when prioritized |
 | **In Progress** | 🚧 | Actively being worked on | Auto-move when PR opened or issue assigned |

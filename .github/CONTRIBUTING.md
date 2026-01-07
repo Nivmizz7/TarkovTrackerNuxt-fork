@@ -126,48 +126,44 @@ Issues are automatically labeled based on template selection. Maintainers will a
 
 ## Label System
 
-### Type Labels
-- `type:bug` - Something isn't working (red)
-- `type:feature` - New feature or major addition (green)
-- `type:enhancement` - Improvement to existing feature (light blue)
-- `type:refactor` - Code refactoring (yellow)
-- `type:docs` - Documentation changes (blue)
-- `type:dependencies` - Dependency updates (blue)
-- `type:chore` - Maintenance tasks (cream)
+We use a streamlined label system (17 labels total). See [LABELS.md](.github/LABELS.md) for the complete reference.
 
-### Area Labels (all light green)
-- `area:frontend` - UI/UX components
-- `area:backend` - Supabase/Nitro/Workers
-- `area:tasks` - Task/quest tracking
-- `area:team` - Team features
-- `area:hideout` - Hideout tracking
-- `area:maps` - Map features
-- `area:traders` - Trader features
-- `area:i18n` - Translations/localization
-- `area:api` - API endpoints
+### Type Labels (5)
+- `bug` - Something isn't working
+- `feature` - New feature or major addition
+- `enhancement` - Improvement to existing feature
+- `dependencies` - Dependency updates (often automated)
+- `docs` - Documentation changes
 
-### Priority Labels
-- `priority:critical` - Blocking issues, security, data loss (dark red)
-- `priority:high` - Important features/bugs (red)
-- `priority:medium` - Normal priority (yellow)
-- `priority:low` - Nice to have (green)
+### Area Labels (6 - technical boundaries)
+All area labels use light green color for visual grouping:
+- `area:ui` - Vue components, pages, styling
+- `area:api` - Nitro server routes, workers, API endpoints
+- `area:database` - Supabase schema, migrations, queries
+- `area:auth` - Authentication and authorization
+- `area:realtime` - Team sync, Supabase broadcasts
+- `area:i18n` - Translations and localization
 
-### Status Labels
-- `status:inbox` - Needs triage (gray)
-- `status:blocked` - Blocked by external factor (red)
-- `status:needs-info` - Waiting for more information (purple)
-- `status:in-progress` - Actively being worked on (blue)
-- `status:ready-for-review` - PR ready for review (green)
+### Priority Labels (3)
+- `priority:high` - Critical bugs, security, important features
+- `priority:medium` - Normal priority (default)
+- `priority:low` - Nice to have
 
-### Data Labels (light pink)
-- `data:quest` - Quest data issues
-- `data:item` - Item data issues
-
-### Special Labels
+### Special Labels (3)
 - `good-first-issue` - Good for newcomers
 - `help-wanted` - Community help needed
-- `duplicate` - Duplicate issue
-- `wontfix` - Will not be addressed
+- `upstream` - Issue belongs in data-overlay repo
+
+### Workflow States
+Status labels (needs-info, blocked, in-progress) are **NOT** used. Instead, these are managed via GitHub Project board columns:
+- **Inbox** - New issues awaiting triage
+- **Waiting for Info** - Need clarification from reporter
+- **Blocked** - Waiting on external dependency
+- **Backlog** - Triaged, not yet prioritized
+- **Todo** - Ready to work on
+- **In Progress** - Actively being worked on
+- **In Review** - PR awaiting review
+- **Done** - Completed/merged
 
 ## Project Board
 
