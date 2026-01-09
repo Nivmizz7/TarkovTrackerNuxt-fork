@@ -4,12 +4,12 @@
  *
  * Note: The debounced function does not return a value since execution is deferred.
  */
-export function debounce<T extends (...args: unknown[]) => unknown>(
-  func: T,
+export function debounce<Args extends unknown[]>(
+  func: (...args: Args) => void,
   wait: number
-): ((...args: Parameters<T>) => void) & { cancel: () => void } {
+): ((...args: Args) => void) & { cancel: () => void } {
   let timeout: ReturnType<typeof setTimeout> | null = null;
-  const debounced = (...args: Parameters<T>) => {
+  const debounced = (...args: Args) => {
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
