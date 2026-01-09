@@ -334,11 +334,17 @@
   const displayCount = ref(15);
   const tasksSentinel = ref<HTMLElement | null>(null);
   const focusedTaskId = ref<string | null>(null);
+  const isHandlingTaskQuery = ref(false);
   const paginatedTasks = computed(() => {
     const baseTasks = filteredTasks.value.slice(0, displayCount.value);
     // If there's a focused task not in the current page, prepend it
     if (focusedTaskId.value) {
-      const focusedTask = filteredTasks.value.find((t) => t.id === focusedTaskId.value);
+      // First try to find in filteredTasks (has neededBy field)
+      let focusedTask = filteredTasks.value.find((t) => t.id === focusedTaskId.value);
+      // If not found (async filter update pending), fall back to raw tasks metadata
+      if (!focusedTask) {
+        focusedTask = tasks.value.find((t) => t.id === focusedTaskId.value);
+      }
       if (focusedTask && !baseTasks.some((t) => t.id === focusedTaskId.value)) {
         return [focusedTask, ...baseTasks];
       }
@@ -362,7 +368,9 @@
     [searchQuery, getTaskSecondaryView, getTaskPrimaryView, getTaskMapView, getTaskTraderView],
     () => {
       displayCount.value = 15;
-      focusedTaskId.value = null;
+      if (!isHandlingTaskQuery.value) {
+        focusedTaskId.value = null;
+      }
     }
   );
   // Handle deep linking to a specific task via ?task=taskId query param
@@ -376,53 +384,42 @@
     return 'locked';
   };
   const scrollToTask = async (taskId: string) => {
-    // Wait for the task to appear in filteredTasks (filters are async)
+    // Poll for DOM element (focusedTaskId ensures task is in paginatedTasks)
     const maxWaitTime = 2000;
     const checkInterval = 50;
     let elapsed = 0;
     while (elapsed < maxWaitTime) {
-      const taskIndex = filteredTasks.value.findIndex((t) => t.id === taskId);
-      if (taskIndex >= 0) {
-        // Task found in filtered list - use focusedTaskId to prepend it if not in current page
-        // This avoids loading hundreds of tasks just to scroll to one
-        if (taskIndex >= displayCount.value) {
-          focusedTaskId.value = taskId;
-        }
-        await nextTick();
-        // Small delay to ensure DOM is fully rendered
+      await nextTick();
+      const taskElement = document.getElementById(`task-${taskId}`);
+      if (taskElement) {
+        taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add a brief highlight effect
+        taskElement.classList.add(
+          'ring-2',
+          'ring-primary-500',
+          'ring-offset-2',
+          'ring-offset-surface-900'
+        );
         setTimeout(() => {
-          const taskElement = document.getElementById(`task-${taskId}`);
-          if (taskElement) {
-            taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Add a brief highlight effect
-            taskElement.classList.add(
-              'ring-2',
-              'ring-primary-500',
-              'ring-offset-2',
-              'ring-offset-surface-900'
-            );
-            setTimeout(() => {
-              taskElement.classList.remove(
-                'ring-2',
-                'ring-primary-500',
-                'ring-offset-2',
-                'ring-offset-surface-900'
-              );
-            }, 2000);
-          }
-        }, 100);
+          taskElement.classList.remove(
+            'ring-2',
+            'ring-primary-500',
+            'ring-offset-2',
+            'ring-offset-surface-900'
+          );
+        }, 2000);
         return;
       }
-      // Wait and check again
       await new Promise((resolve) => setTimeout(resolve, checkInterval));
       elapsed += checkInterval;
     }
   };
-  const handleTaskQueryParam = () => {
+  const handleTaskQueryParam = async () => {
     const taskId = route.query.task as string;
     if (!taskId || tasksLoading.value) return;
     const taskInMetadata = tasks.value.find((t) => t.id === taskId);
     if (!taskInMetadata) return;
+    isHandlingTaskQuery.value = true;
     // Enable the appropriate type filter based on task properties
     const isKappaRequired = taskInMetadata.kappaRequired === true;
     const isLightkeeperRequired = taskInMetadata.lightkeeperRequired === true;
@@ -445,19 +442,34 @@
       preferencesStore.setShowNonSpecialTasks(true);
     }
     // Determine task status and set appropriate filter
-    const status = getTaskStatus(taskId);
-    if (preferencesStore.getTaskSecondaryView !== status) {
-      preferencesStore.setTaskSecondaryView(status);
+    // Skip if already in 'all' view since all tasks are visible there
+    const currentSecondaryView = preferencesStore.getTaskSecondaryView;
+    if (currentSecondaryView !== 'all') {
+      const status = getTaskStatus(taskId);
+      if (currentSecondaryView !== status) {
+        preferencesStore.setTaskSecondaryView(status);
+      }
     }
     // Set primary view to 'all' to ensure the task is visible regardless of map/trader
     if (preferencesStore.getTaskPrimaryView !== 'all') {
       preferencesStore.setTaskPrimaryView('all');
     }
-    // Scroll to the task after filters are applied, then clear query param
-    scrollToTask(taskId).then(() => {
-      // Clear the query param to avoid re-triggering on filter changes
-      router.replace({ path: '/tasks', query: {} });
-    });
+    // Clear search query so the target task is visible
+    if (searchQuery.value) {
+      searchQuery.value = '';
+    }
+    try {
+      // Wait for filter/watch updates to settle so we don't immediately clear the focus
+      await nextTick();
+      // Set focusedTaskId after filter changes - ensures task appears in paginatedTasks
+      focusedTaskId.value = taskId;
+      // scrollToTask polls for DOM element with its own nextTick calls
+      await scrollToTask(taskId);
+    } finally {
+      isHandlingTaskQuery.value = false;
+    }
+    // Clear the query param to avoid re-triggering on filter changes
+    router.replace({ path: '/tasks', query: {} });
   };
   // Watch for task query param and handle it when tasks are loaded
   watch(
