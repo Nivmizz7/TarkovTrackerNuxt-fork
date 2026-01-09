@@ -1,4 +1,4 @@
-import { getCurrentInstance, onUnmounted, ref, toRaw, watch } from 'vue';
+import { getCurrentInstance, onUnmounted, ref, toRaw } from 'vue';
 import { debounce } from '@/utils/helpers';
 import { logger } from '@/utils/logger';
 import type { Store } from 'pinia';
@@ -227,18 +227,20 @@ export function useSupabaseSync({
   const debouncedSync = debounce((state: unknown) => {
     void syncToSupabase(state);
   }, debounceMs);
-  const unwatch = watch(
-    () => store.$state,
-    (newState) => {
-      logger.debug(`[Sync] Store state changed for ${table}, triggering debounced sync`);
-      const clonedState = snapshotState(newState);
+  // Use Pinia's $subscribe instead of a deep watcher for better performance.
+  // $subscribe fires once per mutation (batched), not per individual property change.
+  // This avoids Vue tracking every nested property in large state trees.
+  const unsubscribe = store.$subscribe(
+    (_mutation, state) => {
+      logger.debug(`[Sync] Store mutation for ${table}, triggering debounced sync`);
+      const clonedState = snapshotState(state);
       debouncedSync(clonedState);
     },
-    { deep: true }
+    { detached: true } // Keep subscription active even if component unmounts (we manage cleanup manually)
   );
   const cleanup = () => {
     debouncedSync.cancel();
-    unwatch();
+    unsubscribe();
     // Clear any pending retry timeouts
     if (pendingRetryTimeouts.length > 0) {
       logger.debug(
