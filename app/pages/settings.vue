@@ -74,21 +74,31 @@
               v-model="currentPrestige"
               :items="prestigeOptions"
               value-key="value"
+              :disabled="isPveMode"
               :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
               :ui="selectUi"
               :ui-menu="selectMenuUi"
             >
               <template #leading>
-                <UIcon name="i-mdi-trophy" class="text-gold-400 h-4 w-4" />
+                <UIcon
+                  name="i-mdi-trophy"
+                  class="text-gold-400 h-4 w-4"
+                  :class="{ 'opacity-50': isPveMode }"
+                />
               </template>
             </USelectMenu>
             <p class="text-surface-400 text-xs">
-              {{
-                $t(
-                  'settings.prestige.hint',
-                  'Select your current prestige level. This is display-only and does not affect game progression.'
-                )
-              }}
+              <template v-if="isPveMode">
+                {{ $t('settings.prestige.pve_hint', 'Prestige is not available in PVE mode.') }}
+              </template>
+              <template v-else>
+                {{
+                  $t(
+                    'settings.prestige.hint',
+                    'Select your current prestige level. This is display-only and does not affect game progression.'
+                  )
+                }}
+              </template>
             </p>
           </div>
         </div>
@@ -288,10 +298,7 @@
       </template>
     </UModal>
     <!-- Reset All Modal -->
-    <UModal
-      v-model:open="showResetAllDialog"
-      @close="resetAllConfirmText = ''"
-    >
+    <UModal v-model:open="showResetAllDialog" @close="resetAllConfirmText = ''">
       <template #header>
         <div class="flex items-center gap-2">
           <UIcon name="i-mdi-alert-octagon" class="text-error-400 h-5 w-5" />
@@ -323,13 +330,11 @@
           </p>
           <div class="space-y-2">
             <p class="text-surface-100 text-sm font-medium">
-              Type <strong class="text-error-400">DELETE</strong> to confirm:
+              Type
+              <strong class="text-error-400">DELETE</strong>
+              to confirm:
             </p>
-            <UInput
-              v-model="resetAllConfirmText"
-              placeholder="DELETE"
-              class="font-mono"
-            />
+            <UInput v-model="resetAllConfirmText" placeholder="DELETE" class="font-mono" />
           </div>
         </div>
       </template>
@@ -415,7 +420,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, ref, type Ref } from 'vue';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import AccountDeletionCard from '@/features/settings/AccountDeletionCard.vue';
   import ApiTokens from '@/features/settings/ApiTokens.vue';
@@ -426,6 +431,7 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useSystemStore, useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   import { useTarkovStore } from '@/stores/useTarkov';
+  import { GAME_MODES } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   // Page metadata
   useSeoMeta({
@@ -442,6 +448,8 @@
   const { hasInitiallyLoaded } = useSystemStoreWithSupabase();
   const systemStore = useSystemStore(); // Direct Pinia store
   const tarkovStore = useTarkovStore();
+  // Check if user is in PVE mode (prestige not available in PVE)
+  const isPveMode = computed(() => tarkovStore.getCurrentGameMode() === GAME_MODES.PVE);
   const selectUi = {};
   const selectMenuUi = {
     container: 'z-[9999]',
@@ -512,74 +520,72 @@
   });
   const currentPrestige = computed({
     get(): number {
+      // In PVE mode, always return 0 (No Prestige) since prestige is not available
+      if (isPveMode.value) {
+        return 0;
+      }
       return tarkovStore.getPrestigeLevel();
     },
     set(newValue: number) {
+      // Don't allow setting prestige in PVE mode
+      if (isPveMode.value) {
+        return;
+      }
       tarkovStore.setPrestigeLevel(newValue);
     },
   });
-  // Methods
-  const resetPvPData = async () => {
+  // Reset handler factory to eliminate duplication
+  interface ResetConfig {
+    resetFn: () => Promise<void>;
+    successTitle: string;
+    successDescription: string;
+    errorLogContext: string;
+    errorDescription: string;
+    dialogRef: Ref<boolean>;
+  }
+  const createResetHandler = (config: ResetConfig) => async () => {
     resetting.value = true;
     try {
-      await tarkovStore.resetPvPData();
+      await config.resetFn();
       toast.add({
-        title: 'PvP Data Reset',
-        description: 'Your PvP progress has been reset successfully.',
+        title: config.successTitle,
+        description: config.successDescription,
         color: 'success',
       });
-      showResetPvPDialog.value = false;
+      config.dialogRef.value = false;
     } catch (error) {
-      logger.error('[Settings] Error resetting PvP data:', error);
+      logger.error(`[Settings] Error resetting ${config.errorLogContext}:`, error);
       toast.add({
         title: 'Reset Failed',
-        description: 'Failed to reset PvP data. Please try again.',
+        description: config.errorDescription,
         color: 'error',
       });
     } finally {
       resetting.value = false;
     }
   };
-  const resetPvEData = async () => {
-    resetting.value = true;
-    try {
-      await tarkovStore.resetPvEData();
-      toast.add({
-        title: 'PvE Data Reset',
-        description: 'Your PvE progress has been reset successfully.',
-        color: 'success',
-      });
-      showResetPvEDialog.value = false;
-    } catch (error) {
-      logger.error('[Settings] Error resetting PvE data:', error);
-      toast.add({
-        title: 'Reset Failed',
-        description: 'Failed to reset PvE data. Please try again.',
-        color: 'error',
-      });
-    } finally {
-      resetting.value = false;
-    }
-  };
-  const resetAllData = async () => {
-    resetting.value = true;
-    try {
-      await tarkovStore.resetAllData();
-      toast.add({
-        title: 'All Data Reset',
-        description: 'All your progress has been reset successfully.',
-        color: 'success',
-      });
-      showResetAllDialog.value = false;
-    } catch (error) {
-      logger.error('[Settings] Error resetting all data:', error);
-      toast.add({
-        title: 'Reset Failed',
-        description: 'Failed to reset data. Please try again.',
-        color: 'error',
-      });
-    } finally {
-      resetting.value = false;
-    }
-  };
+  const resetPvPData = createResetHandler({
+    resetFn: () => tarkovStore.resetPvPData(),
+    successTitle: 'PvP Data Reset',
+    successDescription: 'Your PvP progress has been reset successfully.',
+    errorLogContext: 'PvP data',
+    errorDescription: 'Failed to reset PvP data. Please try again.',
+    dialogRef: showResetPvPDialog,
+  });
+  const resetPvEData = createResetHandler({
+    resetFn: () => tarkovStore.resetPvEData(),
+    successTitle: 'PvE Data Reset',
+    successDescription: 'Your PvE progress has been reset successfully.',
+    errorLogContext: 'PvE data',
+    errorDescription: 'Failed to reset PvE data. Please try again.',
+    dialogRef: showResetPvEDialog,
+  });
+  const resetAllData = createResetHandler({
+    resetFn: () => tarkovStore.resetAllData(),
+    successTitle: 'All Data Reset',
+    successDescription: 'All your progress has been reset successfully.',
+    errorLogContext: 'all data',
+    errorDescription: 'Failed to reset data. Please try again.',
+    dialogRef: showResetAllDialog,
+  });
 </script>

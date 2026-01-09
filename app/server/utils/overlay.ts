@@ -12,6 +12,7 @@ const logger = createLogger('Overlay');
 // Overlay data structure
 interface OverlayData {
   tasks?: Record<string, Record<string, unknown>>;
+  tasksAdd?: Record<string, Record<string, unknown>>;
   items?: Record<string, Record<string, unknown>>;
   traders?: Record<string, Record<string, unknown>>;
   hideout?: Record<string, Record<string, unknown>>;
@@ -108,7 +109,7 @@ function isValidOverlayData(data: unknown): data is OverlayData {
     return false;
   }
   // Validate optional entity collections are records if present
-  const collections = ['tasks', 'items', 'traders', 'hideout'] as const;
+  const collections = ['tasks', 'tasksAdd', 'items', 'traders', 'hideout'] as const;
   for (const collection of collections) {
     if (
       overlay[collection] !== undefined &&
@@ -201,6 +202,137 @@ function applyEntityOverlay<T extends { id: string }>(
   }
   return result;
 }
+type ObjectiveAddEntry = Record<string, unknown>;
+const DEFAULT_OVERLAY_OBJECTIVE_TYPE = 'giveItem';
+const DEFAULT_OVERLAY_OBJECTIVE_COUNT = 1;
+function expandObjectiveAdditions(additions: unknown[]): ObjectiveAddEntry[] {
+  const expanded: ObjectiveAddEntry[] = [];
+  for (const [index, entry] of additions.entries()) {
+    if (!isPlainObject(entry)) continue;
+    const baseId = typeof entry.id === 'string' ? entry.id : `overlay-objective-${index}`;
+    const items = Array.isArray(entry.items) ? entry.items.filter(isPlainObject) : [];
+    const description =
+      typeof entry.description === 'string'
+        ? entry.description
+        : 'Hand over the found in raid item';
+    const foundInRaid =
+      typeof entry.foundInRaid === 'boolean'
+        ? entry.foundInRaid
+        : description.toLowerCase().includes('found in raid');
+    const count = typeof entry.count === 'number' ? entry.count : DEFAULT_OVERLAY_OBJECTIVE_COUNT;
+    // Expand multi-item objectives into individual objectives
+    if (!entry.type && items.length > 1) {
+      for (const [itemIndex, item] of items.entries()) {
+        const itemObj = item as Record<string, unknown>;
+        const itemId = typeof itemObj.id === 'string' ? itemObj.id : `item-${itemIndex}`;
+        const itemName = typeof itemObj.name === 'string' ? itemObj.name : 'item';
+        expanded.push({
+          ...entry,
+          id: `${baseId}:${itemId}`,
+          type: DEFAULT_OVERLAY_OBJECTIVE_TYPE,
+          count,
+          foundInRaid,
+          description: `Hand over the found in raid item: ${itemName}`,
+          items: [item],
+        });
+      }
+      continue;
+    }
+    expanded.push({
+      ...entry,
+      type: entry.type ?? (items.length > 0 ? DEFAULT_OVERLAY_OBJECTIVE_TYPE : entry.type),
+      count,
+      foundInRaid,
+    });
+  }
+  return expanded;
+}
+function applyTaskObjectiveAdditions<T extends { id: string }>(task: T): T {
+  if (!isPlainObject(task)) return task;
+  const obj = task as Record<string, unknown>;
+  const additions = Array.isArray(obj.objectivesAdd) ? obj.objectivesAdd : [];
+  if (additions.length === 0) return task;
+  const existing = Array.isArray(obj.objectives) ? obj.objectives : [];
+  const expanded = expandObjectiveAdditions(additions);
+  if (expanded.length === 0) return task;
+  const { objectivesAdd, ...rest } = obj;
+  return {
+    ...(rest as T),
+    objectives: [...existing, ...expanded],
+  };
+}
+const OBJECTIVE_TYPE_PREFIXES: Array<{ prefix: string; type: string }> = [
+  { prefix: 'eliminate', type: 'shoot' },
+  { prefix: 'locate and mark', type: 'mark' },
+  { prefix: 'mark', type: 'mark' },
+  { prefix: 'stash', type: 'plantItem' },
+  { prefix: 'plant', type: 'plantItem' },
+  { prefix: 'place', type: 'plantItem' },
+  { prefix: 'hand over', type: 'giveItem' },
+  { prefix: 'find and hand over', type: 'giveItem' },
+  { prefix: 'find', type: 'findItem' },
+  { prefix: 'locate', type: 'visit' },
+  { prefix: 'recon', type: 'visit' },
+  { prefix: 'eat', type: 'useItem' },
+  { prefix: 'drink', type: 'useItem' },
+  { prefix: 'use', type: 'useItem' },
+  { prefix: 'launch', type: 'useItem' },
+];
+function inferObjectiveType(entry: Record<string, unknown>): string | undefined {
+  if (typeof entry.type === 'string' && entry.type.length > 0) {
+    return entry.type;
+  }
+  const hasMarkerItem = isPlainObject(entry.markerItem);
+  if (hasMarkerItem) {
+    return 'mark';
+  }
+  const description = typeof entry.description === 'string' ? entry.description.trim() : '';
+  const lower = description.toLowerCase();
+  for (const { prefix, type } of OBJECTIVE_TYPE_PREFIXES) {
+    if (lower.startsWith(prefix)) {
+      if (type === 'plantItem' && isPlainObject(entry.questItem)) {
+        return 'plantQuestItem';
+      }
+      if (type === 'giveItem' && isPlainObject(entry.questItem)) {
+        return 'giveQuestItem';
+      }
+      if (type === 'findItem' && isPlainObject(entry.questItem)) {
+        return 'findQuestItem';
+      }
+      return type;
+    }
+  }
+  return undefined;
+}
+function normalizeObjectiveEntry(entry: Record<string, unknown>): Record<string, unknown> {
+  const description = typeof entry.description === 'string' ? entry.description : '';
+  const type = inferObjectiveType(entry) ?? entry.type;
+  const foundInRaid =
+    typeof entry.foundInRaid === 'boolean'
+      ? entry.foundInRaid
+      : description.toLowerCase().includes('found in raid');
+  return { ...entry, type, foundInRaid };
+}
+function normalizeObjectiveList(list: unknown) {
+  if (!Array.isArray(list)) return list;
+  return list.map((entry) => (isPlainObject(entry) ? normalizeObjectiveEntry(entry) : entry));
+}
+type OverlayTaskAddition = Record<string, unknown> & { id: string };
+function normalizeTaskAdditions(
+  additions: Record<string, Record<string, unknown>> | undefined
+): OverlayTaskAddition[] {
+  if (!additions) return [];
+  return Object.values(additions)
+    .filter((entry): entry is Record<string, unknown> & { id: string } => {
+      return isPlainObject(entry) && typeof entry.id === 'string' && entry.disabled !== true;
+    })
+    .map((entry) => {
+      const factionName = typeof entry.factionName === 'string' ? entry.factionName : 'Any';
+      const objectives = normalizeObjectiveList(entry.objectives);
+      const failConditions = normalizeObjectiveList(entry.failConditions);
+      return { ...entry, factionName, objectives, failConditions };
+    });
+}
 /**
  * Apply overlay corrections to tarkov.dev API response
  *
@@ -219,12 +351,19 @@ export async function applyOverlay<T extends { data?: OverlayTargetData }>(data:
     return data;
   }
   const result = { ...data, data: { ...data.data } };
-  // Apply task corrections
-  if (overlay.tasks && Array.isArray(result.data.tasks)) {
-    result.data.tasks = applyEntityOverlay(
+  // Apply task corrections and inject overlay task additions
+  if (Array.isArray(result.data.tasks)) {
+    const correctedTasks = applyEntityOverlay(
       result.data.tasks as Array<{ id: string }>,
       overlay.tasks
-    );
+    ).map((task) => applyTaskObjectiveAdditions(task));
+    const addedTasks = applyEntityOverlay(
+      normalizeTaskAdditions(overlay.tasksAdd),
+      overlay.tasks
+    ).map((task) => applyTaskObjectiveAdditions(task));
+    const existingIds = new Set(correctedTasks.map((task) => task.id));
+    const dedupedAdditions = addedTasks.filter((task) => !existingIds.has(task.id));
+    result.data.tasks = [...correctedTasks, ...dedupedAdditions];
   }
   // Apply item corrections (if present)
   if (overlay.items && Array.isArray(result.data.items)) {
