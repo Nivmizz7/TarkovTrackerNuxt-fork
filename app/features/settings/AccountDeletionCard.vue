@@ -349,7 +349,6 @@
 </template>
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-  import { useRouter } from 'vue-router';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useSystemStore } from '@/stores/useSystemStore';
@@ -360,7 +359,6 @@
     inheritAttrs: false,
   });
   const { $supabase } = useNuxtApp();
-  const router = useRouter();
   const preferencesStore = usePreferencesStore();
   const systemStore = useSystemStore();
   const teamStore = useTeamStore();
@@ -590,21 +588,30 @@
     }
   };
   const resetClientState = () => {
+    // Clear localStorage FIRST to prevent persist plugin from reading stale data
+    localStorage.clear();
+    // Stop Supabase sync before resetting stores
     resetTarkovSync('account deleted');
+    // Reset all stores - this triggers persist plugin writes
     preferencesStore.$reset();
     systemStore.$reset();
     teamStore.$reset();
     tarkovStore.$reset();
+    // Clear localStorage AGAIN to remove any data written by persist plugins during reset
+    localStorage.clear();
   };
   const redirectToHome = async () => {
     try {
       showSuccessDialog.value = false;
       logger.info('Signing out user and redirecting to dashboard...');
+      // Reset all client state and clear localStorage
       resetClientState();
-      localStorage.clear();
+      // Sign out from Supabase
       await $supabase.signOut();
-      await router.push('/');
-      logger.info('Successfully signed out and redirected to dashboard');
+      // Use hard page reload to ensure completely fresh state
+      // router.push() keeps Pinia stores in memory which can show stale data
+      logger.info('Successfully signed out, performing hard reload...');
+      window.location.href = '/';
     } catch (error) {
       logger.error('Failed to sign out and redirect:', error);
       window.location.href = '/';
