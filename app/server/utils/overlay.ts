@@ -25,6 +25,17 @@ interface OverlayData {
     sha256: string;
   };
 }
+type OverlayStatus = 'fresh' | 'cached' | 'stale' | 'missing';
+export interface OverlayMeta {
+  status: OverlayStatus;
+  version?: string;
+  generated?: string;
+  sha256?: string;
+  sourceUrl: string;
+  fetchedAt?: string;
+  cacheAgeMs?: number;
+  error?: string;
+}
 // Module-level cache behavior: cachedOverlay and cacheTimestamp persist across requests in
 // long-running Node.js processes but reset on cold starts in serverless/edge platforms.
 // Features a 1-hour TTL (OVERLAY_CACHE_TTL) and falls back to stale data on fetch errors.
@@ -38,6 +49,16 @@ const FETCH_TIMEOUT_MS = 5000; // 5 seconds
 const OVERLAY_URL =
   process.env.OVERLAY_URL?.trim() ||
   'https://raw.githubusercontent.com/tarkovtracker-org/tarkov-data-overlay/main/dist/overlay.json';
+const OVERLAY_CACHE_BUSTER = process.env.OVERLAY_CACHE_BUSTER?.trim();
+const OVERLAY_URL_WITH_BUSTER = OVERLAY_CACHE_BUSTER
+  ? `${OVERLAY_URL}${OVERLAY_URL.includes('?') ? '&' : '?'}v=${encodeURIComponent(
+      OVERLAY_CACHE_BUSTER
+    )}`
+  : OVERLAY_URL;
+let lastOverlayMeta: OverlayMeta = {
+  status: 'missing',
+  sourceUrl: OVERLAY_URL_WITH_BUSTER,
+};
 /**
  * Validate overlay data structure
  */
@@ -66,35 +87,65 @@ function isValidOverlayData(data: unknown): data is OverlayData {
   }
   return true;
 }
+function buildOverlayMeta(
+  overlay: OverlayData | null,
+  status: OverlayStatus,
+  extra?: Partial<OverlayMeta>
+): OverlayMeta {
+  return {
+    status,
+    version: overlay?.$meta?.version,
+    generated: overlay?.$meta?.generated,
+    sha256: overlay?.$meta?.sha256,
+    sourceUrl: OVERLAY_URL_WITH_BUSTER,
+    ...extra,
+  };
+}
 /**
  * Fetch the overlay data from CDN (with caching)
  */
-async function fetchOverlay(): Promise<OverlayData | null> {
+async function fetchOverlay(): Promise<{ overlay: OverlayData | null; meta: OverlayMeta }> {
   const now = Date.now();
   // Return cached overlay if still valid
   if (cachedOverlay && now - cacheTimestamp < OVERLAY_CACHE_TTL) {
-    return cachedOverlay;
+    lastOverlayMeta = buildOverlayMeta(cachedOverlay, 'cached', {
+      cacheAgeMs: now - cacheTimestamp,
+    });
+    return { overlay: cachedOverlay, meta: lastOverlayMeta };
   }
   try {
     // Set up abort controller with timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
-      const response = await fetch(OVERLAY_URL, { signal: controller.signal });
+      const response = await fetch(OVERLAY_URL_WITH_BUSTER, {
+        signal: controller.signal,
+        headers: { Accept: 'application/json' },
+      });
       if (!response.ok) {
         logger.warn(`Failed to fetch overlay: ${response.status}`);
-        return cachedOverlay; // Return stale cache if available
+        lastOverlayMeta = buildOverlayMeta(cachedOverlay, cachedOverlay ? 'stale' : 'missing', {
+          error: `HTTP ${response.status}`,
+        });
+        return { overlay: cachedOverlay, meta: lastOverlayMeta };
       }
       const parsedData = await response.json();
       // Validate the parsed data before caching
       if (!isValidOverlayData(parsedData)) {
         logger.warn('Fetched overlay failed validation, using stale cache');
-        return cachedOverlay;
+        lastOverlayMeta = buildOverlayMeta(cachedOverlay, cachedOverlay ? 'stale' : 'missing', {
+          error: 'validation_failed',
+        });
+        return { overlay: cachedOverlay, meta: lastOverlayMeta };
       }
       cachedOverlay = parsedData;
       cacheTimestamp = now;
       logger.info(`Loaded overlay v${cachedOverlay.$meta?.version}`);
-      return cachedOverlay;
+      lastOverlayMeta = buildOverlayMeta(cachedOverlay, 'fresh', {
+        fetchedAt: new Date(now).toISOString(),
+        cacheAgeMs: 0,
+      });
+      return { overlay: cachedOverlay, meta: lastOverlayMeta };
     } finally {
       clearTimeout(timeoutId);
     }
@@ -104,7 +155,11 @@ async function fetchOverlay(): Promise<OverlayData | null> {
     } else {
       logger.warn('Error fetching overlay:', error);
     }
-    return cachedOverlay; // Return stale cache if available
+    const message = error instanceof Error ? error.message : String(error);
+    lastOverlayMeta = buildOverlayMeta(cachedOverlay, cachedOverlay ? 'stale' : 'missing', {
+      error: message,
+    });
+    return { overlay: cachedOverlay, meta: lastOverlayMeta };
   }
 }
 /**
@@ -243,11 +298,12 @@ type OverlayTargetData = {
   hideoutStations?: Array<{ id: string }>;
 };
 export async function applyOverlay<T extends { data?: OverlayTargetData }>(data: T): Promise<T> {
-  const overlay = await fetchOverlay();
+  const { overlay, meta } = await fetchOverlay();
+  const result = { ...data, dataOverlay: meta } as T & { dataOverlay?: OverlayMeta };
   if (!overlay || !data?.data) {
-    return data;
+    return result;
   }
-  const result = { ...data, data: { ...data.data } };
+  result.data = { ...data.data };
   // Apply task corrections and inject overlay task additions
   if (Array.isArray(result.data.tasks)) {
     const correctedTasks = applyEntityOverlay(

@@ -13,6 +13,18 @@ interface CacheOptions {
   ttl?: number;
   cacheKeyPrefix?: string;
 }
+type OverlayHeadersMeta = {
+  status?: string;
+  version?: string;
+  generated?: string;
+  sha256?: string;
+};
+function getOverlayHeadersMeta(payload: unknown): OverlayHeadersMeta | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const meta = (payload as { dataOverlay?: OverlayHeadersMeta }).dataOverlay;
+  if (!meta || typeof meta !== 'object') return null;
+  return meta;
+}
 /**
  * Helper function that handles Cloudflare Cache API logic
  *
@@ -56,16 +68,22 @@ export async function edgeCache<T>(
       if (cachedResponse) {
         // CACHE HIT - Return immediately
         const data = await cachedResponse.json();
+        const overlayMeta = getOverlayHeadersMeta(data);
         setResponseHeaders(event, {
           'X-Cache-Status': 'HIT',
           'X-Cache-Key': fullCacheKey,
           'Cache-Control': `public, max-age=${ttl}, s-maxage=${ttl}`,
+          ...(overlayMeta?.status ? { 'X-Overlay-Status': overlayMeta.status } : {}),
+          ...(overlayMeta?.version ? { 'X-Overlay-Version': overlayMeta.version } : {}),
+          ...(overlayMeta?.generated ? { 'X-Overlay-Generated': overlayMeta.generated } : {}),
+          ...(overlayMeta?.sha256 ? { 'X-Overlay-Sha256': overlayMeta.sha256 } : {}),
         });
         return data;
       }
       // CACHE MISS - Fetch fresh data using the provided fetcher function
       logger.info(`Cache miss for ${fullCacheKey}`);
       const response = await fetcher();
+      const overlayMeta = getOverlayHeadersMeta(response);
       // Store in edge cache with TTL
       const cacheResponse = new Response(JSON.stringify(response), {
         headers: {
@@ -87,16 +105,25 @@ export async function edgeCache<T>(
         'X-Cache-Status': 'MISS',
         'X-Cache-Key': fullCacheKey,
         'Cache-Control': `public, max-age=${ttl}, s-maxage=${ttl}`,
+        ...(overlayMeta?.status ? { 'X-Overlay-Status': overlayMeta.status } : {}),
+        ...(overlayMeta?.version ? { 'X-Overlay-Version': overlayMeta.version } : {}),
+        ...(overlayMeta?.generated ? { 'X-Overlay-Generated': overlayMeta.generated } : {}),
+        ...(overlayMeta?.sha256 ? { 'X-Overlay-Sha256': overlayMeta.sha256 } : {}),
       });
       return response;
     } else {
       // DEV MODE - No edge caching, direct fetch using provided fetcher
       logger.info(`Fetching data for ${fullCacheKey} (DEV)`);
       const response = await fetcher();
+      const overlayMeta = getOverlayHeadersMeta(response);
       setResponseHeaders(event, {
         'X-Cache-Status': 'DEV',
         'X-Cache-Key': fullCacheKey,
         'Cache-Control': 'no-cache',
+        ...(overlayMeta?.status ? { 'X-Overlay-Status': overlayMeta.status } : {}),
+        ...(overlayMeta?.version ? { 'X-Overlay-Version': overlayMeta.version } : {}),
+        ...(overlayMeta?.generated ? { 'X-Overlay-Generated': overlayMeta.generated } : {}),
+        ...(overlayMeta?.sha256 ? { 'X-Overlay-Sha256': overlayMeta.sha256 } : {}),
       });
       return response;
     }
