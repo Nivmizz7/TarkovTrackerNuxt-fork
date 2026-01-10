@@ -68,8 +68,33 @@
           </span>
         </UButton>
       </div>
-      <!-- Settings button -->
-      <div class="shrink-0">
+      <!-- Sort + Settings -->
+      <div class="flex shrink-0 items-center gap-2">
+        <USelectMenu
+          v-model="taskSortMode"
+          :items="sortOptions"
+          value-key="value"
+          size="sm"
+          class="w-36 sm:w-44"
+        >
+          <template #leading>
+            <UIcon :name="currentSortIcon" class="h-4 w-4" />
+          </template>
+          <template #item="{ item }">
+            <div class="flex items-center gap-2">
+              <UIcon :name="item.icon" class="h-4 w-4" />
+              <span>{{ item.label }}</span>
+            </div>
+          </template>
+        </USelectMenu>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          :icon="sortDirectionIcon"
+          :aria-label="sortDirectionLabel"
+          @click="toggleSortDirection"
+        />
         <TaskSettingsModal />
       </div>
     </div>
@@ -304,6 +329,7 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTeamStore } from '@/stores/useTeamStore';
+  import { TASK_SORT_MODES, type TaskSortDirection, type TaskSortMode } from '@/types/taskSort';
   defineProps<{
     searchQuery: string;
   }>();
@@ -335,6 +361,86 @@
   const statusCounts = computed(() => {
     const userView = preferencesStore.getTaskUserView;
     return calculateStatusCounts(userView);
+  });
+  type SortOption = {
+    value: TaskSortMode;
+    label: string;
+    icon: string;
+  };
+  const sortOptions = computed<SortOption[]>(() => [
+    {
+      label: t('page.tasks.sort.default', 'Default order'),
+      value: 'default',
+      icon: 'i-mdi-sort',
+    },
+    {
+      label: t('page.tasks.sort.impact', 'Impact'),
+      value: 'impact',
+      icon: 'i-mdi-chart-line',
+    },
+    {
+      label: t('page.tasks.sort.alphabetical', 'Alphabetical'),
+      value: 'alphabetical',
+      icon: 'i-mdi-sort-alphabetical-ascending',
+    },
+    {
+      label: t('page.tasks.sort.level', 'Level required'),
+      value: 'level',
+      icon: 'i-mdi-sort-numeric-ascending',
+    },
+    {
+      label: t('page.tasks.sort.trader', 'Trader order'),
+      value: 'trader',
+      icon: 'i-mdi-account',
+    },
+    {
+      label: t('page.tasks.sort.teammates', 'Teammates available'),
+      value: 'teammates',
+      icon: 'i-mdi-account-multiple',
+    },
+    {
+      label: t('page.tasks.sort.xp', 'XP Reward'),
+      value: 'xp',
+      icon: 'i-mdi-star',
+    },
+  ]);
+  const validSortModes = new Set<TaskSortMode>(TASK_SORT_MODES);
+  const normalizeSortMode = (value: unknown): TaskSortMode => {
+    if (typeof value === 'string') {
+      return validSortModes.has(value as TaskSortMode) ? (value as TaskSortMode) : 'default';
+    }
+    if (value && typeof value === 'object' && 'value' in value) {
+      const candidate = (value as { value?: unknown }).value;
+      if (typeof candidate === 'string' && validSortModes.has(candidate as TaskSortMode)) {
+        return candidate as TaskSortMode;
+      }
+      return 'default';
+    }
+    return 'default';
+  };
+  const taskSortMode = computed({
+    get: (): TaskSortMode => normalizeSortMode(preferencesStore.getTaskSortMode),
+    set: (value: TaskSortMode) => preferencesStore.setTaskSortMode(normalizeSortMode(value)),
+  });
+  const taskSortDirection = computed({
+    get: () => preferencesStore.getTaskSortDirection,
+    set: (value: TaskSortDirection) => preferencesStore.setTaskSortDirection(value),
+  });
+  const sortDirectionIcon = computed(() =>
+    taskSortDirection.value === 'asc' ? 'i-mdi-sort-ascending' : 'i-mdi-sort-descending'
+  );
+  const sortDirectionLabel = computed(() =>
+    taskSortDirection.value === 'asc'
+      ? t('page.tasks.sort.ascending', 'Ascending')
+      : t('page.tasks.sort.descending', 'Descending')
+  );
+  const toggleSortDirection = () => {
+    taskSortDirection.value = taskSortDirection.value === 'asc' ? 'desc' : 'asc';
+  };
+  const currentSortIcon = computed(() => {
+    return (
+      sortOptions.value.find((option) => option.value === taskSortMode.value)?.icon ?? 'i-mdi-sort'
+    );
   });
   const traderCounts = computed(() => {
     const userView = preferencesStore.getTaskUserView;
