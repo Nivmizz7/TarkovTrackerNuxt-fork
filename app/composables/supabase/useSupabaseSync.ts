@@ -36,6 +36,8 @@ export function useSupabaseSync({
   debounceMs = 1000,
 }: SupabaseSyncConfig) {
   logger.debug(`[Sync] useSupabaseSync initialized for table: ${table}, debounce: ${debounceMs}ms`);
+  const tableLabel =
+    table === 'user_progress' ? 'progress' : table === 'user_preferences' ? 'preferences' : table;
   const { $supabase } = useNuxtApp();
   const isSyncing = ref(false);
   const isPaused = ref(false);
@@ -142,9 +144,9 @@ export function useSupabaseSync({
         // All retries exhausted - notify user
         const toast = useToast();
         toast.add({
-          title: 'Sync failed',
+          title: `Sync failed (${tableLabel})`,
           description:
-            "Your progress couldn't be saved to the cloud. Please check your connection and try again.",
+            `Your ${tableLabel} couldn't be saved to the cloud. Please check your connection and try again.`,
           color: 'error',
           duration: 10000,
         });
@@ -196,8 +198,8 @@ export function useSupabaseSync({
       }
       const toast = useToast();
       toast.add({
-        title: 'Sync error',
-        description: 'An unexpected error occurred while saving your progress.',
+        title: `Sync error (${tableLabel})`,
+        description: `An unexpected error occurred while saving your ${tableLabel}.`,
         color: 'error',
         duration: 10000,
       });
