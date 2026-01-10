@@ -7,7 +7,9 @@
  * Deployment Note: Module-level cache persists across requests in long-running Node.js processes
  * but resets on cold starts in serverless/edge platforms. See fetchOverlay for TTL and fallback logic.
  */
+import { deepMerge, isPlainObject } from './deepMerge';
 import { createLogger } from './logger';
+import { inferFoundInRaid, normalizeObjectiveList } from './objectiveTypeInferrer';
 const logger = createLogger('Overlay');
 // Overlay data structure
 interface OverlayData {
@@ -36,63 +38,6 @@ const FETCH_TIMEOUT_MS = 5000; // 5 seconds
 const OVERLAY_URL =
   process.env.OVERLAY_URL?.trim() ||
   'https://raw.githubusercontent.com/tarkovtracker-org/tarkov-data-overlay/main/dist/overlay.json';
-/**
- * Deep merge utility that recursively merges objects without mutation
- */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
-}
-/**
- * Merge ID-keyed patches into an array of entities without mutating the original array.
- * Iterates the target array and, for each element with an `id`, deep-merges a plain-object
- * patch from sourcePatches[id]; non-object patches (including arrays) and non-entity elements
- * are left unchanged. Returns a new array with merged results.
- */
-export function mergeArrayByIdPatches(
-  sourcePatches: Record<string, unknown>,
-  targetArray: unknown[]
-): unknown[] {
-  return targetArray.map((item) => {
-    if (isPlainObject(item) && 'id' in item) {
-      const itemId = (item as { id: string }).id;
-      const patch = sourcePatches[itemId];
-      if (isPlainObject(patch)) {
-        return deepMerge(item as Record<string, unknown>, patch as Record<string, unknown>);
-      }
-    }
-    return item;
-  });
-}
-function deepMerge<T extends Record<string, unknown>>(
-  target: T,
-  source: Record<string, unknown>
-): T {
-  const result: Record<string, unknown> = { ...target };
-  for (const key in source) {
-    const sourceValue = source[key];
-    const targetValue = result[key];
-    if (isPlainObject(sourceValue) && isPlainObject(targetValue)) {
-      // Recursively merge nested objects
-      result[key] = deepMerge(
-        targetValue as Record<string, unknown>,
-        sourceValue as Record<string, unknown>
-      );
-    } else if (
-      // Special case: merge ID-keyed object patches into array of objects
-      isPlainObject(sourceValue) &&
-      Array.isArray(targetValue) &&
-      targetValue.length > 0 &&
-      isPlainObject(targetValue[0]) &&
-      'id' in targetValue[0]
-    ) {
-      result[key] = mergeArrayByIdPatches(sourceValue, targetValue);
-    } else {
-      // Replace primitive values, arrays, or when target doesn't have the key
-      result[key] = sourceValue;
-    }
-  }
-  return result as T;
-}
 /**
  * Validate overlay data structure
  */
@@ -166,9 +111,15 @@ async function fetchOverlay(): Promise<OverlayData | null> {
  * Apply overlay corrections to an array of entities
  * Filters out entities marked as disabled after applying corrections
  */
+type ApplyEntityOverlayOptions = {
+  logLabel?: string;
+  /** If true, log even when appliedCount and disabledCount are both zero. Default: true */
+  logEvenWhenZero?: boolean;
+};
 function applyEntityOverlay<T extends { id: string }>(
   entities: T[],
-  corrections: Record<string, Record<string, unknown>> | undefined
+  corrections: Record<string, Record<string, unknown>> | undefined,
+  options: ApplyEntityOverlayOptions = {}
 ): T[] {
   if (!corrections || !entities) return entities;
   let appliedCount = 0;
@@ -194,11 +145,16 @@ function applyEntityOverlay<T extends { id: string }>(
       }
       return true;
     });
-  logger.info(
-    `Applied ${appliedCount} corrections out of ${Object.keys(corrections).length} available`
-  );
-  if (disabledCount > 0) {
-    logger.info(`Filtered out ${disabledCount} disabled entities`);
+  const logLabel = options.logLabel ? ` (${options.logLabel})` : '';
+  // Log by default unless logEvenWhenZero is explicitly false and counts are zero
+  const shouldLog = appliedCount > 0 || disabledCount > 0 || options.logEvenWhenZero !== false;
+  if (shouldLog) {
+    logger.info(
+      `Applied ${appliedCount} corrections out of ${Object.keys(corrections).length} available${logLabel}`
+    );
+    if (disabledCount > 0) {
+      logger.info(`Filtered out ${disabledCount} disabled entities${logLabel}`);
+    }
   }
   return result;
 }
@@ -215,10 +171,7 @@ function expandObjectiveAdditions(additions: unknown[]): ObjectiveAddEntry[] {
       typeof entry.description === 'string'
         ? entry.description
         : 'Hand over the found in raid item';
-    const foundInRaid =
-      typeof entry.foundInRaid === 'boolean'
-        ? entry.foundInRaid
-        : description.toLowerCase().includes('found in raid');
+    const foundInRaid = inferFoundInRaid(description, entry);
     const count = typeof entry.count === 'number' ? entry.count : DEFAULT_OVERLAY_OBJECTIVE_COUNT;
     // Expand multi-item objectives into individual objectives
     if (!entry.type && items.length > 1) {
@@ -261,62 +214,6 @@ function applyTaskObjectiveAdditions<T extends { id: string }>(task: T): T {
     objectives: [...existing, ...expanded],
   };
 }
-const OBJECTIVE_TYPE_PREFIXES: Array<{ prefix: string; type: string }> = [
-  { prefix: 'eliminate', type: 'shoot' },
-  { prefix: 'locate and mark', type: 'mark' },
-  { prefix: 'mark', type: 'mark' },
-  { prefix: 'stash', type: 'plantItem' },
-  { prefix: 'plant', type: 'plantItem' },
-  { prefix: 'place', type: 'plantItem' },
-  { prefix: 'hand over', type: 'giveItem' },
-  { prefix: 'find and hand over', type: 'giveItem' },
-  { prefix: 'find', type: 'findItem' },
-  { prefix: 'locate', type: 'visit' },
-  { prefix: 'recon', type: 'visit' },
-  { prefix: 'eat', type: 'useItem' },
-  { prefix: 'drink', type: 'useItem' },
-  { prefix: 'use', type: 'useItem' },
-  { prefix: 'launch', type: 'useItem' },
-];
-function inferObjectiveType(entry: Record<string, unknown>): string | undefined {
-  if (typeof entry.type === 'string' && entry.type.length > 0) {
-    return entry.type;
-  }
-  const hasMarkerItem = isPlainObject(entry.markerItem);
-  if (hasMarkerItem) {
-    return 'mark';
-  }
-  const description = typeof entry.description === 'string' ? entry.description.trim() : '';
-  const lower = description.toLowerCase();
-  for (const { prefix, type } of OBJECTIVE_TYPE_PREFIXES) {
-    if (lower.startsWith(prefix)) {
-      if (type === 'plantItem' && isPlainObject(entry.questItem)) {
-        return 'plantQuestItem';
-      }
-      if (type === 'giveItem' && isPlainObject(entry.questItem)) {
-        return 'giveQuestItem';
-      }
-      if (type === 'findItem' && isPlainObject(entry.questItem)) {
-        return 'findQuestItem';
-      }
-      return type;
-    }
-  }
-  return undefined;
-}
-function normalizeObjectiveEntry(entry: Record<string, unknown>): Record<string, unknown> {
-  const description = typeof entry.description === 'string' ? entry.description : '';
-  const type = inferObjectiveType(entry) ?? entry.type;
-  const foundInRaid =
-    typeof entry.foundInRaid === 'boolean'
-      ? entry.foundInRaid
-      : description.toLowerCase().includes('found in raid');
-  return { ...entry, type, foundInRaid };
-}
-function normalizeObjectiveList(list: unknown) {
-  if (!Array.isArray(list)) return list;
-  return list.map((entry) => (isPlainObject(entry) ? normalizeObjectiveEntry(entry) : entry));
-}
 type OverlayTaskAddition = Record<string, unknown> & { id: string };
 function normalizeTaskAdditions(
   additions: Record<string, Record<string, unknown>> | undefined
@@ -357,12 +254,17 @@ export async function applyOverlay<T extends { data?: OverlayTargetData }>(data:
       result.data.tasks as Array<{ id: string }>,
       overlay.tasks
     ).map((task) => applyTaskObjectiveAdditions(task));
-    const addedTasks = applyEntityOverlay(
-      normalizeTaskAdditions(overlay.tasksAdd),
-      overlay.tasks
-    ).map((task) => applyTaskObjectiveAdditions(task));
+    const normalizedAdditions = normalizeTaskAdditions(overlay.tasksAdd);
+    logger.info(
+      `Overlay tasksAdd: ${normalizedAdditions.length} additions after filtering disabled`
+    );
+    const addedTasks = applyEntityOverlay(normalizedAdditions, overlay.tasks, {
+      logLabel: 'tasksAdd',
+      logEvenWhenZero: false,
+    }).map((task) => applyTaskObjectiveAdditions(task));
     const existingIds = new Set(correctedTasks.map((task) => task.id));
     const dedupedAdditions = addedTasks.filter((task) => !existingIds.has(task.id));
+    logger.info(`Overlay tasksAdd: ${dedupedAdditions.length} additions after dedupe`);
     result.data.tasks = [...correctedTasks, ...dedupedAdditions];
   }
   // Apply item corrections (if present)
