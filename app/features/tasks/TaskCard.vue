@@ -309,6 +309,18 @@
           {{ t('page.tasks.questcard.failedbecauseunknown', 'Failed manually or data missing') }}
         </span>
       </div>
+      <div v-if="showNeededBy" class="text-xs text-gray-400">
+        <span class="text-gray-500">
+          <UIcon name="i-mdi-account-multiple-outline" class="mr-1 inline h-4 w-4" />
+          {{
+            t(
+              'page.tasks.questcard.neededby',
+              { names: neededByDisplayText },
+              `Needed by: ${neededByDisplayText}`
+            )
+          }}
+        </span>
+      </div>
       <!-- 3) Body: objectives -->
       <div class="space-y-3">
         <QuestKeys v-if="task?.neededKeys?.length" :needed-keys="task.neededKeys" />
@@ -440,6 +452,8 @@
   import { getExclusiveEditionsForTask } from '@/utils/editionHelpers';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
   type ContextMenuRef = { open: (event: MouseEvent) => void };
+  // Limit displayed names to prevent UI overflow
+  const MAX_DISPLAYED_NAMES = 3;
   const QuestKeys = defineAsyncComponent(() => import('@/features/tasks/QuestKeys.vue'));
   const QuestObjectives = defineAsyncComponent(
     () => import('@/features/tasks/QuestObjectives.vue')
@@ -461,7 +475,6 @@
   const preferencesStore = usePreferencesStore();
   const metadataStore = useMetadataStore();
   const formatNumber = useLocaleNumberFormatter();
-  const tasks = computed(() => metadataStore.tasks);
   const taskContextMenu = ref<ContextMenuRef | null>(null);
   const itemContextMenu = ref<ContextMenuRef | null>(null);
   const selectedItem = ref<{ id: string; wikiLink?: string } | null>(null);
@@ -528,6 +541,18 @@
   const showBackgroundIcon = computed(
     () => isLocked.value || isFailed.value || isComplete.value || isInvalid.value
   );
+  const neededBy = computed(() => props.task.neededBy ?? []);
+  const showNeededBy = computed(
+    () => preferencesStore.getTaskUserView === 'all' && neededBy.value.length > 0
+  );
+  const displayedNeededByNames = computed(() => neededBy.value.slice(0, MAX_DISPLAYED_NAMES));
+  const extraNeededByCount = computed(() =>
+    Math.max(0, neededBy.value.length - MAX_DISPLAYED_NAMES)
+  );
+  const neededByDisplayText = computed(() => {
+    const names = displayedNeededByNames.value.join(', ');
+    return extraNeededByCount.value > 0 ? `${names} +${extraNeededByCount.value} more` : names;
+  });
   const backgroundIcon = computed(() => {
     if (isFailed.value) return 'mdi-close-octagon';
     if (isComplete.value) return 'mdi-check';
@@ -553,7 +578,7 @@
   const parentTasks = computed(() => {
     if (!props.task.parents?.length) return [];
     return props.task.parents
-      .map((id) => tasks.value.find((task) => task.id === id))
+      .map((id) => metadataStore.getTaskById(id))
       .filter((task): task is Task => task !== undefined);
   });
   const failureSources = computed(() => {
@@ -568,10 +593,11 @@
         const id = objective.task!.id;
         sources.set(id, { id, name: objective.task!.name ?? id });
       });
-    tasks.value.forEach((task) => {
-      if (!task.alternatives?.includes(props.task.id)) return;
-      if (!isTaskSuccessful(task.id)) return;
-      sources.set(task.id, { id: task.id, name: task.name ?? task.id });
+    const alternativeSourceIds = metadataStore.alternativeTaskSources[props.task.id] ?? [];
+    alternativeSourceIds.forEach((taskId) => {
+      if (!isTaskSuccessful(taskId)) return;
+      const task = metadataStore.getTaskById(taskId);
+      sources.set(taskId, { id: taskId, name: task?.name ?? taskId });
     });
     return Array.from(sources.values());
   });
@@ -585,7 +611,7 @@
   const childTasks = computed(() => {
     if (!props.task.children?.length) return [];
     return props.task.children
-      .map((id) => tasks.value.find((task) => task.id === id))
+      .map((id) => metadataStore.getTaskById(id))
       .filter((task): task is Task => task !== undefined);
   });
   const unlocksNextCount = computed(() => childTasks.value.length);
