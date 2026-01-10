@@ -127,6 +127,9 @@
         objective.items?.[0] ||
         objective.markerItem ||
         objective.questItem;
+      // Prefer defaultPreset image for weapons (shows full gun instead of bare receiver)
+      const imageItem = item?.properties?.defaultPreset || item;
+      const image8xLink = imageItem?.image8xLink;
       map[objective.id] = {
         neededCount,
         currentCount,
@@ -135,7 +138,7 @@
           item?.name ||
           objective.description ||
           t('page.tasks.questcard.item', 'Item'),
-        itemIcon: item?.iconLink || item?.image8xLink || item?.image512pxLink || undefined,
+        itemIcon: imageItem?.iconLink || imageItem?.image512pxLink || image8xLink,
         foundInRaid: full?.foundInRaid === true || objective.foundInRaid === true,
       };
     });
