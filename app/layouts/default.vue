@@ -31,7 +31,7 @@
         marginLeft: mainMarginLeft,
       }"
     >
-      <div class="min-h-0 flex-1 overflow-y-auto p-2 pt-0">
+      <div :class="contentWrapperClass">
         <slot />
       </div>
     </main>
@@ -47,10 +47,12 @@
 </template>
 <script setup lang="ts">
   import { computed, defineAsyncComponent } from 'vue';
+  import { useRoute } from 'vue-router';
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useAppStore } from '@/stores/useApp';
   import { usePreferencesStore } from '@/stores/usePreferences';
   const appStore = useAppStore();
+  const route = useRoute();
   const preferencesStore = usePreferencesStore();
   // Holiday effects
   const holidayEffectsEnabled = computed(() => preferencesStore.getEnableHolidayEffects);
@@ -61,6 +63,20 @@
     if (belowMd.value) return '56px'; // Rail width on mobile
     return appStore.drawerRail ? '56px' : '224px';
   });
+  const usesWindowScroll = computed(() => {
+    return Boolean(route.meta?.usesWindowScroll);
+  });
+  useHead(
+    computed(() => ({
+      htmlAttrs: {
+        class: usesWindowScroll.value ? 'no-smooth-scroll' : undefined,
+      },
+    }))
+  );
+  const contentWrapperClass = computed(() => [
+    'min-h-0 flex-1 p-2 pt-0',
+    usesWindowScroll.value ? 'overflow-visible' : 'overflow-y-auto',
+  ]);
   // Lazy-load shell components
   const NavDrawer = defineAsyncComponent(() => import('@/shell/NavDrawer.vue'));
   const AppFooter = defineAsyncComponent(() => import('@/shell/AppFooter.vue'));

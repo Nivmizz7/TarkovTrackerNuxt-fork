@@ -4,6 +4,10 @@
 html {
   scroll-behavior: smooth;
 }
+/* Disable smooth scroll for virtualized window-scrollers to avoid scroll ratcheting */
+html.no-smooth-scroll {
+  scroll-behavior: auto;
+}
 /* Tailwind v4 + Nuxt UI v4 theme tokens */
 @theme {
   --font-sans: 'Share Tech Mono', ui-sans-serif, system-ui, sans-serif;
