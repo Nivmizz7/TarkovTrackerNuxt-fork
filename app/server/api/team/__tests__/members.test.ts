@@ -52,26 +52,34 @@ describe('Team Members API', () => {
       runtimeConfig.supabaseUrl = '';
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing required environment variables');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
+        'Missing required environment variables'
+      );
     });
     it('should throw error when supabaseServiceKey is missing', async () => {
       runtimeConfig.supabaseServiceKey = '';
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing required environment variables');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
+        'Missing required environment variables'
+      );
     });
     it('should throw error when supabaseAnonKey is missing', async () => {
       runtimeConfig.supabaseAnonKey = '';
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing required environment variables');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
+        'Missing required environment variables'
+      );
     });
   });
   describe('Team membership validation', () => {
     it('should require teamId query parameter', async () => {
       mockGetQuery.mockReturnValue({});
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow('teamId is required');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
+        'teamId is required'
+      );
     });
     it('should require user to be team member', async () => {
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
@@ -81,7 +89,9 @@ describe('Team Members API', () => {
         json: async () => [],
       });
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow('Not a team member');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
+        'Not a team member'
+      );
     });
     it('should handle failed membership check', async () => {
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
@@ -91,7 +101,9 @@ describe('Team Members API', () => {
         status: 500,
       });
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow('Failed membership check');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
+        'Failed membership check'
+      );
     });
     it('should handle failed members fetch', async () => {
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
@@ -107,7 +119,9 @@ describe('Team Members API', () => {
           status: 500,
         });
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow('Failed to load members');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
+        'Failed to load members'
+      );
     });
     it('should return members when user is valid team member', async () => {
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
@@ -241,7 +255,9 @@ describe('Team Members API', () => {
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockReturnValue(undefined); // No auth header
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing auth token');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
+        'Missing auth token'
+      );
     });
     it('should reject requests with invalid auth token format', async () => {
       mockEvent.context = {}; // No auth context
@@ -251,7 +267,9 @@ describe('Team Members API', () => {
         return undefined;
       });
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing auth token');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
+        'Missing auth token'
+      );
     });
     it('should reject requests when token validation fails', async () => {
       mockEvent.context = {}; // No auth context
@@ -266,7 +284,9 @@ describe('Team Members API', () => {
         status: 401,
       });
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow('Invalid token');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
+        'Invalid token'
+      );
     });
   });
 });
