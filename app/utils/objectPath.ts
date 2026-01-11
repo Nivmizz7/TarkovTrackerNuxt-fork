@@ -42,6 +42,45 @@ function isArrayIndex(segment: string): boolean {
   return Number.isSafeInteger(value) && value >= 0;
 }
 /**
+ * Keys that could lead to prototype pollution if used in object paths.
+ */
+const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'] as const;
+/**
+ * Check if a key is a dangerous prototype-polluting key.
+ */
+function isDangerousKey(key: string): boolean {
+  return DANGEROUS_KEYS.includes(key as (typeof DANGEROUS_KEYS)[number]);
+}
+/**
+ * Validate that a container's type matches the expected type for the next key.
+ * Throws TypeError if there's a type mismatch (e.g., object when array expected).
+ *
+ * @param container - The container value to validate (must be non-null object)
+ * @param nextKey - The next key that will be used to access into the container
+ * @param nextIsArrayIndex - Whether the next key is a numeric array index
+ * @param currentPath - The path to the current container (for error messages)
+ * @param fullPath - The full path being set (for error messages)
+ */
+function validateContainerType(
+  container: unknown,
+  nextKey: string,
+  nextIsArrayIndex: boolean,
+  currentPath: string,
+  fullPath: string
+): void {
+  const isArray = Array.isArray(container);
+  if (nextIsArrayIndex && !isArray) {
+    throw new TypeError(
+      `set(): Expected array at '${currentPath}' for index '${nextKey}' but found object. Full path: '${fullPath}'`
+    );
+  }
+  if (!nextIsArrayIndex && isArray) {
+    throw new TypeError(
+      `set(): Expected object at '${currentPath}' for key '${nextKey}' but found array. Full path: '${fullPath}'`
+    );
+  }
+}
+/**
  * Get a value from an object by path.
  * Supports dot notation ("a.b.c") and array index notation ("items[0].name" or "items.0.name").
  *
@@ -113,15 +152,27 @@ export function set(obj: Record<string, unknown>, path: string, value: unknown):
         }. Expected a non-null plain object.`
       );
     }
-    Object.assign(obj, value);
+    // Safe property copy that prevents prototype pollution
+    for (const key of Object.keys(value as Record<string, unknown>)) {
+      if (isDangerousKey(key)) {
+        throw new TypeError(
+          `set(): Dangerous key '${key}' is not allowed to prevent prototype pollution.`
+        );
+      }
+      obj[key] = (value as Record<string, unknown>)[key];
+    }
     return;
   }
   const keys = parsePath(path);
-  if (keys.length === 0) {
-    throw new Error(`set(): Path "${path}" resolved to no keys`);
-  }
-  // Defensive guard: parsePath should yield at least one segment for non-empty paths.
   const lastKey = keys[keys.length - 1] as string;
+  // Validate all keys for dangerous prototype-polluting names
+  for (const key of keys) {
+    if (isDangerousKey(key)) {
+      throw new TypeError(
+        `set(): Dangerous key '${key}' in path '${path}' is not allowed to prevent prototype pollution.`
+      );
+    }
+  }
   let current: Record<string, unknown> | unknown[] = obj;
   for (let i = 0; i < keys.length - 1; i++) {
     const key = keys[i] as string;
@@ -144,19 +195,13 @@ export function set(obj: Record<string, unknown>, path: string, value: unknown):
       }
       // Validate type of existing object against next key requirement
       if (current[index] != null && typeof current[index] === 'object') {
-        const isArray = Array.isArray(current[index]);
-        if (nextIsArrayIndex && !isArray) {
-          const currentPath = keys.slice(0, i + 1).join('.');
-          throw new TypeError(
-            `set(): Expected array at '${currentPath}' for index '${nextKey}' but found object. Full path: '${path}'`
-          );
-        }
-        if (!nextIsArrayIndex && isArray) {
-          const currentPath = keys.slice(0, i + 1).join('.');
-          throw new TypeError(
-            `set(): Expected object at '${currentPath}' for key '${nextKey}' but found array. Full path: '${path}'`
-          );
-        }
+        validateContainerType(
+          current[index],
+          nextKey,
+          nextIsArrayIndex,
+          keys.slice(0, i + 1).join('.'),
+          path
+        );
       }
       // Use direct assignment for sparse array (avoid O(n) fill with push loop)
       if (current[index] == null) {
@@ -167,19 +212,13 @@ export function set(obj: Record<string, unknown>, path: string, value: unknown):
       const currentObj = current as Record<string, unknown>;
       if (key in currentObj && currentObj[key] != null && typeof currentObj[key] === 'object') {
         // Validate existing value type
-        const isArray = Array.isArray(currentObj[key]);
-        if (nextIsArrayIndex && !isArray) {
-          const currentPath = keys.slice(0, i + 1).join('.');
-          throw new TypeError(
-            `set(): Expected array at '${currentPath}' for index '${nextKey}' but found object. Full path: '${path}'`
-          );
-        }
-        if (!nextIsArrayIndex && isArray) {
-          const currentPath = keys.slice(0, i + 1).join('.');
-          throw new TypeError(
-            `set(): Expected object at '${currentPath}' for key '${nextKey}' but found array. Full path: '${path}'`
-          );
-        }
+        validateContainerType(
+          currentObj[key],
+          nextKey,
+          nextIsArrayIndex,
+          keys.slice(0, i + 1).join('.'),
+          path
+        );
       } else if (
         key in currentObj &&
         currentObj[key] != null &&

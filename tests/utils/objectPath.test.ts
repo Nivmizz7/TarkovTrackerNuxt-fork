@@ -165,4 +165,49 @@ describe('objectPath', () => {
       expect(() => set(obj, "items['ключ']", 1)).toThrow(/quoted bracket keys/);
     });
   });
+  describe('prototype pollution prevention', () => {
+    it('rejects __proto__ in path', () => {
+      const obj = {} as Record<string, unknown>;
+      expect(() => set(obj, '__proto__.polluted', 'yes')).toThrow(/Dangerous key/);
+      expect(() => set(obj, 'a.__proto__.polluted', 'yes')).toThrow(/Dangerous key/);
+    });
+    it('rejects constructor in path', () => {
+      const obj = {} as Record<string, unknown>;
+      expect(() => set(obj, 'constructor.prototype.polluted', 'yes')).toThrow(/Dangerous key/);
+    });
+    it('rejects prototype in path', () => {
+      const obj = {} as Record<string, unknown>;
+      expect(() => set(obj, 'prototype.polluted', 'yes')).toThrow(/Dangerous key/);
+    });
+    it('rejects dangerous keys in root path assignment', () => {
+      const obj = {} as Record<string, unknown>;
+      const malicious = JSON.parse('{"__proto__": {"polluted": true}}');
+      expect(() => set(obj, '.', malicious)).toThrow(/Dangerous key/);
+    });
+    it('does not pollute Object.prototype via __proto__', () => {
+      const obj = {} as Record<string, unknown>;
+      try {
+        set(obj, '__proto__.polluted', 'yes');
+      } catch {
+        // Expected to throw
+      }
+      expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+    });
+    it('does not pollute Object.prototype via constructor', () => {
+      const obj = {} as Record<string, unknown>;
+      try {
+        set(obj, 'constructor.prototype.polluted', 'yes');
+      } catch {
+        // Expected to throw
+      }
+      expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+    });
+    it('allows legitimate keys that contain dangerous substrings', () => {
+      const obj = {} as Record<string, unknown>;
+      set(obj, 'my__proto__key', 'value');
+      expect(obj['my__proto__key']).toBe('value');
+      set(obj, 'constructorName', 'MyClass');
+      expect(obj['constructorName']).toBe('MyClass');
+    });
+  });
 });
