@@ -257,7 +257,9 @@ function expandObjectiveAdditions(additions: unknown[]): ObjectiveAddEntry[] {
       }
       continue;
     }
-    // Determine objective type: use explicit type, infer from entry/description, or fallback to items
+    // Validation check: objectiveType should have been determined above via normalizedType
+    // (inferred from entry.type or description) or via items.length fallback. If still
+    // undefined, the objective (baseId) is missing required type information and must be skipped.
     if (objectiveType === undefined) {
       logger.warn(
         `Skipping overlay objective ${baseId}: missing type and unable to infer objective type`

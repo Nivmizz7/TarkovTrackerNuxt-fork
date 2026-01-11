@@ -5,23 +5,23 @@
  * Used to determine the correct type for overlay objective entries.
  */
 import { isPlainObject } from './deepMerge';
-/** Prefix-to-type mapping for objective inference */
-const OBJECTIVE_TYPE_PREFIXES: Array<{ prefix: string; type: string }> = [
-  { prefix: 'eliminate', type: 'shoot' },
+/** Prefix-to-type mapping for objective inference (ordered by length descending for correct startsWith matching) */
+export const OBJECTIVE_TYPE_PREFIXES: Array<{ prefix: string; type: string }> = [
+  { prefix: 'find and hand over', type: 'giveItem' },
   { prefix: 'locate and mark', type: 'mark' },
-  { prefix: 'mark', type: 'mark' },
+  { prefix: 'eliminate', type: 'shoot' },
+  { prefix: 'hand over', type: 'giveItem' },
+  { prefix: 'launch', type: 'useItem' },
+  { prefix: 'locate', type: 'visit' },
   { prefix: 'stash', type: 'plantItem' },
   { prefix: 'plant', type: 'plantItem' },
   { prefix: 'place', type: 'plantItem' },
-  { prefix: 'hand over', type: 'giveItem' },
-  { prefix: 'find and hand over', type: 'giveItem' },
-  { prefix: 'find', type: 'findItem' },
-  { prefix: 'locate', type: 'visit' },
   { prefix: 'recon', type: 'visit' },
-  { prefix: 'eat', type: 'useItem' },
   { prefix: 'drink', type: 'useItem' },
+  { prefix: 'mark', type: 'mark' },
+  { prefix: 'find', type: 'findItem' },
+  { prefix: 'eat', type: 'useItem' },
   { prefix: 'use', type: 'useItem' },
-  { prefix: 'launch', type: 'useItem' },
 ];
 /**
  * Check if a marker item has valid properties.

@@ -1279,7 +1279,11 @@ function mergeProgressData(
   if (!local && !remote) return {} as UserProgressData;
   if (!local) return remote!;
   if (!remote) return local;
-  // Specialized merge for task completions that preserves completed status
+  // Merge task completions with "sticky complete" semantics:
+  // - Uses timestamp-based merge as the baseline (newer entry wins)
+  // - Treats absence of a `complete` flag (undefined) as "no explicit change"
+  // - Once complete=true is set, it persists UNLESS the newer entry explicitly sets complete=false
+  // - This prevents progress regression when syncing partial updates that omit the complete flag
   const mergeTaskCompletion = (
     localComp: { complete?: boolean; failed?: boolean; timestamp?: number } | undefined,
     remoteComp: { complete?: boolean; failed?: boolean; timestamp?: number } | undefined
@@ -1288,13 +1292,15 @@ function mergeProgressData(
     if (!remoteComp) return localComp;
     const localTs = localComp.timestamp ?? 0;
     const remoteTs = remoteComp.timestamp ?? 0;
-    // Start with timestamp-based merge
+    // Start with timestamp-based merge (newer entry takes precedence)
     const base = remoteTs >= localTs ? remoteComp : localComp;
     const other = remoteTs >= localTs ? localComp : remoteComp;
     const merged = { ...other, ...base };
-    // Preserve completed status: once complete, only explicit newer incomplete can undo it
-    // If either was complete and the newer one doesn't explicitly set complete to false, keep complete
-    if ((localComp.complete || remoteComp.complete) && merged.complete !== false) {
+    // Sticky complete: preserve complete=true unless explicitly overridden with complete=false
+    // Check if the newer entry (base) explicitly sets complete to false via own property check
+    const newerExplicitlySetsFalse =
+      Object.prototype.hasOwnProperty.call(base, 'complete') && base.complete === false;
+    if ((localComp.complete || remoteComp.complete) && !newerExplicitlySetsFalse) {
       merged.complete = true;
     }
     // Use the latest timestamp from either entry
