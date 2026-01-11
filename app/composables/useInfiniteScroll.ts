@@ -1,12 +1,12 @@
 import {
   type ComputedRef,
   computed,
-  isRef,
   nextTick,
   onMounted,
   onUnmounted,
   type Ref,
   ref,
+  toValue,
   watch,
 } from 'vue';
 import { logger } from '@/utils/logger';
@@ -17,6 +17,15 @@ export interface UseInfiniteScrollOptions {
   /** Attach a window scroll listener as a fallback when needed (opt-in). */
   useScrollFallback?: boolean;
   scrollThrottleMs?: number;
+  /** Keep auto-loading while the user is at the bottom, even without new scroll events. */
+  stickToBottom?: boolean;
+  /** Distance from the bottom (px) to consider "at bottom" when stickToBottom is enabled. */
+  stickToBottomThreshold?: number;
+  /**
+   * Maximum number of auto-load cycles while the sentinel remains in range.
+   * Prevents runaway loops if the list doesn't grow.
+   */
+  maxAutoLoads?: number;
 }
 // Scroll fallback attaches a global window scroll listener; only enable if needed.
 export function useInfiniteScroll(
@@ -30,25 +39,47 @@ export function useInfiniteScroll(
     // When true, attaches a window scroll listener; opt-in for cases without IntersectionObserver.
     useScrollFallback = false,
     scrollThrottleMs = 100,
+    stickToBottom = useScrollFallback,
+    stickToBottomThreshold = 200,
+    maxAutoLoads = 100,
   } = options;
-  const enabledOption = options.enabled ?? true;
-  const enabled = computed(() => (isRef(enabledOption) ? enabledOption.value : enabledOption));
+  const enabled = computed(() => toValue(options.enabled) ?? true);
+  const shouldAttachScrollListener = useScrollFallback || stickToBottom;
   let observer: IntersectionObserver | null = null;
   const isLoading = ref(false);
+  const canUseObserver = typeof IntersectionObserver !== 'undefined';
+  let warnedObserverUnavailable = false;
   let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
   let pendingScroll = false;
   const marginPx = parseInt(rootMargin) || 1500;
+  let autoLoadCount = 0;
+  let stickToBottomArmed = false;
+  let isStuckToBottom = false;
+  const updateStickiness = () => {
+    if (!stickToBottom || !stickToBottomArmed || typeof window === 'undefined') return;
+    const doc = document.documentElement;
+    const distanceFromBottom = doc.scrollHeight - (window.scrollY + window.innerHeight);
+    isStuckToBottom = distanceFromBottom <= stickToBottomThreshold;
+  };
   const handleIntersection = (entries: IntersectionObserverEntry[]) => {
     const target = entries[0];
     if (target?.isIntersecting && enabled.value) {
+      autoLoadCount = 0;
       void checkAndLoadMore();
     }
   };
   const checkAndLoadMore = async () => {
     if (!enabled.value || isLoading.value || !sentinelRef.value) return;
+    if (typeof window === 'undefined') return;
     const rect = sentinelRef.value.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    if (rect.top < viewportHeight + marginPx) {
+    const shouldLoad = rect.top < viewportHeight + marginPx || (stickToBottom && isStuckToBottom);
+    if (shouldLoad) {
+      if (autoLoadCount >= maxAutoLoads) {
+        logger.warn('[useInfiniteScroll] Max auto-load cycles reached, pausing');
+        return;
+      }
+      autoLoadCount += 1;
       isLoading.value = true;
       try {
         await Promise.resolve(onLoadMore());
@@ -57,7 +88,18 @@ export function useInfiniteScroll(
         logger.error('[useInfiniteScroll] Failed to load more items:', error);
       } finally {
         isLoading.value = false;
+        // Re-check after DOM updates AND browser paint - sentinel may still
+        // be visible if user scrolled fast and more content is needed.
+        // nextTick ensures Vue's DOM update, requestAnimationFrame ensures paint.
+        nextTick(() => {
+          requestAnimationFrame(() => {
+            if (!enabled.value || !sentinelRef.value) return;
+            void checkAndLoadMore();
+          });
+        });
       }
+    } else {
+      autoLoadCount = 0;
     }
   };
   const scheduleScrollCheck = () => {
@@ -72,6 +114,9 @@ export function useInfiniteScroll(
   };
   const handleScroll = () => {
     if (!enabled.value) return;
+    stickToBottomArmed ||= stickToBottom;
+    updateStickiness();
+    autoLoadCount = 0;
     if (scrollTimeout) {
       pendingScroll = true;
       return;
@@ -79,6 +124,16 @@ export function useInfiniteScroll(
     scheduleScrollCheck();
   };
   const createObserver = () => {
+    if (!canUseObserver) {
+      if (!warnedObserverUnavailable) {
+        warnedObserverUnavailable = true;
+        logger.warn(
+          '[useInfiniteScroll] IntersectionObserver unavailable; ' +
+            'enable useScrollFallback to scroll.'
+        );
+      }
+      return;
+    }
     if (observer) {
       observer.disconnect();
     }
@@ -92,17 +147,18 @@ export function useInfiniteScroll(
   };
   const start = () => {
     createObserver();
-    if (useScrollFallback) {
+    if (shouldAttachScrollListener) {
       window.addEventListener('scroll', handleScroll, { passive: true });
     }
     nextTick(() => {
-      checkAndLoadMore();
+      updateStickiness();
+      void checkAndLoadMore();
     });
   };
   const stop = () => {
     observer?.disconnect();
     observer = null;
-    if (useScrollFallback) {
+    if (shouldAttachScrollListener) {
       window.removeEventListener('scroll', handleScroll);
     }
     if (scrollTimeout) {
@@ -110,20 +166,18 @@ export function useInfiniteScroll(
       scrollTimeout = null;
     }
     pendingScroll = false;
+    autoLoadCount = 0;
+    stickToBottomArmed = false;
+    isStuckToBottom = false;
   };
   watch(
     sentinelRef,
     (el, oldEl) => {
-      if (el !== oldEl) {
-        if (observer) {
-          observer.disconnect();
-          if (el) {
-            observer.observe(el);
-            nextTick(() => {
-              checkAndLoadMore();
-            });
-          }
-        }
+      if (el === oldEl || !observer) return;
+      observer.disconnect();
+      if (el) {
+        observer.observe(el);
+        nextTick(() => void checkAndLoadMore());
       }
     },
     { flush: 'post' }
