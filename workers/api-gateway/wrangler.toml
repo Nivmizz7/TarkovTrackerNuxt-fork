@@ -18,6 +18,8 @@ routes = [
   { pattern = "api.tarkovtracker.org/token*", zone_name = "tarkovtracker.org" },
   { pattern = "api.tarkovtracker.org/progress*", zone_name = "tarkovtracker.org" },
   { pattern = "api.tarkovtracker.org/team/progress*", zone_name = "tarkovtracker.org" },
+  # Catch-all for docs/spec on api subdomain. Keep last for clarity.
+  { pattern = "api.tarkovtracker.org/*", zone_name = "tarkovtracker.org" },
 ]
 
 [placement]

@@ -73,7 +73,8 @@
     "lint:fix": "eslint app --fix",
     "postinstall": "nuxt prepare",
     "preview": "nuxt preview",
-    "supabase:types": "supabase gen types typescript --linked > supabase/functions/_shared/database.types.ts"
+    "supabase:types": "supabase gen types typescript --linked > supabase/functions/_shared/database.types.ts",
+    "test:api-gateway": "vitest --config workers/api-gateway/vitest.config.ts"
   },
   "type": "module"
 }

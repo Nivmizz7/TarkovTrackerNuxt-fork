@@ -14,6 +14,7 @@ export default defineVitestConfig({
     environment: 'nuxt', // The Nuxt environment handles the DOM setup automatically
     globals: true,
     setupFiles: ['./test-setup.ts'],
+    exclude: ['workers/**'],
     // Don't auto-clean up DOM elements as Nuxt environment handles this
     clearMocks: true,
     // Suppress some console warnings during tests
