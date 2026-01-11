@@ -8,6 +8,7 @@ import {
 } from './handlers/progress';
 import { handleGetTeamProgress } from './handlers/team';
 import { handleGetToken } from './handlers/token';
+import { OPENAPI_JSON } from './openapi';
 import type { Env, TaskState, BatchTaskUpdate, LegacyTokenResponse } from './types';
 /**
  * Normalize task updates to support both legacy object and array formats
@@ -192,6 +193,43 @@ function corsHeaders(envOrigin?: string, requestOrigin?: string): Record<string,
     'Access-Control-Allow-Headers': 'Content-Type,Authorization',
   };
 }
+function docsResponse(envOrigin?: string, requestOrigin?: string): Response {
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TarkovTracker API Docs</title>
+  </head>
+  <body style="margin:0;min-height:100vh;background:#0e0f12;">
+    <div id="app"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    <script>
+      Scalar.createApiReference('#app', {
+        url: '/openapi.json'
+      });
+    </script>
+  </body>
+</html>`;
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      ...corsHeaders(envOrigin, requestOrigin),
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+function openApiResponse(envOrigin?: string, requestOrigin?: string): Response {
+  return new Response(OPENAPI_JSON, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      ...corsHeaders(envOrigin, requestOrigin),
+      'Cache-Control': 'no-store',
+    },
+  });
+}
 /**
  * Create a flat response for token endpoint (legacy format - no data wrapper)
  */
@@ -264,6 +302,7 @@ export default {
     const origin = env.ALLOWED_ORIGIN;
     const reqOrigin = request.headers.get('Origin') || undefined;
     const headers = corsHeaders(origin, reqOrigin);
+    const apiHostPrefix = host === 'api.tarkovtracker.org';
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers });
@@ -283,7 +322,12 @@ export default {
         reqOrigin
       );
     }
-    const apiHostPrefix = host === 'api.tarkovtracker.org';
+    if (apiHostPrefix && (path === '/' || path === '/docs')) {
+      return docsResponse(origin, reqOrigin);
+    }
+    if (apiHostPrefix && path === '/openapi.json') {
+      return openApiResponse(origin, reqOrigin);
+    }
     // Extract the API path based on host
     let apiPath: string | null = null;
     if (apiHostPrefix) {
