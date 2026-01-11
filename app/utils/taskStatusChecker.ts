@@ -104,8 +104,17 @@ export interface TeamTaskStatusAggregation {
   usersWhoNeedTask: string[];
 }
 /**
- * Aggregate task status across team members
- * Useful for team view task filtering
+ * Aggregate task status across team members.
+ * Useful for team view task filtering.
+ *
+ * @param taskId - The task ID to check status for
+ * @param teamIds - Team member IDs to aggregate. Should be pre-filtered for faction
+ *   compatibility (e.g., via {@link getRelevantTeamIds}) before calling this function.
+ * @param progress - Progress data containing task completion states
+ * @param getDisplayName - Optional function to convert team IDs to display names
+ * @returns Aggregated status including:
+ *   - `isCompletedByAll`: True only if every provided teamId has completed the task.
+ *     Members who haven't unlocked the task count as not completed.
  */
 export function aggregateTeamTaskStatus(
   taskId: string,
@@ -113,10 +122,7 @@ export function aggregateTeamTaskStatus(
   progress: TaskStatusProgressData,
   getDisplayName?: (teamId: string) => string
 ): TeamTaskStatusAggregation {
-  const statuses = teamIds.map((teamId) => ({
-    teamId,
-    ...getTaskStatusForUser(taskId, teamId, progress),
-  }));
+  const statuses = getTaskStatusesForTeam(taskId, teamIds, progress);
   const usersWhoNeedTask = statuses
     .filter(({ isUnlocked, isCompleted, isFailed }) => isUnlocked && !isCompleted && !isFailed)
     .map(({ teamId }) => (getDisplayName ? getDisplayName(teamId) : teamId));
@@ -125,7 +131,8 @@ export function aggregateTeamTaskStatus(
       ({ isUnlocked, isCompleted, isFailed }) => isUnlocked && !isCompleted && !isFailed
     ),
     isCompletedByAll:
-      statuses.length > 0 && statuses.every(({ isCompleted, isFailed }) => isCompleted && !isFailed),
+      statuses.length > 0 &&
+      statuses.every(({ isCompleted, isFailed }) => isCompleted && !isFailed),
     isFailedForAny: statuses.some(({ isFailed }) => isFailed),
     usersWhoNeedTask,
   };

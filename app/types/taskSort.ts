@@ -1,5 +1,5 @@
 export const TASK_SORT_MODES = [
-  'default',
+  'none',
   'impact',
   'alphabetical',
   'level',

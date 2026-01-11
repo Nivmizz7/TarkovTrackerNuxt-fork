@@ -6,28 +6,65 @@
  */
 import type { Task } from '@/types/tarkov';
 import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
-/** Impact score calculation data */
+/**
+ * Impact score calculation data.
+ * Used to calculate how many incomplete successor tasks each task has.
+ */
 export interface ImpactScoreData {
+  /** Task completion status keyed by taskId -> teamId -> boolean */
   tasksCompletions: Record<string, Record<string, boolean>>;
+  /** Task failure status keyed by taskId -> teamId -> boolean */
   tasksFailed: Record<string, Record<string, boolean>>;
-}
-/** Teammate availability data */
-export interface TeammateAvailabilityData {
-  unlockedTasks: Record<string, Record<string, boolean>>;
-  tasksCompletions: Record<string, Record<string, boolean>>;
-  tasksFailed: Record<string, Record<string, boolean>>;
+  /**
+   * Map keyed by team ID used only for membership/visibility checks.
+   * Keys present mean the team member is visible. Values are intentionally typed
+   * as unknown/opaque since only keys are inspected for determining team membership.
+   * Expected key format: string team IDs (e.g., 'user123', 'team-abc').
+   */
   visibleTeamStores?: Record<string, unknown>;
 }
 /**
- * Build impact scores for tasks based on incomplete successor count
+ * Teammate availability data.
+ * Used to calculate how many team members have a task available (unlocked but not complete/failed).
  */
-export function buildImpactScores(
-  tasks: Task[],
-  teamIds: string[],
-  data: ImpactScoreData
-): Map<string, number> {
+export interface TeammateAvailabilityData {
+  /** Task unlock status keyed by taskId -> teamId -> boolean. Required. */
+  unlockedTasks: Record<string, Record<string, boolean>>;
+  /** Task completion status keyed by taskId -> teamId -> boolean. Required. */
+  tasksCompletions: Record<string, Record<string, boolean>>;
+  /** Task failure status keyed by taskId -> teamId -> boolean. Required. */
+  tasksFailed: Record<string, Record<string, boolean>>;
+  /**
+   * Map keyed by team ID used only for membership/visibility checks.
+   * Keys present mean the team member is visible. Values are intentionally typed
+   * as unknown/opaque since only keys are inspected for determining team membership.
+   * Expected key format: string team IDs (e.g., 'user123', 'team-abc').
+   * Optional - defaults to empty object if not provided.
+   */
+  visibleTeamStores?: Record<string, unknown>;
+}
+/**
+ * Extract team IDs from visibleTeamStores.
+ * Centralizes the derivation of team IDs used for impact/availability calculations.
+ * @param data - Object containing visibleTeamStores property
+ * @returns Array of team ID strings
+ */
+function getTeamIds(data: { visibleTeamStores?: Record<string, unknown> }): string[] {
+  return Object.keys(data.visibleTeamStores || {});
+}
+/**
+ * Build impact scores for tasks based on incomplete successor count.
+ * Derives teamIds from data.visibleTeamStores for consistency with buildTeammateAvailableCounts.
+ */
+export function buildImpactScores(tasks: Task[], data: ImpactScoreData): Map<string, number> {
   const impactScores = new Map<string, number>();
-  if (!tasks.length || !teamIds.length) {
+  // Return early if no tasks
+  if (!tasks.length) {
+    return impactScores;
+  }
+  const teamIds = getTeamIds(data);
+  // If no team members, set all scores to 0
+  if (!teamIds.length) {
     tasks.forEach((task) => impactScores.set(task.id, 0));
     return impactScores;
   }
@@ -61,7 +98,7 @@ export function buildTeammateAvailableCounts(
   tasks: Task[],
   data: TeammateAvailabilityData
 ): Map<string, number> {
-  const teamIds = Object.keys(data.visibleTeamStores || {});
+  const teamIds = getTeamIds(data);
   const counts = new Map<string, number>();
   if (!teamIds.length) {
     tasks.forEach((task) => counts.set(task.id, 0));
@@ -117,12 +154,11 @@ function compareNumbers(a: number, b: number, factor: number): number {
  */
 export function sortTasksByImpact(
   tasks: Task[],
-  teamIds: string[],
   data: ImpactScoreData,
   direction: TaskSortDirection
 ): Task[] {
   const factor = getDirectionFactor(direction);
-  const impactScores = buildImpactScores(tasks, teamIds, data);
+  const impactScores = buildImpactScores(tasks, data);
   return [...tasks].sort((a, b) => {
     const impactA = impactScores.get(a.id) ?? 0;
     const impactB = impactScores.get(b.id) ?? 0;
@@ -231,14 +267,16 @@ export function sortTasksByXp(tasks: Task[], direction: TaskSortDirection): Task
  * Configuration for the sortTasks function
  */
 export interface SortTasksConfig {
-  teamIds: string[];
   progressData: ImpactScoreData & TeammateAvailabilityData;
   traderOrderMap: Map<string, number>;
   defaultTraderOrder: number;
 }
 /**
- * Sort tasks by the specified mode and direction
- * Main entry point for task sorting
+ * Sort tasks by the specified mode and direction.
+ * Main entry point for task sorting.
+ *
+ * The 'none' mode preserves the original input order (optionally reversed based on direction).
+ * Use 'none' when you want to maintain the natural order of tasks without any sorting logic.
  */
 export function sortTasks(
   tasks: Task[],
@@ -252,14 +290,14 @@ export function sortTasks(
     case 'level':
       return sortTasksByLevel(tasks, direction);
     case 'impact':
-      return sortTasksByImpact(tasks, config.teamIds, config.progressData, direction);
+      return sortTasksByImpact(tasks, config.progressData, direction);
     case 'trader':
       return sortTasksByTrader(tasks, config.traderOrderMap, config.defaultTraderOrder, direction);
     case 'teammates':
       return sortTasksByTeammatesAvailable(tasks, config.progressData, direction);
     case 'xp':
       return sortTasksByXp(tasks, direction);
-    case 'default':
+    case 'none':
     default:
       return direction === 'desc' ? [...tasks].reverse() : [...tasks];
   }
