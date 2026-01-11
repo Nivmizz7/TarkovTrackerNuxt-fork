@@ -219,6 +219,7 @@ export function isValidMapSvgConfig(svg: unknown): svg is MapSvgConfig {
   return (
     typeof config.file === 'string' &&
     Array.isArray(config.floors) &&
+    config.floors.length > 0 &&
     typeof config.defaultFloor === 'string' &&
     typeof config.coordinateRotation === 'number' &&
     Array.isArray(config.bounds) &&
@@ -237,11 +238,12 @@ export function getMapSvgCdnUrl(mapName: string, floor: string): string {
 }
 /**
  * Gets the fallback URL for a map SVG file.
+ * Always URL-encodes the filename for consistent behavior.
  * @param filename SVG filename from maps.json
- * @returns Fallback URL for the SVG file
+ * @returns Fallback URL for the SVG file with encoded filename
  */
 export function getMapSvgFallbackUrl(filename: string): string {
-  return `https://tarkovtracker.github.io/tarkovdata/maps/${filename}`;
+  return `https://tarkovtracker.github.io/tarkovdata/maps/${encodeURIComponent(filename)}`;
 }
 /**
  * Gets the URL for Factory floor-specific SVG files.
