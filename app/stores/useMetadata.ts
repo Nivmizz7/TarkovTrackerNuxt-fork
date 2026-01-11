@@ -1646,19 +1646,18 @@ export const useMetadataStore = defineStore('metadata', {
      * We need cumulative XP from level 1 for proper level calculations
      *
      * Level 1 should have exp: 0 (you start at level 1 with 0 XP)
-     * Level 2 should have the XP threshold from level 1's incremental value
-     * And so on...
+     * Level 2 should have exp: 1000 (cumulative XP to reach level 2)
+     * Level 37 should have exp: 3,032,022 (cumulative XP to reach level 37)
      */
     convertToCumulativeXP(levels: PlayerLevel[]): PlayerLevel[] {
       if (!levels || levels.length === 0) return [];
       let cumulativeXP = 0;
       return levels.map((level) => {
-        const result = {
+        cumulativeXP += level.exp;
+        return {
           ...level,
           exp: cumulativeXP,
         };
-        cumulativeXP += level.exp;
-        return result;
       });
     },
     /**

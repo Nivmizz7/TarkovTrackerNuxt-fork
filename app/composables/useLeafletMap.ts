@@ -157,7 +157,8 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       if (zoomSnap > 0) {
         newZoom = Math.round(newZoom / zoomSnap) * zoomSnap;
       }
-      mapInstance.value.setZoom(newZoom);
+      const zoomTarget = mapInstance.value.mouseEventToLatLng(e);
+      mapInstance.value.setZoomAround(zoomTarget, newZoom);
     }
     // Ctrl + Scroll: Cycle Floors
     else if (e.ctrlKey && hasMultipleFloors.value) {

@@ -45,7 +45,9 @@
         <UIcon name="i-mdi-loading" class="text-primary-500 h-8 w-8 animate-spin" />
       </div>
       <!-- Map controls (top right) -->
-      <div class="bg-surface-800/90 absolute top-2 right-2 z-1000 flex gap-2 rounded p-1.5">
+      <div
+        class="bg-surface-800/90 absolute top-2 right-2 z-1000 flex flex-wrap items-center gap-2 rounded p-1.5"
+      >
         <!-- Reset view button -->
         <UButton
           color="primary"
@@ -78,6 +80,19 @@
         >
           Scav
         </UButton>
+        <div class="bg-surface-900/40 flex items-center gap-2 rounded px-2 py-1">
+          <span class="text-[10px] font-semibold uppercase text-gray-400">Zoom</span>
+          <input
+            v-model.number="mapZoomSpeed"
+            type="range"
+            :min="ZOOM_SPEED_MIN"
+            :max="ZOOM_SPEED_MAX"
+            step="0.1"
+            class="h-1.5 w-24 cursor-pointer accent-primary-500"
+            aria-label="Zoom speed"
+          />
+          <span class="text-[10px] text-gray-300 tabular-nums">{{ zoomSpeedLabel }}</span>
+        </div>
       </div>
       <!-- Map container -->
       <div ref="mapContainer" class="bg-surface-900 h-100 w-full rounded sm:h-125 lg:h-150" />
@@ -140,6 +155,7 @@
   import { ref, watch, onUnmounted, computed, toRef } from 'vue';
   import { useLeafletMap } from '@/composables/useLeafletMap';
   import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
   import type { TarkovMap, MapExtract } from '@/types/tarkov';
   import { logger } from '@/utils/logger';
   import { gameToLatLng, outlineToLatLngArray, isValidMapSvgConfig } from '@/utils/mapCoordinates';
@@ -176,6 +192,7 @@
     showLegend: true,
   });
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   // Check if map is unavailable
   const isMapUnavailable = computed(() => {
     return props.map?.unavailable === true;
@@ -219,6 +236,19 @@
       (extract) => extract.faction === 'shared' && isCoopExtract(extract)
     );
   });
+  const ZOOM_SPEED_MIN = 0.5;
+  const ZOOM_SPEED_MAX = 3;
+  const mapZoomSpeed = computed({
+    get: () => preferencesStore.getMapZoomSpeed,
+    set: (value) => {
+      const parsed = Number(value);
+      const clamped = Math.min(ZOOM_SPEED_MAX, Math.max(ZOOM_SPEED_MIN, parsed));
+      preferencesStore.setMapZoomSpeed(clamped);
+    },
+  });
+  const zoomSpeedLabel = computed(() => `${mapZoomSpeed.value.toFixed(1)}x`);
+  const baseZoomDelta = ref<number | null>(null);
+  const baseZoomSnap = ref<number | null>(null);
   const popupOptions = {
     autoClose: false,
     closeOnClick: false,
@@ -458,12 +488,30 @@
       logger.error('Error updating map markers:', error);
     }
   }
+  const applyZoomSpeed = (instance: L.Map | null, speed: number) => {
+    if (!instance) return;
+    if (baseZoomDelta.value === null) {
+      baseZoomDelta.value = instance.options.zoomDelta ?? 0.35;
+    }
+    if (baseZoomSnap.value === null) {
+      baseZoomSnap.value = instance.options.zoomSnap ?? 0.25;
+    }
+    instance.options.zoomDelta = baseZoomDelta.value * speed;
+    if (baseZoomSnap.value !== null) {
+      const nextZoomSnap =
+        speed < 1 ? Math.max(0.05, baseZoomSnap.value * speed) : baseZoomSnap.value;
+      instance.options.zoomSnap = nextZoomSnap;
+    }
+  };
   // Watch for changes that require marker updates
   watch(
     () => props.marks,
     () => updateMarkers(),
     { deep: true }
   );
+  watch(mapZoomSpeed, (speed) => {
+    applyZoomSpeed(mapInstance.value, speed);
+  });
   watch([showPmcExtracts, showScavExtracts], () => createExtractMarkers());
   watch(selectedFloor, () => {
     // Markers might need floor-based visibility in the future
@@ -474,6 +522,9 @@
     mapInstance,
     (instance) => {
       if (instance) {
+        baseZoomDelta.value = instance.options.zoomDelta ?? 0.35;
+        baseZoomSnap.value = instance.options.zoomSnap ?? 0.25;
+        applyZoomSpeed(instance, mapZoomSpeed.value);
         // Give the SVG time to load
         setTimeout(() => updateMarkers(), 500);
       }

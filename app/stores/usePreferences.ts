@@ -58,6 +58,7 @@ export interface PreferencesState {
   enableHolidayEffects: boolean;
   // Map display settings
   showMapExtracts: boolean;
+  mapZoomSpeed: number;
   saving?: {
     streamerMode: boolean;
     hideGlobalTasks: boolean;
@@ -112,6 +113,7 @@ export const preferencesDefaultState: PreferencesState = {
   enableHolidayEffects: true,
   // Map display settings
   showMapExtracts: true,
+  mapZoomSpeed: 1,
   saving: {
     streamerMode: false,
     hideGlobalTasks: false,
@@ -229,6 +231,9 @@ export const usePreferencesStore = defineStore('preferences', {
     getHideoutPrimaryView: (state) => {
       return state.hideoutPrimaryView ?? 'available';
     },
+    getMapZoomSpeed: (state) => {
+      return state.mapZoomSpeed ?? 1;
+    },
     getLocaleOverride: (state) => {
       return state.localeOverride ?? null;
     },
@@ -302,6 +307,14 @@ export const usePreferencesStore = defineStore('preferences', {
     },
     setTaskPrimaryView(view: string) {
       this.taskPrimaryView = view;
+    },
+    setMapZoomSpeed(speed: number) {
+      if (!Number.isFinite(speed)) {
+        this.mapZoomSpeed = 1;
+        return;
+      }
+      const clamped = Math.min(3, Math.max(0.5, speed));
+      this.mapZoomSpeed = clamped;
     },
     setTaskMapView(view: string) {
       this.taskMapView = view;
@@ -465,6 +478,7 @@ export const usePreferencesStore = defineStore('preferences', {
       'useAutomaticLevelCalculation',
       'enableHolidayEffects',
       'showMapExtracts',
+      'mapZoomSpeed',
     ],
   },
 });
