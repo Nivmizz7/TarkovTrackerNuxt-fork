@@ -238,7 +238,7 @@
         upgradebutton: '建造 | 建造等级 {level} | 升级至等级 {level}',
         downgradebutton: '拆除设施 | 降级至等级 {level} | 降级至等级 {level}',
         statusupgraded: '{name} 已升级至等级 {level}',
-        statusdowngraded: '{name} 已从等级{level}降级',
+        statusdowngraded: '{name} 已从等级 {level}降级',
       },
     },
     items: {
