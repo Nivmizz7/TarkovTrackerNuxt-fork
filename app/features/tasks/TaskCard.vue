@@ -194,9 +194,10 @@
             <span>{{ formatNumber(task.experience) }} XP</span>
           </div>
           <!-- Action buttons in header for consistent positioning -->
-          <template v-if="isOurFaction">
+          <template v-if="actionButtonState !== 'none'">
+            <!-- Locked: Mark Available button -->
             <UButton
-              v-if="isLocked"
+              v-if="actionButtonState === 'locked'"
               :size="actionButtonSize"
               color="primary"
               variant="soft"
@@ -205,8 +206,9 @@
             >
               {{ t('page.tasks.questcard.availablebutton', 'Mark Available') }}
             </UButton>
+            <!-- Complete: Mark Uncompleted/Reset Failed button -->
             <UButton
-              v-if="isComplete"
+              v-else-if="actionButtonState === 'complete'"
               :size="actionButtonSize"
               color="primary"
               variant="soft"
@@ -219,7 +221,8 @@
                   : t('page.tasks.questcard.uncompletebutton', 'Mark Uncompleted')
               }}
             </UButton>
-            <div v-if="showHotWheelsFail" class="flex shrink-0 flex-col gap-1">
+            <!-- Hot Wheels: Both Complete and Fail buttons -->
+            <div v-else-if="actionButtonState === 'hotwheels'" class="flex shrink-0 flex-col gap-1">
               <UButton
                 :size="actionButtonSize"
                 color="success"
@@ -237,8 +240,9 @@
                 {{ t('page.tasks.questcard.failbutton', 'Fail') }}
               </UButton>
             </div>
+            <!-- Available: Complete button -->
             <UButton
-              v-else-if="!isComplete && !isLocked"
+              v-else-if="actionButtonState === 'available'"
               :size="actionButtonSize"
               color="success"
               :ui="completeButtonUi"
@@ -324,7 +328,14 @@
       <!-- 3) Body: objectives -->
       <div class="space-y-3">
         <QuestKeys v-if="task?.neededKeys?.length" :needed-keys="task.neededKeys" />
+        <QuestObjectivesSkeleton
+          v-if="showObjectivesSkeleton"
+          :objectives="relevantViewObjectives"
+          :irrelevant-count="irrelevantObjectives.length"
+          :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
+        />
         <QuestObjectives
+          v-else
           :objectives="relevantViewObjectives"
           :irrelevant-count="irrelevantObjectives.length"
           :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
@@ -443,21 +454,42 @@
   import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useTaskActions, type TaskActionPayload } from '@/composables/useTaskActions';
+  import { isTaskSuccessful, useTaskState } from '@/composables/useTaskState';
+  import QuestObjectivesSkeleton from '@/features/tasks/QuestObjectivesSkeleton.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
-  import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
-  import type { GameEdition, Task } from '@/types/tarkov';
+  import type { GameEdition, Task, TaskObjective } from '@/types/tarkov';
   import { HOT_WHEELS_TASK_ID } from '@/utils/constants';
   import { getExclusiveEditionsForTask } from '@/utils/editionHelpers';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
   type ContextMenuRef = { open: (event: MouseEvent) => void };
-  // Limit displayed names to prevent UI overflow
+  // Module-level constants (moved from reactive scope)
   const MAX_DISPLAYED_NAMES = 3;
+  const MAP_OBJECTIVE_TYPES = new Set([
+    'mark',
+    'zone',
+    'extract',
+    'visit',
+    'findItem',
+    'findQuestItem',
+    'plantItem',
+    'plantQuestItem',
+    'shoot',
+  ]);
+  const EDITION_SHORT_NAMES: Record<string, string> = {
+    'Edge of Darkness': 'EOD',
+    'Unheard Edition': 'Unheard',
+    Standard: 'Standard',
+    'Left Behind': 'Left Behind',
+    'Prepare for Escape': 'PFE',
+  };
   const QuestKeys = defineAsyncComponent(() => import('@/features/tasks/QuestKeys.vue'));
-  const QuestObjectives = defineAsyncComponent(
-    () => import('@/features/tasks/QuestObjectives.vue')
-  );
+  const QuestObjectives = defineAsyncComponent({
+    loader: () => import('@/features/tasks/QuestObjectives.vue'),
+    loadingComponent: QuestObjectivesSkeleton,
+    delay: 150, // Prevents skeleton flash on fast loads
+  });
   const TaskCardRewards = defineAsyncComponent(
     () => import('@/features/tasks/TaskCardRewards.vue')
   );
@@ -471,7 +503,6 @@
   const router = useRouter();
   const { xs } = useSharedBreakpoints();
   const tarkovStore = useTarkovStore();
-  const progressStore = useProgressStore();
   const preferencesStore = usePreferencesStore();
   const metadataStore = useMetadataStore();
   const formatNumber = useLocaleNumberFormatter();
@@ -484,21 +515,13 @@
       () => props.task,
       (payload) => emit('on-task-action', payload)
     );
-  const isComplete = computed(() => tarkovStore.isTaskComplete(props.task.id));
-  const isFailed = computed(() => tarkovStore.isTaskFailed(props.task.id));
-  const isTaskSuccessful = (taskId: string) =>
-    tarkovStore.isTaskComplete(taskId) && !tarkovStore.isTaskFailed(taskId);
+  // Consolidated task state using composable (reduces store lookups)
+  const { isComplete, isFailed, isLocked, isInvalid } = useTaskState(() => props.task.id);
+  // Helper for status array checks
   const hasStatus = (status: string[] | undefined, statuses: string[]) => {
     const normalized = (status ?? []).map((entry) => entry.toLowerCase());
     return statuses.some((value) => normalized.includes(value));
   };
-  const isLocked = computed(() => {
-    return progressStore.unlockedTasks[props.task.id]?.self !== true && !isComplete.value;
-  });
-  const isInvalid = computed(() => {
-    // Check if task is permanently blocked (can never be completed)
-    return progressStore.invalidTasks[props.task.id]?.self === true && !isComplete.value;
-  });
   const isOurFaction = computed(() => {
     const taskFaction = props.task.factionName;
     return taskFaction === 'Any' || taskFaction === tarkovStore.getPMCFaction();
@@ -515,17 +538,9 @@
     if (!exclusiveEditions.value.length) return null;
     return exclusiveEditions.value.reduce((min, e) => (e.value < min.value ? e : min));
   });
-  // Short display names for edition badges
-  const editionShortNames: Record<string, string> = {
-    'Edge of Darkness': 'EOD',
-    'Unheard Edition': 'Unheard',
-    Standard: 'Standard',
-    'Left Behind': 'Left Behind',
-    'Prepare for Escape': 'PFE',
-  };
   const exclusiveEditionBadge = computed(() => {
     if (!minExclusiveEdition.value) return '';
-    return editionShortNames[minExclusiveEdition.value.title] || minExclusiveEdition.value.title;
+    return EDITION_SHORT_NAMES[minExclusiveEdition.value.title] || minExclusiveEdition.value.title;
   });
   const taskClasses = computed(() => {
     if (isComplete.value && !isFailed.value) return 'border-success-500/25 bg-success-500/10';
@@ -597,7 +612,8 @@
     alternativeSourceIds.forEach((taskId) => {
       if (!isTaskSuccessful(taskId)) return;
       const task = metadataStore.getTaskById(taskId);
-      sources.set(taskId, { id: taskId, name: task?.name ?? taskId });
+      if (!task?.name) return;
+      sources.set(taskId, { id: taskId, name: task.name });
     });
     return Array.from(sources.values());
   });
@@ -630,49 +646,77 @@
   const showHotWheelsFail = computed(
     () => isHotWheelsTask.value && !isComplete.value && !isLocked.value
   );
-  const mapObjectiveTypes = [
-    'mark',
-    'zone',
-    'extract',
-    'visit',
-    'findItem',
-    'findQuestItem',
-    'plantItem',
-    'plantQuestItem',
-    'shoot',
-  ];
+  /**
+   * Action button state for cleaner template logic.
+   * Returns which action button(s) should be shown.
+   */
+  type ActionButtonState = 'locked' | 'complete' | 'hotwheels' | 'available' | 'none';
+  const actionButtonState = computed((): ActionButtonState => {
+    if (!isOurFaction.value) return 'none';
+    if (isLocked.value) return 'locked';
+    if (isComplete.value) return 'complete';
+    if (showHotWheelsFail.value) return 'hotwheels';
+    return 'available';
+  });
   const onMapView = computed(() => preferencesStore.getTaskPrimaryView === 'maps');
-  const relevantViewObjectives = computed(() => {
-    if (!onMapView.value) return props.task.objectives ?? [];
-    return (props.task.objectives ?? []).filter((objective) => {
-      if (!Array.isArray(objective.maps) || !objective.maps.length) return true;
-      return (
-        objective.maps.some((map) => map.id === preferencesStore.getTaskMapView) &&
-        mapObjectiveTypes.includes(objective.type ?? '')
-      );
-    });
+  // Get objectives from props or fall back to store when props are stale
+  // This handles the case where visibleTasks holds old task objects after objectives merge
+  const taskObjectives = computed(() => {
+    if ((props.task.objectives?.length ?? 0) > 0) {
+      return props.task.objectives!;
+    }
+    // Props empty - check store for latest data
+    const storeTask = metadataStore.getTaskById(props.task.id);
+    return storeTask?.objectives ?? [];
   });
-  const irrelevantObjectives = computed(() => {
-    if (!onMapView.value) return [];
-    return (props.task.objectives ?? []).filter((objective) => {
-      if (!Array.isArray(objective.maps) || !objective.maps.length) return false;
-      const onSelectedMap = objective.maps.some(
-        (map) => map.id === preferencesStore.getTaskMapView
-      );
-      const isMapType = mapObjectiveTypes.includes(objective.type ?? '');
-      return !(onSelectedMap && isMapType);
-    });
+  /**
+   * Consolidated objective categorization - single pass through objectives array.
+   * Categorizes objectives into relevant, irrelevant, and uncompleted irrelevant.
+   */
+  const categorizedObjectives = computed(() => {
+    const objectives = taskObjectives.value;
+    const selectedMapId = preferencesStore.getTaskMapView;
+    const isMapView = onMapView.value;
+    // If not in map view, all objectives are relevant
+    if (!isMapView) {
+      return {
+        relevant: objectives,
+        irrelevant: [] as TaskObjective[],
+        uncompletedIrrelevant: [] as TaskObjective[],
+      };
+    }
+    const relevant: TaskObjective[] = [];
+    const irrelevant: TaskObjective[] = [];
+    const uncompletedIrrelevant: TaskObjective[] = [];
+    for (const objective of objectives) {
+      const hasMaps = Array.isArray(objective.maps) && objective.maps.length > 0;
+      const onSelectedMap = hasMaps && objective.maps!.some((map) => map.id === selectedMapId);
+      const isMapType = MAP_OBJECTIVE_TYPES.has(objective.type ?? '');
+      // Objective is relevant if it has no maps, or is on selected map AND is a map type
+      const isRelevant = !hasMaps || (onSelectedMap && isMapType);
+      if (isRelevant) {
+        relevant.push(objective);
+      } else {
+        irrelevant.push(objective);
+        // Check if this irrelevant objective is also uncompleted
+        if (!tarkovStore.isTaskObjectiveComplete(objective.id)) {
+          uncompletedIrrelevant.push(objective);
+        }
+      }
+    }
+    return { relevant, irrelevant, uncompletedIrrelevant };
   });
-  const uncompletedIrrelevantObjectives = computed(() => {
-    return (props.task.objectives ?? [])
-      .filter((objective) => {
-        const onCorrectMap = objective.maps?.some(
-          (map) => map.id === preferencesStore.getTaskMapView
-        );
-        const isMapObjectiveType = mapObjectiveTypes.includes(objective.type ?? '');
-        return !onCorrectMap || !isMapObjectiveType;
-      })
-      .filter((objective) => !tarkovStore.isTaskObjectiveComplete(objective.id));
+  // Derived values from consolidated categorization
+  const relevantViewObjectives = computed(() => categorizedObjectives.value.relevant);
+  const irrelevantObjectives = computed(() => categorizedObjectives.value.irrelevant);
+  const uncompletedIrrelevantObjectives = computed(
+    () => categorizedObjectives.value.uncompletedIrrelevant
+  );
+  const showObjectivesSkeleton = computed(() => {
+    // If we have objectives (from props or store fallback), no skeleton needed
+    if (taskObjectives.value.length > 0) return false;
+    // No objectives yet - show skeleton while loading or not yet hydrated
+    return metadataStore.tasksObjectivesPending || !metadataStore.tasksObjectivesHydrated;
   });
   const objectiveProgress = computed(() => {
     const total = relevantViewObjectives.value.length;
