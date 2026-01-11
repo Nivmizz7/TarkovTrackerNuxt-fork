@@ -46,6 +46,54 @@ function isArrayIndex(segment: string): boolean {
  */
 const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'] as const;
 /**
+ * Maximum allowed array index to prevent excessive memory usage from sparse arrays.
+ * Valid indices are 0 through MAX_ARRAY_INDEX inclusive (i.e., boundary check uses index > maxIndex).
+ * Can be overridden via the `maxArrayIndex` option in set().
+ */
+export const MAX_ARRAY_INDEX = 10_000;
+/**
+ * Absolute upper bound for array indices to prevent memory exhaustion.
+ * Even when users override maxArrayIndex, this cap is enforced for safety.
+ */
+export const MAX_SAFE_ARRAY_INDEX = 1_000_000;
+/**
+ * Validate that a value is a valid max index: finite, non-negative integer within safe bounds.
+ * This helper centralizes validation logic used by both set() options and validateArrayIndex().
+ * @param value - The value to validate
+ * @param context - Context string for error messages (e.g., function name)
+ * @param upperBound - Maximum allowed value (defaults to MAX_SAFE_ARRAY_INDEX)
+ * @throws TypeError if value is invalid
+ */
+function validateMaxIndexValue(
+  value: number,
+  context: string,
+  upperBound: number = MAX_SAFE_ARRAY_INDEX
+): void {
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0 || value > upperBound) {
+    throw new TypeError(
+      `${context}: Invalid maxIndex value ${value}. ` +
+        `Expected a finite, non-negative integer <= ${upperBound}.`
+    );
+  }
+}
+/**
+ * Validate that an array index doesn't exceed the maximum allowed value.
+ * Also validates that maxIndex itself is a valid, finite, non-negative integer.
+ * @throws TypeError if maxIndex is invalid (NaN, Infinity, negative, non-integer, or exceeds safe bounds)
+ * @throws RangeError if index exceeds maxIndex
+ */
+function validateArrayIndex(index: number, maxIndex: number, path: string): void {
+  // Validate maxIndex is a valid integer (not NaN, Infinity, negative)
+  // Note: we don't enforce upperBound to MAX_ARRAY_INDEX because users can override via options.maxArrayIndex
+  validateMaxIndexValue(maxIndex, `validateArrayIndex() [path: '${path}']`);
+  if (index > maxIndex) {
+    throw new RangeError(
+      `set(): Array index ${index} exceeds maximum allowed index ${maxIndex}. ` +
+        `Path: '${path}'. Use options.maxArrayIndex to override this limit.`
+    );
+  }
+}
+/**
  * Check if a key is a dangerous prototype-polluting key.
  */
 function isDangerousKey(key: string): boolean {
@@ -133,8 +181,14 @@ export function get(obj: Record<string, unknown>, path: string, defaultValue?: u
  * @param obj - The object to modify
  * @param path - The path string (use '.' or '' to Object.assign value onto obj)
  * @param value - The value to set
+ * @param options - Optional configuration
+ * @param options.maxArrayIndex - Maximum allowed array index. Defaults to MAX_ARRAY_INDEX (10,000).
+ *   WARNING: Very large values can cause memory/performance issues with sparse arrays.
+ *   Recommended to keep <= MAX_ARRAY_INDEX. Absolute cap is MAX_SAFE_ARRAY_INDEX (1,000,000).
  * @throws TypeError if path '.' is used with non-object value
  * @throws TypeError if trying to traverse through a primitive (non-object/non-array)
+ * @throws TypeError if maxArrayIndex exceeds MAX_SAFE_ARRAY_INDEX
+ * @throws RangeError if an array index exceeds maxArrayIndex
  *
  * @example
  * ```ts
@@ -143,7 +197,26 @@ export function get(obj: Record<string, unknown>, path: string, defaultValue?: u
  * set(data, 'items[0].id', 1);        // { user: {...}, items: [{ id: 1 }] }
  * ```
  */
-export function set(obj: Record<string, unknown>, path: string, value: unknown): void {
+export function set(
+  obj: Record<string, unknown>,
+  path: string,
+  value: unknown,
+  options?: { maxArrayIndex?: number }
+): void {
+  const maxIndex = options?.maxArrayIndex ?? MAX_ARRAY_INDEX;
+  // Validate maxArrayIndex immediately to fail fast on invalid options
+  // Enforces upper bound of MAX_SAFE_ARRAY_INDEX to prevent memory exhaustion
+  if (options?.maxArrayIndex !== undefined) {
+    validateMaxIndexValue(options.maxArrayIndex, `set() [path: '${path}']`, MAX_SAFE_ARRAY_INDEX);
+    // Warn if exceeding recommended MAX_ARRAY_INDEX (but still within safe bounds)
+    if (options.maxArrayIndex > MAX_ARRAY_INDEX) {
+      console.warn(
+        `[objectPath] set(): maxArrayIndex ${options.maxArrayIndex} exceeds recommended ` +
+          `MAX_ARRAY_INDEX (${MAX_ARRAY_INDEX}). This may cause memory/performance issues. ` +
+          `Path: '${path}'`
+      );
+    }
+  }
   if (path === '.' || path === '') {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {
       throw new TypeError(
@@ -186,6 +259,7 @@ export function set(obj: Record<string, unknown>, path: string, value: unknown):
         );
       }
       const index = parseInt(key, 10);
+      validateArrayIndex(index, maxIndex, path);
       // Check if there's a primitive at this index that we can't traverse into
       if (current[index] != null && typeof current[index] !== 'object') {
         const currentPath = keys.slice(0, i + 1).join('.');
@@ -248,6 +322,7 @@ export function set(obj: Record<string, unknown>, path: string, value: unknown):
       );
     }
     const index = parseInt(lastKey, 10);
+    validateArrayIndex(index, maxIndex, path);
     // Direct assignment creates sparse array - no need to fill with undefined
     current[index] = value;
   } else {
