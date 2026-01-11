@@ -290,39 +290,42 @@
   };
   // Get current level - respect automatic calculation setting
   const useAutomaticLevel = computed(() => preferencesStore.getUseAutomaticLevelCalculation);
+  /** Type guard that narrows unknown to number if it is a finite number */
+  const isFiniteNumber = (value: unknown): value is number => Number.isFinite(value);
+  const safeLevel = (level: unknown): number => (isFiniteNumber(level) ? Math.max(0, level) : 0);
   const currentLevel = computed(() => {
     const manualLevel = tarkovStore.playerLevel();
-    const fallbackLevel = Number.isFinite(manualLevel) ? manualLevel : 0;
-    // Observability: warn when manualLevel is not finite
-    if (!Number.isFinite(manualLevel)) {
-      logger.warn('[Dashboard] manualLevel is not finite, using fallback', { manualLevel });
-    }
-    if (Number.isFinite(manualLevel) && manualLevel < 0) {
-      logger.warn('[Dashboard] manualLevel is negative, using fallbackLevel', {
-        manualLevel,
-        fallbackLevel,
-      });
-    }
     if (!useAutomaticLevel.value) {
-      return Math.max(0, fallbackLevel);
+      return safeLevel(manualLevel);
     }
     const derivedLevel = xpCalculation?.derivedLevel?.value;
-    // Observability: warn when derivedLevel is not finite in automatic mode
-    if (!Number.isFinite(derivedLevel)) {
-      logger.warn('[Dashboard] derivedLevel is not finite, using fallbackLevel', {
-        derivedLevel,
-        fallbackLevel,
-      });
-    }
-    if (Number.isFinite(derivedLevel) && derivedLevel < 0) {
-      logger.warn('[Dashboard] derivedLevel is negative, using fallbackLevel', {
-        derivedLevel,
-        fallbackLevel,
-      });
-    }
-    const result = Number.isFinite(derivedLevel) ? derivedLevel : fallbackLevel;
-    return Math.max(0, result);
+    // Use explicit finite check to avoid treating 0 as falsy
+    return Number.isFinite(derivedLevel) ? safeLevel(derivedLevel) : safeLevel(manualLevel);
   });
+  // Watch for invalid manual level values
+  watch(
+    () => tarkovStore.playerLevel(),
+    (manualLevel) => {
+      if (!Number.isFinite(manualLevel)) {
+        logger.warn('[Dashboard] manualLevel is not finite', { manualLevel });
+      } else if (manualLevel < 0) {
+        logger.warn('[Dashboard] manualLevel is negative', { manualLevel });
+      }
+    }
+  );
+  // Watch for invalid derived level values (only relevant in automatic mode)
+  watch(
+    () => xpCalculation?.derivedLevel?.value,
+    (derivedLevel) => {
+      // Skip if automatic level calculation is disabled or derivedLevel ref is not yet available
+      if (!useAutomaticLevel.value || derivedLevel === undefined) return;
+      if (!Number.isFinite(derivedLevel)) {
+        logger.warn('[Dashboard] derivedLevel is not finite', { derivedLevel });
+      } else if (derivedLevel < 0) {
+        logger.warn('[Dashboard] derivedLevel is negative', { derivedLevel });
+      }
+    }
+  );
   // Unwrap trader stats for template usage
   const traderStats = computed(() => dashboardStats.traderStats.value || []);
   // Percentage calculations (numeric)

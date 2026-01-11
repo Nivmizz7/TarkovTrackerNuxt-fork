@@ -367,56 +367,49 @@
     label: string;
     icon: string;
   };
-  const sortOptions = computed<SortOption[]>(() => [
-    {
-      label: t('page.tasks.sort.default', 'Default order'),
-      value: 'default',
-      icon: 'i-mdi-sort',
-    },
-    {
-      label: t('page.tasks.sort.impact', 'Impact'),
-      value: 'impact',
-      icon: 'i-mdi-chart-line',
-    },
-    {
-      label: t('page.tasks.sort.alphabetical', 'Alphabetical'),
-      value: 'alphabetical',
-      icon: 'i-mdi-sort-alphabetical-ascending',
-    },
-    {
-      label: t('page.tasks.sort.level', 'Level required'),
-      value: 'level',
-      icon: 'i-mdi-sort-numeric-ascending',
-    },
-    {
-      label: t('page.tasks.sort.trader', 'Trader order'),
-      value: 'trader',
-      icon: 'i-mdi-account',
-    },
-    {
-      label: t('page.tasks.sort.teammates', 'Teammates available'),
-      value: 'teammates',
-      icon: 'i-mdi-account-multiple',
-    },
-    {
-      label: t('page.tasks.sort.xp', 'XP Reward'),
-      value: 'xp',
-      icon: 'i-mdi-star',
-    },
-  ]);
+  const SORT_MODE_ICONS: Record<TaskSortMode, string> = {
+    none: 'i-mdi-sort',
+    impact: 'i-mdi-chart-line',
+    alphabetical: 'i-mdi-sort-alphabetical-ascending',
+    level: 'i-mdi-sort-numeric-ascending',
+    trader: 'i-mdi-account',
+    teammates: 'i-mdi-account-multiple',
+    xp: 'i-mdi-star',
+  };
+  const SORT_MODE_FALLBACK_LABELS: Record<TaskSortMode, string> = {
+    none: 'Default order',
+    impact: 'Impact',
+    alphabetical: 'Alphabetical',
+    level: 'Level required',
+    trader: 'Trader order',
+    teammates: 'Teammates available',
+    xp: 'XP Reward',
+  };
+  const sortOptions = computed<SortOption[]>(() =>
+    TASK_SORT_MODES.map((mode) => ({
+      value: mode,
+      label: t(`page.tasks.sort.${mode}`, SORT_MODE_FALLBACK_LABELS[mode]),
+      icon: SORT_MODE_ICONS[mode],
+    }))
+  );
   const validSortModes = new Set<TaskSortMode>(TASK_SORT_MODES);
+  /**
+   * Normalize sort mode value from various input formats.
+   * Handles: string values, objects with 'value' property, or null/undefined.
+   */
   const normalizeSortMode = (value: unknown): TaskSortMode => {
+    // Extract candidate from value: direct string, object.value, or null
+    let candidate: unknown = null;
     if (typeof value === 'string') {
-      return validSortModes.has(value as TaskSortMode) ? (value as TaskSortMode) : 'default';
+      candidate = value;
+    } else if (value && typeof value === 'object' && 'value' in value) {
+      candidate = (value as { value?: unknown }).value;
     }
-    if (value && typeof value === 'object' && 'value' in value) {
-      const candidate = (value as { value?: unknown }).value;
-      if (typeof candidate === 'string' && validSortModes.has(candidate as TaskSortMode)) {
-        return candidate as TaskSortMode;
-      }
-      return 'default';
+    // Validate candidate against valid sort modes
+    if (typeof candidate === 'string' && validSortModes.has(candidate as TaskSortMode)) {
+      return candidate as TaskSortMode;
     }
-    return 'default';
+    return 'none';
   };
   const taskSortMode = computed({
     get: (): TaskSortMode => normalizeSortMode(preferencesStore.getTaskSortMode),
@@ -438,9 +431,7 @@
     taskSortDirection.value = taskSortDirection.value === 'asc' ? 'desc' : 'asc';
   };
   const currentSortIcon = computed(() => {
-    return (
-      sortOptions.value.find((option) => option.value === taskSortMode.value)?.icon ?? 'i-mdi-sort'
-    );
+    return SORT_MODE_ICONS[taskSortMode.value] ?? 'i-mdi-sort';
   });
   const traderCounts = computed(() => {
     const userView = preferencesStore.getTaskUserView;

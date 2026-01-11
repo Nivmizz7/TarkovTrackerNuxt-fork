@@ -16,69 +16,98 @@
     />
     <!-- Items Container -->
     <UCard class="bg-contentbackground border border-white/5">
+      <!-- Error state with retry button -->
+      <div v-if="itemsError" class="text-surface-400 flex flex-col items-center justify-center gap-4 p-8">
+        <UIcon name="i-mdi-alert-circle" class="text-error-400 h-8 w-8" />
+        <span class="text-error-400">{{ $t('page.neededitems.error', 'Failed to load items.') }}</span>
+        <UButton color="primary" @click="ensureNeededItemsData">
+          {{ $t('page.neededitems.retry', 'Retry') }}
+        </UButton>
+      </div>
       <!-- Loading state while items are being fetched -->
-      <div v-if="itemsLoading" class="text-surface-400 flex items-center justify-center gap-2 p-8">
+      <div v-else-if="!itemsReady" class="text-surface-400 flex items-center justify-center gap-2 p-8">
         <UIcon name="i-mdi-loading" class="h-5 w-5 animate-spin" />
         <span>{{ $t('page.neededitems.loading', 'Loading items...') }}</span>
       </div>
-      <div v-else-if="displayItems.length === 0" class="text-surface-400 p-8 text-center">
-        {{ $t('page.neededitems.empty', 'No items match your search.') }}
-      </div>
-      <!-- Grouped View -->
-      <div v-else-if="groupByItem" class="p-2">
-        <div
-          class="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-        >
-          <NeededItemGroupedCard
-            v-for="(group, index) in visibleGroupedItems"
-            :key="group.item.id"
-            :grouped-item="group"
-            :active-filter="activeFilter"
-            :data-index="index"
-          />
+      <template v-else>
+        <div v-if="displayItems.length === 0" class="text-surface-400 p-8 text-center">
+          {{ $t('page.neededitems.empty', 'No items match your search.') }}
         </div>
-        <div v-if="visibleCount < displayItems.length" ref="gridSentinel" class="h-1 w-full"></div>
-      </div>
-      <!-- List View -->
-      <div v-else-if="viewMode === 'list'">
-        <div
-          v-for="(item, index) in visibleIndividualItems"
-          :key="`${item.needType}-${item.id}`"
-          class="border-b border-white/5 pb-1"
-          style="content-visibility: auto; contain-intrinsic-size: auto 128px"
-        >
-          <NeededItem
-            :need="item"
-            item-style="row"
-            :initially-visible="index < adjustedRenderCount"
-          />
+        <!-- Grouped View -->
+        <div v-else-if="groupByItem" class="p-2">
+          <div
+            class="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+          >
+            <NeededItemGroupedCard
+              v-for="(group, index) in visibleGroupedItems"
+              :key="group.item.id"
+              :grouped-item="group"
+              :active-filter="activeFilter"
+              :data-index="index"
+              class="h-full"
+              style="content-visibility: auto; contain-intrinsic-size: auto 220px"
+            />
+          </div>
+          <div
+            v-if="visibleCount < displayItems.length"
+            ref="gridSentinel"
+            class="h-1 w-full"
+          ></div>
         </div>
-        <div v-if="visibleCount < displayItems.length" ref="listSentinel" class="h-1 w-full"></div>
-      </div>
-      <!-- Grid View -->
-      <div v-else class="p-2">
-        <div
-          class="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
-        >
-          <NeededItem
+        <!-- List View -->
+        <div v-else-if="viewMode === 'list'">
+          <div
             v-for="(item, index) in visibleIndividualItems"
             :key="`${item.needType}-${item.id}`"
-            :need="item"
-            item-style="card"
-            :initially-visible="index < adjustedRenderCount"
-            :data-index="index"
-          />
+            class="border-b border-white/5 pb-1"
+            style="content-visibility: auto; contain-intrinsic-size: auto 128px"
+          >
+            <NeededItem
+              :need="item"
+              item-style="row"
+              :initially-visible="index < adjustedRenderCount"
+            />
+          </div>
+          <div
+            v-if="visibleCount < displayItems.length"
+            ref="listSentinel"
+            class="h-1 w-full"
+          ></div>
         </div>
-        <div v-if="visibleCount < displayItems.length" ref="gridSentinel" class="h-1 w-full"></div>
-      </div>
+        <!-- Grid View -->
+        <div v-else class="p-2">
+          <div
+            class="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+          >
+            <NeededItem
+              v-for="(item, index) in visibleIndividualItems"
+              :key="`${item.needType}-${item.id}`"
+              :need="item"
+              item-style="card"
+              :initially-visible="index < adjustedRenderCount"
+              :data-index="index"
+              class="h-full"
+              style="content-visibility: auto; contain-intrinsic-size: auto 240px"
+            />
+          </div>
+          <div
+            v-if="visibleCount < displayItems.length"
+            ref="gridSentinel"
+            class="h-1 w-full"
+          ></div>
+        </div>
+      </template>
     </UCard>
   </div>
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-  import { computed, nextTick, ref, watch } from 'vue';
+  import { computed, nextTick, onMounted, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
+  import {
+    useInfiniteScroll,
+    type UseInfiniteScrollOptions,
+  } from '@/composables/useInfiniteScroll';
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import NeededItem from '@/features/neededitems/NeededItem.vue';
   import {
@@ -91,6 +120,7 @@
     BATCH_SIZE_GRID,
     BATCH_SIZE_LIST,
     DEFAULT_INITIAL_RENDER_COUNT,
+    INFINITE_SCROLL_MARGIN,
     MIN_RENDER_COUNTS,
     SCREEN_SIZE_MULTIPLIERS,
   } from '@/features/neededitems/neededitems-constants';
@@ -132,9 +162,23 @@
   const progressStore = useProgressStore();
   const preferencesStore = usePreferencesStore();
   const tarkovStore = useTarkovStore();
-  const { neededItemTaskObjectives, neededItemHideoutModules, itemsLoading } =
+  const { neededItemTaskObjectives, neededItemHideoutModules, itemsFullLoaded, items } =
     storeToRefs(metadataStore);
   const { belowMd, xs } = useSharedBreakpoints();
+  const ensureNeededItemsData = () => {
+    if (!itemsLoaded.value && !metadataStore.itemsLoading) {
+      void metadataStore.fetchItemsLiteData();
+    }
+    if (!metadataStore.tasksObjectivesHydrated && !metadataStore.tasksObjectivesPending) {
+      void metadataStore.fetchTaskObjectivesData();
+    }
+    if (!metadataStore.hideoutStations.length && !metadataStore.hideoutLoading) {
+      void metadataStore.fetchHideoutData();
+    }
+  };
+  onMounted(() => {
+    ensureNeededItemsData();
+  });
   // View mode state with persistence (two-way binding with preferences store)
   const viewMode = computed({
     get: () => preferencesStore.getNeededItemsViewMode as 'list' | 'grid',
@@ -195,6 +239,47 @@
   const userFaction = computed(() => progressStore.playerFaction['self'] ?? 'USEC');
   // Get user's game edition for filtering task objectives
   const userEdition = computed(() => tarkovStore.getGameEdition());
+  const itemsLoaded = computed(() => (items.value?.length ?? 0) > 0);
+  const itemsError = computed(() => metadataStore.itemsError);
+  const itemsReady = computed(() => itemsLoaded.value && !metadataStore.itemsLoading);
+  const fullItemsQueued = ref(false);
+  const queueFullItemsLoad = (
+    options: {
+      priority?: 'normal' | 'high';
+      timeout?: number;
+      minTime?: number;
+      delayMs?: number;
+    } = {}
+  ) => {
+    if (itemsFullLoaded.value) return;
+    const { priority = 'normal', timeout = 5000, minTime = 16, delayMs = 1500 } = options;
+    if (priority !== 'high' && fullItemsQueued.value) return;
+    if (priority !== 'high') {
+      fullItemsQueued.value = true;
+    }
+    const run = () => {
+      void metadataStore.ensureItemsFullLoaded(false, { priority, timeout, minTime });
+    };
+    if (typeof window === 'undefined' || delayMs <= 0 || priority === 'high') {
+      run();
+      return;
+    }
+    window.setTimeout(run, delayMs);
+  };
+  watch(
+    itemsLoaded,
+    (loaded) => {
+      if (loaded && !itemsFullLoaded.value) {
+        queueFullItemsLoad();
+      }
+    },
+    { immediate: true }
+  );
+  watch(hideNonFirSpecialEquipment, (enabled) => {
+    if (enabled && !itemsFullLoaded.value) {
+      queueFullItemsLoad({ priority: 'high', timeout: 800, minTime: 8, delayMs: 0 });
+    }
+  });
   const allItems = computed(() => {
     const combined = [
       ...(neededItemTaskObjectives.value || []),
@@ -318,10 +403,12 @@
       items = items.filter((item) => !item.foundInRaid);
     }
     // Filter out noisy "special equipment" items that are non-FIR (e.g., MS2000 Markers, Wi-Fi Cameras)
+    const applySpecialEquipmentFilter =
+      hideNonFirSpecialEquipment.value && itemsFullLoaded.value === true;
     items = items.filter(
       (need) =>
         need.needType !== 'taskObjective' ||
-        !hideNonFirSpecialEquipment.value ||
+        !applySpecialEquipmentFilter ||
         !isNonFirSpecialEquipment(need as NeededItemTaskObjective)
     );
     // Filter task items to only show Kappa-required quests (hideout items remain visible)
@@ -459,7 +546,10 @@
     if (groupByItem.value) {
       return BATCH_SIZE_GRID;
     }
-    return viewMode.value === 'list' ? BATCH_SIZE_LIST : BATCH_SIZE_GRID;
+    if (viewMode.value === 'list') {
+      return adjustedRenderCount.value;
+    }
+    return Math.max(adjustedRenderCount.value, BATCH_SIZE_GRID * 2);
   });
   const visibleCount = ref(initialVisibleCount.value);
   // Separate computed for grouped items to ensure proper typing
@@ -488,10 +578,18 @@
   const infiniteScrollEnabled = computed(() => {
     return visibleCount.value < displayItems.value.length;
   });
-  // Set up infinite scroll
-  const { checkAndLoadMore } = useInfiniteScroll(currentSentinel, loadMore, {
+  const infiniteScrollOptions: UseInfiniteScrollOptions & {
+    autoFill?: boolean;
+    autoLoadOnReady?: boolean;
+  } = {
     enabled: infiniteScrollEnabled,
-  });
+    rootMargin: INFINITE_SCROLL_MARGIN,
+    autoFill: false,
+    autoLoadOnReady: true,
+    useScrollFallback: true,
+  };
+  // Set up infinite scroll
+  const { checkAndLoadMore } = useInfiniteScroll(currentSentinel, loadMore, infiniteScrollOptions);
   // Reset visible count when search or filter changes
   const resetVisibleCount = () => {
     visibleCount.value = initialVisibleCount.value;

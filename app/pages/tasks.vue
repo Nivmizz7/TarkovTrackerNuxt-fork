@@ -404,6 +404,7 @@
   // Use shared infinite scroll composable
   const { checkAndLoadMore } = useInfiniteScroll(loadMoreSentinel, loadMoreTasks, {
     enabled: hasMoreTasks,
+    useScrollFallback: true,
   });
   // Reset visible count when filters change
   watch(filteredTasks, () => {
