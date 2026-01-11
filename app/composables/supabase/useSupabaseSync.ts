@@ -145,8 +145,7 @@ export function useSupabaseSync({
         const toast = useToast();
         toast.add({
           title: `Sync failed (${tableLabel})`,
-          description:
-            `Your ${tableLabel} couldn't be saved to the cloud. Please check your connection and try again.`,
+          description: `Your ${tableLabel} couldn't be saved to the cloud. Please check your connection and try again.`,
           color: 'error',
           duration: 10000,
         });
@@ -232,6 +231,12 @@ export function useSupabaseSync({
   // Use Pinia's $subscribe instead of a deep watcher for better performance.
   // $subscribe fires once per mutation (batched), not per individual property change.
   // This avoids Vue tracking every nested property in large state trees.
+  //
+  // LIFECYCLE NOTE: The { detached: true } option detaches this subscription from the
+  // component lifecycle, meaning it will NOT auto-cleanup when the component unmounts.
+  // We must manually call unsubscribe() to prevent memory leaks. This is handled in
+  // the cleanup() function below, which is either called via onUnmounted (if used
+  // within a component) or must be called manually by the consumer.
   const unsubscribe = store.$subscribe(
     (_mutation, state) => {
       logger.debug(`[Sync] Store mutation for ${table}, triggering debounced sync`);
@@ -242,7 +247,7 @@ export function useSupabaseSync({
         }
       });
     },
-    { detached: true } // Keep subscription active even if component unmounts (we manage cleanup manually)
+    { detached: true }
   );
   const cleanup = () => {
     debouncedSync.cancel();

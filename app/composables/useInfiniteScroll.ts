@@ -14,6 +14,8 @@ export interface UseInfiniteScrollOptions {
   rootMargin?: string;
   threshold?: number;
   enabled?: boolean | Ref<boolean> | ComputedRef<boolean>;
+  /** Re-run checks after each load to fill the viewport automatically. */
+  autoFill?: boolean;
   /** Attach a window scroll listener as a fallback when needed (opt-in). */
   useScrollFallback?: boolean;
   scrollThrottleMs?: number;
@@ -21,6 +23,12 @@ export interface UseInfiniteScrollOptions {
   stickToBottom?: boolean;
   /** Distance from the bottom (px) to consider "at bottom" when stickToBottom is enabled. */
   stickToBottomThreshold?: number;
+  /**
+   * If false, skip the initial auto-load checks.
+   * When true (default), triggers load checks both on mount and when the sentinel element changes.
+   * This ensures the viewport is populated initially and re-checked when the sentinel is replaced.
+   */
+  autoLoadOnReady?: boolean;
   /**
    * Maximum number of auto-load cycles while the sentinel remains in range.
    * Prevents runaway loops if the list doesn't grow.
@@ -36,11 +44,13 @@ export function useInfiniteScroll(
   const {
     rootMargin = '1500px',
     threshold = 0,
+    autoFill = true,
     // When true, attaches a window scroll listener; opt-in for cases without IntersectionObserver.
     useScrollFallback = false,
     scrollThrottleMs = 100,
     stickToBottom = useScrollFallback,
     stickToBottomThreshold = 200,
+    autoLoadOnReady = true,
     maxAutoLoads = 100,
   } = options;
   const enabled = computed(() => toValue(options.enabled) ?? true);
@@ -55,6 +65,8 @@ export function useInfiniteScroll(
   let autoLoadCount = 0;
   let stickToBottomArmed = false;
   let isStuckToBottom = false;
+  let ignoreInitialIntersection = !autoLoadOnReady;
+  let pendingRafId: number | null = null;
   const updateStickiness = () => {
     if (!stickToBottom || !stickToBottomArmed || typeof window === 'undefined') return;
     const doc = document.documentElement;
@@ -64,6 +76,10 @@ export function useInfiniteScroll(
   const handleIntersection = (entries: IntersectionObserverEntry[]) => {
     const target = entries[0];
     if (target?.isIntersecting && enabled.value) {
+      if (ignoreInitialIntersection) {
+        ignoreInitialIntersection = false;
+        return;
+      }
       autoLoadCount = 0;
       void checkAndLoadMore();
     }
@@ -75,11 +91,13 @@ export function useInfiniteScroll(
     const viewportHeight = window.innerHeight;
     const shouldLoad = rect.top < viewportHeight + marginPx || (stickToBottom && isStuckToBottom);
     if (shouldLoad) {
-      if (autoLoadCount >= maxAutoLoads) {
+      if (autoFill && autoLoadCount >= maxAutoLoads) {
         logger.warn('[useInfiniteScroll] Max auto-load cycles reached, pausing');
         return;
       }
-      autoLoadCount += 1;
+      if (autoFill) {
+        autoLoadCount += 1;
+      }
       isLoading.value = true;
       try {
         await Promise.resolve(onLoadMore());
@@ -91,12 +109,15 @@ export function useInfiniteScroll(
         // Re-check after DOM updates AND browser paint - sentinel may still
         // be visible if user scrolled fast and more content is needed.
         // nextTick ensures Vue's DOM update, requestAnimationFrame ensures paint.
-        nextTick(() => {
-          requestAnimationFrame(() => {
-            if (!enabled.value || !sentinelRef.value) return;
-            void checkAndLoadMore();
+        if (autoFill) {
+          nextTick(() => {
+            pendingRafId = requestAnimationFrame(() => {
+              pendingRafId = null;
+              if (!enabled.value || !sentinelRef.value) return;
+              void checkAndLoadMore();
+            });
           });
-        });
+        }
       }
     } else {
       autoLoadCount = 0;
@@ -146,13 +167,21 @@ export function useInfiniteScroll(
     }
   };
   const start = () => {
+    // When autoLoadOnReady is true, we run a manual checkAndLoadMore() below.
+    // Set ignoreInitialIntersection=true to skip duplicate observer triggers,
+    // then clear it after the manual check so subsequent intersections work.
+    ignoreInitialIntersection = autoLoadOnReady;
     createObserver();
     if (shouldAttachScrollListener) {
       window.addEventListener('scroll', handleScroll, { passive: true });
     }
     nextTick(() => {
       updateStickiness();
-      void checkAndLoadMore();
+      if (autoLoadOnReady) {
+        void checkAndLoadMore();
+        // Clear the flag after manual check so observer can respond to subsequent intersections
+        ignoreInitialIntersection = false;
+      }
     });
   };
   const stop = () => {
@@ -164,6 +193,10 @@ export function useInfiniteScroll(
     if (scrollTimeout) {
       clearTimeout(scrollTimeout);
       scrollTimeout = null;
+    }
+    if (pendingRafId !== null) {
+      cancelAnimationFrame(pendingRafId);
+      pendingRafId = null;
     }
     pendingScroll = false;
     autoLoadCount = 0;
@@ -177,7 +210,9 @@ export function useInfiniteScroll(
       observer.disconnect();
       if (el) {
         observer.observe(el);
-        nextTick(() => void checkAndLoadMore());
+        if (autoLoadOnReady) {
+          nextTick(() => void checkAndLoadMore());
+        }
       }
     },
     { flush: 'post' }

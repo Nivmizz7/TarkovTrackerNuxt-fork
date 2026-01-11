@@ -22,41 +22,43 @@ export function useItemRowIntersection(
   let observer: IntersectionObserver | null = null;
   let hideTimeout: ReturnType<typeof setTimeout> | null = null;
   onMounted(() => {
-    if (isVisible.value) return;
     const element = elementRef.value;
-    if (element) {
-      observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry?.isIntersecting) {
-            // Show immediately
-            if (hideTimeout) {
-              clearTimeout(hideTimeout);
-              hideTimeout = null;
-            }
-            isVisible.value = true;
-          } else {
-            // Debounce hiding to prevent flicker during fast scrolling
-            if (!hideTimeout) {
-              hideTimeout = setTimeout(() => {
-                isVisible.value = false;
-                hideTimeout = null;
-              }, 150);
-            }
-          }
-        },
-        {
-          rootMargin: '300px',
-          threshold: 0,
-        }
-      );
-      observer.observe(element);
+    if (!element) {
+      return;
     }
+    // Observer is created on mount (onMounted runs once per component instance)
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          // Show immediately
+          if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+          }
+          isVisible.value = true;
+        } else {
+          // Debounce hiding to prevent flicker during fast scrolling
+          if (!hideTimeout) {
+            hideTimeout = setTimeout(() => {
+              isVisible.value = false;
+              hideTimeout = null;
+            }, 150);
+          }
+        }
+      },
+      {
+        rootMargin: '300px',
+        threshold: 0,
+      }
+    );
+    observer.observe(element);
   });
   onUnmounted(() => {
     if (hideTimeout) {
       clearTimeout(hideTimeout);
     }
     observer?.disconnect();
+    observer = null;
   });
   return {
     isVisible,
