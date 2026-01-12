@@ -3,11 +3,18 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <p class="text-surface-400 max-w-3xl text-sm">
-          {{
-            t('page.settings.card.apitokens.description', {
-              openAPI_documentation: t('page.settings.card.apitokens.openAPI_documentation'),
-            })
-          }}
+          <i18n-t keypath="page.settings.card.apitokens.description" tag="span">
+            <template #openAPI_documentation>
+              <a
+                href="https://api.tarkovtracker.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary-400 hover:text-primary-300 underline"
+              >
+                {{ t('page.settings.card.apitokens.openAPI_documentation') }}
+              </a>
+            </template>
+          </i18n-t>
         </p>
       </div>
       <UButton
@@ -426,10 +433,11 @@
       loading.value = false;
     }
   };
-  const generateToken = () => {
-    const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const generateToken = (gameMode: GameMode) => {
+    const bytes = crypto.getRandomValues(new Uint8Array(9));
     const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-    return `tt_${hex}`;
+    const prefix = gameMode === GAME_MODES.PVE ? 'PVE' : 'PVP';
+    return `${prefix}_${hex}`;
   };
   const hashToken = async (token: string) => {
     const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
@@ -482,7 +490,7 @@
       return insertResult.data?.token_id || null;
     };
     try {
-      const rawToken = generateToken();
+      const rawToken = generateToken(selectedGameMode.value);
       // Prefer gateway (Cloudflare Worker) for rate limiting & auth hardening
       try {
         const response = await edgeFunctions.createToken({

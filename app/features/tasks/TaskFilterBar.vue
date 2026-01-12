@@ -68,8 +68,33 @@
           </span>
         </UButton>
       </div>
-      <!-- Settings button -->
-      <div class="shrink-0">
+      <!-- Sort + Settings -->
+      <div class="flex shrink-0 items-center gap-2">
+        <USelectMenu
+          v-model="taskSortMode"
+          :items="sortOptions"
+          value-key="value"
+          size="sm"
+          class="w-36 sm:w-44"
+        >
+          <template #leading>
+            <UIcon :name="currentSortIcon" class="h-4 w-4" />
+          </template>
+          <template #item="{ item }">
+            <div class="flex items-center gap-2">
+              <UIcon :name="item.icon" class="h-4 w-4" />
+              <span>{{ item.label }}</span>
+            </div>
+          </template>
+        </USelectMenu>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          :icon="sortDirectionIcon"
+          :aria-label="sortDirectionLabel"
+          @click="toggleSortDirection"
+        />
         <TaskSettingsModal />
       </div>
     </div>
@@ -145,6 +170,24 @@
             class="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-green-600 px-1 text-xs font-bold text-white"
           >
             {{ statusCounts.completed }}
+          </span>
+        </UButton>
+        <UButton
+          variant="ghost"
+          color="neutral"
+          size="sm"
+          :aria-pressed="secondaryView === 'failed'"
+          :class="secondaryView === 'failed' ? 'bg-white/10 text-white' : 'text-gray-400'"
+          @click="setSecondaryView('failed')"
+        >
+          <UIcon name="i-mdi-close-circle" class="hidden h-4 w-4 sm:mr-1 sm:block" />
+          <span class="text-xs sm:text-sm">
+            {{ t('page.tasks.secondaryviews.failed', 'FAILED').toUpperCase() }}
+          </span>
+          <span
+            class="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white"
+          >
+            {{ statusCounts.failed }}
           </span>
         </UButton>
       </div>
@@ -286,6 +329,7 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTeamStore } from '@/stores/useTeamStore';
+  import { TASK_SORT_MODES, type TaskSortDirection, type TaskSortMode } from '@/types/taskSort';
   defineProps<{
     searchQuery: string;
   }>();
@@ -318,9 +362,81 @@
     const userView = preferencesStore.getTaskUserView;
     return calculateStatusCounts(userView);
   });
+  type SortOption = {
+    value: TaskSortMode;
+    label: string;
+    icon: string;
+  };
+  const SORT_MODE_ICONS: Record<TaskSortMode, string> = {
+    none: 'i-mdi-sort',
+    impact: 'i-mdi-chart-line',
+    alphabetical: 'i-mdi-sort-alphabetical-ascending',
+    level: 'i-mdi-sort-numeric-ascending',
+    trader: 'i-mdi-account',
+    teammates: 'i-mdi-account-multiple',
+    xp: 'i-mdi-star',
+  };
+  const SORT_MODE_FALLBACK_LABELS: Record<TaskSortMode, string> = {
+    none: 'Default order',
+    impact: 'Impact',
+    alphabetical: 'Alphabetical',
+    level: 'Level required',
+    trader: 'Trader order',
+    teammates: 'Teammates available',
+    xp: 'XP Reward',
+  };
+  const sortOptions = computed<SortOption[]>(() =>
+    TASK_SORT_MODES.map((mode) => ({
+      value: mode,
+      label: t(`page.tasks.sort.${mode}`, SORT_MODE_FALLBACK_LABELS[mode]),
+      icon: SORT_MODE_ICONS[mode],
+    }))
+  );
+  const validSortModes = new Set<TaskSortMode>(TASK_SORT_MODES);
+  /**
+   * Normalize sort mode value from various input formats.
+   * Handles: string values, objects with 'value' property, or null/undefined.
+   */
+  const normalizeSortMode = (value: unknown): TaskSortMode => {
+    // Extract candidate from value: direct string, object.value, or null
+    let candidate: unknown = null;
+    if (typeof value === 'string') {
+      candidate = value;
+    } else if (value && typeof value === 'object' && 'value' in value) {
+      candidate = (value as { value?: unknown }).value;
+    }
+    // Validate candidate against valid sort modes
+    if (typeof candidate === 'string' && validSortModes.has(candidate as TaskSortMode)) {
+      return candidate as TaskSortMode;
+    }
+    return 'none';
+  };
+  const taskSortMode = computed({
+    get: (): TaskSortMode => normalizeSortMode(preferencesStore.getTaskSortMode),
+    set: (value: TaskSortMode) => preferencesStore.setTaskSortMode(normalizeSortMode(value)),
+  });
+  const taskSortDirection = computed({
+    get: () => preferencesStore.getTaskSortDirection,
+    set: (value: TaskSortDirection) => preferencesStore.setTaskSortDirection(value),
+  });
+  const sortDirectionIcon = computed(() =>
+    taskSortDirection.value === 'asc' ? 'i-mdi-sort-ascending' : 'i-mdi-sort-descending'
+  );
+  const sortDirectionLabel = computed(() =>
+    taskSortDirection.value === 'asc'
+      ? t('page.tasks.sort.ascending', 'Ascending')
+      : t('page.tasks.sort.descending', 'Descending')
+  );
+  const toggleSortDirection = () => {
+    taskSortDirection.value = taskSortDirection.value === 'asc' ? 'desc' : 'asc';
+  };
+  const currentSortIcon = computed(() => {
+    return SORT_MODE_ICONS[taskSortMode.value] ?? 'i-mdi-sort';
+  });
   const traderCounts = computed(() => {
     const userView = preferencesStore.getTaskUserView;
-    return calculateTraderCounts(userView);
+    const secondaryView = preferencesStore.getTaskSecondaryView;
+    return calculateTraderCounts(userView, secondaryView);
   });
   const mergedMaps = computed(() => {
     return maps.value.map((map) => {

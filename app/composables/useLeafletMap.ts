@@ -2,6 +2,7 @@
  * Composable for managing Leaflet map instances for Tarkov maps.
  * Handles map initialization, SVG overlay loading, floor switching, and layer management.
  */
+import { useDebounceFn } from '@vueuse/core';
 import {
   ref,
   shallowRef,
@@ -122,7 +123,7 @@ function parseSvgContent(content: string): SVGElement | null {
     logger.error('SVG parse error:', parseError.textContent);
     return null;
   }
-  return doc.documentElement as SVGElement;
+  return doc.documentElement as unknown as SVGElement;
 }
 export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapReturn {
   const {
@@ -142,8 +143,45 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   const objectiveLayer = shallowRef<L.LayerGroup | null>(null);
   const extractLayer = shallowRef<L.LayerGroup | null>(null);
   const crsKey = ref('');
+  // Map event handlers
+  const onWheel = (e: WheelEvent) => {
+    if (!mapInstance.value) return;
+    // Shift + Scroll: Zoom
+    if (e.shiftKey) {
+      e.preventDefault();
+      const options = mapInstance.value.options;
+      const zoomDelta = options?.zoomDelta ?? 1;
+      const zoomSnap = options?.zoomSnap ?? 1;
+      const delta = e.deltaY > 0 ? -zoomDelta : zoomDelta;
+      let newZoom = mapInstance.value.getZoom() + delta;
+      if (zoomSnap > 0) {
+        newZoom = Math.round(newZoom / zoomSnap) * zoomSnap;
+      }
+      const zoomTarget = mapInstance.value.mouseEventToLatLng(e);
+      mapInstance.value.setZoomAround(zoomTarget, newZoom);
+    }
+    // Ctrl + Scroll: Cycle Floors
+    else if (e.ctrlKey && hasMultipleFloors.value) {
+      e.preventDefault();
+      const currentIndex = floors.value.indexOf(selectedFloor.value);
+      if (currentIndex === -1) return;
+      // Scroll UP (negative delta) -> Go UP a floor (next index)
+      // Scroll DOWN (positive delta) -> Go DOWN a floor (previous index)
+      // Assuming floors are ordered lowest to highest in array
+      const direction = e.deltaY < 0 ? 1 : -1;
+      const nextIndex = currentIndex + direction;
+      if (nextIndex >= 0 && nextIndex < floors.value.length) {
+        const nextFloor = floors.value[nextIndex];
+        if (nextFloor !== undefined) {
+          setFloor(nextFloor);
+        }
+      }
+    }
+  };
   // Idle detection timer
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
+  // Resize observer
+  let resizeObserver: ResizeObserver | null = null;
   // Computed
   const floors = computed<string[]>(() => {
     const svgConfig = map.value?.svg;
@@ -175,7 +213,6 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       // Re-enable interactions when coming out of idle
       if (mapInstance.value) {
         mapInstance.value.dragging.enable();
-        mapInstance.value.scrollWheelZoom.enable();
       }
     }
     idleTimer = setTimeout(() => {
@@ -215,7 +252,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     }
     // Create new SVG overlay using svgBounds if available
     const bounds = getSvgOverlayBounds(svgConfig);
-    svgLayer.value = L.svgOverlay(svgElement, bounds);
+    svgLayer.value = L.svgOverlay(svgElement, bounds, { pane: 'mapBackground' });
     if (mapInstance.value) {
       svgLayer.value.addTo(mapInstance.value);
       // Apply floor visibility if there are multiple floors in a single SVG
@@ -261,7 +298,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     if (selectedIndex === -1) return;
     const svgConfig = map.value?.svg;
     const stackFloors =
-      (isValidMapSvgConfig(svgConfig) && svgConfig.stackFloors === false) ? false : true;
+      isValidMapSvgConfig(svgConfig) && svgConfig.stackFloors === false ? false : true;
     const inactiveFloorOpacity = 0.7;
     const undergroundOverlayOpacity = 0.3;
     // Detect underground/basement/bunker floors
@@ -269,7 +306,8 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     const groundFloorIndex = isUnderground ? findGroundOverlayIndex(selectedIndex) : -1;
     // Track selected floor element for reordering (to render on top)
     let selectedFloorGroup: SVGElement | null = null;
-    floors.value.forEach((floor, index) => {
+    for (let index = 0; index < floors.value.length; index++) {
+      const floor = floors.value[index];
       const floorGroup = svgElement.querySelector(`#${floor}`);
       if (floorGroup instanceof SVGElement) {
         const keepWith = floorGroup.getAttribute('data-keep-with-group');
@@ -277,12 +315,15 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
         const isKeptWithSelected = keepWith === selectedFloor.value;
         const isGroundOverlay = isUnderground && index === groundFloorIndex;
         const shouldShow =
-          isSelected || isKeptWithSelected || isGroundOverlay || (stackFloors && index <= selectedIndex);
+          isSelected ||
+          isKeptWithSelected ||
+          isGroundOverlay ||
+          (stackFloors && index <= selectedIndex);
         floorGroup.style.display = shouldShow ? 'block' : 'none';
         if (!shouldShow) {
           floorGroup.style.opacity = '0';
           floorGroup.style.pointerEvents = 'none';
-          return;
+          continue;
         }
         let opacity = inactiveFloorOpacity;
         if (isSelected) opacity = 1;
@@ -294,10 +335,10 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
           selectedFloorGroup = floorGroup;
         }
       }
-    });
+    }
     // Move selected floor to end of parent so it renders on top of overlay floors
     // This ensures basement/bunker floors appear above the transparent ground overlay
-    if (selectedFloorGroup && selectedFloorGroup.parentNode) {
+    if (selectedFloorGroup?.parentNode) {
       selectedFloorGroup.parentNode.appendChild(selectedFloorGroup);
     }
   }
@@ -334,6 +375,9 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       // Create map instance with custom CRS
       const mapOptions = getLeafletMapOptions(leaflet.value, validSvgConfig);
       mapInstance.value = leaflet.value.map(containerRef.value, mapOptions);
+      // Create a custom pane for the map background to ensure it stays behind markers
+      const backgroundPane = mapInstance.value.createPane('mapBackground');
+      backgroundPane.style.zIndex = '200'; // Below overlayPane (400) and markerPane (600)
       // Set initial view using map bounds
       const bounds = getLeafletBounds(validSvgConfig);
       mapInstance.value.fitBounds(bounds);
@@ -347,7 +391,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       }
       // Load SVG overlay FIRST so it's below markers
       await loadMapSvg();
-      // Create layer groups for markers AFTER SVG so they appear on top
+      // Create layer groups for markers
       objectiveLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
       extractLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
       // Setup idle detection
@@ -357,10 +401,30 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
         mapInstance.value.on('click', resetIdleTimer);
         resetIdleTimer();
       }
+      // Attach custom wheel handler
+      if (containerRef.value) {
+        containerRef.value.addEventListener('wheel', onWheel, { passive: false });
+      }
     } catch (error) {
       logger.error('Failed to initialize Leaflet map:', error);
     } finally {
       isLoading.value = false;
+    }
+    // Setup resize observer
+    if (containerRef.value) {
+      const handleResize = useDebounceFn(() => {
+        if (mapInstance.value) {
+          mapInstance.value.invalidateSize({ animate: false });
+          // Optional: re-fit bounds if needed, or just invalidate size
+          // refreshView(); // calling refreshView would re-fit bounds
+        }
+      }, 100);
+      try {
+        resizeObserver = new ResizeObserver(handleResize);
+        resizeObserver.observe(containerRef.value);
+      } catch (error) {
+        logger.error('Failed to initialize ResizeObserver:', error);
+      }
     }
   }
   /**
@@ -404,9 +468,17 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     if (idleTimer) {
       clearTimeout(idleTimer);
     }
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
     if (mapInstance.value) {
       mapInstance.value.remove();
       mapInstance.value = null;
+    }
+    // Remove custom wheel handler
+    if (containerRef.value) {
+      containerRef.value.removeEventListener('wheel', onWheel);
     }
     svgLayer.value = null;
     objectiveLayer.value = null;

@@ -6,7 +6,9 @@ import es from '@/locales/es.json5';
 import fr from '@/locales/fr.json5';
 import ru from '@/locales/ru.json5';
 import uk from '@/locales/uk.json5';
+import zh from '@/locales/zh.json5';
 import { logger } from '@/utils/logger';
+import { STORAGE_KEYS } from '@/utils/storageKeys';
 const messages = {
   en,
   de,
@@ -14,6 +16,7 @@ const messages = {
   fr,
   ru,
   uk,
+  zh,
 };
 // Explicitly type the combined messages structure
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,7 +26,7 @@ function getInitialLocale(): string {
   // Check for saved locale preference in localStorage
   if (typeof window !== 'undefined' && localStorage) {
     try {
-      const savedPrefs = localStorage.getItem('preferences');
+      const savedPrefs = localStorage.getItem(STORAGE_KEYS.preferences);
       if (savedPrefs) {
         const prefs = JSON.parse(savedPrefs);
         if (prefs.localeOverride) {

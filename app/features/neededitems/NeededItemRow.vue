@@ -4,12 +4,11 @@
       <div class="px-3 py-2">
         <div class="mx-0 flex flex-nowrap items-center">
           <div class="flex min-w-0 flex-1 items-center p-0">
-            <span class="block">
+            <span class="block h-12 w-12 shrink-0 md:h-16 md:w-16">
               <GameItem
-                v-if="isVisible"
                 :image-item="imageItem"
                 :src="imageItem?.iconLink"
-                :is-visible="true"
+                :is-visible="isVisible"
                 :item-name="item.name"
                 :wiki-link="item.wikiLink"
                 :dev-link="item.link"
@@ -26,6 +25,8 @@
                   :is-craftable="isCraftable"
                   :craftable-title="craftableTitle"
                   :craftable-icon-class="craftableIconClass"
+                  :kappa-required="isKappaRequired"
+                  :kappa-title="$t('task.kappa_req', 'Required for Kappa quest')"
                   @craft="goToCraftStation"
                 />
               </span>
@@ -63,7 +64,7 @@
                 <UCard>
                   <div class="flex h-full flex-col items-end">
                     <!-- Item image -->
-                    <div class="flex aspect-video min-h-[100px] self-stretch">
+                    <div class="flex aspect-video min-h-25 self-stretch">
                       <GameItem
                         v-if="imageItem"
                         :image-item="imageItem"
@@ -88,6 +89,9 @@
                         :craftable-title="craftableTitle"
                         craftable-icon-base-class="ml-1 h-4 w-4"
                         :craftable-icon-class="craftableIconClass"
+                        :kappa-required="isKappaRequired"
+                        :kappa-title="$t('task.kappa_req', 'Required for Kappa quest')"
+                        kappa-icon-class="ml-1 h-4 w-4 text-warning-400"
                         @craft="goToCraftStation"
                       />
                     </div>
@@ -266,6 +270,10 @@
       type: Object,
       required: true,
     },
+    initiallyVisible: {
+      type: Boolean,
+      default: false,
+    },
   });
   // Use shared breakpoints to avoid duplicate listeners
   const { belowMd, mdAndUp } = useSharedBreakpoints();
@@ -283,6 +291,7 @@
     neededCount,
     currentCount,
     isCraftable,
+    isKappaRequired,
     levelRequired,
     item,
     teamNeeds,
@@ -290,7 +299,9 @@
   } = inject(neededItemKey, createDefaultNeededItemContext());
   // Intersection observer for lazy loading
   const cardRef = ref(null);
-  const { isVisible } = useItemRowIntersection(cardRef);
+  const { isVisible } = useItemRowIntersection(cardRef, {
+    initialVisible: props.initiallyVisible,
+  });
   const itemRowClasses = computed(() => {
     return {
       'bg-gradient-to-l from-complete to-surface':

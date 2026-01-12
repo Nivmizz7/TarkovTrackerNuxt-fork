@@ -3,7 +3,7 @@
     <!-- Unavailable map placeholder -->
     <div
       v-if="isMapUnavailable"
-      class="bg-surface-900 flex h-[400px] w-full flex-col items-center justify-center rounded sm:h-[500px] lg:h-[600px]"
+      class="bg-surface-900 flex h-100 w-full flex-col items-center justify-center rounded sm:h-125 lg:h-150"
     >
       <UIcon name="i-mdi-map-marker-off" class="mb-4 h-16 w-16 text-gray-500" />
       <h3 class="mb-2 text-lg font-semibold text-gray-300">Map Not Available</h3>
@@ -17,7 +17,7 @@
       <!-- Floor selector (positioned below Leaflet zoom controls) -->
       <div
         v-if="hasMultipleFloors"
-        class="bg-surface-800/90 absolute top-20 left-2 z-[1000] flex flex-col gap-1 rounded p-1.5"
+        class="bg-surface-800/90 absolute top-20 left-2 z-1000 flex flex-col gap-1 rounded p-1.5"
       >
         <span class="px-1 text-[10px] font-medium tracking-wide text-gray-400 uppercase">
           Floors
@@ -40,12 +40,14 @@
       <!-- Loading indicator -->
       <div
         v-if="isLoading"
-        class="bg-surface-900/50 absolute inset-0 z-[1001] flex items-center justify-center"
+        class="bg-surface-900/50 absolute inset-0 z-1001 flex items-center justify-center"
       >
         <UIcon name="i-mdi-loading" class="text-primary-500 h-8 w-8 animate-spin" />
       </div>
       <!-- Map controls (top right) -->
-      <div class="bg-surface-800/90 absolute top-2 right-2 z-[1000] flex gap-2 rounded p-1.5">
+      <div
+        class="bg-surface-800/90 absolute top-2 right-2 z-1000 flex flex-wrap items-center gap-2 rounded p-1.5"
+      >
         <!-- Reset view button -->
         <UButton
           color="primary"
@@ -78,46 +80,72 @@
         >
           Scav
         </UButton>
+        <div class="bg-surface-900/40 flex items-center gap-2 rounded px-2 py-1">
+          <span class="text-[10px] font-semibold uppercase text-gray-400">Zoom</span>
+          <input
+            v-model.number="mapZoomSpeed"
+            type="range"
+            :min="ZOOM_SPEED_MIN"
+            :max="ZOOM_SPEED_MAX"
+            step="0.1"
+            class="h-1.5 w-24 cursor-pointer accent-primary-500"
+            aria-label="Zoom speed"
+          />
+          <span class="text-[10px] text-gray-300 tabular-nums">{{ zoomSpeedLabel }}</span>
+        </div>
       </div>
       <!-- Map container -->
-      <div
-        ref="mapContainer"
-        class="bg-surface-900 h-[400px] w-full rounded sm:h-[500px] lg:h-[600px]"
-      />
-      <!-- Legend -->
-      <div
-        v-if="props.showLegend"
-        class="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-400"
-      >
-        <div class="flex items-center gap-1">
-          <div class="h-3 w-3 rounded-full bg-red-500" />
-          <span>Your Objectives</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <div class="h-3 w-3 rounded-full bg-orange-500" />
-          <span>Team Objectives</span>
-        </div>
-        <div v-if="showPmcExtracts" class="flex items-center gap-1">
-          <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-green-500" />
-          <span>PMC Extract</span>
-        </div>
-        <div v-if="showScavExtracts" class="flex items-center gap-1">
-          <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-amber-400" />
-          <span>Scav Extract</span>
-        </div>
+      <div ref="mapContainer" class="bg-surface-900 h-100 w-full rounded sm:h-125 lg:h-150" />
+      <!-- Legends Footer -->
+      <div class="mt-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-4">
+        <!-- Main Objective Legend -->
         <div
-          v-if="(showPmcExtracts || showScavExtracts) && hasSharedExtracts"
-          class="flex items-center gap-1"
+          v-if="props.showLegend"
+          class="flex flex-wrap items-center gap-4 text-xs text-gray-300"
         >
-          <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-sky-400" />
-          <span>Shared Extract (Either Faction)</span>
+          <div class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-full bg-red-500" />
+            <span>Your Objectives</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-full bg-orange-500" />
+            <span>Team Objectives</span>
+          </div>
+          <div v-if="showPmcExtracts" class="flex items-center gap-1">
+            <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-green-500" />
+            <span>PMC Extract</span>
+          </div>
+          <div v-if="showScavExtracts" class="flex items-center gap-1">
+            <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-amber-400" />
+            <span>Scav Extract</span>
+          </div>
+          <div
+            v-if="(showPmcExtracts || showScavExtracts) && hasSharedExtracts"
+            class="flex items-center gap-1"
+          >
+            <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-sky-400" />
+            <span>Shared Extract (Either Faction)</span>
+          </div>
+          <div
+            v-if="(showPmcExtracts || showScavExtracts) && hasCoopExtracts"
+            class="flex items-center gap-1"
+          >
+            <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-sky-600" />
+            <span>Co-op Extract (PMC + Scav)</span>
+          </div>
         </div>
+        <!-- Controls Legend -->
         <div
-          v-if="(showPmcExtracts || showScavExtracts) && hasCoopExtracts"
-          class="flex items-center gap-1"
+          class="ml-auto flex flex-wrap-reverse items-center justify-end gap-x-4 gap-y-1 text-[10px] font-medium text-gray-400"
         >
-          <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-sky-600" />
-          <span>Co-op Extract (PMC + Scav)</span>
+          <div v-if="hasMultipleFloors" class="flex items-center gap-1">
+            <kbd class="bg-surface-700 rounded px-1 py-0.5 font-mono text-gray-300">Ctrl</kbd>
+            <span>+ Scroll to Cycle Floors</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <kbd class="bg-surface-700 rounded px-1 py-0.5 font-mono text-gray-300">Shift</kbd>
+            <span>+ Scroll to Zoom</span>
+          </div>
         </div>
       </div>
     </template>
@@ -127,6 +155,7 @@
   import { ref, watch, onUnmounted, computed, toRef } from 'vue';
   import { useLeafletMap } from '@/composables/useLeafletMap';
   import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
   import type { TarkovMap, MapExtract } from '@/types/tarkov';
   import { logger } from '@/utils/logger';
   import { gameToLatLng, outlineToLatLngArray, isValidMapSvgConfig } from '@/utils/mapCoordinates';
@@ -163,6 +192,7 @@
     showLegend: true,
   });
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   // Check if map is unavailable
   const isMapUnavailable = computed(() => {
     return props.map?.unavailable === true;
@@ -206,6 +236,19 @@
       (extract) => extract.faction === 'shared' && isCoopExtract(extract)
     );
   });
+  const ZOOM_SPEED_MIN = 0.5;
+  const ZOOM_SPEED_MAX = 3;
+  const mapZoomSpeed = computed({
+    get: () => preferencesStore.getMapZoomSpeed,
+    set: (value) => {
+      const parsed = Number(value);
+      const clamped = Math.min(ZOOM_SPEED_MAX, Math.max(ZOOM_SPEED_MIN, parsed));
+      preferencesStore.setMapZoomSpeed(clamped);
+    },
+  });
+  const zoomSpeedLabel = computed(() => `${mapZoomSpeed.value.toFixed(1)}x`);
+  const baseZoomDelta = ref<number | null>(null);
+  const baseZoomSnap = ref<number | null>(null);
   const popupOptions = {
     autoClose: false,
     closeOnClick: false,
@@ -375,60 +418,63 @@
       // Color based on faction
       let markerColor: string;
       switch (extract.faction) {
-      case 'pmc':
-        markerColor = '#22c55e'; // green-500
-        break;
-      case 'scav':
-        markerColor = '#f59e0b'; // amber-500
-        break;
-      case 'shared':
-        markerColor = isCoop ? '#0284c7' : '#38bdf8'; // sky-600 : sky-400
-        break;
+        case 'pmc':
+          markerColor = '#22c55e'; // green-500
+          break;
+        case 'scav':
+          markerColor = '#f59e0b'; // amber-500
+          break;
+        case 'shared':
+          markerColor = isCoop ? '#0284c7' : '#38bdf8'; // sky-600 : sky-400
+          break;
         default:
           markerColor = '#3b82f6'; // blue-500
           break;
       }
-      const iconHtml = `<span style="
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background-color: ${markerColor};
-    "></span>`;
+      const extractDot = L.circleMarker([latLng.lat, latLng.lng], {
+        radius: 3,
+        fillColor: markerColor,
+        fillOpacity: 1,
+        color: '#0b0b0f',
+        weight: 1,
+        opacity: 1,
+        interactive: false,
+      });
       // Create custom icon for extracts
       // Use inline styles instead of Tailwind classes since Leaflet injects these outside Vue context
+      const extractBadge = document.createElement('div');
+      extractBadge.setAttribute('title', extract.name);
+      extractBadge.setAttribute('aria-label', extract.name);
+      extractBadge.style.display = 'inline-flex';
+      extractBadge.style.alignItems = 'center';
+      extractBadge.style.gap = '6px';
+      extractBadge.style.padding = '3px 6px';
+      extractBadge.style.borderRadius = '999px';
+      extractBadge.style.backgroundColor = 'rgba(26, 26, 30, 0.9)';
+      extractBadge.style.border = `2px solid ${markerColor}`;
+      extractBadge.style.fontSize = '11px';
+      extractBadge.style.lineHeight = '1';
+      extractBadge.style.color = '#e5e5e5';
+      extractBadge.style.boxShadow = '0 2px 4px rgba(0,0,0,0.5)';
+      extractBadge.style.whiteSpace = 'nowrap';
+      extractBadge.style.transform = 'translate(-50%, calc(-100% - 6px))';
+      const extractLabel = document.createElement('span');
+      extractLabel.style.fontWeight = '600';
+      extractLabel.textContent = extract.name;
+      extractBadge.appendChild(extractLabel);
       const extractIcon = L.divIcon({
         className: 'extract-marker',
-        html: `<div style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background-color: #1a1a1e;
-        border: 2px solid ${markerColor};
-        font-size: 12px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      ">${iconHtml}</div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        html: extractBadge,
+        iconAnchor: [0, 0],
+        iconSize: undefined,
       });
-      const marker = L.marker([latLng.lat, latLng.lng], { icon: extractIcon });
-      // Popup with extract info
-      const factionText = isCoop
-        ? 'Co-op (PMC + Scav)'
-        : extract.faction
-          ? extract.faction.charAt(0).toUpperCase() + extract.faction.slice(1)
-          : 'Unknown';
-      const popupContent = `
-      <div class="text-sm">
-        <div class="font-semibold">${extract.name}</div>
-        <div class="text-gray-400">Faction: ${factionText}</div>
-      </div>
-    `;
-      attachTogglePopup(marker, popupContent, () => marker.getLatLng());
-      extractLayer.value!.addLayer(marker);
+      const labelMarker = L.marker([latLng.lat, latLng.lng], {
+        icon: extractIcon,
+        interactive: false,
+        zIndexOffset: 1000,
+      });
+      extractLayer.value!.addLayer(extractDot);
+      extractLayer.value!.addLayer(labelMarker);
     });
   }
   /**
@@ -442,12 +488,30 @@
       logger.error('Error updating map markers:', error);
     }
   }
+  const applyZoomSpeed = (instance: L.Map | null, speed: number) => {
+    if (!instance) return;
+    if (baseZoomDelta.value === null) {
+      baseZoomDelta.value = instance.options.zoomDelta ?? 0.35;
+    }
+    if (baseZoomSnap.value === null) {
+      baseZoomSnap.value = instance.options.zoomSnap ?? 0.25;
+    }
+    instance.options.zoomDelta = baseZoomDelta.value * speed;
+    if (baseZoomSnap.value !== null) {
+      const nextZoomSnap =
+        speed < 1 ? Math.max(0.05, baseZoomSnap.value * speed) : baseZoomSnap.value;
+      instance.options.zoomSnap = nextZoomSnap;
+    }
+  };
   // Watch for changes that require marker updates
   watch(
     () => props.marks,
     () => updateMarkers(),
     { deep: true }
   );
+  watch(mapZoomSpeed, (speed) => {
+    applyZoomSpeed(mapInstance.value, speed);
+  });
   watch([showPmcExtracts, showScavExtracts], () => createExtractMarkers());
   watch(selectedFloor, () => {
     // Markers might need floor-based visibility in the future
@@ -458,6 +522,9 @@
     mapInstance,
     (instance) => {
       if (instance) {
+        baseZoomDelta.value = instance.options.zoomDelta ?? 0.35;
+        baseZoomSnap.value = instance.options.zoomSnap ?? 0.25;
+        applyZoomSpeed(instance, mapZoomSpeed.value);
         // Give the SVG time to load
         setTimeout(() => updateMarkers(), 500);
       }

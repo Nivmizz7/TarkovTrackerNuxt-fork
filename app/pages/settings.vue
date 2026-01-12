@@ -74,30 +74,41 @@
               v-model="currentPrestige"
               :items="prestigeOptions"
               value-key="value"
+              :disabled="isPveMode"
               :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
               :ui="selectUi"
               :ui-menu="selectMenuUi"
             >
               <template #leading>
-                <UIcon name="i-mdi-trophy" class="text-gold-400 h-4 w-4" />
+                <UIcon
+                  name="i-mdi-trophy"
+                  class="text-gold-400 h-4 w-4"
+                  :class="{ 'opacity-50': isPveMode }"
+                />
               </template>
             </USelectMenu>
             <p class="text-surface-400 text-xs">
-              {{
-                $t(
-                  'settings.prestige.hint',
-                  'Select your current prestige level. This is display-only and does not affect game progression.'
-                )
-              }}
+              <template v-if="isPveMode">
+                {{ $t('settings.prestige.pve_hint', 'Prestige is not available in PVE mode.') }}
+              </template>
+              <template v-else>
+                {{
+                  $t(
+                    'settings.prestige.hint',
+                    'Select your current prestige level. This is display-only and does not affect game progression.'
+                  )
+                }}
+              </template>
             </p>
           </div>
         </div>
       </template>
     </GenericCard>
-    <!-- Section 1.5: Display Name -->
-    <DisplayNameCard />
-    <!-- Section 2: Experience -->
-    <ExperienceCard />
+    <!-- Section 1.5: Display Name & Experience (side by side) -->
+    <div class="grid gap-4 md:grid-cols-2">
+      <DisplayNameCard />
+      <ExperienceCard />
+    </div>
     <!-- Section 3: Skills (Full Width) -->
     <SkillsCard />
     <!-- Section 3: Data Management -->
@@ -287,7 +298,7 @@
       </template>
     </UModal>
     <!-- Reset All Modal -->
-    <UModal v-model:open="showResetAllDialog">
+    <UModal v-model:open="showResetAllDialog" @close="resetAllConfirmText = ''">
       <template #header>
         <div class="flex items-center gap-2">
           <UIcon name="i-mdi-alert-octagon" class="text-error-400 h-5 w-5" />
@@ -297,7 +308,7 @@
         </div>
       </template>
       <template #body>
-        <div class="space-y-3">
+        <div class="space-y-4">
           <UAlert
             icon="i-mdi-alert-octagon"
             color="error"
@@ -317,6 +328,22 @@
               )
             }}
           </p>
+          <div class="space-y-2">
+            <p class="text-surface-100 text-sm font-medium">
+              <i18n-t keypath="settings.danger_zone.confirm_delete_instruction" tag="span">
+                <template #word>
+                  <strong class="text-error-400">
+                    {{ $t('settings.danger_zone.confirm_word', 'DELETE') }}
+                  </strong>
+                </template>
+              </i18n-t>
+            </p>
+            <UInput
+              v-model="resetAllConfirmText"
+              :placeholder="$t('settings.danger_zone.confirm_word', 'DELETE')"
+              class="font-mono"
+            />
+          </div>
         </div>
       </template>
       <template #footer="{ close }">
@@ -334,6 +361,7 @@
             variant="solid"
             class="ml-auto min-w-30 justify-center text-center"
             :loading="resetting"
+            :disabled="resetAllConfirmText !== $t('settings.danger_zone.confirm_word', 'DELETE')"
             @click="resetAllData"
           >
             {{ $t('settings.data_management.reset_confirm', 'Reset All Data') }}
@@ -380,16 +408,6 @@
             icon="i-mdi-lock"
             :title="$t('page.settings.card.apitokens.not_logged_in')"
           />
-          <div
-            class="from-primary-500/10 via-primary-500/5 to-primary-500/10 absolute inset-0 z-10 flex items-center justify-center bg-black/15 bg-gradient-to-b text-center backdrop-blur-[2px]"
-          >
-            <div class="rounded-lg bg-black/55 px-4 py-3 shadow-lg shadow-black/40">
-              <div class="text-xl font-semibold text-white">Work in Progress</div>
-              <div class="mt-1 text-sm text-slate-200">
-                API Tokens is not ready yet. Check back soon.
-              </div>
-            </div>
-          </div>
         </div>
       </template>
     </GenericCard>
@@ -410,7 +428,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, ref, type Ref } from 'vue';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import AccountDeletionCard from '@/features/settings/AccountDeletionCard.vue';
   import ApiTokens from '@/features/settings/ApiTokens.vue';
@@ -421,10 +439,11 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useSystemStore, useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   import { useTarkovStore } from '@/stores/useTarkov';
+  import { GAME_MODES } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   // Page metadata
   useSeoMeta({
-    title: 'Settings | TarkovTracker',
+    title: 'Settings',
     description:
       'Customize your TarkovTracker experience. Manage preferences, game mode, and account settings.',
   });
@@ -437,6 +456,8 @@
   const { hasInitiallyLoaded } = useSystemStoreWithSupabase();
   const systemStore = useSystemStore(); // Direct Pinia store
   const tarkovStore = useTarkovStore();
+  // Check if user is in PVE mode (prestige not available in PVE)
+  const isPveMode = computed(() => tarkovStore.getCurrentGameMode() === GAME_MODES.PVE);
   const selectUi = {};
   const selectMenuUi = {
     container: 'z-[9999]',
@@ -446,7 +467,7 @@
     ring: 'ring-1 ring-white/10',
     padding: 'p-1',
     option: {
-      base: 'px-3 py-2 text-sm cursor-pointer transition-colors rounded',
+      base: 'px-3 py-2 text-sm transition-colors rounded',
       inactive: 'text-surface-200 hover:bg-surface-800 hover:text-white',
       active: 'bg-surface-800 text-white',
       selected: 'bg-primary-500/10 text-primary-100 ring-1 ring-primary-500',
@@ -457,6 +478,7 @@
   const showResetPvPDialog = ref(false);
   const showResetPvEDialog = ref(false);
   const showResetAllDialog = ref(false);
+  const resetAllConfirmText = ref('');
   const streamerModeCooldown = ref(false);
   // Computed properties
   const user = computed(() => ({
@@ -506,74 +528,77 @@
   });
   const currentPrestige = computed({
     get(): number {
+      // In PVE mode, always return 0 (No Prestige) since prestige is not available
+      if (isPveMode.value) {
+        return 0;
+      }
       return tarkovStore.getPrestigeLevel();
     },
     set(newValue: number) {
+      // Don't allow setting prestige in PVE mode
+      if (isPveMode.value) {
+        return;
+      }
       tarkovStore.setPrestigeLevel(newValue);
     },
   });
-  // Methods
-  const resetPvPData = async () => {
+  // Reset handler factory to eliminate duplication
+  interface ResetConfig {
+    resetFn: () => Promise<void>;
+    successTitle: string;
+    successDescription: string;
+    errorLogContext: string;
+    errorDescription: string;
+    dialogRef: Ref<boolean>;
+    onSuccess?: () => void;
+  }
+  const createResetHandler = (config: ResetConfig) => async () => {
     resetting.value = true;
     try {
-      await tarkovStore.resetPvPData();
+      await config.resetFn();
       toast.add({
-        title: 'PvP Data Reset',
-        description: 'Your PvP progress has been reset successfully.',
+        title: config.successTitle,
+        description: config.successDescription,
         color: 'success',
       });
-      showResetPvPDialog.value = false;
+      config.dialogRef.value = false;
+      if (config.onSuccess) {
+        config.onSuccess();
+      }
     } catch (error) {
-      logger.error('[Settings] Error resetting PvP data:', error);
+      logger.error(`[Settings] Error resetting ${config.errorLogContext}:`, error);
       toast.add({
         title: 'Reset Failed',
-        description: 'Failed to reset PvP data. Please try again.',
+        description: config.errorDescription,
         color: 'error',
       });
     } finally {
       resetting.value = false;
     }
   };
-  const resetPvEData = async () => {
-    resetting.value = true;
-    try {
-      await tarkovStore.resetPvEData();
-      toast.add({
-        title: 'PvE Data Reset',
-        description: 'Your PvE progress has been reset successfully.',
-        color: 'success',
-      });
-      showResetPvEDialog.value = false;
-    } catch (error) {
-      logger.error('[Settings] Error resetting PvE data:', error);
-      toast.add({
-        title: 'Reset Failed',
-        description: 'Failed to reset PvE data. Please try again.',
-        color: 'error',
-      });
-    } finally {
-      resetting.value = false;
-    }
-  };
-  const resetAllData = async () => {
-    resetting.value = true;
-    try {
-      await tarkovStore.resetAllData();
-      toast.add({
-        title: 'All Data Reset',
-        description: 'All your progress has been reset successfully.',
-        color: 'success',
-      });
-      showResetAllDialog.value = false;
-    } catch (error) {
-      logger.error('[Settings] Error resetting all data:', error);
-      toast.add({
-        title: 'Reset Failed',
-        description: 'Failed to reset data. Please try again.',
-        color: 'error',
-      });
-    } finally {
-      resetting.value = false;
-    }
-  };
+  const resetPvPData = createResetHandler({
+    resetFn: () => tarkovStore.resetPvPData(),
+    successTitle: 'PvP Data Reset',
+    successDescription: 'Your PvP progress has been reset successfully.',
+    errorLogContext: 'PvP data',
+    errorDescription: 'Failed to reset PvP data. Please try again.',
+    dialogRef: showResetPvPDialog,
+  });
+  const resetPvEData = createResetHandler({
+    resetFn: () => tarkovStore.resetPvEData(),
+    successTitle: 'PvE Data Reset',
+    successDescription: 'Your PvE progress has been reset successfully.',
+    errorLogContext: 'PvE data',
+    errorDescription: 'Failed to reset PvE data. Please try again.',
+    dialogRef: showResetPvEDialog,
+  });
+  const resetAllData = createResetHandler({
+    resetFn: () => tarkovStore.resetAllData(),
+    successTitle: 'All Data Reset',
+    successDescription: 'All your progress has been reset successfully.',
+    errorLogContext: 'all data',
+    errorDescription: 'Failed to reset data. Please try again.',
+    dialogRef: showResetAllDialog,
+    // Note: resetAllConfirmText is cleared in the @close handler of the modal
+  });
 </script>

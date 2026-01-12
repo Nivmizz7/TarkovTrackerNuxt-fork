@@ -27,22 +27,29 @@ export default defineEventHandler(async (event) => {
   if (!teamId) {
     throw createError({ statusCode: 400, statusMessage: 'teamId is required' });
   }
-  const authHeader = getRequestHeader(event, 'authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw createError({ statusCode: 401, statusMessage: 'Missing auth token' });
+  const authContextUser = (event.context as { auth?: { user?: { id?: string } } }).auth?.user;
+  let userId = authContextUser?.id || null;
+  if (!userId) {
+    const authHeader = getRequestHeader(event, 'authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw createError({ statusCode: 401, statusMessage: 'Missing auth token' });
+    }
+    // Validate token -> user via auth endpoint
+    const authResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: authHeader,
+        apikey: supabaseAnonKey,
+      },
+    });
+    if (!authResp.ok) {
+      throw createError({ statusCode: 401, statusMessage: 'Invalid token' });
+    }
+    const user = (await authResp.json()) as { id: string };
+    userId = user.id;
   }
-  // Validate token -> user via auth endpoint
-  const authResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      Authorization: authHeader,
-      apikey: supabaseAnonKey,
-    },
-  });
-  if (!authResp.ok) {
+  if (!userId) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid token' });
   }
-  const user = (await authResp.json()) as { id: string };
-  const userId = user.id;
   // Ensure caller is member
   const membershipResp = await restFetch(
     `team_memberships?team_id=eq.${teamId}&user_id=eq.${userId}&select=user_id&limit=1`
@@ -61,10 +68,10 @@ export default defineEventHandler(async (event) => {
   }
   const membersJson = (await membersResp.json()) as Array<{ user_id: string }>;
   const memberIds = membersJson.map((m) => m.user_id);
-  // Fetch display name + pvp level snapshot (best-effort)
+  // Fetch display name + level snapshot using summary view (reduces egress by ~99%)
   const idsParam = memberIds.map((id) => `"${id}"`).join(',');
   const profilesResp = await restFetch(
-    `user_progress?select=user_id,current_game_mode,pvp_data,pve_data&user_id=in.(${idsParam})`
+    `team_member_summary?select=user_id,current_game_mode,pvp_display_name,pvp_level,pvp_tasks_completed,pve_display_name,pve_level,pve_tasks_completed&user_id=in.(${idsParam})`
   );
   if (!profilesResp.ok) {
     const errorText = await profilesResp.text();
@@ -78,68 +85,46 @@ export default defineEventHandler(async (event) => {
     const profiles = (await profilesResp.json()) as Array<{
       user_id: string;
       current_game_mode?: string | null;
-      pvp_data?: {
-        displayName?: string | null;
-        level?: number | null;
-        taskCompletions?: Record<string, { complete?: boolean }>;
-      };
-      pve_data?: {
-        displayName?: string | null;
-        level?: number | null;
-        taskCompletions?: Record<string, { complete?: boolean }>;
-      };
+      pvp_display_name?: string | null;
+      pvp_level?: number | null;
+      pvp_tasks_completed?: number | null;
+      pve_display_name?: string | null;
+      pve_level?: number | null;
+      pve_tasks_completed?: number | null;
     }>;
     profiles.forEach((p) => {
       const mode = (p.current_game_mode as 'pvp' | 'pve' | null) || 'pvp';
-      const data = (p as Record<string, unknown>)[`${mode}_data`] as {
-        displayName?: string | null;
-        level?: number | null;
-        taskCompletions?: Record<string, { complete?: boolean }>;
-      } | null;
-      const completedCount = data?.taskCompletions
-        ? Object.values(data.taskCompletions).filter((t) => t?.complete).length
-        : null;
+      const isPve = mode === 'pve';
       profileMap[p.user_id] = {
-        displayName: data?.displayName ?? null,
-        level: data?.level ?? null,
-        tasksCompleted: completedCount,
+        displayName: isPve ? (p.pve_display_name ?? null) : (p.pvp_display_name ?? null),
+        level: isPve ? (p.pve_level ?? null) : (p.pvp_level ?? null),
+        tasksCompleted: isPve ? (p.pve_tasks_completed ?? null) : (p.pvp_tasks_completed ?? null),
       };
     });
   } else {
-    // Fallback: fetch each user individually to avoid edge-case parsing/encoding errors
+    // Fallback: fetch each user individually using summary view
     for (const id of memberIds) {
       const resp = await restFetch(
-        `user_progress?select=user_id,current_game_mode,pvp_data,pve_data&user_id=eq.${id}`
+        `team_member_summary?select=user_id,current_game_mode,pvp_display_name,pvp_level,pvp_tasks_completed,pve_display_name,pve_level,pve_tasks_completed&user_id=eq.${id}`
       );
       if (!resp.ok) continue;
       const profiles = (await resp.json()) as Array<{
         user_id: string;
         current_game_mode?: string | null;
-        pvp_data?: {
-          displayName?: string | null;
-          level?: number | null;
-          taskCompletions?: Record<string, { complete?: boolean }>;
-        };
-        pve_data?: {
-          displayName?: string | null;
-          level?: number | null;
-          taskCompletions?: Record<string, { complete?: boolean }>;
-        };
+        pvp_display_name?: string | null;
+        pvp_level?: number | null;
+        pvp_tasks_completed?: number | null;
+        pve_display_name?: string | null;
+        pve_level?: number | null;
+        pve_tasks_completed?: number | null;
       }>;
       profiles.forEach((p) => {
         const mode = (p.current_game_mode as 'pvp' | 'pve' | null) || 'pvp';
-        const data = (p as Record<string, unknown>)[`${mode}_data`] as {
-          displayName?: string | null;
-          level?: number | null;
-          taskCompletions?: Record<string, { complete?: boolean }>;
-        } | null;
-        const completedCount = data?.taskCompletions
-          ? Object.values(data.taskCompletions).filter((t) => t?.complete).length
-          : null;
+        const isPve = mode === 'pve';
         profileMap[p.user_id] = {
-          displayName: data?.displayName ?? null,
-          level: data?.level ?? null,
-          tasksCompleted: completedCount,
+          displayName: isPve ? (p.pve_display_name ?? null) : (p.pvp_display_name ?? null),
+          level: isPve ? (p.pve_level ?? null) : (p.pvp_level ?? null),
+          tasksCompleted: isPve ? (p.pve_tasks_completed ?? null) : (p.pvp_tasks_completed ?? null),
         };
       });
     }

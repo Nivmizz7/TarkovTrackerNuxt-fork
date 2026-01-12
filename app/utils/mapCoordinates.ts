@@ -126,9 +126,17 @@ export function getLeafletBounds(svgConfig?: MapSvgConfig): [[number, number], [
   // tarkov.dev swaps coordinates: [z, x] format
   // bounds[0] = [x1, z1], bounds[1] = [x2, z2]
   // Convert to [[z1, x1], [z2, x2]]
+  const b0 = svgConfig.bounds[0];
+  const b1 = svgConfig.bounds[1];
+  if (!b0 || !b1 || b0.length < 2 || b1.length < 2) {
+    return [
+      [0, 0],
+      [100, 100],
+    ];
+  }
   return [
-    [svgConfig.bounds[0][1], svgConfig.bounds[0][0]],
-    [svgConfig.bounds[1][1], svgConfig.bounds[1][0]],
+    [b0[1] ?? 0, b0[0] ?? 0],
+    [b1[1] ?? 0, b1[0] ?? 0],
   ];
 }
 /**
@@ -155,9 +163,17 @@ export function getSvgOverlayBounds(
     ];
   }
   // tarkov.dev swaps coordinates: [z, x] format
+  const b0 = boundsToUse[0];
+  const b1 = boundsToUse[1];
+  if (!b0 || !b1 || b0.length < 2 || b1.length < 2) {
+    return [
+      [0, 0],
+      [100, 100],
+    ];
+  }
   return [
-    [boundsToUse[0][1], boundsToUse[0][0]],
-    [boundsToUse[1][1], boundsToUse[1][0]],
+    [b0[1] ?? 0, b0[0] ?? 0],
+    [b1[1] ?? 0, b1[0] ?? 0],
   ];
 }
 /**
@@ -187,10 +203,10 @@ export function getLeafletMapOptions(
     zoomAnimation: true,
     zoomAnimationThreshold: 8,
     // Touch support for mobile
-    tap: true,
     touchZoom: true,
     bounceAtZoomLimits: true,
-  };
+    scrollWheelZoom: false, // Disabled default scroll zoom to allow Shift+Scroll interaction
+  } as L.MapOptions;
 }
 /**
  * Validates map SVG configuration.
@@ -203,6 +219,7 @@ export function isValidMapSvgConfig(svg: unknown): svg is MapSvgConfig {
   return (
     typeof config.file === 'string' &&
     Array.isArray(config.floors) &&
+    config.floors.length > 0 &&
     typeof config.defaultFloor === 'string' &&
     typeof config.coordinateRotation === 'number' &&
     Array.isArray(config.bounds) &&
@@ -221,11 +238,12 @@ export function getMapSvgCdnUrl(mapName: string, floor: string): string {
 }
 /**
  * Gets the fallback URL for a map SVG file.
+ * Always URL-encodes the filename for consistent behavior.
  * @param filename SVG filename from maps.json
- * @returns Fallback URL for the SVG file
+ * @returns Fallback URL for the SVG file with encoded filename
  */
 export function getMapSvgFallbackUrl(filename: string): string {
-  return `https://tarkovtracker.github.io/tarkovdata/maps/${filename}`;
+  return `https://tarkovtracker.github.io/tarkovdata/maps/${encodeURIComponent(filename)}`;
 }
 /**
  * Gets the URL for Factory floor-specific SVG files.

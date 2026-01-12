@@ -1,19 +1,6 @@
 {
-  "name": "tarkovtracker-nuxt",
-  "type": "module",
-  "private": true,
-  "packageManager": "npm@11.6.2",
-  "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
-    "deps": "npx taze --r --I",
-    "lint": "eslint app --max-warnings=0",
-    "lint:fix": "eslint app --fix",
-    "format": "prettier --write \"app/**/*.{js,ts,tsx,vue,json,json5,css,scss,md}\" \"docs/**/*.{md,markdown}\" \"nuxt.config.ts\" \"app.config.ts\" \"vitest.config.ts\" \"test-setup.ts\" && eslint app --fix",
-    "supabase:types": "supabase gen types typescript --linked > supabase/functions/_shared/database.types.ts"
+  "__pinnedNotes": {
+    "@vueuse/core": "Previously pinned to 13.9.0 due to Nuxt/@nuxt/ui/reka-ui compatibility; updated to ^14.1.0 after upgrading Nuxt/@nuxt/ui."
   },
   "dependencies": {
     "@iconify-json/mdi": "^1.2.3",
@@ -23,8 +10,8 @@
     "@nuxt/image": "^2.0.0",
     "@nuxt/ui": "^4.3.0",
     "@pinia/nuxt": "^0.11.3",
-    "@supabase/supabase-js": "^2.89.0",
-    "@unhead/vue": "^2.1.1",
+    "@supabase/supabase-js": "^2.90.1",
+    "@unhead/vue": "^2.1.2",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "@vueuse/core": "^14.1.0",
     "d3": "^7.9.0",
@@ -37,43 +24,57 @@
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "qrcode": "^1.5.4",
-    "sass": "^1.97.1",
+    "sass": "^1.97.2",
     "typescript": "^5.9.3",
     "vue": "^3.5.26",
-    "vue-i18n": "^11.2.7",
+    "vue-i18n": "^11.2.8",
     "vue-router": "^4.6.4"
   },
-  "engines": {
-    "node": ">=24.12.0",
-    "npm": ">=11.6.2"
-  },
-  "__pinnedNotes": {
-    "@vueuse/core": "Previously pinned to 13.9.0 due to Nuxt/@nuxt/ui/reka-ui compatibility; updated to ^14.1.0 after upgrading Nuxt/@nuxt/ui."
-  },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20251225.0",
-    "@nuxt/test-utils": "^3.21.0",
+    "@cloudflare/workers-types": "^4.20260111.0",
+    "@nuxt/test-utils": "^3.23.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/d3": "^7.4.3",
     "@types/leaflet": "^1.9.21",
-    "@types/node": "^22.19.3",
+    "@types/node": "^24.10.7",
     "@vitest/ui": "^3.2.4",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.23",
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "fake-indexeddb": "^5.0.2",
-    "happy-dom": "^20.0.11",
+    "happy-dom": "^20.1.0",
     "jsdom": "^27.4.0",
     "postcss": "^8.5.6",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "supabase": "^2.70.5",
+    "supabase": "^2.72.4",
     "tailwindcss": "^4.1.18",
     "vitest": "^3.2.4"
   },
+  "engines": {
+    "node": ">=24.12.0",
+    "npm": ">=11.6.2"
+  },
+  "name": "tarkovtracker-nuxt",
   "overrides": {
     "@tiptap/core": "3.14.0",
     "@tiptap/pm": "3.14.0"
-  }
+  },
+  "packageManager": "npm@11.7.0",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "deps": "npx taze --r --I",
+    "dev": "nuxt dev",
+    "format": "prettier --write \"app/**/*.{js,ts,tsx,vue,json,json5,css,scss,md}\" \"docs/**/*.{md,markdown}\" \"nuxt.config.ts\" \"app.config.ts\" \"vitest.config.ts\" \"test-setup.ts\" && eslint app --fix",
+    "generate": "nuxt generate",
+    "lint": "eslint app --max-warnings=0",
+    "lint:fix": "eslint app --fix",
+    "postinstall": "nuxt prepare",
+    "preview": "nuxt preview",
+    "supabase:types": "supabase gen types typescript --linked > supabase/functions/_shared/database.types.ts",
+    "test:api-gateway": "vitest --config workers/api-gateway/vitest.config.ts"
+  },
+  "type": "module"
 }

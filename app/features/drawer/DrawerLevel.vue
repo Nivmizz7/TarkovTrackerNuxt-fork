@@ -22,7 +22,7 @@
                 <NuxtImg
                   v-if="!factionImageLoadFailed"
                   :src="pmcFactionIcon"
-                  class="absolute top-0 left-0 z-20 mt-1 max-w-[48px] px-1 opacity-0 invert transition-opacity duration-1000 ease-in-out group-hover:opacity-100"
+                  class="absolute top-0 left-0 z-20 mt-1 max-w-12 px-1 opacity-0 invert transition-opacity duration-1000 ease-in-out group-hover:opacity-100"
                   width="48"
                   height="48"
                   @error="handleFactionImageError"
@@ -30,7 +30,7 @@
                 <NuxtImg
                   v-if="!groupImageLoadFailed"
                   :src="groupIcon"
-                  class="absolute top-0 left-0 z-10 max-w-[48px] opacity-100 transition-opacity duration-1000 ease-in-out group-hover:opacity-0"
+                  class="absolute top-0 left-0 z-10 max-w-12 opacity-100 transition-opacity duration-1000 ease-in-out group-hover:opacity-0"
                   width="48"
                   height="48"
                   @error="handleGroupImageError"
@@ -71,7 +71,7 @@
                   :class="
                     useAutomaticLevel
                       ? 'mx-auto w-11 text-[2rem] leading-[0.85]'
-                      : 'hover:text-primary mx-auto w-11 cursor-pointer text-[2rem] leading-[0.85] transition-colors'
+                      : 'hover:text-primary mx-auto w-11 text-[2rem] leading-[0.85] transition-colors'
                   "
                   :tabindex="useAutomaticLevel ? '-1' : '0'"
                   :role="useAutomaticLevel ? undefined : 'button'"
@@ -122,41 +122,36 @@
               "
             >
               <button
-                class="flex h-6 w-6 cursor-pointer items-center justify-center p-0 text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                class="flex h-6 w-6 items-center justify-center p-0 text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                 :disabled="useAutomaticLevel || displayedLevel >= maxPlayerLevel"
                 @click="incrementLevel"
               >
                 <UIcon name="i-mdi-chevron-up" class="h-5 w-5" />
               </button>
             </AppTooltip>
-            <template v-if="displayedLevel > minPlayerLevel">
-              <AppTooltip
-                :text="
-                  useAutomaticLevel
-                    ? t(
-                        'navigation_drawer.manual_disabled',
-                        'Manual level editing is disabled when automatic calculation is enabled'
-                      )
-                    : ''
-                "
+            <AppTooltip
+              :text="
+                useAutomaticLevel
+                  ? t(
+                      'navigation_drawer.manual_disabled',
+                      'Manual level editing is disabled when automatic calculation is enabled'
+                    )
+                  : ''
+              "
+            >
+              <button
+                class="flex h-6 w-6 items-center justify-center p-0 text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                :disabled="useAutomaticLevel || displayedLevel <= minPlayerLevel"
+                @click="decrementLevel"
               >
-                <button
-                  class="flex h-6 w-6 cursor-pointer items-center justify-center p-0 text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                  :disabled="useAutomaticLevel"
-                  @click="decrementLevel"
-                >
-                  <UIcon name="i-mdi-chevron-down" class="h-5 w-5" />
-                </button>
-              </AppTooltip>
-            </template>
-            <template v-else>
-              <div class="h-6 w-6" aria-hidden="true"></div>
-            </template>
+                <UIcon name="i-mdi-chevron-down" class="h-5 w-5" />
+              </button>
+            </AppTooltip>
           </span>
         </div>
         <!-- XP Progress Display -->
         <div
-          class="hover:border-primary/30 mt-1.5 cursor-pointer rounded border border-white/5 bg-white/[0.02] px-2 py-1 transition-all hover:bg-white/[0.04]"
+          class="hover:border-primary/30 mt-1.5 rounded border border-white/5 bg-white/2 px-2 py-1 transition-all hover:bg-white/4"
           @click="navigateToSettings"
         >
           <div class="mb-0.5 flex items-center justify-between text-[0.6rem]">

@@ -114,9 +114,15 @@
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-  import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue';
+  import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useRoute, useRouter } from 'vue-router';
+  import {
+    useRoute,
+    useRouter,
+    type LocationQuery,
+    type LocationQueryRaw,
+    type LocationQueryValue,
+  } from 'vue-router';
   import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
   import { useTarkovTime } from '@/composables/useTarkovTime';
   import { useTaskFiltering } from '@/composables/useTaskFiltering';
@@ -131,6 +137,10 @@
   import type { Task, TaskObjective } from '@/types/tarkov';
   import { EXCLUDED_SCAV_KARMA_TASKS } from '@/utils/constants';
   import { logger } from '@/utils/logger';
+  // Route meta for layout behavior
+  definePageMeta({
+    usesWindowScroll: true,
+  });
   // Lazy load LeafletMap for performance
   const LeafletMapComponent = defineAsyncComponent(() => import('@/features/maps/LeafletMap.vue'));
   // Page metadata
@@ -149,19 +159,26 @@
     getTaskUserView,
     getTaskMapView,
     getTaskTraderView,
+    getTaskSortMode,
+    getTaskSortDirection,
+    getTaskSharedByAllOnly,
     getHideNonKappaTasks,
     getShowNonSpecialTasks,
     getShowLightkeeperTasks,
-    getShowEodTasks,
   } = storeToRefs(preferencesStore);
   const metadataStore = useMetadataStore();
   const { tasks, loading: tasksLoading } = storeToRefs(metadataStore);
   // Use mapsWithSvg getter to get maps with merged SVG config from maps.json
   const maps = computed(() => metadataStore.mapsWithSvg);
+  const sortedTraders = computed(() => metadataStore.sortedTraders);
+  // Edition data for filtering (reactive to trigger refresh when edition changes)
+  const editions = computed(() => metadataStore.editions);
   const progressStore = useProgressStore();
-  const { tasksCompletions, unlockedTasks } = storeToRefs(progressStore);
+  const { tasksCompletions, unlockedTasks, tasksFailed } = storeToRefs(progressStore);
   const { visibleTasks, reloadingTasks, updateVisibleTasks } = useTaskFiltering();
   const tarkovStore = useTarkovStore();
+  // Game edition for filtering (reactive to trigger refresh when edition changes)
+  const userGameEdition = computed(() => tarkovStore.getGameEdition());
   const { tarkovTime } = useTarkovTime();
   // Maps with static/fixed raid times (don't follow normal day/night cycle)
   const STATIC_TIME_MAPS: Record<string, string> = {
@@ -215,8 +232,9 @@
       const objectiveMaps = metadataStore.objectiveMaps?.[task.id] ?? [];
       const objectiveGps = metadataStore.objectiveGPS?.[task.id] ?? [];
       task.objectives.forEach((obj) => {
-        // Skip objectives that are already marked as complete
-        if (tarkovStore.isTaskObjectiveComplete(obj.id)) return;
+        // Skip objectives that are already marked as complete, unless the current filter allows them
+        if (tarkovStore.isTaskObjectiveComplete(obj.id) && !shouldShowCompletedObjectives.value)
+          return;
         const zones: MapObjectiveZone[] = [];
         const possibleLocations: MapObjectiveLocation[] = [];
         const objectiveWithLocations = obj as TaskObjective & {
@@ -303,6 +321,147 @@
     }));
   });
   const lightkeeperTraderId = computed(() => metadataStore.getTraderByName('lightkeeper')?.id);
+  const TASK_PRIMARY_VIEWS = ['all', 'maps', 'traders'] as const;
+  type TaskPrimaryView = (typeof TASK_PRIMARY_VIEWS)[number];
+  const isTaskPrimaryView = (value: unknown): value is TaskPrimaryView => {
+    return typeof value === 'string' && TASK_PRIMARY_VIEWS.includes(value as TaskPrimaryView);
+  };
+  const getQueryString = (
+    value: LocationQueryValue | LocationQueryValue[] | undefined
+  ): string | undefined => {
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) {
+      const firstValue = value.find((entry): entry is string => typeof entry === 'string');
+      return firstValue;
+    }
+    return undefined;
+  };
+  type QueryLike = LocationQuery | LocationQueryRaw;
+  const normalizeQuery = (query: QueryLike): string => {
+    const normalized: Record<string, string> = {};
+    Object.keys(query)
+      .sort()
+      .forEach((key) => {
+        const value = query[key];
+        if (value === undefined || value === null || value === '') return;
+        if (Array.isArray(value)) {
+          const entries = value.filter(
+            (entry): entry is string | number => entry !== undefined && entry !== null
+          );
+          const nonEmptyEntries = entries.filter(
+            (entry) => (typeof entry === 'string' ? entry !== '' : true)
+          );
+          if (nonEmptyEntries.length === 0) return;
+          normalized[key] = nonEmptyEntries.map(String).join(',');
+          return;
+        }
+        normalized[key] = String(value);
+      });
+    return JSON.stringify(normalized);
+  };
+  const buildViewQuery = (
+    primaryView: TaskPrimaryView,
+    mapView: string,
+    traderView: string
+  ): LocationQueryRaw => {
+    const nextQuery: LocationQueryRaw = { ...route.query };
+    if (primaryView === 'maps') {
+      nextQuery.view = 'maps';
+      nextQuery.map = mapView !== 'all' ? mapView : undefined;
+      nextQuery.trader = undefined;
+      return nextQuery;
+    }
+    if (primaryView === 'traders') {
+      nextQuery.view = 'traders';
+      nextQuery.trader = traderView !== 'all' ? traderView : undefined;
+      nextQuery.map = undefined;
+      return nextQuery;
+    }
+    nextQuery.view = 'all';
+    nextQuery.map = undefined;
+    nextQuery.trader = undefined;
+    return nextQuery;
+  };
+  const isSyncingFromRoute = ref(false);
+  const isSyncingToRoute = ref(false);
+  const hasInitializedRouteSync = ref(false);
+  const syncRoute = (nextQuery: LocationQueryRaw, replace = false) => {
+    if (isSyncingToRoute.value) return;
+    if (normalizeQuery(route.query) === normalizeQuery(nextQuery)) return;
+    isSyncingToRoute.value = true;
+    const method = replace ? 'replace' : 'push';
+    void router[method]({ query: nextQuery }).finally(() => {
+      isSyncingToRoute.value = false;
+    });
+  };
+  const syncStateFromRoute = () => {
+    if (isSyncingToRoute.value) return;
+    const viewParam = getQueryString(route.query.view);
+    const mapParam = getQueryString(route.query.map);
+    const traderParam = getQueryString(route.query.trader);
+    const normalizedView = isTaskPrimaryView(viewParam) ? viewParam : undefined;
+    if (!hasInitializedRouteSync.value) {
+      hasInitializedRouteSync.value = true;
+      if (!normalizedView) {
+        const storedView = isTaskPrimaryView(preferencesStore.getTaskPrimaryView)
+          ? preferencesStore.getTaskPrimaryView
+          : 'all';
+        syncRoute(
+          buildViewQuery(
+            storedView,
+            preferencesStore.getTaskMapView,
+            preferencesStore.getTaskTraderView
+          ),
+          true
+        );
+        return;
+      }
+    }
+    const targetView = normalizedView ?? 'all';
+    isSyncingFromRoute.value = true;
+    if (targetView !== preferencesStore.getTaskPrimaryView) {
+      preferencesStore.setTaskPrimaryView(targetView);
+    }
+    if (targetView === 'maps') {
+      const mapId = maps.value.some((map) => map.id === mapParam)
+        ? mapParam
+        : maps.value[0]?.id;
+      if (mapId && mapId !== preferencesStore.getTaskMapView) {
+        preferencesStore.setTaskMapView(mapId);
+      }
+    }
+    if (targetView === 'traders') {
+      const traderId = sortedTraders.value.some((trader) => trader.id === traderParam)
+        ? traderParam
+        : sortedTraders.value[0]?.id;
+      if (traderId && traderId !== preferencesStore.getTaskTraderView) {
+        preferencesStore.setTaskTraderView(traderId);
+      }
+    }
+    isSyncingFromRoute.value = false;
+  };
+  watch(
+    [
+      () => route.query.view,
+      () => route.query.map,
+      () => route.query.trader,
+      () => maps.value.length,
+      () => sortedTraders.value.length,
+    ],
+    () => {
+      syncStateFromRoute();
+    },
+    { immediate: true }
+  );
+  watch(
+    [getTaskPrimaryView, getTaskMapView, getTaskTraderView],
+    ([primaryView, mapView, traderView], [prevPrimaryView]) => {
+      if (isSyncingFromRoute.value) return;
+      const normalizedPrimary = isTaskPrimaryView(primaryView) ? primaryView : 'all';
+      const shouldReplace = normalizedPrimary === prevPrimaryView;
+      syncRoute(buildViewQuery(normalizedPrimary, mapView, traderView), shouldReplace);
+    }
+  );
   const refreshVisibleTasks = () => {
     updateVisibleTasks(
       getTaskPrimaryView.value,
@@ -311,7 +470,9 @@
       getTaskMapView.value,
       getTaskTraderView.value,
       mergedMaps.value,
-      tasksLoading.value
+      tasksLoading.value,
+      getTaskSortMode.value,
+      getTaskSortDirection.value
     ).catch((error) => {
       logger.error('[Tasks] Failed to refresh tasks:', error);
     });
@@ -323,15 +484,20 @@
       getTaskUserView,
       getTaskMapView,
       getTaskTraderView,
+      getTaskSortMode,
+      getTaskSortDirection,
+      getTaskSharedByAllOnly,
       getHideNonKappaTasks,
       getShowNonSpecialTasks,
       getShowLightkeeperTasks,
-      getShowEodTasks,
       tasksLoading,
       tasks,
       maps,
       tasksCompletions,
       unlockedTasks,
+      tasksFailed,
+      userGameEdition,
+      editions,
     ],
     () => {
       refreshVisibleTasks();
@@ -350,15 +516,39 @@
   const isLoading = computed(
     () => !metadataStore.hasInitialized || tasksLoading.value || reloadingTasks.value
   );
-  // Search state
+  // Search state (debounced to reduce lag)
   const searchQuery = ref('');
+  const debouncedSearch = ref('');
+  const updateDebouncedSearch = debounce((value: string) => {
+    debouncedSearch.value = value;
+  }, 180);
+  watch(searchQuery, (value) => {
+    if (!value) {
+      updateDebouncedSearch.cancel();
+      debouncedSearch.value = '';
+      return;
+    }
+    void updateDebouncedSearch(value).catch((error) => {
+      if (isDebounceRejection(error)) return;
+      logger.error('[Tasks] Debounced search update failed:', error);
+    });
+  });
+  const normalizedSearch = computed(() => debouncedSearch.value.toLowerCase().trim());
+  // Cache lowercase task names to avoid repeated toLowerCase() calls in filter
+  type TaskWithLowerName = Task & { _lowerName: string };
+  const tasksWithLowerName = computed((): TaskWithLowerName[] => {
+    return visibleTasks.value.map((task) => ({
+      ...task,
+      _lowerName: (task.name ?? '').toLowerCase(),
+    }));
+  });
   // Filter tasks by search query
-  const filteredTasks = computed(() => {
-    if (!searchQuery.value.trim()) {
+  const filteredTasks = computed((): Task[] => {
+    if (!normalizedSearch.value) {
       return visibleTasks.value;
     }
-    const query = searchQuery.value.toLowerCase().trim();
-    return visibleTasks.value.filter((task) => task.name?.toLowerCase().includes(query));
+    const query = normalizedSearch.value;
+    return tasksWithLowerName.value.filter((task) => task._lowerName.includes(query)) as Task[];
   });
   const treeTasks = computed(() => {
     const baseTasks = (metadataStore.tasks || []).filter(
@@ -383,12 +573,17 @@
         return [focusedTask, ...baseTasks];
       }
     }
-    return baseTasks;
+    const remaining = filteredTasks.value.filter((task) => task.id !== pinnedTask.value?.id);
+    const sliceCount = Math.max(visibleTaskCount.value - 1, 0);
+    return [pinnedTask.value, ...remaining.slice(0, sliceCount)];
   });
+  const hasMoreTasks = computed(() => visibleTaskCount.value < filteredTasks.value.length);
   const loadMoreTasks = () => {
-    if (displayCount.value < filteredTasks.value.length) {
-      displayCount.value += 15;
-    }
+    if (!hasMoreTasks.value) return;
+    visibleTaskCount.value = Math.min(
+      visibleTaskCount.value + BATCH_SIZE,
+      filteredTasks.value.length
+    );
   };
   // Setup infinite scroll
   const infiniteScrollEnabled = computed(
@@ -406,60 +601,99 @@
       displayCount.value = 15;
       focusedTaskId.value = null;
     }
-  );
+    nextTick(() => {
+      checkAndLoadMore();
+    });
+  });
+  const taskListRef = ref<HTMLElement | null>(null);
   // Handle deep linking to a specific task via ?task=taskId query param
-  const getTaskStatus = (taskId: string): 'available' | 'locked' | 'completed' => {
+  const getTaskStatus = (taskId: string): 'available' | 'locked' | 'completed' | 'failed' => {
+    const isFailed = tasksFailed.value?.[taskId]?.['self'] ?? false;
+    if (isFailed) return 'failed';
     const isCompleted = tasksCompletions.value?.[taskId]?.['self'] ?? false;
     if (isCompleted) return 'completed';
     const isUnlocked = unlockedTasks.value?.[taskId]?.['self'] ?? false;
     if (isUnlocked) return 'available';
     return 'locked';
   };
+  const highlightTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+  const highlightTask = (taskElement: HTMLElement) => {
+    taskElement.classList.add(
+      'ring-2',
+      'ring-primary-500',
+      'ring-offset-2',
+      'ring-offset-surface-900'
+    );
+    if (highlightTimeout.value) {
+      clearTimeout(highlightTimeout.value);
+    }
+    highlightTimeout.value = setTimeout(() => {
+      taskElement.classList.remove(
+        'ring-2',
+        'ring-primary-500',
+        'ring-offset-2',
+        'ring-offset-surface-900'
+      );
+      highlightTimeout.value = null;
+    }, 2000);
+  };
+  onBeforeUnmount(() => {
+    updateDebouncedSearch.cancel();
+    if (highlightTimeout.value) {
+      clearTimeout(highlightTimeout.value);
+      highlightTimeout.value = null;
+    }
+    if (pinnedTaskTimeout.value) {
+      clearTimeout(pinnedTaskTimeout.value);
+      pinnedTaskTimeout.value = null;
+    }
+  });
   const scrollToTask = async (taskId: string) => {
-    // Wait for the task to appear in filteredTasks (filters are async)
-    const maxWaitTime = 2000;
-    const checkInterval = 50;
-    let elapsed = 0;
-    while (elapsed < maxWaitTime) {
-      const taskIndex = filteredTasks.value.findIndex((t) => t.id === taskId);
-      if (taskIndex >= 0) {
-        // Task found in filtered list - use focusedTaskId to prepend it if not in current page
-        // This avoids loading hundreds of tasks just to scroll to one
-        if (taskIndex >= displayCount.value) {
-          focusedTaskId.value = taskId;
-        }
-        await nextTick();
-        // Small delay to ensure DOM is fully rendered
-        setTimeout(() => {
-          const taskElement = document.getElementById(`task-${taskId}`);
-          if (taskElement) {
-            taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Add a brief highlight effect
-            taskElement.classList.add(
-              'ring-2',
-              'ring-primary-500',
-              'ring-offset-2',
-              'ring-offset-surface-900'
-            );
-            setTimeout(() => {
-              taskElement.classList.remove(
-                'ring-2',
-                'ring-primary-500',
-                'ring-offset-2',
-                'ring-offset-surface-900'
-              );
-            }, 2000);
-          }
-        }, 100);
+    await nextTick();
+    const taskIndex = filteredTasks.value.findIndex((t) => t.id === taskId);
+    if (taskIndex === -1) return;
+    const pinTaskToTop = () => {
+      pinnedTaskId.value = taskId;
+      if (pinnedTaskTimeout.value) {
+        clearTimeout(pinnedTaskTimeout.value);
+      }
+      pinnedTaskTimeout.value = setTimeout(() => {
+        pinnedTaskId.value = null;
+        pinnedTaskTimeout.value = null;
+      }, 8000);
+    };
+    // If task is already in DOM, scroll to it
+    const taskElement = document.getElementById(`task-${taskId}`);
+    if (taskElement) {
+      const rect = taskElement.getBoundingClientRect();
+      const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+      if (isVisible) {
+        highlightTask(taskElement);
         return;
       }
-      // Wait and check again
-      await new Promise((resolve) => setTimeout(resolve, checkInterval));
-      elapsed += checkInterval;
+      const nearbyThreshold = window.innerHeight * 1.5;
+      const isNearby = Math.abs(rect.top) <= nearbyThreshold;
+      if (isNearby) {
+        taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightTask(taskElement);
+        return;
+      }
+      pinTaskToTop();
+      await nextTick();
+      const pinnedElement = document.getElementById(`task-${taskId}`);
+      if (pinnedElement) {
+        highlightTask(pinnedElement);
+      }
+      return;
     }
+    pinTaskToTop();
+    await nextTick();
+    const newTaskElement = document.getElementById(`task-${taskId}`);
+    if (!newTaskElement) return;
+    highlightTask(newTaskElement);
   };
-  const handleTaskQueryParam = () => {
-    const taskId = route.query.task as string;
+  const handleTaskQueryParam = async () => {
+    const taskId = getQueryString(route.query.task);
     if (!taskId || tasksLoading.value) return;
     const taskInMetadata = tasks.value.find((t) => t.id === taskId);
     if (!taskInMetadata) return;
@@ -485,19 +719,30 @@
       preferencesStore.setShowNonSpecialTasks(true);
     }
     // Determine task status and set appropriate filter
-    const status = getTaskStatus(taskId);
-    if (preferencesStore.getTaskSecondaryView !== status) {
-      preferencesStore.setTaskSecondaryView(status);
+    // Skip if already in 'all' view since all tasks are visible there
+    const currentSecondaryView = preferencesStore.getTaskSecondaryView;
+    if (currentSecondaryView !== 'all') {
+      const status = getTaskStatus(taskId);
+      if (currentSecondaryView !== status) {
+        preferencesStore.setTaskSecondaryView(status);
+      }
     }
     // Set primary view to 'all' to ensure the task is visible regardless of map/trader
     if (preferencesStore.getTaskPrimaryView !== 'all') {
       preferencesStore.setTaskPrimaryView('all');
     }
-    // Scroll to the task after filters are applied, then clear query param
-    scrollToTask(taskId).then(() => {
-      // Clear the query param to avoid re-triggering on filter changes
-      router.replace({ path: '/tasks', query: {} });
-    });
+    // Clear search query so the target task is visible
+    if (searchQuery.value) {
+      searchQuery.value = '';
+    }
+    // Wait for filter/watch updates to settle
+    await nextTick();
+    // scrollToTask handles scrolling directly via scrollIntoView
+    await scrollToTask(taskId);
+    // Clear the query param to avoid re-triggering on filter changes
+    const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>;
+    delete nextQuery.task;
+    router.replace({ query: nextQuery });
   };
   // Watch for task query param and handle it when tasks are loaded
   watch(
@@ -531,6 +776,16 @@
       }
     });
   };
+  const clearTaskObjectives = (objectives: TaskObjective[]) => {
+    objectives.forEach((objective) => {
+      if (!objective?.id) return;
+      tarkovStore.setTaskObjectiveUncomplete(objective.id);
+      const currentCount = tarkovStore.getObjectiveCount(objective.id);
+      if ((objective.count ?? 0) > 0 || currentCount > 0) {
+        tarkovStore.setObjectiveCount(objective.id, 0);
+      }
+    });
+  };
   const handleAlternatives = (
     alternatives: string[] | undefined,
     taskAction: 'setTaskComplete' | 'setTaskUncompleted' | 'setTaskFailed',
@@ -547,7 +802,11 @@
       }
       const alternativeTask = tasks.value.find((task) => task.id === a);
       if (alternativeTask?.objectives) {
-        handleTaskObjectives(alternativeTask.objectives, objectiveAction);
+        if (taskAction === 'setTaskFailed') {
+          clearTaskObjectives(alternativeTask.objectives);
+        } else {
+          handleTaskObjectives(alternativeTask.objectives, objectiveAction);
+        }
       }
     });
   };
@@ -629,6 +888,22 @@
         }
       }
       updateTaskStatus('page.tasks.questcard.undouncomplete', taskName);
+    } else if (action === 'resetfailed') {
+      // Undo reset by restoring failed state (without altering alternatives)
+      tarkovStore.setTaskFailed(taskId);
+      const taskToUndo = tasks.value.find((task) => task.id === taskId);
+      if (taskToUndo?.objectives) {
+        clearTaskObjectives(taskToUndo.objectives);
+      }
+      updateTaskStatus('page.tasks.questcard.undoresetfailed', taskName);
+    } else if (action === 'fail') {
+      // Undo manual fail by clearing completion/failed flags
+      tarkovStore.setTaskUncompleted(taskId);
+      const taskToUndo = tasks.value.find((task) => task.id === taskId);
+      if (taskToUndo?.objectives) {
+        handleTaskObjectives(taskToUndo.objectives, 'setTaskObjectiveUncomplete');
+      }
+      updateTaskStatus('page.tasks.questcard.undofailed', taskName);
     }
     showUndoButton.value = false;
     undoData.value = null;

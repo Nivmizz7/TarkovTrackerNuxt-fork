@@ -27,6 +27,10 @@ export interface GameEdition {
   defaultCultistCircleLevel: number;
   /** Bonus reputation values per trader granted by this edition */
   traderRepBonus: Record<Trader['id'], number>;
+  /** Task IDs that are exclusive to this edition (only available to this edition) */
+  exclusiveTaskIds?: string[];
+  /** Task IDs that are excluded from this edition (not available to this edition) */
+  excludedTaskIds?: string[];
 }
 export interface ItemCategory {
   id: string;
@@ -41,14 +45,18 @@ export interface TarkovItem {
   link?: string;
   wikiLink?: string;
   image512pxLink?: string;
+  image8xLink?: string;
   gridImageLink?: string;
   baseImageLink?: string;
   iconLink?: string;
-  image8xLink?: string;
   backgroundColor?: string;
   types?: string[];
   category?: ItemCategory;
   categories?: ItemCategory[];
+  containsItems?: Array<{
+    item: TarkovItem;
+    count: number;
+  }>;
   properties?: {
     defaultPreset?: TarkovItem;
     [key: string]: unknown;
@@ -113,6 +121,7 @@ export interface HideoutStation {
   id: string;
   name: string;
   normalizedName?: string;
+  imageLink?: string;
   levels: HideoutLevel[];
 }
 export interface HideoutModule extends HideoutLevel {
@@ -129,6 +138,8 @@ export interface TaskObjective {
   maps?: { id: string; name?: string }[];
   /** The primary item this objective refers to */
   item?: TarkovItem;
+  /** All accepted items for this objective (TaskObjectiveItem.items) */
+  items?: TarkovItem[];
   /** Optional item used only for map/UI markers or visual overrides */
   markerItem?: TarkovItem;
   /** Item that counts for quest completion/requirements */
@@ -140,6 +151,20 @@ export interface TaskObjective {
   y?: number;
   optional?: boolean;
   taskId?: string;
+  task?: { id: string; name?: string };
+  status?: string[];
+  /** All items that must be contained */
+  containsAll?: TarkovItem[];
+  /** Any of these items can be used */
+  useAny?: TarkovItem[];
+  /** Weapon that must be used */
+  usingWeapon?: TarkovItem;
+  /** Weapon mods that must be equipped */
+  usingWeaponMods?: TarkovItem[];
+  /** Items that must be worn */
+  wearing?: TarkovItem[];
+  /** Items that must not be worn */
+  notWearing?: TarkovItem[];
 }
 export interface TaskRequirement {
   task: { id: string; name?: string };
@@ -202,6 +227,8 @@ export interface Task {
   factionName?: string;
   startRewards?: FinishRewards;
   finishRewards?: FinishRewards;
+  failConditions?: TaskObjective[];
+  failureOutcome?: FinishRewards;
   traderIcon?: string;
   predecessors?: string[];
   successors?: string[];
@@ -306,7 +333,21 @@ export interface TarkovDataQueryResult {
   tasks: Task[];
   maps: TarkovMap[];
   traders: Trader[];
+  playerLevels?: PlayerLevel[];
+}
+export interface TarkovBootstrapQueryResult {
   playerLevels: PlayerLevel[];
+}
+export interface TarkovTasksCoreQueryResult {
+  tasks: Task[];
+  maps: TarkovMap[];
+  traders: Trader[];
+}
+export interface TarkovTaskObjectivesQueryResult {
+  tasks: Array<Pick<Task, 'id' | 'objectives' | 'failConditions'>>;
+}
+export interface TarkovTaskRewardsQueryResult {
+  tasks: Array<Pick<Task, 'id' | 'startRewards' | 'finishRewards' | 'failureOutcome'>>;
 }
 export interface TarkovHideoutQueryResult {
   hideoutStations: HideoutStation[];
@@ -330,6 +371,44 @@ export interface NeededItemTaskObjective extends NeededItemBase {
 export interface NeededItemHideoutModule extends NeededItemBase {
   needType: 'hideoutModule';
   hideoutModule: HideoutModule;
+}
+export type GroupedItemInfo = Pick<
+  TarkovItem,
+  'id' | 'iconLink' | 'image512pxLink' | 'wikiLink' | 'link'
+> & {
+  /** Item display name (required - items without names are filtered out during grouping) */
+  name: string;
+};
+/**
+ * Grouped needed item aggregating all requirements for a single item
+ * across tasks and hideout modules.
+ *
+ * Counter field naming conventions:
+ * - "Fir" = "Found in Raid" - items that must be found in raid for the requirement
+ * - "Current" = player's current progress toward that specific requirement category
+ */
+export interface GroupedNeededItem {
+  item: GroupedItemInfo;
+  /** Total count of this item required for tasks with Found in Raid requirement */
+  taskFir: number;
+  /** Player's current progress toward task FIR requirements */
+  taskFirCurrent: number;
+  /** Total count of this item required for tasks without FIR requirement */
+  taskNonFir: number;
+  /** Player's current progress toward task non-FIR requirements */
+  taskNonFirCurrent: number;
+  /** Total count of this item required for hideout modules with FIR requirement */
+  hideoutFir: number;
+  /** Player's current progress toward hideout FIR requirements */
+  hideoutFirCurrent: number;
+  /** Total count of this item required for hideout modules without FIR requirement */
+  hideoutNonFir: number;
+  /** Player's current progress toward hideout non-FIR requirements */
+  hideoutNonFirCurrent: number;
+  /** Grand total of this item required (sum of taskFir + taskNonFir + hideoutFir + hideoutNonFir) */
+  readonly total: number;
+  /** Aggregate current progress (sum of all *Current fields) */
+  readonly currentCount: number;
 }
 // Lookup Types
 export interface ObjectiveMapInfo {
@@ -358,7 +437,9 @@ export interface StaticMapData {
       day: number;
       night: number;
     };
-    svg: {
+    /** Whether the map is unavailable for display (e.g., unreleased maps) */
+    unavailable?: boolean;
+    svg?: {
       file: string;
       floors: string[];
       defaultFloor: string;

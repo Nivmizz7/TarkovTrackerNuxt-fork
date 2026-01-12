@@ -30,16 +30,19 @@
         </span>
       </UButton>
     </div>
-    <!-- Secondary filters container -->
-    <div class="flex w-full flex-wrap gap-3">
-      <!-- Section 1: Search bar -->
-      <div class="flex min-w-[250px] flex-1 items-center rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
+    <!-- Unified Filter Bar: Search + Filters + Views -->
+    <div
+      class="flex flex-col gap-3 rounded-lg bg-[hsl(240,5%,5%)] p-3 sm:flex-row sm:items-center sm:p-4"
+    >
+      <!-- Search (grows to fill space) -->
+      <div class="flex-1">
         <UInput
           :model-value="search"
           :placeholder="
             $t('page.neededitems.searchplaceholder', 'Search items, tasks, or hideout stations...')
           "
           icon="i-mdi-magnify"
+          size="md"
           :ui="{ trailing: 'pe-1' }"
           class="w-full"
           @update:model-value="$emit('update:search', $event)"
@@ -56,8 +59,18 @@
           </template>
         </UInput>
       </div>
-      <!-- Section 2: Filters (Popover) -->
-      <div class="flex items-center rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
+      <!-- Right side controls -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <!-- Item count badge -->
+        <UBadge color="neutral" variant="soft" size="md" class="shrink-0 px-3 py-1.5 text-sm">
+          <template v-if="groupByItem && ungroupedCount !== totalCount">
+            {{ totalCount }} unique ({{ ungroupedCount }} total)
+          </template>
+          <template v-else>{{ totalCount }} {{ $t('page.neededitems.items', 'items') }}</template>
+        </UBadge>
+        <!-- Divider (hidden on mobile) -->
+        <div class="hidden h-6 w-px bg-white/10 sm:block" />
+        <!-- Filters Popover -->
         <UPopover>
           <UButton
             icon="i-mdi-filter-variant"
@@ -66,13 +79,15 @@
             size="sm"
             class="shrink-0"
           >
-            <span>{{ $t('page.neededitems.filters.label', 'Filters') }}</span>
+            <span class="hidden sm:inline">
+              {{ $t('page.neededitems.filters.label', 'Filters') }}
+            </span>
             <UBadge
               v-if="activeFiltersCount > 0"
               color="primary"
               variant="soft"
               size="sm"
-              class="ml-2 px-2 py-0.5"
+              class="ml-1 px-1.5 py-0.5 sm:ml-2"
             >
               {{ activeFiltersCount }}
             </UBadge>
@@ -123,6 +138,30 @@
                     }}
                   </UButton>
                 </AppTooltip>
+                <AppTooltip
+                  :text="
+                    isKappaDisabled
+                      ? $t(
+                          'page.neededitems.filters.kappa_only_disabled_tooltip',
+                          'Kappa filter applies to tasks only.'
+                        )
+                      : $t(
+                          'page.neededitems.filters.kappa_only_tooltip',
+                          'Show only items required for Kappa quests'
+                        )
+                  "
+                >
+                  <UButton
+                    :variant="kappaOnly ? 'soft' : 'ghost'"
+                    :color="kappaOnly ? 'warning' : 'neutral'"
+                    size="sm"
+                    :disabled="isKappaDisabled"
+                    @click="$emit('update:kappaOnly', !kappaOnly)"
+                  >
+                    <UIcon name="i-mdi-trophy" class="mr-1 h-4 w-4" />
+                    {{ $t('page.neededitems.filters.kappa_only', 'KAPPA') }}
+                  </UButton>
+                </AppTooltip>
               </div>
               <div class="border-t border-white/10 pt-3">
                 <div class="text-surface-400 mb-2 text-xs font-medium">
@@ -146,16 +185,10 @@
             </div>
           </template>
         </UPopover>
-      </div>
-      <!-- Section 3: View Mode & Item Count -->
-      <div class="flex items-center gap-3 rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
-        <UBadge color="neutral" variant="soft" size="md" class="px-3 py-1 text-sm">
-          <template v-if="groupByItem && ungroupedCount !== totalCount">
-            {{ totalCount }} unique ({{ ungroupedCount }} total)
-          </template>
-          <template v-else>{{ totalCount }} {{ $t('page.neededitems.items', 'items') }}</template>
-        </UBadge>
-        <div class="flex gap-1 border-l border-white/10 pl-3">
+        <!-- Divider (hidden on mobile) -->
+        <div class="hidden h-6 w-px bg-white/10 sm:block" />
+        <!-- View Mode Buttons -->
+        <div class="flex gap-1">
           <UButton
             icon="i-mdi-view-list"
             :color="!groupByItem && viewMode === 'list' ? 'primary' : 'neutral'"
@@ -203,6 +236,7 @@
     groupByItem: boolean;
     hideTeamItems: boolean;
     hideNonFirSpecialEquipment: boolean;
+    kappaOnly: boolean;
   }>();
   const emit = defineEmits<{
     'update:modelValue': [value: FilterType];
@@ -212,6 +246,7 @@
     'update:groupByItem': [value: boolean];
     'update:hideTeamItems': [value: boolean];
     'update:hideNonFirSpecialEquipment': [value: boolean];
+    'update:kappaOnly': [value: boolean];
   }>();
   const activeFiltersCount = computed(() => {
     let count = 0;
@@ -224,7 +259,13 @@
     if (props.hideTeamItems) {
       count += 1;
     }
+    if (props.kappaOnly) {
+      count += 1;
+    }
     return count;
+  });
+  const isKappaDisabled = computed(() => {
+    return props.modelValue === 'hideout';
   });
   const setViewMode = (mode: ViewMode) => {
     emit('update:groupByItem', false);

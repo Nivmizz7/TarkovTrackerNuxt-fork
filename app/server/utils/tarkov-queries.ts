@@ -1,17 +1,179 @@
-export const TARKOV_DATA_QUERY = `
-  fragment ItemData on Item {
-    id
-    shortName
-    name
-    link
-    wikiLink
-    image512pxLink
-    gridImageLink
-    baseImageLink
-    iconLink
-    image8xLink
-    backgroundColor
+// Query to fetch all items - used for complete item reference data
+export const TARKOV_ITEMS_QUERY = `
+  query TarkovItems($lang: LanguageCode) {
+    items(lang: $lang) {
+      id
+      shortName
+      name
+      link
+      wikiLink
+      image512pxLink
+      iconLink
+      backgroundColor
+      types
+      category {
+        name
+      }
+    }
   }
+`;
+// Lightweight items for initial UI hydration (avoid heavy payload)
+export const TARKOV_ITEMS_LITE_QUERY = `
+  query TarkovItemsLite($lang: LanguageCode) {
+    items(lang: $lang) {
+      id
+      shortName
+      name
+      image512pxLink
+      iconLink
+    }
+  }
+`;
+// Query to fetch prestige levels and requirements
+export const TARKOV_PRESTIGE_QUERY = `
+  query TarkovPrestige {
+    prestige {
+      id
+      name
+      prestigeLevel
+      imageLink
+      iconLink
+      conditions {
+        id
+        description
+        __typename
+        ... on TaskObjectiveTaskStatus {
+          task {
+            id
+            name
+          }
+          status
+        }
+      }
+      rewards {
+        traderStanding {
+          trader {
+            id
+            name
+          }
+          standing
+        }
+      }
+      transferSettings {
+        __typename
+      }
+    }
+  }
+`;
+// Lightweight bootstrap query for player levels (used for early UI render)
+export const TARKOV_BOOTSTRAP_QUERY = `
+  query TarkovBootstrap {
+    playerLevels {
+      level
+      exp
+      levelBadgeImageLink
+    }
+  }
+`;
+// Core task data without objectives or rewards (keeps payload small)
+export const TARKOV_TASKS_CORE_QUERY = `
+  query TarkovTasksCore($lang: LanguageCode, $gameMode: GameMode) {
+    tasks(lang: $lang, gameMode: $gameMode) {
+      id
+      name
+      trader {
+        id
+        name
+        imageLink
+      }
+      map {
+        id
+        name
+      }
+      kappaRequired
+      lightkeeperRequired
+      experience
+      wikiLink
+      minPlayerLevel
+      taskRequirements {
+        task {
+          id
+          name
+        }
+        status
+      }
+      traderRequirements {
+        trader {
+          id
+          name
+        }
+        value
+      }
+      factionName
+      neededKeys {
+        keys {
+          id
+        }
+        map {
+          id
+          name
+        }
+      }
+    }
+    maps {
+      id
+      name
+      normalizedName
+      enemies
+      raidDuration
+      players
+      extracts {
+        id
+        name
+        faction
+        position {
+          x
+          y
+          z
+        }
+        top
+        bottom
+      }
+    }
+    traders {
+      id
+      name
+      normalizedName
+      resetTime
+      imageLink
+      levels {
+        id
+        level
+        requiredPlayerLevel
+        requiredReputation
+        requiredCommerce
+        payRate
+      }
+    }
+  }
+`;
+const ITEM_REF_FRAGMENT = `
+  fragment ItemRef on Item {
+    id
+    properties {
+      ... on ItemPropertiesWeapon {
+        defaultPreset {
+          id
+          iconLink
+          image512pxLink
+        }
+      }
+    }
+  }
+`;
+// Task objectives (and fail conditions) split out to reduce core payload
+export const TARKOV_TASKS_OBJECTIVES_QUERY = `
+  ${ITEM_REF_FRAGMENT}
   fragment QuestItemData on QuestItem {
     id
     shortName
@@ -20,7 +182,6 @@ export const TARKOV_DATA_QUERY = `
     gridImageLink
     baseImageLink
     iconLink
-    image8xLink
   }
   fragment CategoryData on ItemCategory {
     id
@@ -54,39 +215,9 @@ export const TARKOV_DATA_QUERY = `
     top
     bottom
   }
-  query TarkovData($lang: LanguageCode, $gameMode: GameMode) {
+  query TarkovTaskObjectives($lang: LanguageCode, $gameMode: GameMode) {
     tasks(lang: $lang, gameMode: $gameMode) {
       id
-      tarkovDataId
-      name
-      trader {
-        id
-        name
-        imageLink
-      }
-      map {
-        id
-        name
-      }
-      kappaRequired
-      lightkeeperRequired
-      experience
-      wikiLink
-      minPlayerLevel
-      taskRequirements {
-        task {
-          id
-          name
-        }
-        status
-      }
-      traderRequirements {
-        trader {
-          id
-          name
-        }
-        value
-      }
       objectives {
         id
         description
@@ -104,17 +235,10 @@ export const TARKOV_DATA_QUERY = `
         }
         ... on TaskObjectiveBuildItem {
           item {
-            ...ItemData
-            properties {
-              ... on ItemPropertiesWeapon {
-                defaultPreset {
-                  ...ItemData
-                }
-              }
-            }
+            ...ItemRef
           }
           containsAll {
-            ...ItemData
+            ...ItemRef
           }
           containsCategory {
             ...CategoryData
@@ -147,19 +271,19 @@ export const TARKOV_DATA_QUERY = `
           exitStatus
           zoneNames
         }
+        ... on TaskObjectiveHideoutStation {
+          hideoutStation {
+            id
+            name
+          }
+          stationLevel
+        }
         ... on TaskObjectiveItem {
           zones {
             ...TaskZoneData
           }
-          item {
-            ...ItemData
-            properties {
-              ... on ItemPropertiesWeapon {
-                defaultPreset {
-                  ...ItemData
-                }
-              }
-            }
+          items {
+            ...ItemRef
           }
           count
           foundInRaid
@@ -169,7 +293,7 @@ export const TARKOV_DATA_QUERY = `
         }
         ... on TaskObjectiveMark {
           markerItem {
-            ...ItemData
+            ...ItemRef
           }
           zones {
             ...TaskZoneData
@@ -197,23 +321,16 @@ export const TARKOV_DATA_QUERY = `
           zoneNames
           bodyParts
           usingWeapon {
-            ...ItemData
-            properties {
-              ... on ItemPropertiesWeapon {
-                defaultPreset {
-                  ...ItemData
-                }
-              }
-            }
+            ...ItemRef
           }
           usingWeaponMods {
-            ...ItemData
+            ...ItemRef
           }
           wearing {
-            ...ItemData
+            ...ItemRef
           }
           notWearing {
-            ...ItemData
+            ...ItemRef
           }
           distance {
             compareMethod
@@ -264,9 +381,17 @@ export const TARKOV_DATA_QUERY = `
           }
           level
         }
+        ... on TaskObjectiveTraderStanding {
+          trader {
+            id
+            name
+          }
+          compareMethod
+          value
+        }
         ... on TaskObjectiveUseItem {
           useAny {
-            ...ItemData
+            ...ItemRef
           }
           zones {
             ...TaskZoneData
@@ -274,6 +399,196 @@ export const TARKOV_DATA_QUERY = `
           count
         }
       }
+      failConditions {
+        id
+        description
+        type
+        maps {
+          id
+          name
+        }
+        optional
+        __typename
+        ... on TaskObjectiveBasic {
+          zones {
+            ...TaskZoneData
+          }
+        }
+        ... on TaskObjectiveBuildItem {
+          item {
+            ...ItemRef
+          }
+          containsAll {
+            ...ItemRef
+          }
+          containsCategory {
+            ...CategoryData
+            parent {
+              ...CategoryData
+            }
+            children {
+              ...CategoryData
+            }
+          }
+          attributes {
+            name
+            requirement {
+              compareMethod
+              value
+            }
+          }
+        }
+        ... on TaskObjectiveExperience {
+          healthEffect {
+            bodyParts
+            effects
+            time {
+              compareMethod
+              value
+            }
+          }
+        }
+        ... on TaskObjectiveExtract {
+          exitStatus
+          zoneNames
+        }
+        ... on TaskObjectiveHideoutStation {
+          hideoutStation {
+            id
+            name
+          }
+          stationLevel
+        }
+        ... on TaskObjectiveItem {
+          zones {
+            ...TaskZoneData
+          }
+          items {
+            ...ItemRef
+          }
+          count
+          foundInRaid
+          dogTagLevel
+          maxDurability
+          minDurability
+        }
+        ... on TaskObjectiveMark {
+          markerItem {
+            ...ItemRef
+          }
+          zones {
+            ...TaskZoneData
+          }
+        }
+        ... on TaskObjectivePlayerLevel {
+          playerLevel
+        }
+        ... on TaskObjectiveQuestItem {
+          possibleLocations {
+            ...MapWithPositionsData
+          }
+          zones {
+            ...TaskZoneData
+          }
+          questItem {
+            ...QuestItemData
+          }
+          count
+        }
+        ... on TaskObjectiveShoot {
+          shotType
+          targetNames
+          count
+          zoneNames
+          bodyParts
+          usingWeapon {
+            ...ItemRef
+          }
+          usingWeaponMods {
+            ...ItemRef
+          }
+          wearing {
+            ...ItemRef
+          }
+          notWearing {
+            ...ItemRef
+          }
+          distance {
+            compareMethod
+            value
+          }
+          playerHealthEffect {
+            bodyParts
+            effects
+            time {
+              compareMethod
+              value
+            }
+          }
+          enemyHealthEffect {
+            bodyParts
+            effects
+            time {
+              compareMethod
+              value
+            }
+          }
+          zones {
+            ...TaskZoneData
+          }
+        }
+        ... on TaskObjectiveSkill {
+          skillLevel {
+            name
+            level
+            skill {
+              id
+              name
+              imageLink
+            }
+          }
+        }
+        ... on TaskObjectiveTaskStatus {
+          task {
+            id
+            name
+          }
+          status
+        }
+        ... on TaskObjectiveTraderLevel {
+          trader {
+            id
+            name
+          }
+          level
+        }
+        ... on TaskObjectiveTraderStanding {
+          trader {
+            id
+            name
+          }
+          compareMethod
+          value
+        }
+        ... on TaskObjectiveUseItem {
+          useAny {
+            ...ItemRef
+          }
+          zones {
+            ...TaskZoneData
+          }
+          count
+        }
+      }
+    }
+  }
+`;
+// Task rewards split out to reduce core payload
+export const TARKOV_TASKS_REWARDS_QUERY = `
+  ${ITEM_REF_FRAGMENT}
+  query TarkovTaskRewards($lang: LanguageCode, $gameMode: GameMode) {
+    tasks(lang: $lang, gameMode: $gameMode) {
+      id
       startRewards {
         traderStanding {
           trader {
@@ -285,10 +600,10 @@ export const TARKOV_DATA_QUERY = `
         items {
           count
           item {
-            ...ItemData
+            ...ItemRef
             containsItems {
               item {
-                ...ItemData
+                ...ItemRef
               }
               count
             }
@@ -302,11 +617,11 @@ export const TARKOV_DATA_QUERY = `
           }
           level
           item {
-            ...ItemData
+            ...ItemRef
             containsItems {
               count
               item {
-                ...ItemData
+                ...ItemRef
               }
             }
           }
@@ -336,10 +651,10 @@ export const TARKOV_DATA_QUERY = `
         items {
           count
           item {
-            ...ItemData
+            ...ItemRef
             containsItems {
               item {
-                ...ItemData
+                ...ItemRef
               }
               count
             }
@@ -353,11 +668,11 @@ export const TARKOV_DATA_QUERY = `
           }
           level
           item {
-            ...ItemData
+            ...ItemRef
             containsItems {
               count
               item {
-                ...ItemData
+                ...ItemRef
               }
             }
           }
@@ -376,109 +691,7 @@ export const TARKOV_DATA_QUERY = `
           name
         }
       }
-      factionName
-      neededKeys {
-        keys {
-          ...ItemData
-        }
-        map {
-          id
-          name
-        }
-      }
-    }
-    maps {
-      id
-      name
-      normalizedName
-      tarkovDataId
-      enemies
-      wiki
-      raidDuration
-      players
-      description
-      extracts {
-        id
-        name
-        faction
-        position {
-          x
-          y
-          z
-        }
-        top
-        bottom
-      }
-    }
-    playerLevels {
-      level
-      exp
-      levelBadgeImageLink
-    }
-    traders {
-      id
-      name
-      normalizedName
-      resetTime
-      imageLink
-      levels {
-        id
-        level
-        requiredPlayerLevel
-        requiredReputation
-        requiredCommerce
-        insuranceRate
-        payRate
-        repairCostMultiplier
-      }
-    }
-  }
-`;
-// Query to fetch all items - used for complete item reference data
-export const TARKOV_ITEMS_QUERY = `
-  query TarkovItems($lang: LanguageCode) {
-    items(lang: $lang) {
-      id
-      shortName
-      name
-      normalizedName
-      link
-      wikiLink
-      image512pxLink
-      gridImageLink
-      baseImageLink
-      iconLink
-      image8xLink
-      backgroundColor
-      types
-      category {
-        id
-        name
-        normalizedName
-      }
-      categories {
-        id
-        name
-        normalizedName
-      }
-    }
-  }
-`;
-// Query to fetch prestige levels and requirements
-export const TARKOV_PRESTIGE_QUERY = `
-  query TarkovPrestige {
-    prestige {
-      id
-      name
-      prestigeLevel
-      imageLink
-      iconLink
-      conditions {
-        id
-        description
-        __typename
-      }
-      rewards {
+      failureOutcome {
         traderStanding {
           trader {
             id
@@ -486,9 +699,48 @@ export const TARKOV_PRESTIGE_QUERY = `
           }
           standing
         }
-      }
-      transferSettings {
-        __typename
+        items {
+          count
+          item {
+            ...ItemRef
+            containsItems {
+              item {
+                ...ItemRef
+              }
+              count
+            }
+          }
+        }
+        offerUnlock {
+          id
+          trader {
+            id
+            name
+          }
+          level
+          item {
+            ...ItemRef
+            containsItems {
+              count
+              item {
+                ...ItemRef
+              }
+            }
+          }
+        }
+        skillLevelReward {
+          name
+          level
+          skill {
+            id
+            name
+            imageLink
+          }
+        }
+        traderUnlock {
+          id
+          name
+        }
       }
     }
   }

@@ -1,12 +1,12 @@
-import { getCurrentInstance, onUnmounted, ref, toRaw, watch } from 'vue';
-import { debounce } from '@/utils/helpers';
+import { getCurrentInstance, onUnmounted, ref, toRaw } from 'vue';
+import { debounce, isDebounceRejection } from '@/utils/debounce';
 import { logger } from '@/utils/logger';
 import type { Store } from 'pinia';
 import type { UserProgressData } from '~/stores/progressState';
 export interface SupabaseSyncConfig {
   store: Store;
   table: string;
-  transform?: (state: Record<string, unknown>) => Record<string, unknown>;
+  transform?: (state: Record<string, unknown>) => Record<string, unknown> | null;
   debounceMs?: number;
 }
 // Type for the transformed data that gets sent to Supabase
@@ -18,6 +18,17 @@ interface SupabaseUserData {
   pve_data?: UserProgressData;
   [key: string]: unknown;
 }
+// Fast hash for change detection - avoids full JSON comparison
+function hashState(obj: unknown): string {
+  const str = JSON.stringify(obj);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
+}
 export function useSupabaseSync({
   store,
   table,
@@ -25,14 +36,44 @@ export function useSupabaseSync({
   debounceMs = 1000,
 }: SupabaseSyncConfig) {
   logger.debug(`[Sync] useSupabaseSync initialized for table: ${table}, debounce: ${debounceMs}ms`);
+  const tableLabel =
+    table === 'user_progress' ? 'progress' : table === 'user_preferences' ? 'preferences' : table;
   const { $supabase } = useNuxtApp();
   const isSyncing = ref(false);
   const isPaused = ref(false);
-  const syncToSupabase = async (inputState: unknown) => {
+  let lastSyncedHash: string | null = null;
+  // Retry state
+  const MAX_SYNC_RETRIES = 3;
+  let syncRetries = 0;
+  let pendingRetryTimeouts: NodeJS.Timeout[] = [];
+  let syncVersion = 0; // Increments with each sync to track freshness
+  const syncToSupabase = async (inputState: unknown, retryVersion?: number) => {
     const state = inputState as Record<string, unknown>;
+    // If this is a retry, check if it's stale
+    if (retryVersion !== undefined && retryVersion < syncVersion) {
+      logger.debug('[Sync] Ignoring stale retry - newer sync has occurred', {
+        retryVersion,
+        currentVersion: syncVersion,
+      });
+      return;
+    }
+    // Cancel any pending retries when starting a new sync (not a retry itself)
+    if (retryVersion === undefined) {
+      if (pendingRetryTimeouts.length > 0) {
+        logger.debug(`[Sync] Canceling ${pendingRetryTimeouts.length} pending retry timeouts`);
+        pendingRetryTimeouts.forEach(clearTimeout);
+        pendingRetryTimeouts = [];
+      }
+      // Increment version for this new sync
+      syncVersion++;
+      syncRetries = 0; // Reset retry counter for new sync
+    }
+    const currentSyncVersion = retryVersion !== undefined ? retryVersion : syncVersion;
     logger.debug('[Sync] syncToSupabase called', {
       loggedIn: $supabase.user.loggedIn,
       isPaused: isPaused.value,
+      version: currentSyncVersion,
+      isRetry: retryVersion !== undefined,
     });
     if (isPaused.value) {
       logger.debug('[Sync] Skipping - sync is paused');
@@ -55,6 +96,13 @@ export function useSupabaseSync({
       if (!dataToSave.user_id) {
         dataToSave.user_id = $supabase.user.id;
       }
+      // Skip sync if data hasn't changed (reduces egress significantly)
+      const currentHash = hashState(dataToSave);
+      if (currentHash === lastSyncedHash) {
+        logger.debug('[Sync] Skipping - data unchanged');
+        isSyncing.value = false;
+        return;
+      }
       // Log detailed info about what we're syncing (dev only)
       if (import.meta.env.DEV) {
         if (table === 'user_progress') {
@@ -75,11 +123,85 @@ export function useSupabaseSync({
       const { error } = await $supabase.client.from(table).upsert(dataToSave);
       if (error) {
         logger.error(`[Sync] Error syncing to ${table}:`, error);
+        // Retry with exponential backoff
+        if (syncRetries < MAX_SYNC_RETRIES) {
+          syncRetries++;
+          const retryDelay = 1000 * Math.pow(2, syncRetries - 1); // 1s, 2s, 4s
+          logger.debug(
+            `[Sync] Retrying in ${retryDelay}ms (attempt ${syncRetries}/${MAX_SYNC_RETRIES})`
+          );
+          const timeoutId = setTimeout(() => {
+            logger.debug(`[Sync] Retry attempt ${syncRetries}/${MAX_SYNC_RETRIES}`);
+            // Remove this timeout from pending list
+            pendingRetryTimeouts = pendingRetryTimeouts.filter((id) => id !== timeoutId);
+            // Pass version to ensure retry isn't stale
+            syncToSupabase(state, currentSyncVersion);
+          }, retryDelay);
+          pendingRetryTimeouts.push(timeoutId);
+          isSyncing.value = false;
+          return;
+        }
+        // All retries exhausted - notify user
+        const toast = useToast();
+        toast.add({
+          title: `Sync failed (${tableLabel})`,
+          description: `Your ${tableLabel} couldn't be saved to the cloud. Please check your connection and try again.`,
+          color: 'error',
+          duration: 10000,
+        });
+        // Store failed sync for potential recovery (table-specific key to avoid conflicts)
+        if (typeof window !== 'undefined') {
+          try {
+            const pendingSyncKey = `pending_sync_${table}`;
+            localStorage.setItem(pendingSyncKey, JSON.stringify(dataToSave));
+            logger.debug(
+              `[Sync] Saved pending sync to localStorage for recovery (${pendingSyncKey})`
+            );
+          } catch (e) {
+            logger.error('[Sync] Could not save pending sync:', e);
+          }
+        }
       } else {
+        // Success - reset retry counter and clear pending sync
+        syncRetries = 0;
+        lastSyncedHash = currentHash;
         logger.debug(`[Sync] ✅ Successfully synced to ${table}`);
+        // Clear any pending sync from localStorage (table-specific key)
+        if (typeof window !== 'undefined') {
+          try {
+            const pendingSyncKey = `pending_sync_${table}`;
+            localStorage.removeItem(pendingSyncKey);
+          } catch {
+            // Ignore cleanup errors
+          }
+        }
       }
     } catch (err) {
       logger.error('[Sync] Unexpected error:', err);
+      // Treat unexpected errors same as sync errors
+      if (syncRetries < MAX_SYNC_RETRIES) {
+        syncRetries++;
+        const retryDelay = 1000 * Math.pow(2, syncRetries - 1);
+        logger.debug(
+          `[Sync] Retrying after unexpected error in ${retryDelay}ms (attempt ${syncRetries}/${MAX_SYNC_RETRIES})`
+        );
+        const timeoutId = setTimeout(() => {
+          // Remove this timeout from pending list
+          pendingRetryTimeouts = pendingRetryTimeouts.filter((id) => id !== timeoutId);
+          // Pass version to ensure retry isn't stale
+          syncToSupabase(state, currentSyncVersion);
+        }, retryDelay);
+        pendingRetryTimeouts.push(timeoutId);
+        isSyncing.value = false;
+        return;
+      }
+      const toast = useToast();
+      toast.add({
+        title: `Sync error (${tableLabel})`,
+        description: `An unexpected error occurred while saving your ${tableLabel}.`,
+        color: 'error',
+        duration: 10000,
+      });
     } finally {
       isSyncing.value = false;
     }
@@ -103,19 +225,43 @@ export function useSupabaseSync({
       }
     }
   };
-  const debouncedSync = debounce(syncToSupabase, debounceMs);
-  const unwatch = watch(
-    () => store.$state,
-    (newState) => {
-      logger.debug(`[Sync] Store state changed for ${table}, triggering debounced sync`);
-      const clonedState = snapshotState(newState);
-      debouncedSync(clonedState);
+  const debouncedSync = debounce((state: unknown) => {
+    void syncToSupabase(state);
+  }, debounceMs);
+  // Use Pinia's $subscribe instead of a deep watcher for better performance.
+  // $subscribe fires once per mutation (batched), not per individual property change.
+  // This avoids Vue tracking every nested property in large state trees.
+  //
+  // LIFECYCLE NOTE: The { detached: true } option detaches this subscription from the
+  // component lifecycle, meaning it will NOT auto-cleanup when the component unmounts.
+  // We must manually call unsubscribe() to prevent memory leaks. This is handled in
+  // the cleanup() function below, which is either called via onUnmounted (if used
+  // within a component) or must be called manually by the consumer.
+  const unsubscribe = store.$subscribe(
+    (_mutation, state) => {
+      logger.debug(`[Sync] Store mutation for ${table}, triggering debounced sync`);
+      const clonedState = snapshotState(state);
+      void debouncedSync(clonedState).catch((error) => {
+        if (!isDebounceRejection(error)) {
+          logger.error('[Sync] Debounced sync failed:', error);
+        }
+      });
     },
-    { deep: true }
+    { detached: true }
   );
   const cleanup = () => {
     debouncedSync.cancel();
-    unwatch();
+    unsubscribe();
+    // Clear any pending retry timeouts
+    if (pendingRetryTimeouts.length > 0) {
+      logger.debug(
+        `[Sync] Cleanup: clearing ${pendingRetryTimeouts.length} pending retry timeouts`
+      );
+      pendingRetryTimeouts.forEach(clearTimeout);
+      pendingRetryTimeouts = [];
+    }
+    // Reset retry state
+    syncRetries = 0;
   };
   if (getCurrentInstance()) {
     onUnmounted(cleanup);

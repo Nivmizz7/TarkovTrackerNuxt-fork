@@ -6,16 +6,21 @@
  *
  * @module composables/useXpCalculation
  */
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
 import { useTarkovStore } from '@/stores/useTarkov';
+// Module-level flag to ensure level sync watcher is only set up once
+let levelSyncWatcherInitialized = false;
 export function useXpCalculation() {
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
+  const isTaskSuccessful = (taskId: string) =>
+    tarkovStore.isTaskComplete(taskId) && !tarkovStore.isTaskFailed(taskId);
   // Computed: Sum of XP from all completed tracked tasks
   const calculatedQuestXP = computed(() => {
     return metadataStore.tasks
-      .filter((task) => tarkovStore.isTaskComplete(task.id))
+      .filter((task) => isTaskSuccessful(task.id))
       .reduce((sum, task) => sum + (task.experience || 0), 0);
   });
   // Computed: User's total XP (calculated + offset)
@@ -71,6 +76,26 @@ export function useXpCalculation() {
     if (levelData) {
       setTotalXP(levelData.exp);
     }
+  }
+  // Set up a watcher to sync derivedLevel to the store when automatic level calculation is enabled.
+  // This ensures the database stays in sync with the calculated level.
+  // Only set up once per app lifecycle to avoid duplicate watchers.
+  if (!levelSyncWatcherInitialized) {
+    levelSyncWatcherInitialized = true;
+    const preferencesStore = usePreferencesStore();
+    watch(
+      derivedLevel,
+      (newLevel) => {
+        // Only sync if automatic level calculation is enabled
+        if (!preferencesStore.getUseAutomaticLevelCalculation) return;
+        // Only update if the stored level differs from the derived level
+        const storedLevel = tarkovStore.playerLevel();
+        if (storedLevel !== newLevel) {
+          tarkovStore.setLevel(newLevel);
+        }
+      },
+      { immediate: true }
+    );
   }
   return {
     calculatedQuestXP,

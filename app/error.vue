@@ -46,7 +46,7 @@
       </div>
       <!-- Loot Mini-Game Area -->
       <div
-        class="bg-surface-900/50 mx-auto min-h-[100px] w-full max-w-xs rounded-lg border border-white/5 p-3 backdrop-blur-sm sm:min-h-[140px] sm:max-w-sm sm:p-4 lg:min-h-[180px] lg:max-w-md lg:p-6"
+        class="bg-surface-900/50 mx-auto min-h-25 w-full max-w-xs rounded-lg border border-white/5 p-3 backdrop-blur-sm sm:min-h-35 sm:max-w-sm sm:p-4 lg:min-h-45 lg:max-w-md lg:p-6"
       >
         <transition name="fade" mode="out-in">
           <!-- State: Initial -->
@@ -101,7 +101,7 @@
                 :aria-label="`View ${foundItem.name} on tarkov.dev`"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="bg-surface-950 hover:ring-primary-500/50 hover:bg-surface-900 group flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3 ring-1 ring-white/10 transition-all sm:gap-4 sm:px-5 sm:py-4 lg:gap-5 lg:px-6 lg:py-5"
+                class="bg-surface-950 hover:ring-primary-500/50 hover:bg-surface-900 group flex w-full items-center gap-3 rounded-lg px-3 py-3 ring-1 ring-white/10 transition-all sm:gap-4 sm:px-5 sm:py-4 lg:gap-5 lg:px-6 lg:py-5"
               >
                 <!-- Item Image -->
                 <div

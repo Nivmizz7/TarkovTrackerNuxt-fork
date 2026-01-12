@@ -38,7 +38,7 @@ function parseCommaSeparated(value: string): string[] {
 }
 /**
  * Check if a route matches a pattern (supports * wildcard at end)
- * e.g., "/api/tarkov/*" matches "/api/tarkov/data" and "/api/tarkov/items"
+ * e.g., "/api/tarkov/*" matches "/api/tarkov/items" and "/api/tarkov/tasks-core"
  */
 function routeMatchesPattern(route: string, pattern: string): boolean {
   if (pattern.endsWith('/*')) {
@@ -235,11 +235,7 @@ export default defineEventHandler(async (event) => {
   const effectiveAllowedHosts = [...allowedHosts];
   if (effectiveAllowedHosts.length === 0 && !isDevelopment) {
     // Default production hosts
-    effectiveAllowedHosts.push(
-      'tarkovtracker.org',
-      'www.tarkovtracker.org',
-      'dev.tarkovtracker.org'
-    );
+    effectiveAllowedHosts.push('tarkovtracker.org', 'www.tarkovtracker.org');
   }
   // === SECURITY CHECK 1: Host Header Validation ===
   const hostHeader = getRequestHeader(event, 'host');

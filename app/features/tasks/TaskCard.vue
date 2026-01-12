@@ -8,7 +8,8 @@
   >
     <div
       v-if="showBackgroundIcon"
-      class="text-brand-200 pointer-events-none absolute inset-0 z-0 flex rotate-12 transform items-center justify-center p-8 opacity-15"
+      class="pointer-events-none absolute inset-0 z-0 flex rotate-12 transform items-center justify-center p-8 opacity-15"
+      :class="backgroundIconColor"
     >
       <UIcon
         :name="backgroundIcon.startsWith('mdi-') ? `i-${backgroundIcon}` : backgroundIcon"
@@ -92,7 +93,12 @@
               )
             "
           >
-            <UBadge size="xs" color="neutral" variant="soft" class="cursor-help text-[11px]">
+            <UBadge
+              size="xs"
+              :color="meetsLevelRequirement ? 'success' : 'error'"
+              variant="soft"
+              class="cursor-help text-[11px]"
+            >
               {{ t('page.tasks.questcard.levelBadge', { count: task.minPlayerLevel }) }}
             </UBadge>
           </AppTooltip>
@@ -101,7 +107,7 @@
               size="xs"
               color="neutral"
               variant="soft"
-              class="inline-flex max-w-[10rem] items-center gap-1 text-[11px]"
+              class="inline-flex max-w-40 items-center gap-1 text-[11px]"
             >
               <UIcon
                 :name="task?.map?.name ? 'i-mdi-map-marker' : 'i-mdi-earth'"
@@ -123,6 +129,22 @@
             <UIcon name="i-mdi-progress-check" aria-hidden="true" class="h-3 w-3" />
             {{ t('page.tasks.questcard.progress', objectiveProgress) }}
           </UBadge>
+          <UBadge v-if="isFailed" size="xs" color="error" variant="soft" class="text-[11px]">
+            {{ t('page.dashboard.stats.failed.stat', 'Failed') }}
+          </UBadge>
+          <AppTooltip
+            v-if="isInvalid && !isFailed"
+            :text="
+              t(
+                'page.tasks.questcard.blockedTooltip',
+                'This quest is permanently blocked and can never be completed due to choices made in other quests'
+              )
+            "
+          >
+            <UBadge size="xs" color="neutral" variant="soft" class="cursor-help text-[11px]">
+              {{ t('page.tasks.questcard.blocked', 'Blocked') }}
+            </UBadge>
+          </AppTooltip>
           <AppTooltip
             v-if="preferencesStore.getShowRequiredLabels && task.kappaRequired"
             :text="
@@ -149,6 +171,20 @@
               {{ t('page.tasks.questcard.lightkeeper', 'Lightkeeper') }}
             </UBadge>
           </AppTooltip>
+          <AppTooltip
+            v-if="preferencesStore.getShowRequiredLabels && minExclusiveEdition"
+            :text="
+              t(
+                'page.tasks.questcard.editionExclusiveTooltip',
+                { editions: minExclusiveEdition.title },
+                `This quest is only available to players with ${minExclusiveEdition.title} edition`
+              )
+            "
+          >
+            <UBadge size="xs" color="primary" variant="soft" class="cursor-help text-[11px]">
+              {{ exclusiveEditionBadge }}
+            </UBadge>
+          </AppTooltip>
           <!-- XP display - shown for all task statuses when setting is enabled -->
           <div
             v-if="preferencesStore.getShowExperienceRewards && task.experience"
@@ -158,9 +194,10 @@
             <span>{{ formatNumber(task.experience) }} XP</span>
           </div>
           <!-- Action buttons in header for consistent positioning -->
-          <template v-if="isOurFaction">
+          <template v-if="actionButtonState !== 'none'">
+            <!-- Locked: Mark Available button -->
             <UButton
-              v-if="isLocked"
+              v-if="actionButtonState === 'locked'"
               :size="actionButtonSize"
               color="primary"
               variant="soft"
@@ -169,18 +206,43 @@
             >
               {{ t('page.tasks.questcard.availablebutton', 'Mark Available') }}
             </UButton>
+            <!-- Complete: Mark Uncompleted/Reset Failed button -->
             <UButton
-              v-if="isComplete"
+              v-else-if="actionButtonState === 'complete'"
               :size="actionButtonSize"
               color="primary"
               variant="soft"
               class="shrink-0"
               @click.stop="markTaskUncomplete()"
             >
-              {{ t('page.tasks.questcard.uncompletebutton', 'Mark Uncompleted') }}
+              {{
+                isFailed
+                  ? t('page.tasks.questcard.resetfailed', 'Reset Failed')
+                  : t('page.tasks.questcard.uncompletebutton', 'Mark Uncompleted')
+              }}
             </UButton>
+            <!-- Hot Wheels: Both Complete and Fail buttons -->
+            <div v-else-if="actionButtonState === 'hotwheels'" class="flex shrink-0 flex-col gap-1">
+              <UButton
+                :size="actionButtonSize"
+                color="success"
+                :ui="completeButtonUi"
+                @click.stop="markTaskComplete()"
+              >
+                {{ t('page.tasks.questcard.completebutton', 'Complete').toUpperCase() }}
+              </UButton>
+              <UButton
+                :size="actionButtonSize"
+                color="error"
+                variant="soft"
+                @click.stop="markTaskFailed()"
+              >
+                {{ t('page.tasks.questcard.failbutton', 'Fail') }}
+              </UButton>
+            </div>
+            <!-- Available: Complete button -->
             <UButton
-              v-if="!isComplete && !isLocked"
+              v-else-if="actionButtonState === 'available'"
               :size="actionButtonSize"
               color="success"
               :ui="completeButtonUi"
@@ -231,10 +293,49 @@
           <span class="ml-2 text-gray-300">{{ lockedBefore }}</span>
         </template>
       </div>
+      <div v-if="isFailed" class="text-xs text-red-300">
+        <span class="text-red-200/70">
+          {{ t('page.tasks.questcard.failedbecause', 'Failed because') }}:
+        </span>
+        <template v-if="failureSources.length > 0">
+          <span class="ml-2 inline-flex flex-wrap items-center gap-1.5">
+            <router-link
+              v-for="source in failureSources"
+              :key="source.id"
+              :to="`/tasks?task=${source.id}`"
+              class="inline-flex max-w-[16rem] items-center rounded-md border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[11px] text-red-200 hover:bg-red-500/20"
+            >
+              {{ source.name }}
+            </router-link>
+          </span>
+        </template>
+        <span v-else class="ml-2 text-red-200/80">
+          {{ t('page.tasks.questcard.failedbecauseunknown', 'Failed manually or data missing') }}
+        </span>
+      </div>
+      <div v-if="showNeededBy" class="text-xs text-gray-400">
+        <span class="text-gray-500">
+          <UIcon name="i-mdi-account-multiple-outline" class="mr-1 inline h-4 w-4" />
+          {{
+            t(
+              'page.tasks.questcard.neededby',
+              { names: neededByDisplayText },
+              `Needed by: ${neededByDisplayText}`
+            )
+          }}
+        </span>
+      </div>
       <!-- 3) Body: objectives -->
       <div class="space-y-3">
         <QuestKeys v-if="task?.neededKeys?.length" :needed-keys="task.neededKeys" />
+        <QuestObjectivesSkeleton
+          v-if="showObjectivesSkeleton"
+          :objectives="relevantViewObjectives"
+          :irrelevant-count="irrelevantObjectives.length"
+          :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
+        />
         <QuestObjectives
+          v-else
           :objectives="relevantViewObjectives"
           :irrelevant-count="irrelevantObjectives.length"
           :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
@@ -311,6 +412,15 @@
             close();
           "
         />
+        <ContextMenuItem
+          v-if="preferencesStore.getEnableManualTaskFail && isOurFaction && !isFailed"
+          icon="i-mdi-close-circle"
+          :label="t('page.tasks.questcard.markfailed', 'Mark Failed')"
+          @click="
+            confirmMarkFailed();
+            close();
+          "
+        />
       </template>
     </ContextMenu>
     <!-- Item Context Menu -->
@@ -344,17 +454,42 @@
   import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useTaskActions, type TaskActionPayload } from '@/composables/useTaskActions';
+  import { isTaskSuccessful, useTaskState } from '@/composables/useTaskState';
+  import QuestObjectivesSkeleton from '@/features/tasks/QuestObjectivesSkeleton.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
-  import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
-  import type { Task } from '@/types/tarkov';
+  import type { GameEdition, Task, TaskObjective } from '@/types/tarkov';
+  import { HOT_WHEELS_TASK_ID } from '@/utils/constants';
+  import { getExclusiveEditionsForTask } from '@/utils/editionHelpers';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
   type ContextMenuRef = { open: (event: MouseEvent) => void };
+  // Module-level constants (moved from reactive scope)
+  const MAX_DISPLAYED_NAMES = 3;
+  const MAP_OBJECTIVE_TYPES = new Set([
+    'mark',
+    'zone',
+    'extract',
+    'visit',
+    'findItem',
+    'findQuestItem',
+    'plantItem',
+    'plantQuestItem',
+    'shoot',
+  ]);
+  const EDITION_SHORT_NAMES: Record<string, string> = {
+    'Edge of Darkness': 'EOD',
+    'Unheard Edition': 'Unheard',
+    Standard: 'Standard',
+    'Left Behind': 'Left Behind',
+    'Prepare for Escape': 'PFE',
+  };
   const QuestKeys = defineAsyncComponent(() => import('@/features/tasks/QuestKeys.vue'));
-  const QuestObjectives = defineAsyncComponent(
-    () => import('@/features/tasks/QuestObjectives.vue')
-  );
+  const QuestObjectives = defineAsyncComponent({
+    loader: () => import('@/features/tasks/QuestObjectives.vue'),
+    loadingComponent: QuestObjectivesSkeleton,
+    delay: 150, // Prevents skeleton flash on fast loads
+  });
   const TaskCardRewards = defineAsyncComponent(
     () => import('@/features/tasks/TaskCardRewards.vue')
   );
@@ -368,59 +503,122 @@
   const router = useRouter();
   const { xs } = useSharedBreakpoints();
   const tarkovStore = useTarkovStore();
-  const progressStore = useProgressStore();
   const preferencesStore = usePreferencesStore();
   const metadataStore = useMetadataStore();
   const formatNumber = useLocaleNumberFormatter();
-  const tasks = computed(() => metadataStore.tasks);
   const taskContextMenu = ref<ContextMenuRef | null>(null);
   const itemContextMenu = ref<ContextMenuRef | null>(null);
   const selectedItem = ref<{ id: string; wikiLink?: string } | null>(null);
   // Use extracted task actions composable
-  const { markTaskComplete, markTaskUncomplete, markTaskAvailable } = useTaskActions(
-    () => props.task,
-    (payload) => emit('on-task-action', payload)
-  );
-  const isComplete = computed(() => tarkovStore.isTaskComplete(props.task.id));
-  const isFailed = computed(() => tarkovStore.isTaskFailed(props.task.id));
-  const isLocked = computed(() => {
-    return progressStore.unlockedTasks[props.task.id]?.self !== true && !isComplete.value;
-  });
+  const { markTaskComplete, markTaskUncomplete, markTaskAvailable, markTaskFailed } =
+    useTaskActions(
+      () => props.task,
+      (payload) => emit('on-task-action', payload)
+    );
+  // Consolidated task state using composable (reduces store lookups)
+  const { isComplete, isFailed, isLocked, isInvalid } = useTaskState(() => props.task.id);
+  // Helper for status array checks
+  const hasStatus = (status: string[] | undefined, statuses: string[]) => {
+    const normalized = (status ?? []).map((entry) => entry.toLowerCase());
+    return statuses.some((value) => normalized.includes(value));
+  };
   const isOurFaction = computed(() => {
     const taskFaction = props.task.factionName;
     return taskFaction === 'Any' || taskFaction === tarkovStore.getPMCFaction();
   });
+  const meetsLevelRequirement = computed(() => {
+    const minLevel = props.task.minPlayerLevel ?? 0;
+    return minLevel <= 0 || tarkovStore.playerLevel() >= minLevel;
+  });
+  const exclusiveEditions = computed<GameEdition[]>(() =>
+    getExclusiveEditionsForTask(props.task.id, metadataStore.editions)
+  );
+  // Get the minimum required edition (lowest value = base requirement)
+  const minExclusiveEdition = computed(() => {
+    if (!exclusiveEditions.value.length) return null;
+    return exclusiveEditions.value.reduce((min, e) => (e.value < min.value ? e : min));
+  });
+  const exclusiveEditionBadge = computed(() => {
+    if (!minExclusiveEdition.value) return '';
+    return EDITION_SHORT_NAMES[minExclusiveEdition.value.title] || minExclusiveEdition.value.title;
+  });
   const taskClasses = computed(() => {
     if (isComplete.value && !isFailed.value) return 'border-success-500/25 bg-success-500/10';
-    if (isLocked.value || isFailed.value) return 'border-error-500/25 bg-error-500/10';
+    if (isFailed.value) return 'border-error-500/25 bg-error-500/10'; // Red for failed
+    if (isInvalid.value) return 'border-neutral-500/25 bg-neutral-500/10 opacity-60'; // Gray for blocked
+    if (isLocked.value) return 'border-amber-500/25 bg-amber-500/10'; // Amber/orange for locked
     return 'border-white/10';
   });
   const isCompact = computed(() => preferencesStore.getTaskCardDensity === 'compact');
   const cardBodyClass = computed(() => {
     return isCompact.value ? 'p-3 flex flex-col' : 'p-4 flex flex-col';
   });
-  const showBackgroundIcon = computed(() => isLocked.value || isFailed.value || isComplete.value);
+  const showBackgroundIcon = computed(
+    () => isLocked.value || isFailed.value || isComplete.value || isInvalid.value
+  );
+  const neededBy = computed(() => props.task.neededBy ?? []);
+  const showNeededBy = computed(
+    () => preferencesStore.getTaskUserView === 'all' && neededBy.value.length > 0
+  );
+  const displayedNeededByNames = computed(() => neededBy.value.slice(0, MAX_DISPLAYED_NAMES));
+  const extraNeededByCount = computed(() =>
+    Math.max(0, neededBy.value.length - MAX_DISPLAYED_NAMES)
+  );
+  const neededByDisplayText = computed(() => {
+    const names = displayedNeededByNames.value.join(', ');
+    return extraNeededByCount.value > 0 ? `${names} +${extraNeededByCount.value} more` : names;
+  });
   const backgroundIcon = computed(() => {
+    if (isFailed.value) return 'mdi-close-octagon';
     if (isComplete.value) return 'mdi-check';
-    if (isLocked.value || isFailed.value) return 'mdi-lock';
+    if (isInvalid.value) return 'mdi-cancel';
+    if (isLocked.value) return 'mdi-lock';
     return '';
   });
+  const backgroundIconColor = computed(() => {
+    if (isFailed.value) return 'text-error-400';
+    if (isComplete.value) return 'text-success-400';
+    if (isInvalid.value) return 'text-neutral-400';
+    if (isLocked.value) return 'text-amber-400';
+    return 'text-brand-200';
+  });
   const lockedBehind = computed(() => {
-    return props.task.successors?.filter((s) => !tarkovStore.isTaskComplete(s)).length || 0;
+    return props.task.successors?.filter((s) => !isTaskSuccessful(s)).length || 0;
   });
   const lockedBefore = computed(() => {
-    return props.task.predecessors?.filter((s) => !tarkovStore.isTaskComplete(s)).length || 0;
+    return props.task.predecessors?.filter((s) => !isTaskSuccessful(s)).length || 0;
   });
   const isFactionTask = computed(() => props.task.factionName !== 'Any');
   const factionImage = computed(() => `/img/factions/${props.task.factionName}.webp`);
   const parentTasks = computed(() => {
     if (!props.task.parents?.length) return [];
     return props.task.parents
-      .map((id) => tasks.value.find((task) => task.id === id))
+      .map((id) => metadataStore.getTaskById(id))
       .filter((task): task is Task => task !== undefined);
   });
+  const failureSources = computed(() => {
+    if (!isFailed.value) return [];
+    const sources = new Map<string, { id: string; name: string }>();
+    (props.task.failConditions ?? [])
+      .filter(
+        (objective) => objective?.task?.id && hasStatus(objective.status, ['complete', 'completed'])
+      )
+      .filter((objective) => isTaskSuccessful(objective.task!.id))
+      .forEach((objective) => {
+        const id = objective.task!.id;
+        sources.set(id, { id, name: objective.task!.name ?? id });
+      });
+    const alternativeSourceIds = metadataStore.alternativeTaskSources[props.task.id] ?? [];
+    alternativeSourceIds.forEach((taskId) => {
+      if (!isTaskSuccessful(taskId)) return;
+      const task = metadataStore.getTaskById(taskId);
+      if (!task?.name) return;
+      sources.set(taskId, { id: taskId, name: task.name });
+    });
+    return Array.from(sources.values());
+  });
   const pendingParentTasks = computed(() => {
-    return parentTasks.value.filter((parent) => !tarkovStore.isTaskComplete(parent.id));
+    return parentTasks.value.filter((parent) => !isTaskSuccessful(parent.id));
   });
   const displayedPendingParents = computed(() => pendingParentTasks.value.slice(0, 2));
   const extraPendingParentsCount = computed(() => {
@@ -429,7 +627,7 @@
   const childTasks = computed(() => {
     if (!props.task.children?.length) return [];
     return props.task.children
-      .map((id) => tasks.value.find((task) => task.id === id))
+      .map((id) => metadataStore.getTaskById(id))
       .filter((task): task is Task => task !== undefined);
   });
   const unlocksNextCount = computed(() => childTasks.value.length);
@@ -444,49 +642,81 @@
     base: 'bg-success-500 hover:bg-success-600 active:bg-success-700 text-white border border-success-700',
   };
   const actionButtonSize = computed(() => (xs.value ? 'xs' : 'sm'));
-  const mapObjectiveTypes = [
-    'mark',
-    'zone',
-    'extract',
-    'visit',
-    'findItem',
-    'findQuestItem',
-    'plantItem',
-    'plantQuestItem',
-    'shoot',
-  ];
+  const isHotWheelsTask = computed(() => props.task.id === HOT_WHEELS_TASK_ID);
+  const showHotWheelsFail = computed(
+    () => isHotWheelsTask.value && !isComplete.value && !isLocked.value
+  );
+  /**
+   * Action button state for cleaner template logic.
+   * Returns which action button(s) should be shown.
+   */
+  type ActionButtonState = 'locked' | 'complete' | 'hotwheels' | 'available' | 'none';
+  const actionButtonState = computed((): ActionButtonState => {
+    if (!isOurFaction.value) return 'none';
+    if (isLocked.value) return 'locked';
+    if (isComplete.value) return 'complete';
+    if (showHotWheelsFail.value) return 'hotwheels';
+    return 'available';
+  });
   const onMapView = computed(() => preferencesStore.getTaskPrimaryView === 'maps');
-  const relevantViewObjectives = computed(() => {
-    if (!onMapView.value) return props.task.objectives ?? [];
-    return (props.task.objectives ?? []).filter((objective) => {
-      if (!Array.isArray(objective.maps) || !objective.maps.length) return true;
-      return (
-        objective.maps.some((map) => map.id === preferencesStore.getTaskMapView) &&
-        mapObjectiveTypes.includes(objective.type ?? '')
-      );
-    });
+  // Get objectives from props or fall back to store when props are stale
+  // This handles the case where visibleTasks holds old task objects after objectives merge
+  const taskObjectives = computed(() => {
+    if ((props.task.objectives?.length ?? 0) > 0) {
+      return props.task.objectives!;
+    }
+    // Props empty - check store for latest data
+    const storeTask = metadataStore.getTaskById(props.task.id);
+    return storeTask?.objectives ?? [];
   });
-  const irrelevantObjectives = computed(() => {
-    if (!onMapView.value) return [];
-    return (props.task.objectives ?? []).filter((objective) => {
-      if (!Array.isArray(objective.maps) || !objective.maps.length) return false;
-      const onSelectedMap = objective.maps.some(
-        (map) => map.id === preferencesStore.getTaskMapView
-      );
-      const isMapType = mapObjectiveTypes.includes(objective.type ?? '');
-      return !(onSelectedMap && isMapType);
-    });
+  /**
+   * Consolidated objective categorization - single pass through objectives array.
+   * Categorizes objectives into relevant, irrelevant, and uncompleted irrelevant.
+   */
+  const categorizedObjectives = computed(() => {
+    const objectives = taskObjectives.value;
+    const selectedMapId = preferencesStore.getTaskMapView;
+    const isMapView = onMapView.value;
+    // If not in map view, all objectives are relevant
+    if (!isMapView) {
+      return {
+        relevant: objectives,
+        irrelevant: [] as TaskObjective[],
+        uncompletedIrrelevant: [] as TaskObjective[],
+      };
+    }
+    const relevant: TaskObjective[] = [];
+    const irrelevant: TaskObjective[] = [];
+    const uncompletedIrrelevant: TaskObjective[] = [];
+    for (const objective of objectives) {
+      const hasMaps = Array.isArray(objective.maps) && objective.maps.length > 0;
+      const onSelectedMap = hasMaps && objective.maps!.some((map) => map.id === selectedMapId);
+      const isMapType = MAP_OBJECTIVE_TYPES.has(objective.type ?? '');
+      // Objective is relevant if it has no maps, or is on selected map AND is a map type
+      const isRelevant = !hasMaps || (onSelectedMap && isMapType);
+      if (isRelevant) {
+        relevant.push(objective);
+      } else {
+        irrelevant.push(objective);
+        // Check if this irrelevant objective is also uncompleted
+        if (!tarkovStore.isTaskObjectiveComplete(objective.id)) {
+          uncompletedIrrelevant.push(objective);
+        }
+      }
+    }
+    return { relevant, irrelevant, uncompletedIrrelevant };
   });
-  const uncompletedIrrelevantObjectives = computed(() => {
-    return (props.task.objectives ?? [])
-      .filter((objective) => {
-        const onCorrectMap = objective.maps?.some(
-          (map) => map.id === preferencesStore.getTaskMapView
-        );
-        const isMapObjectiveType = mapObjectiveTypes.includes(objective.type ?? '');
-        return !onCorrectMap || !isMapObjectiveType;
-      })
-      .filter((objective) => !tarkovStore.isTaskObjectiveComplete(objective.id));
+  // Derived values from consolidated categorization
+  const relevantViewObjectives = computed(() => categorizedObjectives.value.relevant);
+  const irrelevantObjectives = computed(() => categorizedObjectives.value.irrelevant);
+  const uncompletedIrrelevantObjectives = computed(
+    () => categorizedObjectives.value.uncompletedIrrelevant
+  );
+  const showObjectivesSkeleton = computed(() => {
+    // If we have objectives (from props or store fallback), no skeleton needed
+    if (taskObjectives.value.length > 0) return false;
+    // No objectives yet - show skeleton while loading or not yet hydrated
+    return metadataStore.tasksObjectivesPending || !metadataStore.tasksObjectivesHydrated;
   });
   const objectiveProgress = computed(() => {
     const total = relevantViewObjectives.value.length;
@@ -521,6 +751,16 @@
       `https://escapefromtarkov.fandom.com/wiki/Special:Search?query=${selectedItem.value.id}`,
       '_blank'
     );
+  };
+  const confirmMarkFailed = () => {
+    const confirmed = window.confirm(
+      t(
+        'page.tasks.questcard.markfailedconfirm',
+        "Mark this task as failed? This is only for data issues, isn't recommended, and may block questlines."
+      )
+    );
+    if (!confirmed) return;
+    markTaskFailed();
   };
   const copyTextToClipboard = async (text: string) => {
     try {

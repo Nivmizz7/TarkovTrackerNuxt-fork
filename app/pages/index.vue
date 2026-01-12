@@ -57,7 +57,7 @@
           <div class="space-y-4 lg:col-span-2 lg:space-y-6">
             <div>
               <h1 class="mb-2 text-2xl font-bold text-white md:text-4xl">
-                {{ $t('page.dashboard.hero.welcome') }}
+                {{ $t('page.dashboard.hero.welcome', { name: userDisplayName }) }}
               </h1>
               <p class="text-surface-400 text-sm md:text-lg">
                 {{ $t('page.dashboard.hero.subtitle') }}
@@ -171,7 +171,7 @@
           <div
             role="button"
             tabindex="0"
-            class="bg-surface-900 border-surface-700/30 hover:border-primary-700/30 focus-visible:border-primary-500 focus-visible:ring-primary-500/50 cursor-pointer rounded-lg border p-3 shadow-sm transition-all outline-none hover:shadow-md focus-visible:ring-2"
+            class="bg-surface-900 border-surface-700/30 hover:border-primary-700/30 focus-visible:border-primary-500 focus-visible:ring-primary-500/50 rounded-lg border p-3 shadow-sm transition-all outline-none hover:shadow-md focus-visible:ring-2"
             :aria-label="$t('page.dashboard.traders.viewTasks', { name: trader.name })"
             @click="navigateToTraderTasks(trader.id)"
             @keydown.enter="navigateToTraderTasks(trader.id)"
@@ -263,9 +263,11 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useXpCalculation } from '@/composables/useXpCalculation';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { calculatePercentage, calculatePercentageNum } from '@/utils/formatters';
+  import { logger } from '@/utils/logger';
   // Page metadata
   useSeoMeta({
     title: 'Dashboard',
@@ -277,6 +279,17 @@
   const tarkovStore = useTarkovStore();
   const router = useRouter();
   const preferencesStore = usePreferencesStore();
+  const { $supabase } = useNuxtApp();
+  const xpCalculation = useXpCalculation();
+  const userDisplayName = computed(() => {
+    if (preferencesStore.getStreamerMode) return 'Operator';
+    if (!$supabase.user?.loggedIn) return 'Operator';
+    const displayName = tarkovStore.getDisplayName();
+    if (displayName && displayName.trim() !== '') return displayName;
+    const authDisplayName = $supabase.user.displayName;
+    if (authDisplayName && authDisplayName.trim() !== '') return authDisplayName;
+    return 'Operator';
+  });
   // Holiday effects
   const holidayEffectsEnabled = computed(() => preferencesStore.getEnableHolidayEffects);
   // Navigate to tasks page filtered by trader
@@ -285,11 +298,44 @@
     preferencesStore.setTaskTraderView(traderId);
     router.push('/tasks');
   };
-  // Get current level
+  // Get current level - respect automatic calculation setting
+  const useAutomaticLevel = computed(() => preferencesStore.getUseAutomaticLevelCalculation);
+  /** Type guard that narrows unknown to number if it is a finite number */
+  const isFiniteNumber = (value: unknown): value is number => Number.isFinite(value);
+  const safeLevel = (level: unknown): number => (isFiniteNumber(level) ? Math.max(0, level) : 0);
   const currentLevel = computed(() => {
-    const currentMode = tarkovStore.currentGameMode;
-    return tarkovStore[currentMode]?.level || 1;
+    const manualLevel = tarkovStore.playerLevel();
+    if (!useAutomaticLevel.value) {
+      return safeLevel(manualLevel);
+    }
+    const derivedLevel = xpCalculation?.derivedLevel?.value;
+    // Use explicit finite check to avoid treating 0 as falsy
+    return Number.isFinite(derivedLevel) ? safeLevel(derivedLevel) : safeLevel(manualLevel);
   });
+  // Watch for invalid manual level values
+  watch(
+    () => tarkovStore.playerLevel(),
+    (manualLevel) => {
+      if (!Number.isFinite(manualLevel)) {
+        logger.warn('[Dashboard] manualLevel is not finite', { manualLevel });
+      } else if (manualLevel < 0) {
+        logger.warn('[Dashboard] manualLevel is negative', { manualLevel });
+      }
+    }
+  );
+  // Watch for invalid derived level values (only relevant in automatic mode)
+  watch(
+    () => xpCalculation?.derivedLevel?.value,
+    (derivedLevel) => {
+      // Skip if automatic level calculation is disabled or derivedLevel ref is not yet available
+      if (!useAutomaticLevel.value || derivedLevel === undefined) return;
+      if (!Number.isFinite(derivedLevel)) {
+        logger.warn('[Dashboard] derivedLevel is not finite', { derivedLevel });
+      } else if (derivedLevel < 0) {
+        logger.warn('[Dashboard] derivedLevel is negative', { derivedLevel });
+      }
+    }
+  );
   // Unwrap trader stats for template usage
   const traderStats = computed(() => dashboardStats.traderStats.value || []);
   // Percentage calculations (numeric)

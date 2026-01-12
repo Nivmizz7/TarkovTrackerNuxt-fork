@@ -139,12 +139,22 @@
                 <div>
                   <div class="mb-2 flex items-center">
                     <UIcon name="i-mdi-login" class="mr-2 h-4.5 w-4.5 text-gray-400" />
-                    <span class="flex items-center text-sm">
-                      <span class="mr-2 text-gray-400">Auth Method:</span>
-                      <UBadge size="xs" :color="providerColor" variant="solid" class="text-white">
-                        <UIcon :name="providerIcon" class="mr-1 h-4 w-4" />
-                        {{ providerLabel }}
-                      </UBadge>
+                    <span class="flex flex-wrap items-center gap-1 text-sm">
+                      <span class="mr-1 text-gray-400">Auth Method:</span>
+                      <template v-if="providers.length > 0">
+                        <UBadge
+                          v-for="p in providers"
+                          :key="p"
+                          size="xs"
+                          :color="getProviderColor(p)"
+                          variant="solid"
+                          :class="['text-white', p === 'github' && 'bg-[#24292e]! text-white!']"
+                        >
+                          <UIcon :name="getProviderIcon(p)" class="mr-1 h-4 w-4" />
+                          {{ getProviderLabel(p) }}
+                        </UBadge>
+                      </template>
+                      <span v-else class="text-gray-500">Unknown</span>
                     </span>
                   </div>
                   <div class="flex items-center">
@@ -211,7 +221,7 @@
               </template>
             </UAlert>
             <UAlert
-              v-if="hasOwnedTeams"
+              v-if="isLoggedIn"
               icon="i-mdi-account-group"
               color="warning"
               variant="soft"
@@ -220,9 +230,8 @@
             >
               <template #description>
                 <div class="text-sm">
-                  You own {{ ownedTeamsCount }} team(s). Team ownership will be automatically
-                  transferred to the oldest member in each team. Teams without other members will be
-                  deleted.
+                  If you own any teams, ownership will be automatically transferred to the oldest
+                  member in each team. Teams without other members will be deleted.
                 </div>
               </template>
             </UAlert>
@@ -246,11 +255,16 @@
     </GenericCard>
   </div>
   <UModal v-model:open="showConfirmationDialog" prevent-close>
-    <template #header>
+    <template #title>
       <div class="flex items-center text-xl font-medium text-red-500">
         <UIcon name="i-mdi-alert-circle" class="mr-2 h-6 w-6 text-red-500" />
         Confirm Account Deletion
       </div>
+    </template>
+    <template #description>
+      <span class="sr-only">
+        This action is irreversible and requires typing the confirmation phrase to proceed.
+      </span>
     </template>
     <template #body>
       <div class="space-y-4">
@@ -301,16 +315,25 @@
     </template>
   </UModal>
   <UModal v-model:open="showSuccessDialog" prevent-close>
-    <template #header>
+    <template #title>
       <div class="flex items-center text-xl font-medium text-green-500">
         <UIcon name="i-mdi-check-circle" class="mr-2 h-6 w-6 text-green-500" />
         Account Deleted Successfully
       </div>
     </template>
+    <template #description>
+      <span class="sr-only">
+        Your account deletion is complete, and you will be redirected to the dashboard.
+      </span>
+    </template>
     <template #body>
       <div class="space-y-3">
         <div class="text-base">
           Your account and all associated data have been permanently deleted.
+        </div>
+        <div v-if="cleanupScheduled" class="text-sm text-gray-400">
+          <UIcon name="i-mdi-information" class="mr-1 inline h-4 w-4" />
+          Some data cleanup is still in progress and will complete shortly.
         </div>
         <div class="text-sm text-gray-400">
           Thank you for using TarkovTracker. You will be redirected to the dashboard.
@@ -326,16 +349,20 @@
 </template>
 <script setup lang="ts">
   import { computed, ref } from 'vue';
-  import { useRouter } from 'vue-router';
   import GenericCard from '@/components/ui/GenericCard.vue';
-  import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
+  import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useSystemStore } from '@/stores/useSystemStore';
+  import { resetTarkovSync, useTarkovStore } from '@/stores/useTarkov';
+  import { useTeamStore } from '@/stores/useTeamStore';
   import { logger } from '@/utils/logger';
   defineOptions({
     inheritAttrs: false,
   });
   const { $supabase } = useNuxtApp();
-  const router = useRouter();
-  const { teamStore } = useTeamStoreWithSupabase();
+  const preferencesStore = usePreferencesStore();
+  const systemStore = useSystemStore();
+  const teamStore = useTeamStore();
+  const tarkovStore = useTarkovStore();
   const showConfirmationDialog = ref(false);
   const showSuccessDialog = ref(false);
   const confirmationText = ref('');
@@ -343,6 +370,7 @@
   const deleteError = ref('');
   const isDeleting = ref(false);
   const accountIdCopied = ref(false);
+  const cleanupScheduled = ref(false);
   // Visibility toggles for sensitive data (hidden by default)
   const showUsername = ref(false);
   const showEmail = ref(false);
@@ -380,42 +408,52 @@
     return Boolean($supabase?.user?.loggedIn);
   });
   // Safely extract provider information with proper typing
-  type AuthProvider = 'discord' | 'twitch' | null;
-  interface SupabaseUserWithProvider {
-    app_metadata?: { provider?: string };
-    provider?: string;
+  type AuthProvider = 'discord' | 'twitch' | 'google' | 'github';
+  interface UserWithProviders {
+    providers?: string[] | null;
+    provider?: string | null;
   }
-  const provider = computed<AuthProvider>(() => {
-    if (!$supabase?.user) return null;
-    const user = $supabase.user as SupabaseUserWithProvider;
-    const providerValue = user.app_metadata?.provider || user.provider;
-    if (providerValue === 'discord' || providerValue === 'twitch') {
-      return providerValue;
+  const providers = computed<AuthProvider[]>(() => {
+    if (!$supabase?.user) return [];
+    const user = $supabase.user as UserWithProviders;
+    // Use the hydrated providers array
+    const providersList = user.providers || [];
+    if (providersList.length > 0) {
+      return providersList.filter(
+        (p: string): p is AuthProvider =>
+          p === 'discord' || p === 'twitch' || p === 'google' || p === 'github'
+      );
     }
-    return null;
+    // Fallback to single provider
+    const providerValue = user.provider;
+    if (
+      providerValue === 'discord' ||
+      providerValue === 'twitch' ||
+      providerValue === 'google' ||
+      providerValue === 'github'
+    ) {
+      return [providerValue];
+    }
+    return [];
   });
-  const providerLabel = computed(() => {
-    if (!provider.value) return 'Unknown';
-    return provider.value.charAt(0).toUpperCase() + provider.value.slice(1);
-  });
-  const providerIcon = computed(() => {
-    if (provider.value === 'discord') return 'i-mdi-discord';
-    if (provider.value === 'twitch') return 'i-mdi-twitch';
+  const getProviderIcon = (provider: AuthProvider) => {
+    if (provider === 'discord') return 'i-mdi-discord';
+    if (provider === 'twitch') return 'i-mdi-twitch';
+    if (provider === 'google') return 'i-mdi-google';
+    if (provider === 'github') return 'i-mdi-github';
     return 'i-mdi-account';
-  });
-  const providerColor = computed(() => {
-    if (provider.value === 'discord') return 'primary';
+  };
+  const getProviderColor = (provider: AuthProvider) => {
+    if (provider === 'discord') return 'primary';
+    if (provider === 'google') return 'error';
+    if (provider === 'github') return 'neutral';
     return 'secondary';
-  });
-  const hasOwnedTeams = computed(() => {
-    if (!isLoggedIn.value) return false;
-    return teamStore.$state.team && teamStore.$state.team.owner === $supabase.user.id;
-  });
-  const ownedTeamsCount = computed(() => {
-    return hasOwnedTeams.value ? 1 : 0;
-  });
+  };
+  const getProviderLabel = (provider: AuthProvider) => {
+    return provider.charAt(0).toUpperCase() + provider.slice(1);
+  };
   const canDelete = computed(() => {
-    return confirmationText.value === 'DELETE MY ACCOUNT';
+    return confirmationText.value.trim().toUpperCase() === 'DELETE MY ACCOUNT';
   });
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'Unknown';
@@ -440,16 +478,104 @@
     isDeleting.value = true;
     deleteError.value = '';
     try {
-      const { data: sessionData } = await $supabase.client.auth.getSession();
+      const { data: sessionData, error: sessionError } = await $supabase.client.auth.getSession();
+      if (sessionError) {
+        logger.error('Session error:', sessionError);
+        throw new Error(`Session error: ${sessionError.message}`);
+      }
       if (!sessionData.session) {
         throw new Error('You must be logged in to delete your account.');
       }
+      // Refresh the session to ensure we have a valid token
+      const { data: refreshData, error: refreshError } =
+        await $supabase.client.auth.refreshSession();
+      if (refreshError) {
+        logger.error('Session refresh failed:', refreshError);
+        throw new Error('Your session has expired. Please refresh the page and try again.');
+      }
+      if (!refreshData.session) {
+        throw new Error('Unable to verify your session. Please refresh the page and try again.');
+      }
       const { data, error } = await $supabase.client.functions.invoke('account-delete');
       if (error) {
-        throw error;
+        logger.error('Edge function error:', error);
+        // Extract the actual error message from the Edge Function response
+        // Supabase wraps Edge Function errors with context: Response
+        let errorMessage = 'Failed to delete account. Please try again.';
+        const applyBodyError = (body: unknown) => {
+          if (!body) return false;
+          if (typeof body === 'string' && body.trim()) {
+            errorMessage = body;
+            return true;
+          }
+          if (typeof body === 'object' && 'error' in body) {
+            const bodyError = (body as { error?: unknown }).error;
+            if (bodyError) {
+              errorMessage = String(bodyError);
+              return true;
+            }
+          }
+          return false;
+        };
+        const getErrorContext = (err: unknown): unknown => {
+          if (err && typeof err === 'object' && 'context' in err) {
+            return (err as { context?: unknown }).context;
+          }
+          return undefined;
+        };
+        const getErrorMessage = (err: unknown): string | undefined => {
+          if (err && typeof err === 'object' && 'message' in err) {
+            const message = (err as { message?: unknown }).message;
+            return typeof message === 'string' ? message : undefined;
+          }
+          return undefined;
+        };
+        const context = getErrorContext(error);
+        if (context instanceof Response) {
+          try {
+            const body = await context.clone().json();
+            applyBodyError(body);
+          } catch {
+            try {
+              const text = await context.clone().text();
+              applyBodyError(text);
+            } catch {
+              // Ignore parsing errors and fall back to generic messaging
+            }
+          }
+        } else if ((context as { body?: { error?: string } }).body?.error) {
+          errorMessage = (context as { body?: { error?: string } }).body?.error || errorMessage;
+        }
+        if (
+          errorMessage === 'Failed to delete account. Please try again.' &&
+          getErrorMessage(error)
+        ) {
+          errorMessage = getErrorMessage(error) || errorMessage;
+        } else if (
+          typeof error === 'string' &&
+          errorMessage === 'Failed to delete account. Please try again.'
+        ) {
+          errorMessage = error;
+        }
+        // Handle rate limiting errors specifically
+        if (errorMessage.includes('Too many deletion requests')) {
+          // Extract wait time if present
+          const match = errorMessage.match(/wait (\d+) seconds/);
+          if (match) {
+            errorMessage = `Rate limit exceeded. Please wait ${match[1]} seconds before trying again.`;
+          }
+        }
+        throw new Error(errorMessage);
       }
       if (data?.success) {
         showConfirmationDialog.value = false;
+        // Check if cleanup is scheduled asynchronously (202 response)
+        if (data.cleanupScheduled) {
+          logger.info('Account deleted, cleanup scheduled:', data.message);
+          cleanupScheduled.value = true;
+        } else {
+          cleanupScheduled.value = false;
+        }
         showSuccessDialog.value = true;
       } else {
         throw new Error('Failed to delete account.');
@@ -461,14 +587,31 @@
       isDeleting.value = false;
     }
   };
+  const resetClientState = () => {
+    // Clear localStorage FIRST to prevent persist plugin from reading stale data
+    localStorage.clear();
+    // Stop Supabase sync before resetting stores
+    resetTarkovSync('account deleted');
+    // Reset all stores - this triggers persist plugin writes
+    preferencesStore.$reset();
+    systemStore.$reset();
+    teamStore.$reset();
+    tarkovStore.$reset();
+    // Clear localStorage AGAIN to remove any data written by persist plugins during reset
+    localStorage.clear();
+  };
   const redirectToHome = async () => {
     try {
       showSuccessDialog.value = false;
       logger.info('Signing out user and redirecting to dashboard...');
-      localStorage.clear();
+      // Reset all client state and clear localStorage
+      resetClientState();
+      // Sign out from Supabase
       await $supabase.signOut();
-      await router.push('/');
-      logger.info('Successfully signed out and redirected to dashboard');
+      // Use hard page reload to ensure completely fresh state
+      // router.push() keeps Pinia stores in memory which can show stale data
+      logger.info('Successfully signed out, performing hard reload...');
+      window.location.href = '/';
     } catch (error) {
       logger.error('Failed to sign out and redirect:', error);
       window.location.href = '/';

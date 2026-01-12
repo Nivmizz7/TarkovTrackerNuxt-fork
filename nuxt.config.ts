@@ -8,6 +8,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   ssr: false,
   srcDir: 'app',
+  ignore: ['**/__tests__/**', '**/*.test.*', '**/*.spec.*'],
   runtimeConfig: {
     // Server-only (private) runtime config
     supabaseUrl: process.env.SB_URL || process.env.SUPABASE_URL || '',
@@ -82,7 +83,6 @@ export default defineNuxtConfig({
             'Complete Escape from Tarkov progress tracker for patch 1.0+. Track quests, storyline, hideout, and needed items. Team collaboration features and API integration with TarkovMonitor and RatScanner.',
         },
         { name: 'theme-color', content: '#c8a882' },
-
         // OpenGraph tags
         { property: 'og:site_name', content: 'TarkovTracker' },
         { property: 'og:type', content: 'website' },

@@ -201,7 +201,7 @@ export function useLootGame() {
     foundItem.value = item;
     lootState.value = 'found';
   };
-  const startSearch = () => {
+  const startSearch = async () => {
     // Clear any existing interval to prevent multiple timers
     if (searchIntervalId.value) {
       clearInterval(searchIntervalId.value);
@@ -209,11 +209,10 @@ export function useLootGame() {
     }
     lootState.value = 'searching';
     searchProgress.value = 0;
-    if (metadataStore.items.length === 0 && !metadataStore.itemsLoading) {
-      metadataStore.fetchItemsData().catch((error) => {
-        logger.error('[LootGame] Failed to fetch items data:', error);
-      });
-    }
+    // Wait for items to load before starting the search timer
+    await metadataStore.ensureItemsFullLoaded().catch((error) => {
+      logger.error('[LootGame] Failed to fetch full items data:', error);
+    });
     searchIntervalId.value = setInterval(() => {
       searchProgress.value += Math.floor(Math.random() * 15) + 5;
       if (searchProgress.value >= 100) {
@@ -225,16 +224,17 @@ export function useLootGame() {
       }
     }, 200);
   };
+  let isActivatingEasterEgg = false;
   const activateEasterEgg = async (onComplete?: () => void) => {
+    if (isActivatingEasterEgg) return;
+    isActivatingEasterEgg = true;
     lootState.value = 'searching';
     searchProgress.value = 50;
-    if (metadataStore.items.length === 0 && !metadataStore.itemsLoading) {
-      try {
-        await metadataStore.fetchItemsData();
-      } catch (error) {
-        logger.error('[LootGame] Failed to fetch items data for easter egg:', error);
-        // Continue with fallback if fetch fails
-      }
+    try {
+      await metadataStore.ensureItemsFullLoaded();
+    } catch (error) {
+      logger.error('[LootGame] Failed to fetch full items data for easter egg:', error);
+      // Continue with fallback if fetch fails
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
     searchProgress.value = 100;
@@ -266,6 +266,7 @@ export function useLootGame() {
     }
     foundItem.value = baseItem;
     onComplete?.();
+    isActivatingEasterEgg = false;
   };
   const resetSearch = () => {
     if (searchIntervalId.value) {
