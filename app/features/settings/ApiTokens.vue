@@ -3,11 +3,18 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <p class="text-surface-400 max-w-3xl text-sm">
-          {{
-            t('page.settings.card.apitokens.description', {
-              openAPI_documentation: t('page.settings.card.apitokens.openAPI_documentation'),
-            })
-          }}
+          <i18n-t keypath="page.settings.card.apitokens.description" tag="span">
+            <template #openAPI_documentation>
+              <a
+                href="https://api.tarkovtracker.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary-400 hover:text-primary-300 underline"
+              >
+                {{ t('page.settings.card.apitokens.openAPI_documentation') }}
+              </a>
+            </template>
+          </i18n-t>
         </p>
       </div>
       <UButton
