@@ -306,7 +306,8 @@ export default {
     const origin = env.ALLOWED_ORIGIN;
     const reqOrigin = request.headers.get('Origin') || undefined;
     const headers = corsHeaders(origin, reqOrigin);
-    const isApiHost = host === 'api.tarkovtracker.org';
+    const apiHost = (env.API_HOST || 'api.tarkovtracker.org').trim().toLowerCase();
+    const isApiHost = host === apiHost;
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers });

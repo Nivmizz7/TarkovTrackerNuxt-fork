@@ -5,6 +5,7 @@ export interface Env {
   SUPABASE_ANON_KEY: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   ALLOWED_ORIGIN?: string;
+  API_HOST?: string;
 }
 // API Token from database
 export interface ApiToken {

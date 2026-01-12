@@ -6,7 +6,7 @@ export const OPENAPI_SPEC = {
     description:
       'Public API gateway for TarkovTracker progress, team progress, and token info.\n\n' +
       'Authentication: Send API tokens in the Authorization header as `Bearer <token>`.\n' +
-      'Tokens use prefixes `tt_`, `PVP_`, or `PVE_`.\n\n' +
+      'Tokens use prefixes `PVP_` or `PVE_`.\n\n' +
       'Rate limits: enforced per IP + token. Read endpoints are ~60/min, write endpoints are ~30/min.\n\n' +
       'Docs: https://api.tarkovtracker.org/docs (or / on the api subdomain).',
     contact: {

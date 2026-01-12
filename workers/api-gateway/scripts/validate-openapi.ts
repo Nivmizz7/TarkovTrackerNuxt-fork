@@ -1,18 +1,18 @@
 import SwaggerParser from '@apidevtools/swagger-parser';
-import { OPENAPI_SPEC } from '../src/openapi';
+import { OPENAPI_SPEC } from '@/openapi';
 import type { OpenAPI } from 'openapi-types';
 const run = async () => {
-  try {
-    const api = await SwaggerParser.validate(OPENAPI_SPEC as unknown as OpenAPI.Document);
-    const title = api.info?.title ?? 'OpenAPI';
-    const version = api.info?.version ?? '';
-    console.log(`✓ ${title} ${version} schema is valid.`);
-  } catch (error) {
-    console.error('OpenAPI schema validation failed.');
-    if (error instanceof Error) {
-      console.error(error.message);
-    }
-    throw error;
-  }
+  const api = await SwaggerParser.validate(OPENAPI_SPEC as unknown as OpenAPI.Document);
+  const title = api.info?.title ?? 'OpenAPI';
+  const version = api.info?.version ?? '';
+  console.log(`✓ ${title} ${version} schema is valid.`);
 };
-run();
+run().catch((error) => {
+  console.error('OpenAPI schema validation failed.');
+  if (error instanceof Error) {
+    console.error(error.message);
+  } else {
+    console.error(error);
+  }
+  process.exit(1);
+});

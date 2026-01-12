@@ -11,6 +11,7 @@
   "devDependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",
     "@cloudflare/workers-types": "^4.20260111.0",
+    "@types/node": "^24.10.7",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "wrangler": "^4.58.0"
