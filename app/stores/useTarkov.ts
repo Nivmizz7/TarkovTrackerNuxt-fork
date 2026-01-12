@@ -1084,7 +1084,7 @@ export async function initializeTarkovSync() {
 // Realtime channel for multi-device sync
 let realtimeChannel: unknown = null;
 let lastLocalSyncTime = 0; // Track when we last synced locally to filter self-origin updates
-let lastApiUpdateIds: { pvp: string | null; pve: string | null } = { pvp: null, pve: null };
+const lastApiUpdateIds: { pvp: string | null; pve: string | null } = { pvp: null, pve: null };
 const API_TASK_STATES = ['completed', 'failed', 'uncompleted'] as const;
 const API_UPDATE_FRESHNESS_MS = 30000;
 const isApiTaskState = (state: unknown): state is ApiTaskUpdate['state'] => {
