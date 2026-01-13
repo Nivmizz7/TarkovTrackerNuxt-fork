@@ -157,14 +157,16 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, onUnmounted, ref, toRef, watch } from 'vue';
+  import { computed, createApp, onUnmounted, ref, toRef, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { useRouter } from 'vue-router';
   import { useLeafletMap } from '@/composables/useLeafletMap';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import type { TarkovMap, MapExtract } from '@/types/tarkov';
   import { logger } from '@/utils/logger';
   import { gameToLatLng, outlineToLatLngArray, isValidMapSvgConfig } from '@/utils/mapCoordinates';
+  import LeafletObjectiveTooltip from './LeafletObjectiveTooltip.vue';
   import type L from 'leaflet';
   // Types for marks (matching TarkovMap.vue structure)
   interface MapZone {
@@ -198,6 +200,7 @@
     showLegend: true,
   });
   const { t } = useI18n({ useScope: 'global' });
+  const router = useRouter();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
   // Check if map is unavailable
@@ -259,30 +262,134 @@
   const popupOptions = {
     autoClose: false,
     closeOnClick: false,
-    closeButton: true,
+    closeButton: false, // We use our own close button
   };
-  const attachTogglePopup = (
+  // Track currently pinned popup's cleanup function to allow only one pinned popup at a time
+  let activePinnedPopupCleanup: (() => void) | null = null;
+  /**
+   * Mounts the LeafletObjectiveTooltip Vue component and returns the container element.
+   */
+  function mountObjectiveTooltip(
+    objectiveId: string,
+    onClose: () => void
+  ): { element: HTMLElement; unmount: () => void } {
+    const container = document.createElement('div');
+    const app = createApp(LeafletObjectiveTooltip, { objectiveId, onClose });
+    // Provide router to the standalone app instance
+    app.provide('router', router);
+    app.mount(container);
+    return { element: container, unmount: () => app.unmount() };
+  }
+  /**
+   * Attaches a popup to a layer that shows on hover and can be pinned on click.
+   * - On hover: shows popup (closes when mouse leaves)
+   * - On click: pins the popup (stays open until close button or click again)
+   */
+  const attachHoverPinPopup = (
     layer: L.Layer,
-    html: string,
+    objectiveId: string,
     getLatLng: () => L.LatLngExpression
   ): void => {
     if (!leaflet.value || !mapInstance.value) return;
-    const popup = leaflet.value.popup(popupOptions).setContent(html);
-    const togglePopup = () => {
+    const popup = leaflet.value.popup({
+      ...popupOptions,
+      className: 'map-objective-popup',
+    });
+    let isPinned = false;
+    let isHovering = false;
+    let currentMountedComponent: { element: HTMLElement; unmount: () => void } | null = null;
+    const showPopup = (pinned: boolean) => {
       if (!mapInstance.value) return;
-      if (mapInstance.value.hasLayer(popup)) {
-        popup.remove();
-        return;
+      isPinned = pinned;
+      // Unmount previous component if exists
+      if (currentMountedComponent) {
+        currentMountedComponent.unmount();
       }
+      // Mount the Vue component
+      currentMountedComponent = mountObjectiveTooltip(objectiveId, unpinAndHide);
+      popup.setContent(currentMountedComponent.element);
       popup.setLatLng(getLatLng());
-      popup.addTo(mapInstance.value);
+      if (!mapInstance.value.hasLayer(popup)) {
+        popup.addTo(mapInstance.value);
+      }
     };
+    const hidePopup = () => {
+      if (!isPinned && mapInstance.value) {
+        popup.remove();
+        if (currentMountedComponent) {
+          currentMountedComponent.unmount();
+          currentMountedComponent = null;
+        }
+      }
+    };
+    const unpinAndHide = () => {
+      isPinned = false;
+      // Clear active reference if this was the pinned popup
+      if (activePinnedPopupCleanup === unpinAndHide) {
+        activePinnedPopupCleanup = null;
+      }
+      if (mapInstance.value) {
+        popup.remove();
+        if (currentMountedComponent) {
+          currentMountedComponent.unmount();
+          currentMountedComponent = null;
+        }
+      }
+    };
+    // Hover events
+    layer.on('mouseover', () => {
+      isHovering = true;
+      if (!isPinned) {
+        showPopup(false);
+      }
+    });
+    layer.on('mouseout', () => {
+      isHovering = false;
+      setTimeout(() => {
+        if (!isHovering && !isPinned) {
+          hidePopup();
+        }
+      }, 100);
+    });
+    // Click to pin
     layer.on('click', (event) => {
       leaflet.value?.DomEvent.stop(event);
-      togglePopup();
+      if (isPinned) {
+        unpinAndHide();
+      } else {
+        // Close any other pinned popup first
+        if (activePinnedPopupCleanup) {
+          activePinnedPopupCleanup();
+        }
+        showPopup(true);
+        activePinnedPopupCleanup = unpinAndHide;
+      }
+    });
+    // Handle popup element hover
+    popup.on('add', () => {
+      const popupElement = popup.getElement();
+      if (popupElement) {
+        popupElement.addEventListener('mouseenter', () => {
+          isHovering = true;
+        });
+        popupElement.addEventListener('mouseleave', () => {
+          isHovering = false;
+          if (!isPinned) {
+            setTimeout(() => {
+              if (!isHovering) {
+                hidePopup();
+              }
+            }, 100);
+          }
+        });
+      }
     });
     layer.on('remove', () => {
       popup.remove();
+      if (currentMountedComponent) {
+        currentMountedComponent.unmount();
+        currentMountedComponent = null;
+      }
     });
   };
   /**
@@ -293,16 +400,20 @@
     const L = leaflet.value;
     const svgConfig = props.map.svg;
     if (!isValidMapSvgConfig(svgConfig)) return;
+    // Clear any pinned popup before recreating markers
+    if (activePinnedPopupCleanup) {
+      activePinnedPopupCleanup();
+      activePinnedPopupCleanup = null;
+    }
     objectiveLayer.value.clearLayers();
-    const zoneEntries: Array<{
-      polygon: L.Polygon;
-      area: number;
-      popupContent?: string;
-    }> = [];
-    const pointEntries: Array<{
-      marker: L.CircleMarker;
-      popupContent?: string;
-    }> = [];
+    interface MarkerEntry {
+      polygon?: L.Polygon;
+      marker?: L.CircleMarker;
+      area?: number;
+      objectiveId?: string;
+    }
+    const zoneEntries: MarkerEntry[] = [];
+    const pointEntries: MarkerEntry[] = [];
     const calculateZoneArea = (outline: Array<{ x: number; z: number }>): number => {
       if (outline.length < 3) return 0;
       let sum = 0;
@@ -318,15 +429,10 @@
     props.marks.forEach((mark) => {
       const objective = metadataStore.objectives.find((obj) => obj.id === mark.id);
       const task = objective ? metadataStore.tasks.find((t) => t.id === objective.taskId) : null;
-      const popupContent =
-        task || objective
-          ? `
-          <div class="text-sm">
-            ${task ? `<div class="font-semibold">${task.name}</div>` : ''}
-            ${objective ? `<div class="text-gray-400">${objective.description}</div>` : ''}
-          </div>
-        `
-          : undefined;
+      // Get the objective ID for the tooltip
+      const objectiveId = mark.id;
+      // Skip if no meaningful content
+      if (!task && !objective) return;
       // Handle point markers (possibleLocations)
       mark.possibleLocations?.forEach((location) => {
         if (location.map.id !== props.map.id) return;
@@ -344,7 +450,7 @@
           color: '#ffffff',
           weight: 2,
         });
-        pointEntries.push({ marker, popupContent });
+        pointEntries.push({ marker, objectiveId });
       });
       // Handle zone polygons
       mark.zones.forEach((zone) => {
@@ -367,35 +473,29 @@
         zoneEntries.push({
           polygon,
           area: calculateZoneArea(zone.outline),
-          popupContent,
+          objectiveId,
         });
       });
     });
     // Add larger zones first so smaller zones stay on top (clickable)
     zoneEntries
-      .sort((a, b) => b.area - a.area)
-      .forEach(({ polygon, popupContent }) => {
-        if (popupContent) {
-          attachTogglePopup(polygon, popupContent, () => polygon.getBounds().getCenter());
-          polygon.bindTooltip(popupContent, {
-            className: 'map-zone-tooltip',
-            opacity: 0.95,
-            sticky: true,
-          });
+      .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
+      .forEach(({ polygon, objectiveId }) => {
+        if (!polygon) return;
+        if (objectiveId) {
+          // Attach hover/pin popup - shows on hover, pins on click
+          attachHoverPinPopup(polygon, objectiveId, () => polygon.getBounds().getCenter());
         }
         polygon.on('mouseover', () => polygon.setStyle({ fillOpacity: 0.35, weight: 3 }));
         polygon.on('mouseout', () => polygon.setStyle({ fillOpacity: 0.2, weight: 2 }));
         objectiveLayer.value!.addLayer(polygon);
       });
     // Add point markers last so they render above zones
-    pointEntries.forEach(({ marker, popupContent }) => {
-      if (popupContent) {
-        attachTogglePopup(marker, popupContent, () => marker.getLatLng());
-        marker.bindTooltip(popupContent, {
-          className: 'map-zone-tooltip',
-          opacity: 0.95,
-          direction: 'top',
-        });
+    pointEntries.forEach(({ marker, objectiveId }) => {
+      if (!marker) return;
+      if (objectiveId) {
+        // Attach hover/pin popup - shows on hover, pins on click
+        attachHoverPinPopup(marker, objectiveId, () => marker.getLatLng());
       }
       objectiveLayer.value!.addLayer(marker);
     });
@@ -544,39 +644,48 @@
   });
 </script>
 <style>
-  /* Override Leaflet default styles for dark theme */
+  /* Override Leaflet default styles for dark theme
+     Note: Hex colors used here because Leaflet creates DOM elements dynamically
+     outside Vue's scope where CSS variables may not be accessible */
   .leaflet-container {
-    background-color: rgb(var(--color-surface-900));
+    background-color: #121212; /* surface-900 */
     font-family: inherit;
   }
   .leaflet-popup-content-wrapper {
-    background-color: #1a1a1e !important;
-    color: #e5e5e5 !important;
+    background-color: #1a1a1e !important; /* surface-800 */
+    color: #e5e5e5 !important; /* surface-100 */
     border-radius: 0.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   }
   .leaflet-popup-tip {
-    background-color: #1a1a1e !important;
+    background-color: #1a1a1e !important; /* surface-800 */
   }
   .leaflet-popup-content {
     margin: 0.75rem;
   }
   .leaflet-control-zoom a {
-    background-color: rgb(var(--color-surface-800)) !important;
-    color: rgb(var(--color-gray-200)) !important;
-    border-color: rgb(var(--color-surface-700)) !important;
+    background-color: #1a1a1e !important; /* surface-800 */
+    color: #e5e5e5 !important; /* gray-200 */
+    border-color: #2a2a2e !important; /* surface-700 */
   }
   .leaflet-control-zoom a:hover {
-    background-color: rgb(var(--color-surface-700)) !important;
+    background-color: #2a2a2e !important; /* surface-700 */
   }
-  /* Zone hover tooltip styling */
-  .map-zone-tooltip {
-    background-color: #1a1a1e !important;
-    color: #e5e5e5 !important;
+  /* Objective popup styling */
+  .map-objective-popup .leaflet-popup-content-wrapper {
+    background-color: #1a1a1e !important; /* surface-800 */
+    color: #e5e5e5 !important; /* surface-100 */
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    padding: 6px 8px;
+  }
+  .map-objective-popup .leaflet-popup-content {
+    margin: 10px 12px;
+  }
+  .map-objective-popup .leaflet-popup-tip {
+    background-color: #1a1a1e !important; /* surface-800 */
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
   /* Extract marker styling */
   .extract-marker {
