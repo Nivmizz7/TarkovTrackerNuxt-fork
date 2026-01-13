@@ -642,11 +642,17 @@
    * Used by TaskObjective's "Jump to map" button.
    */
   const jumpToMapObjective = (objectiveId: string) => {
-    scrollToMap();
-    // Small delay to let scroll complete before activating popup
-    setTimeout(() => {
+    const isNearTop = window.scrollY < 100;
+    if (isNearTop) {
+      // Already at top, activate immediately
       leafletMapRef.value?.activateObjectivePopup(objectiveId);
-    }, 400);
+    } else {
+      // Need to scroll, use minimal delay
+      scrollToMap();
+      setTimeout(() => {
+        leafletMapRef.value?.activateObjectivePopup(objectiveId);
+      }, 150);
+    }
   };
   // Provide the jumpToMapObjective function for child components
   provide('jumpToMapObjective', jumpToMapObjective);
