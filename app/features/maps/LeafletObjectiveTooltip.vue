@@ -67,9 +67,14 @@
     (e: 'close'): void;
   }>();
 
+  // Inject clearPinnedTask to dismiss the pinned task when tooltip closes
+  const clearPinnedTask = inject<(() => void) | null>('clearPinnedTask', null);
+
   const emitClose = () => {
     emit('close');
     props.onClose?.();
+    // Clear the pinned task when user closes the tooltip
+    clearPinnedTask?.();
   };
 
   const { t } = useI18n();

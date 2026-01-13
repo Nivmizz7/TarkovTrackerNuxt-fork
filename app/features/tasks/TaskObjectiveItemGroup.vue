@@ -50,8 +50,7 @@
           >
             <UIcon name="i-mdi-map-marker" aria-hidden="true" class="h-4 w-4" />
           </button>
-        </AppTooltip>
-        <!-- Single set of controls per item - updates all related objectives together -->
+        </AppTooltip>ther        <!-- Single set of controls per item - updates all related objectives together -->
         <ObjectiveCountControls
           v-if="row.meta.neededCount > 1"
           :current-count="row.currentCount"

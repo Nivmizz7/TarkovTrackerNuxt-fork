@@ -38,9 +38,30 @@
           <TaskEmptyState />
         </div>
         <div v-else ref="taskListRef" data-testid="task-list">
+          <!-- Pinned/Selected Task (shown separately at top with visual distinction) -->
+          <div v-if="pinnedTask" class="mb-6">
+            <div class="mb-2 flex items-center gap-2 text-xs text-primary-400">
+              <UIcon name="i-mdi-pin" class="h-4 w-4" />
+              <span>Selected Task</span>
+              <button
+                type="button"
+                class="ml-auto rounded p-1 text-gray-400 hover:bg-white/10 hover:text-gray-200"
+                aria-label="Dismiss"
+                @click="clearPinnedTaskAndClosePopup"
+              >
+                <UIcon name="i-mdi-close" class="h-4 w-4" />
+              </button>
+            </div>
+            <div :id="`task-${pinnedTask.id}`" class="pinned-task-wrapper pb-4">
+              <TaskCard :key="`pinned-${pinnedTask.id}`" :task="pinnedTask" @on-task-action="onTaskAction" />
+            </div>
+            <!-- Separator -->
+            <div class="border-t border-white/10" />
+          </div>
+          <!-- Regular task list -->
           <div
-            v-for="task in visibleTasksSlice"
-            :id="`task-${task.id}`"
+            v-for="task in unpinnedTasksSlice"
+            :id="pinnedTask?.id === task.id ? undefined : `task-${task.id}`"
             :key="task.id"
             class="pb-4"
             style="content-visibility: auto; contain-intrinsic-size: auto 280px"
@@ -574,11 +595,18 @@
     ) as Task[];
   });
   const pinnedTaskId = ref<string | null>(null);
-  const pinnedTaskTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
   const pinnedTask = computed(() => {
     if (!pinnedTaskId.value) return null;
     return filteredTasks.value.find((task) => task.id === pinnedTaskId.value) ?? null;
   });
+  const clearPinnedTask = () => {
+    pinnedTaskId.value = null;
+  };
+  const clearPinnedTaskAndClosePopup = () => {
+    clearPinnedTask();
+    // Also close the map tooltip and deselect the marker
+    leafletMapRef.value?.closeActivePopup();
+  };
   // Progressive rendering - load tasks incrementally for smooth scrolling
   const INITIAL_BATCH = 15;
   const BATCH_SIZE = 10;
@@ -586,15 +614,19 @@
   const loadMoreSentinel = ref<HTMLElement | null>(null);
   // Flag to prevent visibleTaskCount reset during scroll-to-task navigation
   const isScrollingToTask = ref(false);
+  // Tasks slice excluding the pinned task (shown separately)
+  const unpinnedTasksSlice = computed(() => {
+    const tasks = pinnedTask.value
+      ? filteredTasks.value.filter((task) => task.id !== pinnedTask.value?.id)
+      : filteredTasks.value;
+    return tasks.slice(0, visibleTaskCount.value);
+  });
+  // For backwards compatibility - includes pinned task at top
   const visibleTasksSlice = computed(() => {
-    // Handle pinned task (reorders to top)
     if (pinnedTask.value) {
-      const remaining = filteredTasks.value.filter((task) => task.id !== pinnedTask.value?.id);
-      const sliceCount = Math.max(visibleTaskCount.value - 1, 0);
-      return [pinnedTask.value, ...remaining.slice(0, sliceCount)];
+      return [pinnedTask.value, ...unpinnedTasksSlice.value];
     }
-
-    return filteredTasks.value.slice(0, visibleTaskCount.value);
+    return unpinnedTasksSlice.value;
   });
   const hasMoreTasks = computed(() => visibleTaskCount.value < filteredTasks.value.length);
   const loadMoreTasks = () => {
@@ -623,7 +655,10 @@
   });
   const taskListRef = ref<HTMLElement | null>(null);
   const mapContainerRef = ref<HTMLElement | null>(null);
-  const leafletMapRef = ref<{ activateObjectivePopup: (id: string) => boolean } | null>(null);
+  const leafletMapRef = ref<{
+    activateObjectivePopup: (id: string) => boolean;
+    closeActivePopup: () => void;
+  } | null>(null);
   // Scroll position tracking for floating buttons
   const scrollY = ref(0);
   const showScrollToTopButton = computed(() => scrollY.value > 400);
@@ -654,9 +689,10 @@
       }, 150);
     }
   };
-  // Provide the jumpToMapObjective function for child components
+  // Provide functions for child components
   provide('jumpToMapObjective', jumpToMapObjective);
   provide('isMapView', showMapDisplay);
+  provide('clearPinnedTask', clearPinnedTask);
   // Set up scroll listener
   onMounted(() => {
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -677,10 +713,6 @@
   onBeforeUnmount(() => {
     updateDebouncedSearch.cancel();
     window.removeEventListener('scroll', handleScroll);
-    if (pinnedTaskTimeout.value) {
-      clearTimeout(pinnedTaskTimeout.value);
-      pinnedTaskTimeout.value = null;
-    }
     // Clear highlightObjective timers
     highlightObjectiveTimers.value.forEach((timerId) => clearTimeout(timerId));
     highlightObjectiveTimers.value = [];
@@ -716,32 +748,19 @@
     }
     return null;
   };
-
-  const scrollToTask = async (taskId: string, options?: { noPinning?: boolean }) => {
+  const scrollToTask = async (taskId: string) => {
     await nextTick();
     const taskIndex = filteredTasks.value.findIndex((t) => t.id === taskId);
     if (taskIndex === -1) return;
-
     const pinTaskToTop = () => {
-      // Skip pinning if requested (e.g., from map tooltip scroll)
-      if (options?.noPinning) return;
       pinnedTaskId.value = taskId;
-      if (pinnedTaskTimeout.value) {
-        clearTimeout(pinnedTaskTimeout.value);
-      }
-      pinnedTaskTimeout.value = setTimeout(() => {
-        pinnedTaskId.value = null;
-        pinnedTaskTimeout.value = null;
-      }, 8000);
     };
-
     // Helper to scroll to an element
     const scrollToElement = (element: HTMLElement) => {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
-
     // If task is already in DOM, scroll to it
-    let taskElement = document.getElementById(`task-${taskId}`);
+    const taskElement = document.getElementById(`task-${taskId}`);
     if (taskElement) {
       const rect = taskElement.getBoundingClientRect();
       const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
@@ -749,33 +768,19 @@
         // Already visible, nothing to do
         return;
       }
-      // Task in DOM but not visible - scroll to it
-      if (options?.noPinning) {
-        scrollToElement(taskElement);
-        return;
-      }
-      // Pin and scroll
+      // Task in DOM but not visible - pin it
+      // Note: We always pin because content-visibility: auto causes layout shifts
+      // when scrolling past many unrendered elements. Pinning puts the task at the
+      // top of the list, avoiding this issue entirely.
+      // No automatic scroll - user can scroll manually to see the pinned task
       pinTaskToTop();
       return;
     }
-
-    // Task not in DOM - need to load it first
-    if (options?.noPinning) {
-      // Expand visible count to include this task (preserves list order)
-      if (taskIndex >= visibleTaskCount.value) {
-        visibleTaskCount.value = taskIndex + 1;
-      }
-    } else {
-      pinTaskToTop();
-    }
-
-    // Wait for Vue to render the element - poll until it appears
-    taskElement = await waitForElement(`task-${taskId}`);
-    if (taskElement) {
-      scrollToElement(taskElement);
-    }
+    // Task not in DOM - need to load it first via pinning
+    // Pinning ensures the task renders at the top of the task list
+    // No automatic scroll - user can scroll manually to see the pinned task
+    pinTaskToTop();
   };
-
   /**
    * Applies objective-highlight class to an element when it becomes visible.
    */
@@ -783,12 +788,10 @@
     // Clear any existing highlightObjective timers
     highlightObjectiveTimers.value.forEach((timerId) => clearTimeout(timerId));
     highlightObjectiveTimers.value = [];
-
     // Clear any existing highlights from other elements
     document.querySelectorAll('.objective-highlight').forEach((el) => {
       el.classList.remove('objective-highlight');
     });
-
     const applyHighlight = () => {
       element.classList.add('objective-highlight');
       const removeTimer = setTimeout(() => {
@@ -796,7 +799,6 @@
       }, 3500);
       highlightObjectiveTimers.value.push(removeTimer);
     };
-
     // Check if already in view
     const rect = element.getBoundingClientRect();
     const isInView = rect.top >= 0 && rect.bottom <= window.innerHeight;
@@ -804,7 +806,6 @@
       applyHighlight();
       return;
     }
-
     // Wait for element to become visible
     const observer = new IntersectionObserver(
       (entries) => {
@@ -818,30 +819,30 @@
       { threshold: 0.5 }
     );
     observer.observe(element);
-
     // Cleanup observer after timeout
     const cleanupTimer = setTimeout(() => observer.disconnect(), 5000);
     highlightObjectiveTimers.value.push(cleanupTimer);
   };
-
   const highlightObjective = async (objectiveId: string, taskId: string) => {
     // Clear any existing highlightObjective timers before starting new ones
     highlightObjectiveTimers.value.forEach((timerId) => clearTimeout(timerId));
     highlightObjectiveTimers.value = [];
-
     // Wait for objective element to appear in DOM (only highlight objectives, never task cards)
     const objectiveEl = await waitForElement(`objective-${objectiveId}`, 1500);
-    
     if (!objectiveEl) {
       // If objective not found, just scroll to task without highlighting
       const taskEl = await waitForElement(`task-${taskId}`, 500);
-      if (taskEl) {
+      if (taskEl && !pinnedTaskId.value) {
+        // Only scroll if task is not pinned (pinned tasks are already at top)
         taskEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       return;
     }
-
-    objectiveEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Only scroll to objective if the task is NOT pinned
+    // Scrolling to an objective inside a pinned task causes the card content to appear shifted
+    if (!pinnedTaskId.value || pinnedTaskId.value !== taskId) {
+      objectiveEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
     highlightObjectiveWhenVisible(objectiveEl);
   };
   const handleTaskQueryParam = async () => {
@@ -850,10 +851,8 @@
     if (!taskId || tasksLoading.value) return;
     const taskInMetadata = tasks.value.find((t) => t.id === taskId);
     if (!taskInMetadata) return;
-
     // Set flag to prevent filter watch from resetting visibleTaskCount during navigation
     isScrollingToTask.value = true;
-
     try {
       // If highlighting from map tooltip, don't change the view - just pin and scroll
       const isMapHighlight = !!objectiveIdToHighlight;
@@ -899,9 +898,9 @@
       }
       // Wait for filter/watch updates to settle
       await nextTick();
-      // scrollToTask handles scrolling directly via scrollIntoView
-      // When highlighting from map, skip pinning to avoid reordering the list
-      await scrollToTask(taskId, { noPinning: isMapHighlight });
+      // scrollToTask pins the task to the top temporarily for reliable scrolling
+      // (content-visibility: auto causes layout shifts when scrolling past unrendered elements)
+      await scrollToTask(taskId);
       // Highlight specific objective if requested (falls back to task card if objective not found)
       if (objectiveIdToHighlight) {
         highlightObjective(objectiveIdToHighlight, taskId);
@@ -1080,3 +1079,10 @@
     undoData.value = null;
   };
 </script>
+<style scoped>
+  /* Apply purple ring to the TaskCard inside the pinned wrapper using outline (doesn't interfere with box-shadow) */
+  .pinned-task-wrapper :deep([data-slot='root']) {
+    outline: 2px solid rgb(168 85 247 / 0.5); /* primary-500/50 */
+    outline-offset: 0px;
+  }
+</style>

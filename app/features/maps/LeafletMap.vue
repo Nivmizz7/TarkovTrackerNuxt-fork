@@ -698,9 +698,19 @@
     return true;
   };
 
+  /**
+   * Closes the currently active/pinned popup and deselects the marker.
+   */
+  const closeActivePopup = (): void => {
+    if (activePinnedPopupCleanup) {
+      activePinnedPopupCleanup();
+    }
+  };
+
   // Expose methods for parent components
   defineExpose({
     activateObjectivePopup,
+    closeActivePopup,
     refreshView,
   });
 
