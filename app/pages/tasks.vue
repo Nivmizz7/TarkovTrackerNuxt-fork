@@ -610,11 +610,13 @@
       pinnedTaskTimeout.value = null;
     }
   });
-  const scrollToTask = async (taskId: string) => {
+  const scrollToTask = async (taskId: string, options?: { noPinning?: boolean }) => {
     await nextTick();
     const taskIndex = filteredTasks.value.findIndex((t) => t.id === taskId);
     if (taskIndex === -1) return;
     const pinTaskToTop = () => {
+      // Skip pinning if requested (e.g., from map tooltip scroll)
+      if (options?.noPinning) return;
       pinnedTaskId.value = taskId;
       if (pinnedTaskTimeout.value) {
         clearTimeout(pinnedTaskTimeout.value);
@@ -630,21 +632,22 @@
       const rect = taskElement.getBoundingClientRect();
       const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
       if (isVisible) {
-        highlightTask(taskElement);
+        // Don't highlight here when noPinning - let highlightObjective handle it
+        if (!options?.noPinning) highlightTask(taskElement);
         return;
       }
       const nearbyThreshold = window.innerHeight * 1.5;
       const isNearby = Math.abs(rect.top) <= nearbyThreshold;
       if (isNearby) {
         taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        highlightTask(taskElement);
+        if (!options?.noPinning) highlightTask(taskElement);
         return;
       }
       pinTaskToTop();
       await nextTick();
       const pinnedElement = document.getElementById(`task-${taskId}`);
       if (pinnedElement) {
-        highlightTask(pinnedElement);
+        if (!options?.noPinning) highlightTask(pinnedElement);
       }
       return;
     }
@@ -652,64 +655,89 @@
     await nextTick();
     const newTaskElement = document.getElementById(`task-${taskId}`);
     if (!newTaskElement) return;
-    highlightTask(newTaskElement);
+    if (!options?.noPinning) highlightTask(newTaskElement);
+  };
+  const highlightObjective = (objectiveId: string, taskId: string) => {
+    // Wait a bit for the DOM to settle after task scroll
+    setTimeout(() => {
+      const objectiveEl = document.getElementById(`objective-${objectiveId}`);
+      // Try objective first, fall back to task card
+      const targetEl = objectiveEl || document.getElementById(`task-${taskId}`);
+      if (!targetEl) return;
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      targetEl.classList.add('objective-highlight');
+      setTimeout(() => {
+        targetEl.classList.remove('objective-highlight');
+      }, 2500);
+    }, 500);
   };
   const handleTaskQueryParam = async () => {
     const taskId = getQueryString(route.query.task);
+    const objectiveIdToHighlight = getQueryString(route.query.highlightObjective);
     if (!taskId || tasksLoading.value) return;
     const taskInMetadata = tasks.value.find((t) => t.id === taskId);
     if (!taskInMetadata) return;
-    // Enable the appropriate type filter based on task properties
-    const isKappaRequired = taskInMetadata.kappaRequired === true;
-    const isLightkeeperRequired = taskInMetadata.lightkeeperRequired === true;
-    const isLightkeeperTraderTask =
-      lightkeeperTraderId.value !== undefined
-        ? taskInMetadata.trader?.id === lightkeeperTraderId.value
-        : taskInMetadata.trader?.name?.toLowerCase() === 'lightkeeper';
-    const isNonSpecial = !isKappaRequired && !isLightkeeperRequired && !isLightkeeperTraderTask;
-    // Ensure the task's type filter is enabled so task will appear
-    if (
-      (isLightkeeperRequired || isLightkeeperTraderTask) &&
-      !preferencesStore.getShowLightkeeperTasks
-    ) {
-      preferencesStore.setShowLightkeeperTasks(true);
-    }
-    if (isKappaRequired && preferencesStore.getHideNonKappaTasks) {
-      preferencesStore.setHideNonKappaTasks(false);
-    }
-    if (isNonSpecial && !preferencesStore.getShowNonSpecialTasks) {
-      preferencesStore.setShowNonSpecialTasks(true);
-    }
-    // Determine task status and set appropriate filter
-    // Skip if already in 'all' view since all tasks are visible there
-    const currentSecondaryView = preferencesStore.getTaskSecondaryView;
-    if (currentSecondaryView !== 'all') {
-      const status = getTaskStatus(taskId);
-      if (currentSecondaryView !== status) {
-        preferencesStore.setTaskSecondaryView(status);
+    // If highlighting from map tooltip, don't change the view - just pin and scroll
+    const isMapHighlight = !!objectiveIdToHighlight;
+    if (!isMapHighlight) {
+      // Enable the appropriate type filter based on task properties
+      const isKappaRequired = taskInMetadata.kappaRequired === true;
+      const isLightkeeperRequired = taskInMetadata.lightkeeperRequired === true;
+      const isLightkeeperTraderTask =
+        lightkeeperTraderId.value !== undefined
+          ? taskInMetadata.trader?.id === lightkeeperTraderId.value
+          : taskInMetadata.trader?.name?.toLowerCase() === 'lightkeeper';
+      const isNonSpecial = !isKappaRequired && !isLightkeeperRequired && !isLightkeeperTraderTask;
+      // Ensure the task's type filter is enabled so task will appear
+      if (
+        (isLightkeeperRequired || isLightkeeperTraderTask) &&
+        !preferencesStore.getShowLightkeeperTasks
+      ) {
+        preferencesStore.setShowLightkeeperTasks(true);
       }
-    }
-    // Set primary view to 'all' to ensure the task is visible regardless of map/trader
-    if (preferencesStore.getTaskPrimaryView !== 'all') {
-      preferencesStore.setTaskPrimaryView('all');
-    }
-    // Clear search query so the target task is visible
-    if (searchQuery.value) {
-      searchQuery.value = '';
+      if (isKappaRequired && preferencesStore.getHideNonKappaTasks) {
+        preferencesStore.setHideNonKappaTasks(false);
+      }
+      if (isNonSpecial && !preferencesStore.getShowNonSpecialTasks) {
+        preferencesStore.setShowNonSpecialTasks(true);
+      }
+      // Determine task status and set appropriate filter
+      // Skip if already in 'all' view since all tasks are visible there
+      const currentSecondaryView = preferencesStore.getTaskSecondaryView;
+      if (currentSecondaryView !== 'all') {
+        const status = getTaskStatus(taskId);
+        if (currentSecondaryView !== status) {
+          preferencesStore.setTaskSecondaryView(status);
+        }
+      }
+      // Set primary view to 'all' to ensure the task is visible regardless of map/trader
+      if (preferencesStore.getTaskPrimaryView !== 'all') {
+        preferencesStore.setTaskPrimaryView('all');
+      }
+      // Clear search query so the target task is visible
+      if (searchQuery.value) {
+        searchQuery.value = '';
+      }
     }
     // Wait for filter/watch updates to settle
     await nextTick();
     // scrollToTask handles scrolling directly via scrollIntoView
-    await scrollToTask(taskId);
-    // Clear the query param to avoid re-triggering on filter changes
+    // When highlighting from map, skip pinning to avoid reordering the list
+    await scrollToTask(taskId, { noPinning: isMapHighlight });
+    // Highlight specific objective if requested (falls back to task card if objective not found)
+    if (objectiveIdToHighlight) {
+      highlightObjective(objectiveIdToHighlight, taskId);
+    }
+    // Clear the query params to avoid re-triggering on filter changes
     const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>;
     delete nextQuery.task;
+    delete nextQuery.highlightObjective;
     router.replace({ query: nextQuery });
   };
   // Watch for task query param and handle it when tasks are loaded
   watch(
-    [() => route.query.task, tasksLoading, tasksCompletions],
-    ([taskQueryParam, loading]) => {
+    [() => route.query.task, () => route.query.highlightObjective, tasksLoading, tasksCompletions],
+    ([taskQueryParam, , loading]) => {
       if (taskQueryParam && !loading) {
         handleTaskQueryParam();
       }
