@@ -1,8 +1,8 @@
 <template>
   <div class="leaflet-objective-tooltip">
-    <div class="flex items-center justify-between gap-2">
+    <div class="flex items-start justify-between gap-2">
       <div class="min-w-0 flex-1">
-        <div class="text-sm font-semibold leading-7 text-gray-100">{{ taskName }}</div>
+        <div class="text-sm font-semibold leading-snug text-gray-100">{{ taskName }}</div>
       </div>
       <div class="flex shrink-0 gap-1">
         <button
@@ -117,32 +117,100 @@
     pendingTimers.length = 0;
   };
 
+  // Track observer for cleanup
+  let visibilityObserver: IntersectionObserver | null = null;
+
+  /**
+   * Highlights element when it becomes visible on screen.
+   */
+  const highlightWhenVisible = (element: HTMLElement) => {
+    clearPendingTimers();
+    if (visibilityObserver) {
+      visibilityObserver.disconnect();
+      visibilityObserver = null;
+    }
+
+    // Clear any existing highlights from other elements
+    document.querySelectorAll('.objective-highlight').forEach((el) => {
+      el.classList.remove('objective-highlight');
+    });
+
+    const applyHighlight = () => {
+      element.classList.add('objective-highlight');
+      const removeTimer = setTimeout(() => {
+        element.classList.remove('objective-highlight');
+      }, 3500);
+      pendingTimers.push(removeTimer);
+    };
+
+    // Check if already in view
+    const rect = element.getBoundingClientRect();
+    const isInView = rect.top >= 0 && rect.bottom <= window.innerHeight;
+    if (isInView) {
+      applyHighlight();
+      return;
+    }
+
+    // Wait for element to become visible
+    visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting) {
+          visibilityObserver?.disconnect();
+          visibilityObserver = null;
+          // Small delay to let scroll settle
+          const delayTimer = setTimeout(applyHighlight, 100);
+          pendingTimers.push(delayTimer);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    visibilityObserver.observe(element);
+
+    // Cleanup observer after timeout
+    const cleanupTimer = setTimeout(() => {
+      visibilityObserver?.disconnect();
+      visibilityObserver = null;
+    }, 3500);
+    pendingTimers.push(cleanupTimer);
+  };
+
   /**
    * Scrolls to the objective in the task list and highlights it.
-   * Falls back to task card if objective element not found.
-   * If neither is rendered, triggers the task page to load it via query params.
+   * Only highlights objectives, never task cards.
+   * If element not rendered, triggers the task page to load it via query params.
    */
   const scrollToObjective = () => {
     if (!task.value || !router) return;
-    // Try to find the objective element first, fall back to task card
-    const objectiveEl = document.getElementById(`objective-${props.objectiveId}`);
+    // Try to find the objective element (only highlight objectives, never task cards)
+    // First try by ID, then by data-objective-ids for item groups
+    let objectiveEl = document.getElementById(`objective-${props.objectiveId}`);
+    if (!objectiveEl) {
+      // For item groups, the ID might be based on the first objective, so search by data attribute
+      objectiveEl = document.querySelector<HTMLElement>(
+        `[data-objective-ids*="${props.objectiveId}"]`
+      );
+    }
+    if (objectiveEl) {
+      // Objective exists - scroll task card into view first, then highlight objective
+      // This prevents layout shifts from content-visibility: auto
+      const taskEl = document.getElementById(`task-${task.value.id}`);
+      if (taskEl) {
+        // First scroll the task card into view
+        taskEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      // Small delay to let scroll settle, then highlight
+      const elToHighlight = objectiveEl;
+      setTimeout(() => {
+        highlightWhenVisible(elToHighlight);
+      }, 100);
+      return;
+    }
+    // Check if task card exists but objective not rendered yet
     const taskEl = document.getElementById(`task-${task.value.id}`);
-    const targetEl = objectiveEl || taskEl;
-    if (targetEl) {
-      // Clear any pending timers before scheduling new ones
-      clearPendingTimers();
-
-      // Element exists - scroll to it and highlight
-      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const addTimer = setTimeout(() => {
-        targetEl.classList.add('objective-highlight');
-      }, 300);
-      const removeTimer = setTimeout(() => {
-        targetEl.classList.remove('objective-highlight');
-      }, 2800);
-
-      // Track timers for cleanup
-      pendingTimers.push(addTimer, removeTimer);
+    if (taskEl) {
+      // Task exists but objective not visible - just scroll to task without highlighting
+      taskEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       return;
     }
     // Neither element in DOM - add query params to trigger task loading
@@ -157,9 +225,13 @@
     });
   };
 
-  // Clean up timers on component unmount
+  // Clean up timers and observers on component unmount
   onBeforeUnmount(() => {
     clearPendingTimers();
+    if (visibilityObserver) {
+      visibilityObserver.disconnect();
+      visibilityObserver = null;
+    }
   });
 </script>
 <style scoped>

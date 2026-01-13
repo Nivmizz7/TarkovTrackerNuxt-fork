@@ -1,7 +1,7 @@
 <template>
   <div
     :id="`objective-${props.objective.id}`"
-    class="group focus-within:ring-primary-500 focus-within:ring-offset-surface-900 flex w-full items-start gap-4 rounded-md px-2 py-2 transition-colors focus-within:ring-2 focus-within:ring-offset-2"
+    class="group flex w-full items-center gap-4 rounded-md px-2 py-2 transition-colors focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 focus-within:ring-offset-surface-900"
     :class="[
       isComplete ? 'bg-success-500/10' : 'hover:bg-white/5',
       isParentTaskLocked ? 'cursor-not-allowed opacity-80' : 'cursor-pointer',
@@ -13,7 +13,7 @@
     <UIcon
       :name="objectiveIcon.startsWith('mdi-') ? `i-${objectiveIcon}` : objectiveIcon"
       aria-hidden="true"
-      class="mt-0.5 h-4 w-4 shrink-0"
+      class="h-4 w-4 shrink-0"
       :class="isComplete ? 'text-success-300' : 'text-gray-400 group-hover:text-gray-300'"
     />
     <div class="flex flex-1 flex-wrap items-center gap-2">
@@ -32,6 +32,20 @@
         </AppTooltip>
       </div>
       <div class="flex items-center gap-2" @click.stop>
+        <!-- Jump to map button (only shown when in maps view and objective has location) -->
+        <AppTooltip
+          v-if="hasMapLocation"
+          :text="t('page.tasks.questcard.jumpToMap', 'Jump to map')"
+        >
+          <button
+            type="button"
+            class="flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-300 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900"
+            :aria-label="t('page.tasks.questcard.jumpToMap', 'Jump to map')"
+            @click.stop="($event.currentTarget as HTMLElement)?.blur(); handleJumpToMap()"
+          >
+            <UIcon name="i-mdi-map-marker" aria-hidden="true" class="h-4 w-4" />
+          </button>
+        </AppTooltip>
         <ObjectiveCountControls
           v-if="neededCount > 1"
           :current-count="currentObjectiveCount"
@@ -75,7 +89,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
+  import { computed, inject, ref, watch, type ComputedRef } from 'vue';
   import { useI18n } from 'vue-i18n';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
   import { OBJECTIVE_ICON_MAP } from '@/features/tasks/task-objective-constants';
@@ -86,6 +100,9 @@
   import { useTarkovStore } from '@/stores/useTarkov';
   import type { TaskObjective } from '@/types/tarkov';
   const { t } = useI18n({ useScope: 'global' });
+  // Inject functions from tasks.vue
+  const jumpToMapObjective = inject<((id: string) => void) | null>('jumpToMapObjective', null);
+  const isMapView = inject<ComputedRef<boolean> | null>('isMapView', null);
   const { systemStore } = useSystemStoreWithSupabase();
   // Define the props for the component
   const props = defineProps<{
@@ -176,6 +193,22 @@
     return 'mdi-help-circle';
   });
   const neededCount = computed(() => fullObjective.value?.count ?? props.objective.count ?? 1);
+  // Check if this objective has map location data (for "Jump to map" button)
+  const hasMapLocation = computed(() => {
+    if (!isMapView?.value) return false;
+    const obj = fullObjective.value ?? props.objective;
+    // Check if objective has zones or possibleLocations
+    const hasZones = Array.isArray((obj as any).zones) && (obj as any).zones.length > 0;
+    const hasLocations = Array.isArray((obj as any).possibleLocations) && (obj as any).possibleLocations.length > 0;
+    // Also check the maps array
+    const hasMaps = Array.isArray(obj.maps) && obj.maps.length > 0;
+    return hasZones || hasLocations || hasMaps;
+  });
+  const handleJumpToMap = () => {
+    if (jumpToMapObjective) {
+      jumpToMapObjective(props.objective.id);
+    }
+  };
   const handleRowClick = () => {
     if (isParentTaskLocked.value) return;
     if (neededCount.value > 1) {

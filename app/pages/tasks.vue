@@ -6,7 +6,7 @@
         <!-- Task Filter Bar -->
         <TaskFilterBar v-model:search-query="searchQuery" />
         <!-- Map Display (shown when MAPS view is selected) -->
-        <div v-if="showMapDisplay" class="mb-6">
+        <div v-if="showMapDisplay" ref="mapContainerRef" data-map-container class="mb-6">
           <div class="bg-surface-800/50 rounded-lg p-4">
             <div class="mb-3 flex items-center justify-between">
               <h3 class="text-lg font-medium text-gray-200">
@@ -18,6 +18,7 @@
             </div>
             <LeafletMapComponent
               v-if="selectedMapData"
+              ref="leafletMapRef"
               :map="selectedMapData"
               :marks="mapObjectiveMarks"
               :show-extracts="true"
@@ -39,6 +40,7 @@
         <div v-else ref="taskListRef" data-testid="task-list">
           <div
             v-for="task in visibleTasksSlice"
+            :id="`task-${task.id}`"
             :key="task.id"
             class="pb-4"
             style="content-visibility: auto; contain-intrinsic-size: auto 280px"
@@ -55,6 +57,52 @@
         </div>
       </div>
     </div>
+    <!-- Floating scroll buttons -->
+    <Teleport to="body">
+      <!-- Scroll to Map button (floating at top, only in maps view) -->
+      <Transition
+        enter-active-class="transition ease-out duration-200"
+        enter-from-class="opacity-0 -translate-y-3"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition ease-in duration-150"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-3"
+      >
+        <div
+          v-if="showMapDisplay && showScrollToMapButton"
+          class="fixed top-20 left-1/2 z-40 -translate-x-1/2"
+        >
+          <button
+            type="button"
+            class="bg-primary-600 hover:bg-primary-500 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white shadow-lg transition-all hover:shadow-xl"
+            @click="scrollToMap"
+          >
+            <UIcon name="i-mdi-map" class="h-4 w-4" />
+            <span>{{ t('page.tasks.scrollToMap', 'Scroll to Map') }}</span>
+            <UIcon name="i-mdi-arrow-up" class="h-4 w-4" />
+          </button>
+        </div>
+      </Transition>
+      <!-- Scroll to Top button (floating at bottom right) -->
+      <Transition
+        enter-active-class="transition ease-out duration-200"
+        enter-from-class="opacity-0 translate-y-3"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition ease-in duration-150"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 translate-y-3"
+      >
+        <button
+          v-if="showScrollToTopButton"
+          type="button"
+          class="fixed bottom-20 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-white/20 hover:shadow-xl"
+          :aria-label="t('page.tasks.scrollToTop', 'Scroll to top')"
+          @click="scrollToTop"
+        >
+          <UIcon name="i-mdi-arrow-up" class="h-6 w-6" />
+        </button>
+      </Transition>
+    </Teleport>
     <Teleport to="body">
       <Transition
         enter-active-class="transition ease-out duration-200"
@@ -101,7 +149,7 @@
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-  import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+  import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import {
     useRoute,
@@ -536,13 +584,17 @@
   const BATCH_SIZE = 10;
   const visibleTaskCount = ref(INITIAL_BATCH);
   const loadMoreSentinel = ref<HTMLElement | null>(null);
+  // Flag to prevent visibleTaskCount reset during scroll-to-task navigation
+  const isScrollingToTask = ref(false);
   const visibleTasksSlice = computed(() => {
-    if (!pinnedTask.value) {
-      return filteredTasks.value.slice(0, visibleTaskCount.value);
+    // Handle pinned task (reorders to top)
+    if (pinnedTask.value) {
+      const remaining = filteredTasks.value.filter((task) => task.id !== pinnedTask.value?.id);
+      const sliceCount = Math.max(visibleTaskCount.value - 1, 0);
+      return [pinnedTask.value, ...remaining.slice(0, sliceCount)];
     }
-    const remaining = filteredTasks.value.filter((task) => task.id !== pinnedTask.value?.id);
-    const sliceCount = Math.max(visibleTaskCount.value - 1, 0);
-    return [pinnedTask.value, ...remaining.slice(0, sliceCount)];
+
+    return filteredTasks.value.slice(0, visibleTaskCount.value);
   });
   const hasMoreTasks = computed(() => visibleTaskCount.value < filteredTasks.value.length);
   const loadMoreTasks = () => {
@@ -557,9 +609,11 @@
     enabled: hasMoreTasks,
     useScrollFallback: true,
   });
-  // Reset visible count when filters change
+  // Reset visible count when filters change (but not during scroll-to-task)
   watch(filteredTasks, () => {
-    visibleTaskCount.value = INITIAL_BATCH;
+    if (!isScrollingToTask.value) {
+      visibleTaskCount.value = INITIAL_BATCH;
+    }
     if (pinnedTaskId.value && !filteredTasks.value.some((task) => task.id === pinnedTaskId.value)) {
       pinnedTaskId.value = null;
     }
@@ -568,6 +622,40 @@
     });
   });
   const taskListRef = ref<HTMLElement | null>(null);
+  const mapContainerRef = ref<HTMLElement | null>(null);
+  const leafletMapRef = ref<{ activateObjectivePopup: (id: string) => boolean } | null>(null);
+  // Scroll position tracking for floating buttons
+  const scrollY = ref(0);
+  const showScrollToTopButton = computed(() => scrollY.value > 400);
+  const showScrollToMapButton = computed(() => scrollY.value > 300);
+  const handleScroll = () => {
+    scrollY.value = window.scrollY;
+  };
+  const scrollToMap = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  /**
+   * Scrolls to the map and activates the popup for a specific objective.
+   * Used by TaskObjective's "Jump to map" button.
+   */
+  const jumpToMapObjective = (objectiveId: string) => {
+    scrollToMap();
+    // Small delay to let scroll complete before activating popup
+    setTimeout(() => {
+      leafletMapRef.value?.activateObjectivePopup(objectiveId);
+    }, 400);
+  };
+  // Provide the jumpToMapObjective function for child components
+  provide('jumpToMapObjective', jumpToMapObjective);
+  provide('isMapView', showMapDisplay);
+  // Set up scroll listener
+  onMounted(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initialize
+  });
   // Handle deep linking to a specific task via ?task=taskId query param
   const getTaskStatus = (taskId: string): 'available' | 'locked' | 'completed' | 'failed' => {
     const isFailed = tasksFailed.value?.[taskId]?.['self'] ?? false;
@@ -578,35 +666,11 @@
     if (isUnlocked) return 'available';
     return 'locked';
   };
-  const highlightTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-  // Track highlightObjective timers separately (can have multiple nested timeouts)
+  // Track highlightObjective timers (can have multiple nested timeouts)
   const highlightObjectiveTimers = ref<ReturnType<typeof setTimeout>[]>([]);
-  const highlightTask = (taskElement: HTMLElement) => {
-    taskElement.classList.add(
-      'ring-2',
-      'ring-primary-500',
-      'ring-offset-2',
-      'ring-offset-surface-900'
-    );
-    if (highlightTimeout.value) {
-      clearTimeout(highlightTimeout.value);
-    }
-    highlightTimeout.value = setTimeout(() => {
-      taskElement.classList.remove(
-        'ring-2',
-        'ring-primary-500',
-        'ring-offset-2',
-        'ring-offset-surface-900'
-      );
-      highlightTimeout.value = null;
-    }, 2000);
-  };
   onBeforeUnmount(() => {
     updateDebouncedSearch.cancel();
-    if (highlightTimeout.value) {
-      clearTimeout(highlightTimeout.value);
-      highlightTimeout.value = null;
-    }
+    window.removeEventListener('scroll', handleScroll);
     if (pinnedTaskTimeout.value) {
       clearTimeout(pinnedTaskTimeout.value);
       pinnedTaskTimeout.value = null;
@@ -615,10 +679,43 @@
     highlightObjectiveTimers.value.forEach((timerId) => clearTimeout(timerId));
     highlightObjectiveTimers.value = [];
   });
+  /**
+   * Waits for an element to appear in the DOM using Vue's nextTick.
+   * More reliable than requestAnimationFrame for Vue-rendered content.
+   */
+  const waitForElement = async (
+    elementId: string,
+    maxAttempts = 50
+  ): Promise<HTMLElement | null> => {
+    for (let i = 0; i < maxAttempts; i++) {
+      await nextTick();
+      // First try by ID
+      const el = document.getElementById(elementId);
+      if (el) {
+        return el;
+      }
+      // For objectives in item groups, also search by data-objective-ids attribute
+      // Item groups consolidate multiple objectives, so the ID might not be the primary one
+      if (elementId.startsWith('objective-')) {
+        const objectiveId = elementId.replace('objective-', '');
+        const elByData = document.querySelector<HTMLElement>(
+          `[data-objective-ids*="${objectiveId}"]`
+        );
+        if (elByData) {
+          return elByData;
+        }
+      }
+      // Small delay between attempts to let Vue batch updates
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return null;
+  };
+
   const scrollToTask = async (taskId: string, options?: { noPinning?: boolean }) => {
     await nextTick();
     const taskIndex = filteredTasks.value.findIndex((t) => t.id === taskId);
     if (taskIndex === -1) return;
+
     const pinTaskToTop = () => {
       // Skip pinning if requested (e.g., from map tooltip scroll)
       if (options?.noPinning) return;
@@ -631,56 +728,115 @@
         pinnedTaskTimeout.value = null;
       }, 8000);
     };
+
+    // Helper to scroll to an element
+    const scrollToElement = (element: HTMLElement) => {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
     // If task is already in DOM, scroll to it
-    const taskElement = document.getElementById(`task-${taskId}`);
+    let taskElement = document.getElementById(`task-${taskId}`);
     if (taskElement) {
       const rect = taskElement.getBoundingClientRect();
       const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
       if (isVisible) {
-        // Don't highlight here when noPinning - let highlightObjective handle it
-        if (!options?.noPinning) highlightTask(taskElement);
+        // Already visible, nothing to do
         return;
       }
-      const nearbyThreshold = window.innerHeight * 1.5;
-      const isNearby = Math.abs(rect.top) <= nearbyThreshold;
-      if (isNearby) {
-        taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        if (!options?.noPinning) highlightTask(taskElement);
+      // Task in DOM but not visible - scroll to it
+      if (options?.noPinning) {
+        scrollToElement(taskElement);
         return;
       }
+      // Pin and scroll
       pinTaskToTop();
-      await nextTick();
-      const pinnedElement = document.getElementById(`task-${taskId}`);
-      if (pinnedElement) {
-        if (!options?.noPinning) highlightTask(pinnedElement);
-      }
       return;
     }
-    pinTaskToTop();
-    await nextTick();
-    const newTaskElement = document.getElementById(`task-${taskId}`);
-    if (!newTaskElement) return;
-    if (!options?.noPinning) highlightTask(newTaskElement);
+
+    // Task not in DOM - need to load it first
+    if (options?.noPinning) {
+      // Expand visible count to include this task (preserves list order)
+      if (taskIndex >= visibleTaskCount.value) {
+        visibleTaskCount.value = taskIndex + 1;
+      }
+    } else {
+      pinTaskToTop();
+    }
+
+    // Wait for Vue to render the element - poll until it appears
+    taskElement = await waitForElement(`task-${taskId}`);
+    if (taskElement) {
+      scrollToElement(taskElement);
+    }
   };
-  const highlightObjective = (objectiveId: string, taskId: string) => {
+
+  /**
+   * Applies objective-highlight class to an element when it becomes visible.
+   */
+  const highlightObjectiveWhenVisible = (element: HTMLElement) => {
+    // Clear any existing highlightObjective timers
+    highlightObjectiveTimers.value.forEach((timerId) => clearTimeout(timerId));
+    highlightObjectiveTimers.value = [];
+
+    // Clear any existing highlights from other elements
+    document.querySelectorAll('.objective-highlight').forEach((el) => {
+      el.classList.remove('objective-highlight');
+    });
+
+    const applyHighlight = () => {
+      element.classList.add('objective-highlight');
+      const removeTimer = setTimeout(() => {
+        element.classList.remove('objective-highlight');
+      }, 3500);
+      highlightObjectiveTimers.value.push(removeTimer);
+    };
+
+    // Check if already in view
+    const rect = element.getBoundingClientRect();
+    const isInView = rect.top >= 0 && rect.bottom <= window.innerHeight;
+    if (isInView) {
+      applyHighlight();
+      return;
+    }
+
+    // Wait for element to become visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting) {
+          observer.disconnect();
+          // Small delay to let scroll settle
+          setTimeout(applyHighlight, 100);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(element);
+
+    // Cleanup observer after timeout
+    const cleanupTimer = setTimeout(() => observer.disconnect(), 5000);
+    highlightObjectiveTimers.value.push(cleanupTimer);
+  };
+
+  const highlightObjective = async (objectiveId: string, taskId: string) => {
     // Clear any existing highlightObjective timers before starting new ones
     highlightObjectiveTimers.value.forEach((timerId) => clearTimeout(timerId));
     highlightObjectiveTimers.value = [];
 
-    // Wait a bit for the DOM to settle after task scroll
-    const outerTimer = setTimeout(() => {
-      const objectiveEl = document.getElementById(`objective-${objectiveId}`);
-      // Try objective first, fall back to task card
-      const targetEl = objectiveEl || document.getElementById(`task-${taskId}`);
-      if (!targetEl) return;
-      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      targetEl.classList.add('objective-highlight');
-      const innerTimer = setTimeout(() => {
-        targetEl.classList.remove('objective-highlight');
-      }, 2500);
-      highlightObjectiveTimers.value.push(innerTimer);
-    }, 500);
-    highlightObjectiveTimers.value.push(outerTimer);
+    // Wait for objective element to appear in DOM (only highlight objectives, never task cards)
+    const objectiveEl = await waitForElement(`objective-${objectiveId}`, 1500);
+    
+    if (!objectiveEl) {
+      // If objective not found, just scroll to task without highlighting
+      const taskEl = await waitForElement(`task-${taskId}`, 500);
+      if (taskEl) {
+        taskEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    objectiveEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    highlightObjectiveWhenVisible(objectiveEl);
   };
   const handleTaskQueryParam = async () => {
     const taskId = getQueryString(route.query.task);
@@ -688,56 +844,64 @@
     if (!taskId || tasksLoading.value) return;
     const taskInMetadata = tasks.value.find((t) => t.id === taskId);
     if (!taskInMetadata) return;
-    // If highlighting from map tooltip, don't change the view - just pin and scroll
-    const isMapHighlight = !!objectiveIdToHighlight;
-    if (!isMapHighlight) {
-      // Enable the appropriate type filter based on task properties
-      const isKappaRequired = taskInMetadata.kappaRequired === true;
-      const isLightkeeperRequired = taskInMetadata.lightkeeperRequired === true;
-      const isLightkeeperTraderTask =
-        lightkeeperTraderId.value !== undefined
-          ? taskInMetadata.trader?.id === lightkeeperTraderId.value
-          : taskInMetadata.trader?.name?.toLowerCase() === 'lightkeeper';
-      const isNonSpecial = !isKappaRequired && !isLightkeeperRequired && !isLightkeeperTraderTask;
-      // Ensure the task's type filter is enabled so task will appear
-      if (
-        (isLightkeeperRequired || isLightkeeperTraderTask) &&
-        !preferencesStore.getShowLightkeeperTasks
-      ) {
-        preferencesStore.setShowLightkeeperTasks(true);
-      }
-      if (isKappaRequired && preferencesStore.getHideNonKappaTasks) {
-        preferencesStore.setHideNonKappaTasks(false);
-      }
-      if (isNonSpecial && !preferencesStore.getShowNonSpecialTasks) {
-        preferencesStore.setShowNonSpecialTasks(true);
-      }
-      // Determine task status and set appropriate filter
-      // Skip if already in 'all' view since all tasks are visible there
-      const currentSecondaryView = preferencesStore.getTaskSecondaryView;
-      if (currentSecondaryView !== 'all') {
-        const status = getTaskStatus(taskId);
-        if (currentSecondaryView !== status) {
-          preferencesStore.setTaskSecondaryView(status);
+
+    // Set flag to prevent filter watch from resetting visibleTaskCount during navigation
+    isScrollingToTask.value = true;
+
+    try {
+      // If highlighting from map tooltip, don't change the view - just pin and scroll
+      const isMapHighlight = !!objectiveIdToHighlight;
+      if (!isMapHighlight) {
+        // Enable the appropriate type filter based on task properties
+        const isKappaRequired = taskInMetadata.kappaRequired === true;
+        const isLightkeeperRequired = taskInMetadata.lightkeeperRequired === true;
+        const isLightkeeperTraderTask =
+          lightkeeperTraderId.value !== undefined
+            ? taskInMetadata.trader?.id === lightkeeperTraderId.value
+            : taskInMetadata.trader?.name?.toLowerCase() === 'lightkeeper';
+        const isNonSpecial = !isKappaRequired && !isLightkeeperRequired && !isLightkeeperTraderTask;
+        // Ensure the task's type filter is enabled so task will appear
+        if (
+          (isLightkeeperRequired || isLightkeeperTraderTask) &&
+          !preferencesStore.getShowLightkeeperTasks
+        ) {
+          preferencesStore.setShowLightkeeperTasks(true);
+        }
+        if (isKappaRequired && preferencesStore.getHideNonKappaTasks) {
+          preferencesStore.setHideNonKappaTasks(false);
+        }
+        if (isNonSpecial && !preferencesStore.getShowNonSpecialTasks) {
+          preferencesStore.setShowNonSpecialTasks(true);
+        }
+        // Determine task status and set appropriate filter
+        // Skip if already in 'all' view since all tasks are visible there
+        const currentSecondaryView = preferencesStore.getTaskSecondaryView;
+        if (currentSecondaryView !== 'all') {
+          const status = getTaskStatus(taskId);
+          if (currentSecondaryView !== status) {
+            preferencesStore.setTaskSecondaryView(status);
+          }
+        }
+        // Set primary view to 'all' to ensure the task is visible regardless of map/trader
+        if (preferencesStore.getTaskPrimaryView !== 'all') {
+          preferencesStore.setTaskPrimaryView('all');
+        }
+        // Clear search query so the target task is visible
+        if (searchQuery.value) {
+          searchQuery.value = '';
         }
       }
-      // Set primary view to 'all' to ensure the task is visible regardless of map/trader
-      if (preferencesStore.getTaskPrimaryView !== 'all') {
-        preferencesStore.setTaskPrimaryView('all');
+      // Wait for filter/watch updates to settle
+      await nextTick();
+      // scrollToTask handles scrolling directly via scrollIntoView
+      // When highlighting from map, skip pinning to avoid reordering the list
+      await scrollToTask(taskId, { noPinning: isMapHighlight });
+      // Highlight specific objective if requested (falls back to task card if objective not found)
+      if (objectiveIdToHighlight) {
+        highlightObjective(objectiveIdToHighlight, taskId);
       }
-      // Clear search query so the target task is visible
-      if (searchQuery.value) {
-        searchQuery.value = '';
-      }
-    }
-    // Wait for filter/watch updates to settle
-    await nextTick();
-    // scrollToTask handles scrolling directly via scrollIntoView
-    // When highlighting from map, skip pinning to avoid reordering the list
-    await scrollToTask(taskId, { noPinning: isMapHighlight });
-    // Highlight specific objective if requested (falls back to task card if objective not found)
-    if (objectiveIdToHighlight) {
-      highlightObjective(objectiveIdToHighlight, taskId);
+    } finally {
+      isScrollingToTask.value = false;
     }
     // Clear the query params to avoid re-triggering on filter changes
     const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>;

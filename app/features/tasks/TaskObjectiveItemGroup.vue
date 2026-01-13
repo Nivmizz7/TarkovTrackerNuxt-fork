@@ -1,7 +1,7 @@
 <template>
-  <div class="space-y-2">
-    <div class="grid grid-cols-[16px_1fr] items-start gap-2">
-      <UIcon :name="`i-${iconName}`" aria-hidden="true" class="mt-0.5 h-4 w-4 text-gray-400" />
+  <div class="space-y-2 px-2">
+    <div class="grid grid-cols-[16px_1fr] items-center gap-2">
+      <UIcon :name="`i-${iconName}`" aria-hidden="true" class="h-4 w-4 text-gray-400" />
       <div class="min-w-0">
         <div class="text-sm font-medium text-gray-100">{{ title }}</div>
       </div>
@@ -9,7 +9,9 @@
     <div class="flex flex-wrap gap-2 pl-6">
       <div
         v-for="row in consolidatedRows"
+        :id="getRowObjectiveIds(row)[0] ? `objective-${getRowObjectiveIds(row)[0]}` : undefined"
         :key="row.itemKey"
+        :data-objective-ids="getRowObjectiveIds(row).join(',')"
         class="flex max-w-full items-center gap-2 rounded-md border px-2 py-1 transition-colors"
         :class="[
           row.allComplete
@@ -35,6 +37,20 @@
         >
           FiR
         </span>
+        <!-- Jump to map button (only shown when in maps view and any objective has location) -->
+        <AppTooltip
+          v-if="getMapObjectiveId(row)"
+          :text="t('page.tasks.questcard.jumpToMap', 'Jump to map')"
+        >
+          <button
+            type="button"
+            class="flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-300 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900"
+            :aria-label="t('page.tasks.questcard.jumpToMap', 'Jump to map')"
+            @click.stop="($event.currentTarget as HTMLElement)?.blur(); handleJumpToMap(getMapObjectiveId(row)!)"
+          >
+            <UIcon name="i-mdi-map-marker" aria-hidden="true" class="h-4 w-4" />
+          </button>
+        </AppTooltip>
         <!-- Single set of controls per item - updates all related objectives together -->
         <ObjectiveCountControls
           v-if="row.meta.neededCount > 1"
@@ -75,12 +91,17 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, inject, type ComputedRef } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import '@/assets/css/objective-highlight.css';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { useTarkovStore } from '@/stores/useTarkov';
   import type { TaskObjective } from '@/types/tarkov';
+
+  // Inject functions from tasks.vue for map integration
+  const jumpToMapObjective = inject<((id: string) => void) | null>('jumpToMapObjective', null);
+  const isMapView = inject<ComputedRef<boolean> | null>('isMapView', null);
   const props = defineProps<{
     title: string;
     iconName: string;
@@ -229,6 +250,45 @@
       };
     });
   });
+
+  /**
+   * Gets all objective IDs from a consolidated row.
+   * Used for highlighting and data attributes.
+   */
+  const getRowObjectiveIds = (row: ConsolidatedRow): string[] => {
+    return row.objectives.map((objRow) => objRow.objective.id);
+  };
+
+  /**
+   * Finds an objective with map location data from a consolidated row.
+   * Returns the objective ID if found, null otherwise.
+   */
+  const getMapObjectiveId = (row: ConsolidatedRow): string | null => {
+    if (!isMapView?.value) return null;
+    
+    for (const objRow of row.objectives) {
+      const obj = objRow.objective;
+      const fullObj = fullObjectives.value.find((o) => o.id === obj.id);
+      const target = fullObj ?? obj;
+      
+      // Check if objective has zones or possibleLocations
+      const hasZones = Array.isArray((target as any).zones) && (target as any).zones.length > 0;
+      const hasLocations = Array.isArray((target as any).possibleLocations) && (target as any).possibleLocations.length > 0;
+      const hasMaps = Array.isArray(target.maps) && target.maps.length > 0;
+      
+      if (hasZones || hasLocations || hasMaps) {
+        return obj.id;
+      }
+    }
+    return null;
+  };
+
+  const handleJumpToMap = (objectiveId: string) => {
+    if (jumpToMapObjective) {
+      jumpToMapObjective(objectiveId);
+    }
+  };
+
   const isObjectiveComplete = (objectiveId: string) => {
     return tarkovStore.isTaskObjectiveComplete(objectiveId);
   };

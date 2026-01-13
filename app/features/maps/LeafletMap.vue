@@ -160,6 +160,7 @@
   import { computed, createApp, onUnmounted, ref, toRef, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRouter } from 'vue-router';
+  import { useNuxtApp } from '#imports';
   import { useLeafletMap } from '@/composables/useLeafletMap';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
@@ -201,6 +202,7 @@
   });
   const { t } = useI18n({ useScope: 'global' });
   const router = useRouter();
+  const { $i18n } = useNuxtApp();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
   // Check if map is unavailable
@@ -266,6 +268,8 @@
   };
   // Track currently pinned popup's cleanup function to allow only one pinned popup at a time
   let activePinnedPopupCleanup: (() => void) | null = null;
+  // Store marker references by objective ID for programmatic activation
+  const objectiveMarkers = new Map<string, { layer: L.Layer; getLatLng: () => L.LatLngExpression; showPopup: (pinned: boolean) => void }>();
   /**
    * Mounts the LeafletObjectiveTooltip Vue component and returns the container element.
    */
@@ -275,8 +279,9 @@
   ): { element: HTMLElement; unmount: () => void } {
     const container = document.createElement('div');
     const app = createApp(LeafletObjectiveTooltip, { objectiveId, onClose });
-    // Provide router to the standalone app instance
+    // Provide router and i18n to the standalone app instance
     app.provide('router', router);
+    app.use($i18n);
     app.mount(container);
     return { element: container, unmount: () => app.unmount() };
   }
@@ -298,9 +303,45 @@
     let isPinned = false;
     let isHovering = false;
     let currentMountedComponent: { element: HTMLElement; unmount: () => void } | null = null;
+
+    // Store original colors for restoration when unpinned
+    const styledLayer = layer as L.CircleMarker | L.Polygon;
+    const originalFillColor = styledLayer.options?.fillColor || '#ef4444';
+    const originalStrokeColor = styledLayer.options?.color || '#ef4444';
+    const isCircleMarker = 'getRadius' in styledLayer;
+    const SELECTED_COLOR = '#8b5cf6'; // violet-500
+
+    const setLayerSelected = (selected: boolean) => {
+      if (!('setStyle' in styledLayer)) return;
+      if (selected) {
+        // For circle markers, only change fillColor (keep white border)
+        // For polygons, change both stroke and fill
+        if (isCircleMarker) {
+          styledLayer.setStyle({ fillColor: SELECTED_COLOR });
+        } else {
+          styledLayer.setStyle({ color: SELECTED_COLOR, fillColor: SELECTED_COLOR });
+        }
+      } else {
+        // Restore original colors
+        if (isCircleMarker) {
+          styledLayer.setStyle({ fillColor: originalFillColor });
+        } else {
+          styledLayer.setStyle({ color: originalStrokeColor, fillColor: originalFillColor });
+        }
+      }
+    };
+
     const showPopup = (pinned: boolean) => {
       if (!mapInstance.value) return;
+      // Close any other pinned popup first if we're pinning
+      if (pinned && activePinnedPopupCleanup) {
+        activePinnedPopupCleanup();
+      }
       isPinned = pinned;
+      // Change marker color to purple when pinned
+      if (pinned) {
+        setLayerSelected(true);
+      }
       // Unmount previous component if exists
       if (currentMountedComponent) {
         currentMountedComponent.unmount();
@@ -311,6 +352,9 @@
       popup.setLatLng(getLatLng());
       if (!mapInstance.value.hasLayer(popup)) {
         popup.addTo(mapInstance.value);
+      }
+      if (pinned) {
+        activePinnedPopupCleanup = unpinAndHide;
       }
     };
     const hidePopup = () => {
@@ -324,6 +368,8 @@
     };
     const unpinAndHide = () => {
       isPinned = false;
+      // Restore original marker color
+      setLayerSelected(false);
       // Clear active reference if this was the pinned popup
       if (activePinnedPopupCleanup === unpinAndHide) {
         activePinnedPopupCleanup = null;
@@ -336,6 +382,8 @@
         }
       }
     };
+    // Store reference for programmatic activation
+    objectiveMarkers.set(objectiveId, { layer, getLatLng, showPopup });
     // Hover events
     layer.on('mouseover', () => {
       isHovering = true;
@@ -386,6 +434,7 @@
     });
     layer.on('remove', () => {
       popup.remove();
+      objectiveMarkers.delete(objectiveId);
       if (currentMountedComponent) {
         currentMountedComponent.unmount();
         currentMountedComponent = null;
@@ -459,7 +508,7 @@
         const latLngs = outlineToLatLngArray(zone.outline);
         if (latLngs.length < 3) return;
         const isSelf = mark.users?.includes('self') ?? false;
-        const zoneColor = isSelf ? '#ef4444' : '#f97316';
+        const zoneColor = isSelf ? '#ef4444' : '#f97316'; // red-500 : orange-500
         const polygon = L.polygon(
           latLngs.map((ll) => [ll.lat, ll.lng]),
           {
@@ -638,8 +687,26 @@
     },
     { immediate: true }
   );
+  /**
+   * Activates (pins) the popup for a specific objective marker.
+   * Called programmatically from outside the component.
+   */
+  const activateObjectivePopup = (objectiveId: string): boolean => {
+    const markerData = objectiveMarkers.get(objectiveId);
+    if (!markerData) return false;
+    markerData.showPopup(true);
+    return true;
+  };
+
+  // Expose methods for parent components
+  defineExpose({
+    activateObjectivePopup,
+    refreshView,
+  });
+
   // Cleanup
   onUnmounted(() => {
+    objectiveMarkers.clear();
     clearMarkers();
   });
 </script>
