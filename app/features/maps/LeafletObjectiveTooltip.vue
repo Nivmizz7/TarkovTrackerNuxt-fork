@@ -46,7 +46,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, inject, onBeforeUnmount } from 'vue';
+  import { computed, inject } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { useTarkovStore } from '@/stores/useTarkov';
@@ -82,9 +82,6 @@
   const metadataStore = useMetadataStore();
   const tarkovStore = useTarkovStore();
 
-  // Track timer IDs for cleanup on unmount
-  const pendingTimers: ReturnType<typeof setTimeout>[] = [];
-
   const objective = computed(() => {
     return metadataStore.objectives.find((o) => o.id === props.objectiveId);
   });
@@ -115,111 +112,16 @@
   };
 
   /**
-   * Clears all pending timers tracked by this component.
-   */
-  const clearPendingTimers = () => {
-    pendingTimers.forEach((timerId) => clearTimeout(timerId));
-    pendingTimers.length = 0;
-  };
-
-  // Track observer for cleanup
-  let visibilityObserver: IntersectionObserver | null = null;
-
-  /**
-   * Highlights element when it becomes visible on screen.
-   */
-  const highlightWhenVisible = (element: HTMLElement) => {
-    clearPendingTimers();
-    if (visibilityObserver) {
-      visibilityObserver.disconnect();
-      visibilityObserver = null;
-    }
-
-    // Clear any existing highlights from other elements
-    document.querySelectorAll('.objective-highlight').forEach((el) => {
-      el.classList.remove('objective-highlight');
-    });
-
-    const applyHighlight = () => {
-      element.classList.add('objective-highlight');
-      const removeTimer = setTimeout(() => {
-        element.classList.remove('objective-highlight');
-      }, 3500);
-      pendingTimers.push(removeTimer);
-    };
-
-    // Check if already in view
-    const rect = element.getBoundingClientRect();
-    const isInView = rect.top >= 0 && rect.bottom <= window.innerHeight;
-    if (isInView) {
-      applyHighlight();
-      return;
-    }
-
-    // Wait for element to become visible
-    visibilityObserver = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry?.isIntersecting) {
-          visibilityObserver?.disconnect();
-          visibilityObserver = null;
-          // Small delay to let scroll settle
-          const delayTimer = setTimeout(applyHighlight, 100);
-          pendingTimers.push(delayTimer);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    visibilityObserver.observe(element);
-
-    // Cleanup observer after timeout
-    const cleanupTimer = setTimeout(() => {
-      visibilityObserver?.disconnect();
-      visibilityObserver = null;
-    }, 3500);
-    pendingTimers.push(cleanupTimer);
-  };
-
-  /**
    * Scrolls to the objective in the task list and highlights it.
    * Only highlights objectives, never task cards.
-   * If element not rendered, triggers the task page to load it via query params.
+   * Always uses query params to trigger the scroll/highlight via tasks.vue,
+   * ensuring the highlight happens even if this tooltip unmounts (e.g., from hover ending).
    */
   const scrollToObjective = () => {
     if (!task.value || !router) return;
-    // Try to find the objective element (only highlight objectives, never task cards)
-    // First try by ID, then by data-objective-ids for item groups
-    let objectiveEl = document.getElementById(`objective-${props.objectiveId}`);
-    if (!objectiveEl) {
-      // For item groups, the ID might be based on the first objective, so search by data attribute
-      objectiveEl = document.querySelector<HTMLElement>(
-        `[data-objective-ids*="${props.objectiveId}"]`
-      );
-    }
-    if (objectiveEl) {
-      // Objective exists - scroll task card into view first, then highlight objective
-      // This prevents layout shifts from content-visibility: auto
-      const taskEl = document.getElementById(`task-${task.value.id}`);
-      if (taskEl) {
-        // First scroll the task card into view
-        taskEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-      // Small delay to let scroll settle, then highlight
-      const elToHighlight = objectiveEl;
-      setTimeout(() => {
-        highlightWhenVisible(elToHighlight);
-      }, 100);
-      return;
-    }
-    // Check if task card exists but objective not rendered yet
-    const taskEl = document.getElementById(`task-${task.value.id}`);
-    if (taskEl) {
-      // Task exists but objective not visible - just scroll to task without highlighting
-      taskEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      return;
-    }
-    // Neither element in DOM - add query params to trigger task loading
-    // Use router.replace to keep current view (map/traders) while adding task query
+    // Use query params to trigger scroll and highlight via tasks.vue
+    // This ensures the highlight happens even if this tooltip component
+    // gets unmounted (e.g., when hover ends during scroll)
     const currentQuery = { ...router.currentRoute.value.query };
     router.replace({
       query: {
@@ -229,15 +131,6 @@
       },
     });
   };
-
-  // Clean up timers and observers on component unmount
-  onBeforeUnmount(() => {
-    clearPendingTimers();
-    if (visibilityObserver) {
-      visibilityObserver.disconnect();
-      visibilityObserver = null;
-    }
-  });
 </script>
 <style scoped>
   .leaflet-objective-tooltip {
