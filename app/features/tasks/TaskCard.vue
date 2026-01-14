@@ -63,13 +63,13 @@
                 <img src="/img/logos/wikilogo.webp" alt="Wiki" aria-hidden="true" class="h-5 w-5" />
               </a>
             </AppTooltip>
-            <AppTooltip :text="t('page.tasks.questcard.viewOnTarkovDev', 'View on tarkov.dev')">
+            <AppTooltip :text="t('page.tasks.questcard.viewOnTarkovDev', 'View on Tarkov.dev')">
               <a
                 :href="tarkovDevTaskUrl"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 inline-flex items-center justify-center rounded p-1 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                :aria-label="t('page.tasks.questcard.viewOnTarkovDev', 'View on tarkov.dev')"
+                :aria-label="t('page.tasks.questcard.viewOnTarkovDev', 'View on Tarkov.dev')"
                 @click.stop
               >
                 <img
@@ -388,27 +388,43 @@
     <ContextMenu ref="taskContextMenu">
       <template #default="{ close }">
         <ContextMenuItem
-          icon="i-mdi-content-copy"
-          :label="t('page.tasks.questcard.copyTaskId', 'Copy task ID')"
+          v-if="task.wikiLink"
+          icon="/img/logos/wikilogo.webp"
+          :label="t('page.tasks.questcard.viewOnWiki', 'View on Wiki')"
           @click="
-            copyTaskId();
+            openTaskWiki();
+            close();
+          "
+        />
+        <ContextMenuItem
+          icon="/img/logos/tarkovdevlogo.webp"
+          :label="t('page.tasks.questcard.viewOnTarkovDev', 'View on Tarkov.dev')"
+          @click="
+            openTaskOnTarkovDev();
             close();
           "
         />
         <ContextMenuItem
           icon="i-mdi-link-variant"
-          :label="t('page.tasks.questcard.copyTaskLink', 'Copy task link')"
+          :label="t('page.tasks.questcard.copyTaskLink', 'Copy Task Link')"
           @click="
             copyTaskLink();
             close();
           "
         />
         <ContextMenuItem
-          v-if="task.wikiLink"
-          icon="/img/logos/wikilogo.webp"
-          :label="t('page.tasks.questcard.viewTaskOnWiki', 'View task on Wiki')"
+          icon="i-mdi-content-copy"
+          :label="t('page.tasks.questcard.copyTaskId', 'Copy Task ID')"
           @click="
-            openTaskWiki();
+            copyTaskId();
+            close();
+          "
+        />
+        <ContextMenuItem
+          icon="i-mdi-alert-circle-outline"
+          :label="t('page.tasks.questcard.reportDataIssue', 'Report Data Issue')"
+          @click="
+            openTaskDataIssue();
             close();
           "
         />
@@ -428,7 +444,7 @@
       <template #default="{ close }">
         <ContextMenuItem
           icon="/img/logos/tarkovdevlogo.webp"
-          :label="t('page.tasks.questcard.viewOnTarkovDev', 'View on tarkov.dev')"
+          :label="t('page.tasks.questcard.viewOnTarkovDev', 'View on Tarkov.dev')"
           @click="
             openItemOnTarkovDev();
             close();
@@ -788,5 +804,40 @@
     if (props.task.wikiLink) {
       window.open(props.task.wikiLink, '_blank');
     }
+  };
+  const openTaskOnTarkovDev = () => {
+    window.open(tarkovDevTaskUrl.value, '_blank');
+  };
+  // Builds the data issue report URL with prefilled query params for the issue form.
+  const getTaskDataIssueUrl = () => {
+    const title = `${props.task.name} (${props.task.id})`;
+    const objectiveIds = taskObjectives.value.map((objective) => objective.id).filter(Boolean);
+    const minLevel = props.task.minPlayerLevel ?? 0;
+    const playerLevel = tarkovStore.playerLevel();
+    const gameMode = tarkovStore.getCurrentGameMode().toUpperCase();
+    const descriptionLines = [
+      `Task Name: ${props.task.name}`,
+      `Task ID: ${props.task.id}`,
+      objectiveIds.length ? `Objective IDs: ${objectiveIds.join(', ')}` : '',
+      minLevel > 0 ? `Task Req Level: ${minLevel}` : '',
+      `Dev Link: https://tarkov.dev/task/${props.task.id}`,
+      playerLevel > 0 ? `\nUSER LEVEL: ${playerLevel}` : '',
+      `USER MODE: ${gameMode}`,
+    ].filter(Boolean);
+    // Prompt + padding so the form opens with a clear place to start typing.
+    const description = `>--Describe issue here--<\n\n\n${descriptionLines.join('\n')}`;
+    const params = new URLSearchParams({
+      title,
+      category: 'Overlay - Quests',
+      description,
+    });
+    if (props.task.wikiLink) {
+      params.set('reference', props.task.wikiLink);
+    }
+    return `https://issue.tarkovtracker.org/data?${params.toString()}`;
+  };
+  // Opens the data issue form in a new tab using the prefilled report URL.
+  const openTaskDataIssue = () => {
+    window.open(getTaskDataIssueUrl(), '_blank');
   };
 </script>
