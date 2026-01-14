@@ -93,6 +93,7 @@
   import { useI18n } from 'vue-i18n';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
   import { OBJECTIVE_ICON_MAP } from '@/features/tasks/task-objective-constants';
+  import { objectiveHasMapLocation } from '@/features/tasks/task-objective-helpers';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
@@ -196,13 +197,7 @@
   // Check if this objective has map location data (for "Jump to map" button)
   const hasMapLocation = computed(() => {
     if (!isMapView?.value) return false;
-    const obj = fullObjective.value ?? props.objective;
-    // Check if objective has zones or possibleLocations
-    const hasZones = Array.isArray((obj as any).zones) && (obj as any).zones.length > 0;
-    const hasLocations = Array.isArray((obj as any).possibleLocations) && (obj as any).possibleLocations.length > 0;
-    // Also check the maps array
-    const hasMaps = Array.isArray(obj.maps) && obj.maps.length > 0;
-    return hasZones || hasLocations || hasMaps;
+    return objectiveHasMapLocation(props.objective, fullObjective.value);
   });
   const handleJumpToMap = () => {
     if (jumpToMapObjective) {

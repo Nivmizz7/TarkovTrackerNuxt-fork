@@ -235,6 +235,7 @@
       notasksfound: 'No tasks found. Try changing your filters or updating your level.',
       showing_all_sources: 'Showing all sources',
       loading: 'Loading tasks',
+      selectedTask: 'Selected Task',
       questcard: {
         level: 'Level: {count}',
         levelBadge: 'Lv {count}',
@@ -717,6 +718,7 @@
     item: 'Item',
     items: 'Items',
     close_button: 'Close',
+    dismiss: 'Dismiss',
     loading: 'Loading...',
     error: 'Error',
   },

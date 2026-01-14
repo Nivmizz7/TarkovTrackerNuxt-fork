@@ -1,15 +1,14 @@
 /**
  * Shared objective highlight animation for scroll-to-objective feature.
  * Used by: TaskCard.vue, TaskObjective.vue, LeafletObjectiveTooltip.vue
+ *
+ * Color constant defined here as the nearest shared parent for highlight styling.
+ * Matches violet-500 for selection/highlight states.
  */
 
-/* Highlight color tokens */
-:root {
-  --highlight-color-primary: #8b5cf6;
-}
-
-/* Base highlight class for objective elements - solid purple outline */
+/* Highlight color - violet for selection states */
 .objective-highlight {
+  --highlight-color: hsl(262 83% 58%);
   animation: objective-highlight-solid 3s ease-in-out;
   border-radius: 0.375rem;
 }
@@ -21,11 +20,11 @@
     outline-offset: 0;
   }
   5% {
-    outline: 2px solid var(--highlight-color-primary);
+    outline: 2px solid var(--highlight-color);
     outline-offset: 0;
   }
   85% {
-    outline: 2px solid var(--highlight-color-primary);
+    outline: 2px solid var(--highlight-color);
     outline-offset: 0;
   }
   100% {

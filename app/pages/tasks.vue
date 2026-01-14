@@ -42,11 +42,11 @@
           <div v-if="pinnedTask" class="mb-6">
             <div class="mb-2 flex items-center gap-2 text-xs text-primary-400">
               <UIcon name="i-mdi-pin" class="h-4 w-4" />
-              <span>Selected Task</span>
+              <span>{{ t('page.tasks.selectedTask', 'Selected Task') }}</span>
               <button
                 type="button"
                 class="ml-auto rounded p-1 text-gray-400 hover:bg-white/10 hover:text-gray-200"
-                aria-label="Dismiss"
+                :aria-label="t('generic.dismiss', 'Dismiss')"
                 @click="clearPinnedTaskAndClosePopup"
               >
                 <UIcon name="i-mdi-close" class="h-4 w-4" />
@@ -808,7 +808,7 @@
     highlightObjectiveTimers.value.forEach((timerId) => clearTimeout(timerId));
     highlightObjectiveTimers.value = [];
     // Wait for objective element to appear in DOM (only highlight objectives, never task cards)
-    const objectiveEl = await waitForElement(`objective-${objectiveId}`, 1500);
+    const objectiveEl = await waitForElement(`objective-${objectiveId}`, 30);
     if (!objectiveEl) return;
     highlightObjectiveWhenVisible(objectiveEl);
   };

@@ -93,12 +93,11 @@
 <script setup lang="ts">
   import { computed, inject, type ComputedRef } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import '@/assets/css/objective-highlight.css';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
+  import { objectiveHasMapLocation } from '@/features/tasks/task-objective-helpers';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { useTarkovStore } from '@/stores/useTarkov';
   import type { TaskObjective } from '@/types/tarkov';
-
   // Inject functions from tasks.vue for map integration
   const jumpToMapObjective = inject<((id: string) => void) | null>('jumpToMapObjective', null);
   const isMapView = inject<ComputedRef<boolean> | null>('isMapView', null);
@@ -265,18 +264,10 @@
    */
   const getMapObjectiveId = (row: ConsolidatedRow): string | null => {
     if (!isMapView?.value) return null;
-    
     for (const objRow of row.objectives) {
       const obj = objRow.objective;
       const fullObj = fullObjectives.value.find((o) => o.id === obj.id);
-      const target = fullObj ?? obj;
-      
-      // Check if objective has zones or possibleLocations
-      const hasZones = Array.isArray((target as any).zones) && (target as any).zones.length > 0;
-      const hasLocations = Array.isArray((target as any).possibleLocations) && (target as any).possibleLocations.length > 0;
-      const hasMaps = Array.isArray(target.maps) && target.maps.length > 0;
-      
-      if (hasZones || hasLocations || hasMaps) {
+      if (objectiveHasMapLocation(obj, fullObj)) {
         return obj.id;
       }
     }
@@ -396,3 +387,7 @@
     });
   };
 </script>
+<style>
+  /* Shared highlight animation imported from global CSS */
+  @import '@/assets/css/objective-highlight.css';
+</style>
