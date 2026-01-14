@@ -169,6 +169,33 @@
   import { gameToLatLng, outlineToLatLngArray, isValidMapSvgConfig } from '@/utils/mapCoordinates';
   import LeafletObjectiveTooltip from './LeafletObjectiveTooltip.vue';
   import type L from 'leaflet';
+  /**
+   * Map marker colors - hex values required because Leaflet creates DOM elements
+   * outside Vue/Tailwind context where CSS variables may not be accessible.
+   * These values match the Tailwind v4 theme colors for visual consistency.
+   */
+  const MAP_COLORS = {
+    /** Self objectives - matches error-500 */
+    SELF_OBJECTIVE: 'hsl(0 84.2% 60.2%)',
+    /** Team objectives - matches warning-500 */
+    TEAM_OBJECTIVE: 'hsl(38 92.1% 50.2%)',
+    /** Selected/pinned marker - matches violet-500 */
+    SELECTED: 'hsl(262 83% 58%)',
+    /** PMC extracts - matches success-500 */
+    PMC_EXTRACT: 'hsl(150 59.2% 41.4%)',
+    /** Scav extracts - amber */
+    SCAV_EXTRACT: 'hsl(38 92.1% 50.2%)',
+    /** Shared extracts - sky-400 */
+    SHARED_EXTRACT: 'hsl(198 93.2% 59.6%)',
+    /** Co-op extracts - sky-600 */
+    COOP_EXTRACT: 'hsl(200 98% 39.4%)',
+    /** Default extract - secondary-500 */
+    DEFAULT_EXTRACT: 'hsl(215 50% 22.7%)',
+    /** Marker border */
+    MARKER_BORDER: 'hsl(0 0% 100%)',
+    /** Extract dot border */
+    EXTRACT_DOT_BORDER: 'hsl(240 5.1% 4%)',
+  } as const;
   // Types for marks (matching TarkovMap.vue structure)
   interface MapZone {
     map: { id: string };
@@ -307,10 +334,9 @@
 
     // Store original colors for restoration when unpinned
     const styledLayer = layer as L.CircleMarker | L.Polygon;
-    const originalFillColor = styledLayer.options?.fillColor || '#ef4444';
-    const originalStrokeColor = styledLayer.options?.color || '#ef4444';
+    const originalFillColor = styledLayer.options?.fillColor || MAP_COLORS.SELF_OBJECTIVE;
+    const originalStrokeColor = styledLayer.options?.color || MAP_COLORS.SELF_OBJECTIVE;
     const isCircleMarker = 'getRadius' in styledLayer;
-    const SELECTED_COLOR = '#8b5cf6'; // violet-500
 
     const setLayerSelected = (selected: boolean) => {
       if (!('setStyle' in styledLayer)) return;
@@ -318,9 +344,9 @@
         // For circle markers, only change fillColor (keep white border)
         // For polygons, change both stroke and fill
         if (isCircleMarker) {
-          styledLayer.setStyle({ fillColor: SELECTED_COLOR });
+          styledLayer.setStyle({ fillColor: MAP_COLORS.SELECTED });
         } else {
-          styledLayer.setStyle({ color: SELECTED_COLOR, fillColor: SELECTED_COLOR });
+          styledLayer.setStyle({ color: MAP_COLORS.SELECTED, fillColor: MAP_COLORS.SELECTED });
         }
       } else {
         // Restore original colors
@@ -512,12 +538,12 @@
         if (!pos) return;
         const latLng = gameToLatLng(pos.x, pos.z);
         const isSelf = mark.users?.includes('self') ?? false;
-        const markerColor = isSelf ? '#ef4444' : '#f97316'; // red-500 : orange-500
+        const markerColor = isSelf ? MAP_COLORS.SELF_OBJECTIVE : MAP_COLORS.TEAM_OBJECTIVE;
         const marker = L.circleMarker([latLng.lat, latLng.lng], {
           radius: 8,
           fillColor: markerColor,
           fillOpacity: 0.8,
-          color: '#ffffff',
+          color: MAP_COLORS.MARKER_BORDER,
           weight: 2,
         });
         pointEntries.push({ marker, objectiveId });
@@ -529,7 +555,7 @@
         const latLngs = outlineToLatLngArray(zone.outline);
         if (latLngs.length < 3) return;
         const isSelf = mark.users?.includes('self') ?? false;
-        const zoneColor = isSelf ? '#ef4444' : '#f97316'; // red-500 : orange-500
+        const zoneColor = isSelf ? MAP_COLORS.SELF_OBJECTIVE : MAP_COLORS.TEAM_OBJECTIVE;
         const polygon = L.polygon(
           latLngs.map((ll) => [ll.lat, ll.lng]),
           {
@@ -596,23 +622,23 @@
       let markerColor: string;
       switch (extract.faction) {
         case 'pmc':
-          markerColor = '#22c55e'; // green-500
+          markerColor = MAP_COLORS.PMC_EXTRACT;
           break;
         case 'scav':
-          markerColor = '#f59e0b'; // amber-500
+          markerColor = MAP_COLORS.SCAV_EXTRACT;
           break;
         case 'shared':
-          markerColor = isCoop ? '#0284c7' : '#38bdf8'; // sky-600 : sky-400
+          markerColor = isCoop ? MAP_COLORS.COOP_EXTRACT : MAP_COLORS.SHARED_EXTRACT;
           break;
         default:
-          markerColor = '#3b82f6'; // blue-500
+          markerColor = MAP_COLORS.DEFAULT_EXTRACT;
           break;
       }
       const extractDot = L.circleMarker([latLng.lat, latLng.lng], {
         radius: 3,
         fillColor: markerColor,
         fillOpacity: 1,
-        color: '#0b0b0f',
+        color: MAP_COLORS.EXTRACT_DOT_BORDER,
         weight: 1,
         opacity: 1,
         interactive: false,

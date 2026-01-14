@@ -161,6 +161,7 @@
       notasksfound: 'Aucune quête trouvée. Essayez de modifier vos filtres ou de mettre à jour votre niveau.',
       showing_all_sources: 'Afficher toutes les sources',
       loading: 'Chargement des quêtes',
+      selectedTask: 'Tâche sélectionnée',
       questcard: {
         level: 'Niveau requis : {count}',
         wiki: 'Wiki',
@@ -594,6 +595,7 @@
     item: 'Objet',
     items: 'Objets',
     close_button: 'Fermer',
+    dismiss: 'Ignorer',
     loading: 'Chargement...',
     error: 'Erreur',
   },

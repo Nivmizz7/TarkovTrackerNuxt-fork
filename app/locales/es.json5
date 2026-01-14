@@ -139,6 +139,7 @@
       notasksfound: 'No se han encontrado misiones. Prueba a cambiar los filtros o actualizar el nivel.',
       showing_all_sources: 'Mostrar todas las fuentes',
       loading: 'Cargando misiones',
+      selectedTask: 'Tarea seleccionada',
       questcard: {
         level: 'Nivel requerido: {count}',
         wiki: 'Wiki',
@@ -552,6 +553,7 @@
     item: 'Objeto',
     items: 'Objetos',
     close_button: 'Cerrar',
+    dismiss: 'Descartar',
     loading: 'Cargando...',
     error: 'Error',
   },

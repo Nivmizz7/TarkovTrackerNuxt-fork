@@ -178,6 +178,7 @@
       notasksfound: 'Keine Aufgaben gefunden. Ändere deine Filter oder passe dein Level an.',
       showing_all_sources: 'Zeige alle Quellen',
       loading: 'Lade Aufgaben',
+      selectedTask: 'Ausgewählte Aufgabe',
       questcard: {
         level: 'Level: {count}',
         levelBadge: 'Lv {count}',
@@ -651,6 +652,7 @@
     item: 'Gegenstand',
     items: 'Gegenstände',
     close_button: 'Schließen',
+    dismiss: 'Verwerfen',
     loading: 'Lädt...',
     error: 'Fehler',
   },
