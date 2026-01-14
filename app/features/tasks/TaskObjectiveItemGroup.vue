@@ -249,7 +249,6 @@
       };
     });
   });
-
   /**
    * Gets all objective IDs from a consolidated row.
    * Used for highlighting and data attributes.
@@ -257,7 +256,6 @@
   const getRowObjectiveIds = (row: ConsolidatedRow): string[] => {
     return row.objectives.map((objRow) => objRow.objective.id);
   };
-
   /**
    * Finds an objective with map location data from a consolidated row.
    * Returns the objective ID if found, null otherwise.
@@ -273,13 +271,11 @@
     }
     return null;
   };
-
   const handleJumpToMap = (objectiveId: string) => {
     if (jumpToMapObjective) {
       jumpToMapObjective(objectiveId);
     }
   };
-
   const isObjectiveComplete = (objectiveId: string) => {
     return tarkovStore.isTaskObjectiveComplete(objectiveId);
   };

@@ -870,6 +870,8 @@
       // Highlight specific objective if requested
       if (objectiveIdToHighlight) {
         highlightObjective(objectiveIdToHighlight);
+        // Also activate the map marker to keep map and list selection coupled
+        leafletMapRef.value?.activateObjectivePopup(objectiveIdToHighlight);
       }
     } finally {
       isNavigatingToTask.value = false;
