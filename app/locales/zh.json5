@@ -32,7 +32,7 @@
   maps: {
     zoom: '缩放',
     notAvailableTitle: '地图不可用',
-    notAvailableDescription: '“{mapName}”的互动地图尚不可用。我们正在等待兼容地图的制作。',
+    notAvailableDescription: '"{mapName}"的互动地图尚不可用。我们正在等待兼容地图的制作。',
     placeholder: '该地点',
     floors: '楼层',
     reset: '重置',
