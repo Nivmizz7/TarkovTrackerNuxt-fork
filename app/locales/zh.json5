@@ -313,7 +313,10 @@
         anyMap: '任意',
         globalTask: '任意地图',
         globalTaskTooltip: '此任务可在任意地图上完成',
+        jumpToMap: '跳转到地图',
       },
+      scrollToMap: '滚动到地图',
+      scrollToTop: '滚动到顶部',
     },
     traders: {
       title: '商人',

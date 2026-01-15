@@ -196,7 +196,10 @@
         anyMap: 'Будь-яка',
         globalTask: 'Будь-яка карта',
         globalTaskTooltip: 'Це завдання можна виконати на будь-якій карті',
+        jumpToMap: 'Перейти до карти',
       },
+      scrollToMap: 'Прокрутити до карти',
+      scrollToTop: 'Вгору',
     },
     traders: {
       title: 'Торговці',

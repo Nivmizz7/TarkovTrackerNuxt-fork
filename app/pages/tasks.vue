@@ -684,6 +684,11 @@
    * Used by TaskObjective's "Jump to map" button.
    */
   const jumpToMapObjective = (objectiveId: string) => {
+    // Clear any pending jumpToMap timeout
+    if (jumpToMapTimeoutId) {
+      clearTimeout(jumpToMapTimeoutId);
+      jumpToMapTimeoutId = null;
+    }
     const isNearTop = window.scrollY < 100;
     if (isNearTop) {
       // Already at top, activate immediately
@@ -691,7 +696,8 @@
     } else {
       // Need to scroll, use minimal delay
       scrollToMap();
-      setTimeout(() => {
+      jumpToMapTimeoutId = setTimeout(() => {
+        jumpToMapTimeoutId = null;
         leafletMapRef.value?.activateObjectivePopup(objectiveId);
       }, SCROLL_TO_MAP_POPUP_DELAY);
     }
@@ -717,22 +723,53 @@
   };
   // Track highlightObjective timers (can have multiple nested timeouts)
   const highlightObjectiveTimers = ref<ReturnType<typeof setTimeout>[]>([]);
+  // Track IntersectionObserver instances for cleanup
+  const activeObservers = ref<IntersectionObserver[]>([]);
+  // Track jumpToMapObjective timeout
+  let jumpToMapTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  // AbortController for waitForElement cancellation
+  let waitForElementAbortController: AbortController | null = null;
+
   onBeforeUnmount(() => {
     updateDebouncedSearch.cancel();
     window.removeEventListener('scroll', handleScroll);
     // Clear highlightObjective timers
     highlightObjectiveTimers.value.forEach((timerId) => clearTimeout(timerId));
     highlightObjectiveTimers.value = [];
+    // Disconnect all active IntersectionObservers
+    activeObservers.value.forEach((observer) => observer.disconnect());
+    activeObservers.value = [];
+    // Clear jumpToMapObjective timeout
+    if (jumpToMapTimeoutId) {
+      clearTimeout(jumpToMapTimeoutId);
+      jumpToMapTimeoutId = null;
+    }
+    // Abort any pending waitForElement calls
+    if (waitForElementAbortController) {
+      waitForElementAbortController.abort();
+      waitForElementAbortController = null;
+    }
   });
   /**
    * Waits for an element to appear in the DOM using Vue's nextTick.
    * More reliable than requestAnimationFrame for Vue-rendered content.
+   * Uses AbortController to allow cancellation on component unmount.
    */
   const waitForElement = async (
     elementId: string,
     maxAttempts = 50
   ): Promise<HTMLElement | null> => {
+    // Cancel any previous waitForElement call
+    if (waitForElementAbortController) {
+      waitForElementAbortController.abort();
+    }
+    waitForElementAbortController = new AbortController();
+    const signal = waitForElementAbortController.signal;
+
     for (let i = 0; i < maxAttempts; i++) {
+      // Check if aborted
+      if (signal.aborted) return null;
+
       await nextTick();
       // First try by ID
       const el = document.getElementById(elementId);
@@ -751,7 +788,14 @@
         }
       }
       // Small delay between attempts to let Vue batch updates
-      await new Promise((resolve) => setTimeout(resolve, ELEMENT_WAIT_RETRY_DELAY));
+      await new Promise<void>((resolve) => {
+        const timerId = setTimeout(() => resolve(), ELEMENT_WAIT_RETRY_DELAY);
+        // If aborted during wait, resolve immediately and clear timeout
+        signal.addEventListener('abort', () => {
+          clearTimeout(timerId);
+          resolve();
+        }, { once: true });
+      });
     }
     return null;
   };
@@ -772,6 +816,9 @@
     // Clear any existing highlightObjective timers
     highlightObjectiveTimers.value.forEach((timerId) => clearTimeout(timerId));
     highlightObjectiveTimers.value = [];
+    // Disconnect any existing observers
+    activeObservers.value.forEach((obs) => obs.disconnect());
+    activeObservers.value = [];
     // Clear any existing highlights from other elements
     document.querySelectorAll('.objective-highlight').forEach((el) => {
       el.classList.remove('objective-highlight');
@@ -796,15 +843,25 @@
         const entry = entries[0];
         if (entry?.isIntersecting) {
           observer.disconnect();
-          // Small delay to let element settle
-          setTimeout(applyHighlight, HIGHLIGHT_SETTLE_DELAY);
+          // Remove from tracked observers
+          const idx = activeObservers.value.indexOf(observer);
+          if (idx !== -1) activeObservers.value.splice(idx, 1);
+          // Small delay to let element settle (tracked for cleanup)
+          const settleTimer = setTimeout(applyHighlight, HIGHLIGHT_SETTLE_DELAY);
+          highlightObjectiveTimers.value.push(settleTimer);
         }
       },
       { threshold: 0.5 }
     );
+    // Track observer for cleanup on unmount
+    activeObservers.value.push(observer);
     observer.observe(element);
     // Cleanup observer after timeout
-    const cleanupTimer = setTimeout(() => observer.disconnect(), 5000);
+    const cleanupTimer = setTimeout(() => {
+      observer.disconnect();
+      const idx = activeObservers.value.indexOf(observer);
+      if (idx !== -1) activeObservers.value.splice(idx, 1);
+    }, 5000);
     highlightObjectiveTimers.value.push(cleanupTimer);
   };
   /**

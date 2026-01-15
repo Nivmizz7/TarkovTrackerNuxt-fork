@@ -252,7 +252,10 @@
         anyMap: 'Beliebig',
         globalTask: 'Beliebige Karte',
         globalTaskTooltip: 'Diese Aufgabe kann auf jeder Karte abgeschlossen werden',
+        jumpToMap: 'Zur Karte springen',
       },
+      scrollToMap: 'Zur Karte scrollen',
+      scrollToTop: 'Nach oben scrollen',
     },
     traders: {
       title: 'Händler',

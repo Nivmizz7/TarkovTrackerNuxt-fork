@@ -313,7 +313,10 @@
         anyMap: 'Any',
         globalTask: 'Any Map',
         globalTaskTooltip: 'This task can be completed on any map',
+        jumpToMap: 'Jump to map',
       },
+      scrollToMap: 'Scroll to Map',
+      scrollToTop: 'Scroll to top',
     },
     traders: {
       title: 'Traders',

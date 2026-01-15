@@ -174,7 +174,10 @@
         anyMap: 'Cualquiera',
         globalTask: 'Cualquier mapa',
         globalTaskTooltip: 'Esta misión se puede completar en cualquier mapa',
+        jumpToMap: 'Ir al mapa',
       },
+      scrollToMap: 'Desplazar al mapa',
+      scrollToTop: 'Volver arriba',
     },
     traders: {
       title: 'Comerciantes',

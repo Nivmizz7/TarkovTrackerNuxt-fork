@@ -160,7 +160,6 @@
   import { computed, createApp, onUnmounted, ref, toRef, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRouter } from 'vue-router';
-  import { useNuxtApp } from '#imports';
   import { useLeafletMap } from '@/composables/useLeafletMap';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
@@ -169,6 +168,7 @@
   import { gameToLatLng, outlineToLatLngArray, isValidMapSvgConfig } from '@/utils/mapCoordinates';
   import LeafletObjectiveTooltip from './LeafletObjectiveTooltip.vue';
   import type L from 'leaflet';
+  import { useNuxtApp } from '#imports';
   /**
    * Map marker colors - hex values required because Leaflet creates DOM elements
    * outside Vue/Tailwind context where CSS variables may not be accessible.
@@ -321,7 +321,6 @@
    * Popup timing constants (in milliseconds)
    */
   const POPUP_HIDE_DELAY = 100; // Delay before hiding popup on mouseout
-
   const attachHoverPinPopup = (
     layer: L.Layer,
     objectiveId: string,
@@ -338,13 +337,11 @@
     let currentMountedComponent: { element: HTMLElement; unmount: () => void } | null = null;
     // Track whether popup element listeners have been attached (prevents accumulation)
     let popupListenersAttached = false;
-
     // Store original colors for restoration when unpinned
     const styledLayer = layer as L.CircleMarker | L.Polygon;
     const originalFillColor = styledLayer.options?.fillColor || MAP_COLORS.SELF_OBJECTIVE;
     const originalStrokeColor = styledLayer.options?.color || MAP_COLORS.SELF_OBJECTIVE;
     const isCircleMarker = 'getRadius' in styledLayer;
-
     const setLayerSelected = (selected: boolean) => {
       if (!('setStyle' in styledLayer)) return;
       if (selected) {
@@ -364,7 +361,6 @@
         }
       }
     };
-
     const showPopup = (pinned: boolean) => {
       if (!mapInstance.value) return;
       // Close any other pinned popup first if we're pinning
@@ -481,7 +477,6 @@
         }, POPUP_HIDE_DELAY);
       }
     };
-
     // Handle popup element hover - only add listeners once per popup instance
     popup.on('add', () => {
       if (popupListenersAttached) return;
@@ -492,7 +487,6 @@
         popupListenersAttached = true;
       }
     });
-
     // Clean up popup element listeners when popup is removed
     popup.on('remove', () => {
       if (!popupListenersAttached) return;
@@ -504,6 +498,11 @@
       }
     });
     layer.on('remove', () => {
+      // Clear any pending hide timeout to prevent stale closure calls
+      if (popupHideTimer) {
+        clearTimeout(popupHideTimer);
+        popupHideTimer = null;
+      }
       popup.remove();
       objectiveMarkers.delete(objectiveId);
       if (currentMountedComponent) {
@@ -768,7 +767,6 @@
     markerData.showPopup(true);
     return true;
   };
-
   /**
    * Closes the currently active/pinned popup and deselects the marker.
    */
@@ -777,14 +775,12 @@
       activePinnedPopupCleanup();
     }
   };
-
   // Expose methods for parent components
   defineExpose({
     activateObjectivePopup,
     closeActivePopup,
     refreshView,
   });
-
   // Cleanup
   onUnmounted(() => {
     objectiveMarkers.clear();

@@ -197,7 +197,10 @@
         anyMap: "N'importe",
         globalTask: "N'importe quelle carte",
         globalTaskTooltip: "Cette quête peut être complétée sur n'importe quelle carte",
+        jumpToMap: 'Aller à la carte',
       },
+      scrollToMap: 'Défiler vers la carte',
+      scrollToTop: 'Retour en haut',
     },
     traders: {
       title: 'Marchands',
