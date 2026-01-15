@@ -16,7 +16,7 @@
     zoom: 'Zoom',
     notAvailableTitle: 'Carte indisponible',
     notAvailableDescription:
-      'La carte interactive de {mapName} n'est pas encore disponible. Nous attendons la création d'une carte compatible.',
+      'La carte interactive de {mapName} n\'est pas encore disponible. Nous attendons la création d\'une carte compatible.',
     placeholder: 'cet endroit',
     floors: 'Étages',
     reset: 'Réinitialiser',
@@ -27,15 +27,15 @@
     },
     legend: {
       yourObjectives: 'Vos objectifs',
-      teamObjectives: 'Objectifs de l'équipe',
+      teamObjectives: 'Objectifs de l\'équipe',
       pmcExtract: 'Extraction PMC',
       scavExtract: 'Extraction Scav',
-      sharedExtract: 'Extraction partagée (n'importe quelle faction)',
+      sharedExtract: 'Extraction partagée (n\'importe quelle faction)',
       coopExtract: 'Extraction coop (PMC + Scav)',
     },
     controls: {
       keyboard: {
-        cycleFloors: '+ Faire défiler pour changer d'étage',
+        cycleFloors: '+ Faire défiler pour changer d\'étage',
         zoom: '+ Faire défiler pour zoomer',
       },
     },
