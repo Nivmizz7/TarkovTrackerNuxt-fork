@@ -10,7 +10,7 @@ import { API_SUPPORTED_LANGUAGES } from '~/utils/constants';
 const logger = createLogger('TarkovTaskRewards');
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
-  const bypassOverlay = shouldBypassCache(event);
+  const bypassCache = shouldBypassCache(event);
   // Normalize query params (H3 can return string | string[])
   // Array.isArray guarantees an array, so no optional chaining needed; use logical OR for falsy defaults
   const extractedLang = Array.isArray(query.lang) ? query.lang[0] : query.lang;
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
     }
     const sanitizedResponse = sanitizeTaskRewards(rawResponse);
     try {
-      return await applyOverlay(sanitizedResponse, { bypassCache: bypassOverlay });
+      return await applyOverlay(sanitizedResponse, { bypassCache });
     } catch (overlayError) {
       logger.error('Failed to apply overlay:', overlayError);
       throw overlayError;

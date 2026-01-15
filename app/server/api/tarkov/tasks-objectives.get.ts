@@ -9,7 +9,7 @@ import { API_SUPPORTED_LANGUAGES } from '~/utils/constants';
 const logger = createLogger('TarkovTaskObjectives');
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
-  const bypassOverlay = shouldBypassCache(event);
+  const bypassCache = shouldBypassCache(event);
   // Validate and sanitize inputs
   let lang = (query.lang as string)?.toLowerCase() || 'en';
   const gameMode = validateGameMode(query.gameMode as string);
@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
       throw error;
     }
     try {
-      return await applyOverlay(rawResponse, { bypassCache: bypassOverlay });
+      return await applyOverlay(rawResponse, { bypassCache });
     } catch (overlayError) {
       logger.error('Failed to apply overlay:', overlayError);
       throw overlayError;

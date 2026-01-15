@@ -825,9 +825,13 @@ export const useMetadataStore = defineStore('metadata', {
         const localValue = localStorage.getItem(CACHE_PURGE_STORAGE_KEY);
         const localTime = localValue ? Date.parse(localValue) : 0;
         if (!Number.isFinite(localTime) || serverTime > localTime) {
-          await clearAllCache();
-          localStorage.setItem(CACHE_PURGE_STORAGE_KEY, lastPurgeAt);
-          logger.info('[MetadataStore] Cleared local cache after server purge.');
+          try {
+            await clearAllCache();
+            localStorage.setItem(CACHE_PURGE_STORAGE_KEY, lastPurgeAt);
+            logger.info('[MetadataStore] Cleared local cache after server purge.');
+          } catch (clearError) {
+            logger.error('[MetadataStore] Failed to clear local cache after server purge:', clearError);
+          }
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
