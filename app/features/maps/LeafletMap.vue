@@ -317,6 +317,11 @@
    * - On hover: shows popup (closes when mouse leaves)
    * - On click: pins the popup (stays open until close button or click again)
    */
+  /**
+   * Popup timing constants (in milliseconds)
+   */
+  const POPUP_HIDE_DELAY = 100; // Delay before hiding popup on mouseout
+
   const attachHoverPinPopup = (
     layer: L.Layer,
     objectiveId: string,
@@ -331,6 +336,8 @@
     let isHovering = false;
     let popupHideTimer: ReturnType<typeof setTimeout> | null = null;
     let currentMountedComponent: { element: HTMLElement; unmount: () => void } | null = null;
+    // Track whether popup element listeners have been attached (prevents accumulation)
+    let popupListenersAttached = false;
 
     // Store original colors for restoration when unpinned
     const styledLayer = layer as L.CircleMarker | L.Polygon;
@@ -434,7 +441,7 @@
         if (!isHovering && !isPinned) {
           hidePopup();
         }
-      }, 100);
+      }, POPUP_HIDE_DELAY);
     });
     // Click to pin
     layer.on('click', (event) => {
@@ -450,33 +457,50 @@
         activePinnedPopupCleanup = unpinAndHide;
       }
     });
-    // Handle popup element hover
+    // Popup element hover handlers (stored for cleanup)
+    const handlePopupMouseEnter = () => {
+      isHovering = true;
+      // Cancel any pending hide timeout
+      if (popupHideTimer) {
+        clearTimeout(popupHideTimer);
+        popupHideTimer = null;
+      }
+    };
+    const handlePopupMouseLeave = () => {
+      isHovering = false;
+      if (!isPinned) {
+        // Cancel any pending hide timeout before setting a new one
+        if (popupHideTimer) {
+          clearTimeout(popupHideTimer);
+        }
+        popupHideTimer = setTimeout(() => {
+          popupHideTimer = null;
+          if (!isHovering) {
+            hidePopup();
+          }
+        }, POPUP_HIDE_DELAY);
+      }
+    };
+
+    // Handle popup element hover - only add listeners once per popup instance
     popup.on('add', () => {
+      if (popupListenersAttached) return;
       const popupElement = popup.getElement();
       if (popupElement) {
-        popupElement.addEventListener('mouseenter', () => {
-          isHovering = true;
-          // Cancel any pending hide timeout
-          if (popupHideTimer) {
-            clearTimeout(popupHideTimer);
-            popupHideTimer = null;
-          }
-        });
-        popupElement.addEventListener('mouseleave', () => {
-          isHovering = false;
-          if (!isPinned) {
-            // Cancel any pending hide timeout before setting a new one
-            if (popupHideTimer) {
-              clearTimeout(popupHideTimer);
-            }
-            popupHideTimer = setTimeout(() => {
-              popupHideTimer = null;
-              if (!isHovering) {
-                hidePopup();
-              }
-            }, 100);
-          }
-        });
+        popupElement.addEventListener('mouseenter', handlePopupMouseEnter);
+        popupElement.addEventListener('mouseleave', handlePopupMouseLeave);
+        popupListenersAttached = true;
+      }
+    });
+
+    // Clean up popup element listeners when popup is removed
+    popup.on('remove', () => {
+      if (!popupListenersAttached) return;
+      const popupElement = popup.getElement();
+      if (popupElement) {
+        popupElement.removeEventListener('mouseenter', handlePopupMouseEnter);
+        popupElement.removeEventListener('mouseleave', handlePopupMouseLeave);
+        popupListenersAttached = false;
       }
     });
     layer.on('remove', () => {

@@ -610,6 +610,14 @@
   // Progressive rendering - load tasks incrementally for smooth scrolling
   const INITIAL_BATCH = 15;
   const BATCH_SIZE = 10;
+
+  /**
+   * Timing constants (in milliseconds) for task navigation and highlighting
+   */
+  const SCROLL_TO_MAP_POPUP_DELAY = 150; // Delay before activating popup after scrolling to map
+  const ELEMENT_WAIT_RETRY_DELAY = 50; // Delay between retries when waiting for DOM element
+  const HIGHLIGHT_SETTLE_DELAY = 100; // Delay to let element settle before highlighting
+  const HIGHLIGHT_DURATION = 3500; // How long the highlight animation stays visible
   const visibleTaskCount = ref(INITIAL_BATCH);
   const loadMoreSentinel = ref<HTMLElement | null>(null);
   // Flag to prevent visibleTaskCount reset during task navigation (e.g., from map tooltip)
@@ -685,7 +693,7 @@
       scrollToMap();
       setTimeout(() => {
         leafletMapRef.value?.activateObjectivePopup(objectiveId);
-      }, 150);
+      }, SCROLL_TO_MAP_POPUP_DELAY);
     }
   };
   // Provide functions for child components
@@ -743,7 +751,7 @@
         }
       }
       // Small delay between attempts to let Vue batch updates
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, ELEMENT_WAIT_RETRY_DELAY));
     }
     return null;
   };
@@ -772,7 +780,7 @@
       element.classList.add('objective-highlight');
       const removeTimer = setTimeout(() => {
         element.classList.remove('objective-highlight');
-      }, 3500);
+      }, HIGHLIGHT_DURATION);
       highlightObjectiveTimers.value.push(removeTimer);
     };
     // Check if already in view
@@ -789,7 +797,7 @@
         if (entry?.isIntersecting) {
           observer.disconnect();
           // Small delay to let element settle
-          setTimeout(applyHighlight, 100);
+          setTimeout(applyHighlight, HIGHLIGHT_SETTLE_DELAY);
         }
       },
       { threshold: 0.5 }
