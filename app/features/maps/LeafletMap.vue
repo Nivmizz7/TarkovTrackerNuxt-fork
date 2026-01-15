@@ -169,33 +169,7 @@
   import LeafletObjectiveTooltip from './LeafletObjectiveTooltip.vue';
   import type L from 'leaflet';
   import { useNuxtApp } from '#imports';
-  /**
-   * Map marker colors - hex values required because Leaflet creates DOM elements
-   * outside Vue/Tailwind context where CSS variables may not be accessible.
-   * These values match the Tailwind v4 theme colors for visual consistency.
-   */
-  const MAP_COLORS = {
-    /** Self objectives - matches error-500 */
-    SELF_OBJECTIVE: 'hsl(0 84.2% 60.2%)',
-    /** Team objectives - matches warning-500 */
-    TEAM_OBJECTIVE: 'hsl(38 92.1% 50.2%)',
-    /** Selected/pinned marker - matches violet-500 */
-    SELECTED: 'hsl(262 83% 58%)',
-    /** PMC extracts - matches success-500 */
-    PMC_EXTRACT: 'hsl(150 59.2% 41.4%)',
-    /** Scav extracts - amber */
-    SCAV_EXTRACT: 'hsl(38 92.1% 50.2%)',
-    /** Shared extracts - sky-400 */
-    SHARED_EXTRACT: 'hsl(198 93.2% 59.6%)',
-    /** Co-op extracts - sky-600 */
-    COOP_EXTRACT: 'hsl(200 98% 39.4%)',
-    /** Default extract - secondary-500 */
-    DEFAULT_EXTRACT: 'hsl(215 50% 22.7%)',
-    /** Marker border */
-    MARKER_BORDER: 'hsl(0 0% 100%)',
-    /** Extract dot border */
-    EXTRACT_DOT_BORDER: 'hsl(240 5.1% 4%)',
-  } as const;
+  import { MAP_MARKER_COLORS as MAP_COLORS } from '@/utils/theme-colors';
   // Types for marks (matching TarkovMap.vue structure)
   interface MapZone {
     map: { id: string };

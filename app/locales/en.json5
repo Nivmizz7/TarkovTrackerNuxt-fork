@@ -321,7 +321,7 @@
         anyMap: 'Any',
         globalTask: 'Any Map',
         globalTaskTooltip: 'This task can be completed on any map',
-        jumpToMap: 'Jump to map',
+        jumpToMap: 'Jump To Map',
       },
       scrollToMap: 'Scroll to Map',
       scrollToTop: 'Scroll to top',

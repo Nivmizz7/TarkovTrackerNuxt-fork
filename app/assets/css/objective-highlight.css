@@ -2,13 +2,13 @@
  * Shared objective highlight animation for scroll-to-objective feature.
  * Used by: TaskCard.vue, TaskObjective.vue, LeafletObjectiveTooltip.vue
  *
- * Color constant defined here as the nearest shared parent for highlight styling.
- * Matches violet-500 for selection/highlight states.
+ * Uses --color-selection-500 (violet) for highlight states.
+ * Source of truth: app/assets/css/tailwind.css @theme
  */
 
-/* Highlight color - violet for selection states */
+/* Highlight color - uses selection-500 from theme */
 .objective-highlight {
-  --highlight-color: hsl(262 83% 58%);
+  --highlight-color: var(--color-selection-500);
   animation: objective-highlight-solid 3s ease-in-out;
   border-radius: 0.375rem;
 }

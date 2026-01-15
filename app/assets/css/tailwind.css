@@ -134,6 +134,18 @@ html.no-smooth-scroll {
   --color-error-800: hsl(0 70% 35.3%);
   --color-error-900: hsl(0 62.8% 30.6%);
   --color-error-950: hsl(0 74.7% 15.5%);
+  /* Selection (violet) - used for highlights, pinned states, focus rings */
+  --color-selection-50: hsl(270 100% 98%);
+  --color-selection-100: hsl(269 100% 95%);
+  --color-selection-200: hsl(269 100% 92%);
+  --color-selection-300: hsl(269 97% 85%);
+  --color-selection-400: hsl(270 95% 75%);
+  --color-selection-500: hsl(262 83% 58%);
+  --color-selection-600: hsl(262 83% 50%);
+  --color-selection-700: hsl(263 70% 42%);
+  --color-selection-800: hsl(263 69% 35%);
+  --color-selection-900: hsl(264 67% 29%);
+  --color-selection-950: hsl(261 73% 19%);
   /* Legacy Tailwind aliases mapped to semantic palettes */
   --color-gray-50: var(--color-surface-50);
   --color-gray-100: var(--color-surface-100);

@@ -37,15 +37,15 @@
         >
           FiR
         </span>
-        <!-- Jump to map button (only shown when in maps view and any objective has location) -->
+        <!-- Jump To Map button (only shown when in maps view and any objective has actionable coordinates) -->
         <AppTooltip
           v-if="getMapObjectiveId(row)"
-          :text="t('page.tasks.questcard.jumpToMap', 'Jump to map')"
+          :text="t('page.tasks.questcard.jumpToMap', 'Jump To Map')"
         >
           <button
             type="button"
             class="flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-300 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900"
-            :aria-label="t('page.tasks.questcard.jumpToMap', 'Jump to map')"
+            :aria-label="t('page.tasks.questcard.jumpToMap', 'Jump To Map')"
             @click.stop="($event.currentTarget as HTMLElement)?.blur(); handleJumpToMap(getMapObjectiveId(row)!)"
           >
             <UIcon name="i-mdi-map-marker" aria-hidden="true" class="h-4 w-4" />

@@ -1109,9 +1109,13 @@
   };
 </script>
 <style scoped>
-  /* Apply purple ring to the TaskCard inside the pinned wrapper using outline (doesn't interfere with box-shadow) */
+  /**
+   * Apply purple ring to the TaskCard inside the pinned wrapper using outline.
+   * Uses --color-selection-500 (violet) with 50% opacity.
+   * Source of truth: app/assets/css/tailwind.css @theme
+   */
   .pinned-task-wrapper :deep([data-slot='root']) {
-    outline: 2px solid rgb(168 85 247 / 0.5); /* primary-500/50 */
+    outline: 2px solid hsl(from var(--color-selection-500) h s l / 0.5);
     outline-offset: 0px;
   }
 </style>
