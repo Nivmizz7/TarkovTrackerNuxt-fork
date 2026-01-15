@@ -641,7 +641,14 @@ export function useTaskFiltering() {
       visibleTaskList = afterType;
       // Apply primary view filter
       const [afterView, filterViewMs] = timed(
-        () => filterTasksByView(visibleTaskList, activePrimaryView, activeMapView, activeTraderView, mergedMaps),
+        () =>
+          filterTasksByView(
+            visibleTaskList,
+            activePrimaryView,
+            activeMapView,
+            activeTraderView,
+            mergedMaps
+          ),
         perfOn
       );
       visibleTaskList = afterView;

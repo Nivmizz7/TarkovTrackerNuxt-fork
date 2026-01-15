@@ -29,6 +29,37 @@
   menu: {
     language: 'Sprache',
   },
+  maps: {
+    zoom: 'Zoom',
+    notAvailableTitle: 'Karte nicht verfügbar',
+    notAvailableDescription:
+      'Die interaktive Karte für {mapName} ist noch nicht verfügbar. Wir warten auf eine kompatible Karte.',
+    placeholder: 'diesen Ort',
+    floors: 'Stockwerke',
+    reset: 'Zurücksetzen',
+    resetTitle: 'Ansicht auf Standard zurücksetzen',
+    factions: {
+      pmc: 'PMC',
+      scav: 'Scav',
+    },
+    legend: {
+      yourObjectives: 'Deine Ziele',
+      teamObjectives: 'Teamziele',
+      pmcExtract: 'PMC-Extrakt',
+      scavExtract: 'Scav-Extrakt',
+      sharedExtract: 'Gemeinsamer Extrakt (beide Fraktionen)',
+      coopExtract: 'Co-op-Extrakt (PMC + Scav)',
+    },
+    controls: {
+      keyboard: {
+        cycleFloors: '+ Scrollen zum Ebenenwechsel',
+        zoom: '+ Scrollen zum Zoomen',
+      },
+    },
+    aria: {
+      zoomSpeed: 'Zoomgeschwindigkeit',
+    },
+  },
   page: {
     index: {
       title: 'Dashboard',

@@ -6,10 +6,13 @@
       class="bg-surface-900 flex h-100 w-full flex-col items-center justify-center rounded sm:h-125 lg:h-150"
     >
       <UIcon name="i-mdi-map-marker-off" class="mb-4 h-16 w-16 text-gray-500" />
-      <h3 class="mb-2 text-lg font-semibold text-gray-300">Map Not Available</h3>
+      <h3 class="mb-2 text-lg font-semibold text-gray-300">{{ t('maps.notAvailableTitle') }}</h3>
       <p class="max-w-md text-center text-sm text-gray-500">
-        The interactive map for {{ props.map?.name || 'this location' }} is not yet available. We
-        are waiting for a compatible map to be created.
+        {{
+          t('maps.notAvailableDescription', {
+            mapName: props.map?.name || t('maps.placeholder'),
+          })
+        }}
       </p>
     </div>
     <!-- Map content (only shown when map is available) -->
@@ -20,7 +23,7 @@
         class="bg-surface-800/90 absolute top-20 left-2 z-1000 flex flex-col gap-1 rounded p-1.5"
       >
         <span class="px-1 text-[10px] font-medium tracking-wide text-gray-400 uppercase">
-          Floors
+          {{ t('maps.floors') }}
         </span>
         <!-- Display floors in reverse order so lowest floor is at bottom, highest at top -->
         <div class="flex flex-col-reverse gap-1">
@@ -54,10 +57,10 @@
           variant="soft"
           size="sm"
           icon="i-mdi-fit-to-screen"
-          title="Reset view to default"
+          :title="t('maps.resetTitle')"
           @click="refreshView"
         >
-          Reset
+          {{ t('maps.reset') }}
         </UButton>
         <!-- Extract toggle -->
         <UButton
@@ -68,7 +71,7 @@
           icon="i-mdi-exit-run"
           @click="showPmcExtracts = !showPmcExtracts"
         >
-          PMC
+          {{ t('maps.factions.pmc') }}
         </UButton>
         <UButton
           v-if="props.showExtractToggle"
@@ -78,18 +81,20 @@
           icon="i-mdi-exit-run"
           @click="showScavExtracts = !showScavExtracts"
         >
-          Scav
+          {{ t('maps.factions.scav') }}
         </UButton>
         <div class="bg-surface-900/40 flex items-center gap-2 rounded px-2 py-1">
-          <span class="text-[10px] font-semibold uppercase text-gray-400">Zoom</span>
+          <span class="text-[10px] font-semibold text-gray-400 uppercase">
+            {{ t('maps.zoom') }}
+          </span>
           <input
             v-model.number="mapZoomSpeed"
             type="range"
             :min="ZOOM_SPEED_MIN"
             :max="ZOOM_SPEED_MAX"
             step="0.1"
-            class="h-1.5 w-24 cursor-pointer accent-primary-500"
-            aria-label="Zoom speed"
+            class="accent-primary-500 h-1.5 w-24 cursor-pointer"
+            :aria-label="t('maps.aria.zoomSpeed')"
           />
           <span class="text-[10px] text-gray-300 tabular-nums">{{ zoomSpeedLabel }}</span>
         </div>
@@ -105,33 +110,33 @@
         >
           <div class="flex items-center gap-1">
             <div class="h-3 w-3 rounded-full bg-red-500" />
-            <span>Your Objectives</span>
+            <span>{{ t('maps.legend.yourObjectives') }}</span>
           </div>
           <div class="flex items-center gap-1">
             <div class="h-3 w-3 rounded-full bg-orange-500" />
-            <span>Team Objectives</span>
+            <span>{{ t('maps.legend.teamObjectives') }}</span>
           </div>
           <div v-if="showPmcExtracts" class="flex items-center gap-1">
             <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-green-500" />
-            <span>PMC Extract</span>
+            <span>{{ t('maps.legend.pmcExtract') }}</span>
           </div>
           <div v-if="showScavExtracts" class="flex items-center gap-1">
             <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-amber-400" />
-            <span>Scav Extract</span>
+            <span>{{ t('maps.legend.scavExtract') }}</span>
           </div>
           <div
             v-if="(showPmcExtracts || showScavExtracts) && hasSharedExtracts"
             class="flex items-center gap-1"
           >
             <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-sky-400" />
-            <span>Shared Extract (Either Faction)</span>
+            <span>{{ t('maps.legend.sharedExtract') }}</span>
           </div>
           <div
             v-if="(showPmcExtracts || showScavExtracts) && hasCoopExtracts"
             class="flex items-center gap-1"
           >
             <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-sky-600" />
-            <span>Co-op Extract (PMC + Scav)</span>
+            <span>{{ t('maps.legend.coopExtract') }}</span>
           </div>
         </div>
         <!-- Controls Legend -->
@@ -140,11 +145,11 @@
         >
           <div v-if="hasMultipleFloors" class="flex items-center gap-1">
             <kbd class="bg-surface-700 rounded px-1 py-0.5 font-mono text-gray-300">Ctrl</kbd>
-            <span>+ Scroll to Cycle Floors</span>
+            <span>{{ t('maps.controls.keyboard.cycleFloors') }}</span>
           </div>
           <div class="flex items-center gap-1">
             <kbd class="bg-surface-700 rounded px-1 py-0.5 font-mono text-gray-300">Shift</kbd>
-            <span>+ Scroll to Zoom</span>
+            <span>{{ t('maps.controls.keyboard.zoom') }}</span>
           </div>
         </div>
       </div>
@@ -152,7 +157,8 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { ref, watch, onUnmounted, computed, toRef } from 'vue';
+  import { computed, onUnmounted, ref, toRef, watch } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { useLeafletMap } from '@/composables/useLeafletMap';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
@@ -191,6 +197,7 @@
     showExtractToggle: true,
     showLegend: true,
   });
+  const { t } = useI18n({ useScope: 'global' });
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
   // Check if map is unavailable

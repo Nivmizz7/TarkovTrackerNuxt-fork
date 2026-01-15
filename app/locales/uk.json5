@@ -12,6 +12,37 @@
   menu: {
     language: 'Мова',
   },
+  maps: {
+    zoom: 'Масштаб',
+    notAvailableTitle: 'Карта недоступна',
+    notAvailableDescription:
+      'Інтерактивна карта для {mapName} поки недоступна. Ми чекаємо на створення сумісної карти.',
+    placeholder: 'цієї локації',
+    floors: 'Поверхи',
+    reset: 'Скинути',
+    resetTitle: 'Скинути вигляд за замовчуванням',
+    factions: {
+      pmc: 'PMC',
+      scav: 'Scav',
+    },
+    legend: {
+      yourObjectives: 'Ваші цілі',
+      teamObjectives: 'Цілі команди',
+      pmcExtract: 'Вихід PMC',
+      scavExtract: 'Вихід Scav',
+      sharedExtract: 'Спільний вихід (будь-яка фракція)',
+      coopExtract: 'Кооп-вихід (PMC + Scav)',
+    },
+    controls: {
+      keyboard: {
+        cycleFloors: '+ Прокрутка для зміни поверхів',
+        zoom: '+ Прокрутка для масштабу',
+      },
+    },
+    aria: {
+      zoomSpeed: 'Швидкість масштабування',
+    },
+  },
   page: {
     index: {
       title: 'Приладова Панель',

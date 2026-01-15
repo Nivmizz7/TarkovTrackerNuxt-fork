@@ -12,6 +12,37 @@
   menu: {
     language: 'Язык',
   },
+  maps: {
+    zoom: 'Масштаб',
+    notAvailableTitle: 'Карта недоступна',
+    notAvailableDescription:
+      'Интерактивная карта для {mapName} пока недоступна. Мы ждём появления совместимой карты.',
+    placeholder: 'этой локации',
+    floors: 'Этажи',
+    reset: 'Сброс',
+    resetTitle: 'Сбросить вид по умолчанию',
+    factions: {
+      pmc: 'PMC',
+      scav: 'Scav',
+    },
+    legend: {
+      yourObjectives: 'Ваши цели',
+      teamObjectives: 'Цели команды',
+      pmcExtract: 'Выход PMC',
+      scavExtract: 'Выход Scav',
+      sharedExtract: 'Общий выход (любая фракция)',
+      coopExtract: 'Совместный выход (PMC + Scav)',
+    },
+    controls: {
+      keyboard: {
+        cycleFloors: '+ Прокрутка для смены этажей',
+        zoom: '+ Прокрутка для зума',
+      },
+    },
+    aria: {
+      zoomSpeed: 'Скорость зума',
+    },
+  },
   page: {
     index: {
       title: 'Приборная панель',

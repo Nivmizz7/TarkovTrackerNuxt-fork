@@ -49,10 +49,12 @@ import {
 import { createGraph } from '@/utils/graphHelpers';
 import { logger } from '@/utils/logger';
 import { perfEnd, perfStart } from '@/utils/perf';
+import { STORAGE_KEYS } from '@/utils/storageKeys';
 import {
   CACHE_CONFIG,
   type CacheType,
   cleanupExpiredCache,
+  clearAllCache,
   getCachedData,
   setCachedData,
 } from '@/utils/tarkovCache';
@@ -69,6 +71,10 @@ type IdleTask = {
 };
 const idleQueue: IdleTask[] = [];
 let idleRunnerActive = false;
+const CACHE_PURGE_STORAGE_KEY = STORAGE_KEYS.cachePurgeAt;
+const CACHE_PURGE_CHECK_TTL_MS = 60 * 1000;
+const CACHE_PURGE_CHECK_TIMEOUT_MS = 2500;
+const CACHE_PURGE_CHECK_STORAGE_KEY = STORAGE_KEYS.cachePurgeCheckAt;
 const getIdleScheduler = () => {
   if (typeof window === 'undefined') return null;
   if ('requestIdleCallback' in window) {
@@ -265,6 +271,7 @@ interface MetadataState {
   // Language and game mode
   languageCode: string;
   currentGameMode: string;
+  lastCachePurgeCheckAt: number;
 }
 export const useMetadataStore = defineStore('metadata', {
   state: (): MetadataState => ({
@@ -309,6 +316,7 @@ export const useMetadataStore = defineStore('metadata', {
     neededItemHideoutModules: markRaw([]),
     languageCode: 'en',
     currentGameMode: GAME_MODES.PVP,
+    lastCachePurgeCheckAt: 0,
   }),
   getters: {
     // Computed properties for tasks
@@ -714,8 +722,11 @@ export const useMetadataStore = defineStore('metadata', {
         logger.debug(
           `[MetadataStore] Fetching ${logName} from server: ${cacheLanguage}-${cacheKey}`
         );
+        const effectiveQueryParams = forceRefresh
+          ? { ...queryParams, cacheBust: '1' }
+          : queryParams;
         const response = await $fetch<FetchResponse<T>>(endpoint, {
-          query: queryParams,
+          query: effectiveQueryParams,
         });
         if (isFetchError(response)) {
           // Log full response for debugging
@@ -785,6 +796,50 @@ export const useMetadataStore = defineStore('metadata', {
       );
     },
     /**
+     * Check if the server has purged cache and clear local cache if needed.
+     */
+    async checkCachePurge(): Promise<void> {
+      if (typeof window === 'undefined') return;
+      const now = Date.now();
+      const storedCheckRaw = localStorage.getItem(CACHE_PURGE_CHECK_STORAGE_KEY);
+      const storedCheckAt = storedCheckRaw ? Number(storedCheckRaw) : 0;
+      const lastCheckAt = Number.isFinite(storedCheckAt)
+        ? Math.max(this.lastCachePurgeCheckAt, storedCheckAt)
+        : this.lastCachePurgeCheckAt;
+      if (now - lastCheckAt < CACHE_PURGE_CHECK_TTL_MS) return;
+      this.lastCachePurgeCheckAt = now;
+      const timeoutMs = CACHE_PURGE_CHECK_TIMEOUT_MS;
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await $fetch<FetchResponse<{ lastPurgeAt: string | null }>>(
+          '/api/tarkov/cache-meta',
+          { signal: controller.signal }
+        );
+        if (!isFetchSuccess(response)) return;
+        localStorage.setItem(CACHE_PURGE_CHECK_STORAGE_KEY, String(now));
+        const lastPurgeAt = response.data?.lastPurgeAt;
+        if (!lastPurgeAt) return;
+        const serverTime = Date.parse(lastPurgeAt);
+        if (!Number.isFinite(serverTime)) return;
+        const localValue = localStorage.getItem(CACHE_PURGE_STORAGE_KEY);
+        const localTime = localValue ? Date.parse(localValue) : 0;
+        if (!Number.isFinite(localTime) || serverTime > localTime) {
+          await clearAllCache();
+          localStorage.setItem(CACHE_PURGE_STORAGE_KEY, lastPurgeAt);
+          logger.info('[MetadataStore] Cleared local cache after server purge.');
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          logger.warn(`[MetadataStore] Cache purge check timed out after ${timeoutMs}ms.`, error);
+          return;
+        }
+        logger.warn('[MetadataStore] Failed to check cache purge status:', error);
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    },
+    /**
      * Fetch all metadata from the API
      * @param forceRefresh - If true, bypass cache and fetch fresh data
      * @param options.deferHeavy - If true, defer heavy fetches to idle time
@@ -804,6 +859,7 @@ export const useMetadataStore = defineStore('metadata', {
     ) {
       const { deferHeavy = false, cachedData = null } = options;
       const perfTimer = perfStart('[Metadata] fetchAllData', { forceRefresh, deferHeavy });
+      await this.checkCachePurge();
       // Run cleanup once per session
       if (typeof window !== 'undefined') {
         cleanupExpiredCache().catch((err) =>

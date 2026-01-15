@@ -29,6 +29,37 @@
   menu: {
     language: 'Language',
   },
+  maps: {
+    zoom: 'Zoom',
+    notAvailableTitle: 'Map Not Available',
+    notAvailableDescription:
+      'The interactive map for {mapName} is not yet available. We are waiting for a compatible map to be created.',
+    placeholder: 'this location',
+    floors: 'Floors',
+    reset: 'Reset',
+    resetTitle: 'Reset view to default',
+    factions: {
+      pmc: 'PMC',
+      scav: 'Scav',
+    },
+    legend: {
+      yourObjectives: 'Your Objectives',
+      teamObjectives: 'Team Objectives',
+      pmcExtract: 'PMC Extract',
+      scavExtract: 'Scav Extract',
+      sharedExtract: 'Shared Extract (Either Faction)',
+      coopExtract: 'Co-op Extract (PMC + Scav)',
+    },
+    controls: {
+      keyboard: {
+        cycleFloors: '+ Scroll to Cycle Floors',
+        zoom: '+ Scroll to Zoom',
+      },
+    },
+    aria: {
+      zoomSpeed: 'Zoom speed',
+    },
+  },
   page: {
     index: {
       title: 'Dashboard',

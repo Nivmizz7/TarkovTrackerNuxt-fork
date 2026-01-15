@@ -29,6 +29,36 @@
   menu: {
     language: '语言',
   },
+  maps: {
+    zoom: '缩放',
+    notAvailableTitle: '地图不可用',
+    notAvailableDescription: '“{mapName}”的互动地图尚不可用。我们正在等待兼容地图的制作。',
+    placeholder: '该地点',
+    floors: '楼层',
+    reset: '重置',
+    resetTitle: '重置为默认视图',
+    factions: {
+      pmc: 'PMC',
+      scav: 'Scav',
+    },
+    legend: {
+      yourObjectives: '你的目标',
+      teamObjectives: '团队目标',
+      pmcExtract: 'PMC撤离点',
+      scavExtract: 'Scav撤离点',
+      sharedExtract: '共享撤离点（任一阵营）',
+      coopExtract: '合作撤离点（PMC + Scav）',
+    },
+    controls: {
+      keyboard: {
+        cycleFloors: '+ 滚轮切换楼层',
+        zoom: '+ 滚轮缩放',
+      },
+    },
+    aria: {
+      zoomSpeed: '缩放速度',
+    },
+  },
   page: {
     index: {
       title: '总览面板',

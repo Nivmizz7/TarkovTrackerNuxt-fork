@@ -13,6 +13,37 @@
   menu: {
     language: 'Idioma',
   },
+  maps: {
+    zoom: 'Zoom',
+    notAvailableTitle: 'Mapa no disponible',
+    notAvailableDescription:
+      'El mapa interactivo de {mapName} aún no está disponible. Estamos esperando a que se cree un mapa compatible.',
+    placeholder: 'esta ubicación',
+    floors: 'Pisos',
+    reset: 'Restablecer',
+    resetTitle: 'Restablecer vista por defecto',
+    factions: {
+      pmc: 'PMC',
+      scav: 'Scav',
+    },
+    legend: {
+      yourObjectives: 'Tus objetivos',
+      teamObjectives: 'Objetivos del equipo',
+      pmcExtract: 'Extracción PMC',
+      scavExtract: 'Extracción Scav',
+      sharedExtract: 'Extracción compartida (cualquiera de las facciones)',
+      coopExtract: 'Extracción cooperativa (PMC + Scav)',
+    },
+    controls: {
+      keyboard: {
+        cycleFloors: '+ Desplazar para cambiar de piso',
+        zoom: '+ Desplazar para hacer zoom',
+      },
+    },
+    aria: {
+      zoomSpeed: 'Velocidad de zoom',
+    },
+  },
   page: {
     index: {
       title: 'Panel',
