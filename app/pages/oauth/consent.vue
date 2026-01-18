@@ -21,6 +21,7 @@
       const { data, error: fetchError } = await supabase.auth.oauth.getAuthorizationDetails(
         authorizationId.value
       );
+      console.log('[OAuth] Authorization details:', { data, error: fetchError });
       if (fetchError) {
         if (fetchError.message?.includes('cannot be processed')) {
           error.value = 'This authorization request has expired or was already processed.';
@@ -40,14 +41,20 @@
     loading.value = true;
     error.value = '';
     try {
+      console.log('[OAuth] Approving authorization:', authorizationId.value);
       const { data, error: approveError } = await supabase.auth.oauth.approveAuthorization(
         authorizationId.value
       );
+      console.log('[OAuth] Approve result:', { data, error: approveError });
       if (approveError) throw approveError;
       if (data?.redirect_url) {
+        console.log('[OAuth] Redirecting to:', data.redirect_url);
         window.location.href = data.redirect_url;
+      } else {
+        throw new Error('No redirect URL returned');
       }
     } catch (e) {
+      console.error('[OAuth] Approve error:', e);
       error.value = e instanceof Error ? e.message : 'Failed to approve authorization';
       loading.value = false;
     }
