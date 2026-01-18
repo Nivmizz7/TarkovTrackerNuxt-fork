@@ -23,18 +23,26 @@
     }
   );
   onMounted(async () => {
+    console.log('[OAuth Consent] Starting, authorizationId:', authorizationId.value);
+    console.log('[OAuth Consent] Config:', {
+      url: config.public.supabaseUrl,
+      hasKey: !!config.public.supabaseAnonKey,
+    });
     if (!authorizationId.value) {
       error.value = 'Missing authorization_id parameter';
       loading.value = false;
       return;
     }
     try {
+      console.log('[OAuth Consent] Fetching authorization details...');
       const { data, error: fetchError } = await oauthClient.auth.oauth.getAuthorizationDetails(
         authorizationId.value
       );
+      console.log('[OAuth Consent] Result:', { data, error: fetchError });
       if (fetchError) throw fetchError;
       details.value = data;
     } catch (e) {
+      console.error('[OAuth Consent] Error:', e);
       error.value = e instanceof Error ? e.message : 'Failed to fetch authorization details';
     } finally {
       loading.value = false;
