@@ -2,7 +2,6 @@
   import { createClient } from '@supabase/supabase-js';
   const route = useRoute();
   const config = useRuntimeConfig();
-  const { client: mainSupabase } = useNuxtApp().$supabase;
   const authorizationId = computed(() => route.query.authorization_id as string);
   const loading = ref(true);
   const error = ref('');
@@ -26,12 +25,6 @@
   onMounted(async () => {
     if (!authorizationId.value) {
       error.value = 'Missing authorization_id parameter';
-      loading.value = false;
-      return;
-    }
-    const { data: sessionData } = await mainSupabase.auth.getSession();
-    if (!sessionData.session) {
-      error.value = 'Auth session missing!';
       loading.value = false;
       return;
     }
