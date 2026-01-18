@@ -2,6 +2,7 @@
   import { createClient } from '@supabase/supabase-js';
   const route = useRoute();
   const config = useRuntimeConfig();
+  const { client: mainSupabase } = useNuxtApp().$supabase;
   const authorizationId = computed(() => route.query.authorization_id as string);
   const loading = ref(true);
   const error = ref('');
@@ -12,17 +13,30 @@
     redirect_url?: string;
     client: { id: string; name: string; uri: string; logo_uri: string };
   } | null>(null);
-  const supabase = createClient(config.public.supabaseUrl, config.public.supabaseAnonKey, {
-    auth: { persistSession: false },
-  });
+  const oauthClient = createClient(
+    config.public.supabaseUrl as string,
+    config.public.supabaseAnonKey as string,
+    {
+      auth: {
+        persistSession: false,
+        storageKey: 'sb-oauth-consent',
+      },
+    }
+  );
   onMounted(async () => {
     if (!authorizationId.value) {
       error.value = 'Missing authorization_id parameter';
       loading.value = false;
       return;
     }
+    const { data: sessionData } = await mainSupabase.auth.getSession();
+    if (!sessionData.session) {
+      error.value = 'Auth session missing!';
+      loading.value = false;
+      return;
+    }
     try {
-      const { data, error: fetchError } = await supabase.auth.oauth.getAuthorizationDetails(
+      const { data, error: fetchError } = await oauthClient.auth.oauth.getAuthorizationDetails(
         authorizationId.value
       );
       if (fetchError) throw fetchError;
@@ -37,7 +51,7 @@
     loading.value = true;
     error.value = '';
     try {
-      const { data, error: approveError } = await supabase.auth.oauth.approveAuthorization(
+      const { data, error: approveError } = await oauthClient.auth.oauth.approveAuthorization(
         authorizationId.value
       );
       if (approveError) throw approveError;
@@ -53,7 +67,7 @@
     loading.value = true;
     error.value = '';
     try {
-      const { data, error: denyError } = await supabase.auth.oauth.denyAuthorization(
+      const { data, error: denyError } = await oauthClient.auth.oauth.denyAuthorization(
         authorizationId.value
       );
       if (denyError) throw denyError;
