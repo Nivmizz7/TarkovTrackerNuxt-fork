@@ -5,11 +5,11 @@
   const loading = ref(true);
   const error = ref('');
   const details = ref<{
-    user: { id: string; email: string };
-    scope: string;
+    user?: { id: string; email: string };
+    scope?: string;
     authorization_id: string;
     redirect_url?: string;
-    client: { id: string; name: string; uri: string; logo_uri: string };
+    client?: { id: string; name: string; uri?: string; logo_uri?: string };
   } | null>(null);
   onMounted(async () => {
     if (!authorizationId.value) {
@@ -92,7 +92,7 @@
         <div class="mb-6">
           <p class="mb-4 text-(--color-text-secondary)">
             <strong class="text-(--color-text-primary)">
-              {{ details.client.name || 'Unknown Application' }}
+              {{ details.client?.name || 'Unknown Application' }}
             </strong>
             is requesting access to your TarkovTracker account.
           </p>
@@ -100,7 +100,7 @@
             <h3 class="mb-2 font-semibold text-(--color-text-primary)">Requested Permissions:</h3>
             <ul class="list-inside list-disc space-y-1">
               <li
-                v-for="scope in details.scope.split(' ')"
+                v-for="scope in details.scope?.split(' ') || []"
                 :key="scope"
                 class="text-sm text-(--color-text-secondary)"
               >
