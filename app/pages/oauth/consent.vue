@@ -1,5 +1,7 @@
 <script setup lang="ts">
+  import { createClient } from '@supabase/supabase-js';
   const route = useRoute();
+  const config = useRuntimeConfig();
   const authorizationId = computed(() => route.query.authorization_id as string);
   const loading = ref(true);
   const error = ref('');
@@ -10,6 +12,9 @@
     redirect_url?: string;
     client: { id: string; name: string; uri: string; logo_uri: string };
   } | null>(null);
+  const supabase = createClient(config.public.supabaseUrl, config.public.supabaseAnonKey, {
+    auth: { persistSession: false },
+  });
   onMounted(async () => {
     if (!authorizationId.value) {
       error.value = 'Missing authorization_id parameter';
@@ -17,9 +22,10 @@
       return;
     }
     try {
-      const data = await $fetch('/api/oauth/details', {
-        query: { authorization_id: authorizationId.value },
-      });
+      const { data, error: fetchError } = await supabase.auth.oauth.getAuthorizationDetails(
+        authorizationId.value
+      );
+      if (fetchError) throw fetchError;
       details.value = data;
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch authorization details';
@@ -31,10 +37,10 @@
     loading.value = true;
     error.value = '';
     try {
-      const data = await $fetch('/api/oauth/approve', {
-        method: 'POST',
-        body: { authorization_id: authorizationId.value },
-      });
+      const { data, error: approveError } = await supabase.auth.oauth.approveAuthorization(
+        authorizationId.value
+      );
+      if (approveError) throw approveError;
       if (data?.redirect_url) {
         window.location.href = data.redirect_url;
       }
@@ -47,10 +53,10 @@
     loading.value = true;
     error.value = '';
     try {
-      const data = await $fetch('/api/oauth/deny', {
-        method: 'POST',
-        body: { authorization_id: authorizationId.value },
-      });
+      const { data, error: denyError } = await supabase.auth.oauth.denyAuthorization(
+        authorizationId.value
+      );
+      if (denyError) throw denyError;
       if (data?.redirect_url) {
         window.location.href = data.redirect_url;
       }
