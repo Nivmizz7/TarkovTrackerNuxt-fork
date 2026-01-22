@@ -15,7 +15,6 @@
  * Note: Prefer Tailwind classes or CSS variables when possible.
  * Only use these constants when the above scenarios apply.
  */
-
 /**
  * Core theme colors matching Tailwind v4 tokens.
  * HSL format for consistency with CSS custom properties.
@@ -28,7 +27,6 @@ export const THEME_COLORS = {
   selection: {
     500: 'hsl(262 83% 58%)',
   },
-
   // Status colors
   // CSS var: --color-error-*
   error: {
@@ -42,13 +40,11 @@ export const THEME_COLORS = {
   success: {
     500: 'hsl(150 59.2% 41.4%)',
   },
-
   // Accent colors (not in theme, but used for map markers)
   sky: {
     400: 'hsl(198 93.2% 59.6%)',
     600: 'hsl(200 98% 39.4%)',
   },
-
   // Surface colors
   // CSS var: --color-surface-*
   surface: {
@@ -56,27 +52,25 @@ export const THEME_COLORS = {
     800: 'hsl(240 5.1% 11.6%)',
     700: 'hsl(240 5.1% 19.4%)',
   },
-
   // Neutral colors
   neutral: {
     white: 'hsl(0 0% 100%)',
     black: 'hsl(240 5.1% 4%)',
     gray200: 'hsl(0 0% 90%)',
   },
-
   // Secondary
   // CSS var: --color-secondary-*
   secondary: {
     500: 'hsl(215 50% 22.7%)',
   },
 } as const;
-
 /**
  * Map-specific color constants for Leaflet markers and overlays.
  * These are derived from THEME_COLORS for semantic naming in map context.
  *
- * Note: Leaflet creates DOM elements outside Vue/Tailwind context,
- * so CSS variables are not accessible. These raw values are required.
+ * Note: Leaflet's JS API requires raw color strings for options like `color`
+ * and `fillColor`, not CSS variable references. These constants provide
+ * theme-aligned values for use when constructing markers programmatically.
  */
 export const MAP_MARKER_COLORS = {
   /** Self objectives - matches --color-error-500 */
@@ -100,12 +94,11 @@ export const MAP_MARKER_COLORS = {
   /** Extract dot border - near black */
   EXTRACT_DOT_BORDER: THEME_COLORS.neutral.black,
 } as const;
-
 /**
  * Highlight color for objective scroll/focus animations.
  * Matches --color-selection-500 (violet) for selection states.
  *
  * Note: For CSS contexts, prefer using var(--color-selection-500) directly.
- * This constant is for JS contexts where CSS variables aren't accessible.
+ * This constant is for JS contexts where Leaflet's API requires raw strings.
  */
 export const HIGHLIGHT_COLOR = THEME_COLORS.selection[500];

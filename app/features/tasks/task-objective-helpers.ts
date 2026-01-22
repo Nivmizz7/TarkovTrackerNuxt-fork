@@ -30,18 +30,15 @@ export function objectiveHasMapLocation(
   fullObjective?: TaskObjective
 ): boolean {
   const target = (fullObjective ?? objective) as ObjectiveWithLocation;
-
   // Check for zones with actual outline coordinates
   const hasZonesWithOutlines =
     Array.isArray(target.zones) &&
     target.zones.some((zone) => Array.isArray(zone.outline) && zone.outline.length > 0);
-
   // Check for possibleLocations with actual position coordinates
   const hasLocationsWithPositions =
     Array.isArray(target.possibleLocations) &&
     target.possibleLocations.some(
       (loc) => Array.isArray(loc.positions) && loc.positions.length > 0
     );
-
   return hasZonesWithOutlines || hasLocationsWithPositions;
 }

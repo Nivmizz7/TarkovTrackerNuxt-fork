@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
+@import 'leaflet/dist/leaflet.css';
 /* Smooth scrolling for hash anchor navigation */
 html {
   scroll-behavior: smooth;
@@ -564,8 +565,7 @@ summary {
 }
 
 /* Leaflet dark theme overrides.
-   Note: Hex colors required because Leaflet creates DOM elements dynamically
-   outside Vue's scope where CSS variables may not be accessible.
+   Hex colors are used here to keep Leaflet-generated UI consistent with the app theme.
    Values mirror theme tokens: #121212 = surface-900, #1a1a1e = surface-800, etc. */
 .leaflet-container {
   background-color: #121212;

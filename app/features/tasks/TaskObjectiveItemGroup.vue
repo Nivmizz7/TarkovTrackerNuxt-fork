@@ -44,9 +44,12 @@
         >
           <button
             type="button"
-            class="flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-300 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900"
+            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-300 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             :aria-label="t('page.tasks.questcard.jumpToMap', 'Jump To Map')"
-            @click.stop="($event.currentTarget as HTMLElement)?.blur(); handleJumpToMap(getMapObjectiveId(row)!)"
+            @click.stop="
+              ($event.currentTarget as HTMLElement)?.blur();
+              handleJumpToMap(getMapObjectiveId(row)!);
+            "
           >
             <UIcon name="i-mdi-map-marker" aria-hidden="true" class="h-4 w-4" />
           </button>

@@ -40,7 +40,7 @@
         <div v-else ref="taskListRef" data-testid="task-list">
           <!-- Pinned/Selected Task (shown separately at top with visual distinction) -->
           <div v-if="pinnedTask" class="mb-6">
-            <div class="mb-2 flex items-center gap-2 text-xs text-primary-400">
+            <div class="text-primary-400 mb-2 flex items-center gap-2 text-xs">
               <UIcon name="i-mdi-pin" class="h-4 w-4" />
               <span>{{ t('page.tasks.selectedTask', 'Selected Task') }}</span>
               <button
@@ -53,7 +53,11 @@
               </button>
             </div>
             <div :id="`task-${pinnedTask.id}`" class="pinned-task-wrapper pb-4">
-              <TaskCard :key="`pinned-${pinnedTask.id}`" :task="pinnedTask" @on-task-action="onTaskAction" />
+              <TaskCard
+                :key="`pinned-${pinnedTask.id}`"
+                :task="pinnedTask"
+                @on-task-action="onTaskAction"
+              />
             </div>
             <!-- Separator -->
             <div class="border-t border-white/10" />
@@ -116,7 +120,7 @@
         <button
           v-if="showScrollToTopButton"
           type="button"
-          class="fixed bottom-20 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-white/20 hover:shadow-xl"
+          class="fixed right-6 bottom-20 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-white/20 hover:shadow-xl"
           :aria-label="t('page.tasks.scrollToTop', 'Scroll to top')"
           @click="scrollToTop"
         >
@@ -170,7 +174,16 @@
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-  import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
+  import {
+    computed,
+    defineAsyncComponent,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    provide,
+    ref,
+    watch,
+  } from 'vue';
   import { useI18n } from 'vue-i18n';
   import {
     useRoute,
@@ -678,6 +691,8 @@
   };
   // Alias for semantic clarity - scrolls to top where the map is located
   const scrollToMap = scrollToTop;
+  let jumpToMapTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  let waitForElementAbortController: AbortController | null = null;
   /**
    * Scrolls to the map and activates the popup for a specific objective.
    * Used by TaskObjective's "Jump to map" button.
@@ -724,10 +739,6 @@
   const highlightObjectiveTimers = ref<ReturnType<typeof setTimeout>[]>([]);
   // Track IntersectionObserver instances for cleanup
   const activeObservers = ref<IntersectionObserver[]>([]);
-  // Track jumpToMapObjective timeout
-  let jumpToMapTimeoutId: ReturnType<typeof setTimeout> | null = null;
-  // AbortController for waitForElement cancellation
-  let waitForElementAbortController: AbortController | null = null;
   onBeforeUnmount(() => {
     updateDebouncedSearch.cancel();
     window.removeEventListener('scroll', handleScroll);
@@ -787,10 +798,14 @@
       await new Promise<void>((resolve) => {
         const timerId = setTimeout(() => resolve(), ELEMENT_WAIT_RETRY_DELAY);
         // If aborted during wait, resolve immediately and clear timeout
-        signal.addEventListener('abort', () => {
-          clearTimeout(timerId);
-          resolve();
-        }, { once: true });
+        signal.addEventListener(
+          'abort',
+          () => {
+            clearTimeout(timerId);
+            resolve();
+          },
+          { once: true }
+        );
       });
     }
     return null;

@@ -270,7 +270,10 @@
   // Track currently pinned popup's cleanup function to allow only one pinned popup at a time
   let activePinnedPopupCleanup: (() => void) | null = null;
   // Store marker references by objective ID for programmatic activation
-  const objectiveMarkers = new Map<string, { layer: L.Layer; getLatLng: () => L.LatLngExpression; showPopup: (pinned: boolean) => void }>();
+  const objectiveMarkers = new Map<
+    string,
+    { layer: L.Layer; getLatLng: () => L.LatLngExpression; showPopup: (pinned: boolean) => void }
+  >();
   /**
    * Mounts the LeafletObjectiveTooltip Vue component and returns the container element.
    */

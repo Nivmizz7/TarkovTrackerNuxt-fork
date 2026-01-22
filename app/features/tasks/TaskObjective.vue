@@ -1,7 +1,7 @@
 <template>
   <div
     :id="`objective-${props.objective.id}`"
-    class="group flex w-full items-center gap-4 rounded-md px-2 py-2 transition-colors focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 focus-within:ring-offset-surface-900"
+    class="group focus-within:ring-primary-500 focus-within:ring-offset-surface-900 flex w-full items-center gap-4 rounded-md px-2 py-2 transition-colors focus-within:ring-2 focus-within:ring-offset-2"
     :class="[
       isComplete ? 'bg-success-500/10' : 'hover:bg-white/5',
       isParentTaskLocked ? 'cursor-not-allowed opacity-80' : 'cursor-pointer',
@@ -39,9 +39,12 @@
         >
           <button
             type="button"
-            class="flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-300 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900"
+            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-300 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             :aria-label="t('page.tasks.questcard.jumpToMap', 'Jump To Map')"
-            @click.stop="($event.currentTarget as HTMLElement)?.blur(); handleJumpToMap()"
+            @click.stop="
+              ($event.currentTarget as HTMLElement)?.blur();
+              handleJumpToMap();
+            "
           >
             <UIcon name="i-mdi-map-marker" aria-hidden="true" class="h-4 w-4" />
           </button>
