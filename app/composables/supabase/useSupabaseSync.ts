@@ -6,7 +6,7 @@ import type { UserProgressData } from '~/stores/progressState';
 export interface SupabaseSyncConfig {
   store: Store;
   table: string;
-  transform?: (state: Record<string, unknown>) => Record<string, unknown>;
+  transform?: (state: Record<string, unknown>) => Record<string, unknown> | null;
   debounceMs?: number;
 }
 // Type for the transformed data that gets sent to Supabase
