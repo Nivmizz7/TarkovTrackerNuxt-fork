@@ -14,7 +14,7 @@
         :class="[
           itemCardClasses,
           {
-            'hover:ring-primary-400 hover:ring-opacity-50 cursor-pointer transition-all hover:ring-2 active:scale-[0.98]':
+            'cursor-pointer transition-all active:scale-[0.98]':
               hasItem && isSingleItem && !selfCompletedNeed,
           },
         ]"
@@ -56,7 +56,10 @@
               size="small"
               simple-mode
               fill
-              class="h-full w-full"
+              :class="[
+                'h-full w-full',
+                isSingleItem && !selfCompletedNeed ? '!cursor-pointer' : '',
+              ]"
             />
             <!-- Compact Mode Controls Overlay -->
             <div
@@ -222,10 +225,9 @@
     const baseLayoutClasses =
       'relative z-0 aspect-[4/3] w-full shrink-0 origin-bottom overflow-hidden';
     const roundedClasses = cardStyle.value === 'compact' ? 'rounded-lg' : 'rounded-t-lg';
-    const transitionClasses = 'transition-transform duration-150 ease-out will-change-transform';
-    const hoverClasses =
-      'hover:z-20 hover:-translate-y-1 hover:scale-[1.08] hover:shadow-2xl hover:ring-1 hover:ring-white/10';
-    return [baseLayoutClasses, roundedClasses, transitionClasses, hoverClasses];
+    const cursorClass =
+      isSingleItem.value && !selfCompletedNeed.value ? 'cursor-pointer' : '';
+    return [baseLayoutClasses, roundedClasses, cursorClass];
   });
   const itemCountTagClasses = computed(() => {
     return {
