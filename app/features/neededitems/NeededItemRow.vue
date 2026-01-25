@@ -35,7 +35,11 @@
                   <TaskLink :task="relatedTask" />
                 </template>
                 <template v-else-if="props.need.needType == 'hideoutModule'">
-                  <StationLink v-if="relatedStation" :station="relatedStation" />
+                  <StationLink
+                    v-if="relatedStation"
+                    :station="relatedStation"
+                    :module-id="props.need.hideoutModule.id"
+                  />
                   <span v-else class="text-surface-300 text-sm">Unknown station</span>
                 </template>
               </span>
@@ -110,7 +114,11 @@
                         <div class="mt-1 mb-1 flex justify-center">
                           <div class="text-center">
                             <template v-if="relatedStation">
-                              <station-link :station="relatedStation" class="justify-center" />
+                              <station-link
+                                :station="relatedStation"
+                                :module-id="props.need.hideoutModule.id"
+                                class="justify-center"
+                              />
                             </template>
                             <template v-else>
                               <span class="text-surface-300 text-sm">Unknown station</span>
@@ -127,6 +135,7 @@
                           :player-level="tarkovStore.playerLevel()"
                           :related-station="relatedStation"
                           :hideout-level="props.need.hideoutModule.level"
+                          :hideout-module-id="props.need.hideoutModule.id"
                         />
                       </template>
                     </div>
@@ -200,6 +209,7 @@
                     :player-level="tarkovStore.playerLevel()"
                     :related-station="relatedStation"
                     :hideout-level="props.need.hideoutModule.level"
+                    :hideout-module-id="props.need.hideoutModule.id"
                   />
                 </template>
               </div>

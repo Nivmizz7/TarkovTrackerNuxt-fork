@@ -260,15 +260,15 @@
   }>();
   const formatNumber = useLocaleNumberFormatter();
   const backgroundClassMap = {
-    violet: 'bg-brand-900',
-    grey: 'bg-surface-900',
-    yellow: 'bg-warning-900',
-    orange: 'bg-warning-950',
-    green: 'bg-success-950',
-    red: 'bg-error-900',
-    black: 'bg-surface-950',
-    blue: 'bg-secondary-900',
-    default: 'bg-transparent',
+    violet: 'bg-[#392d44]',
+    grey: 'bg-[#3d3d3d]',
+    yellow: 'bg-[#756742]',
+    orange: 'bg-[#7c4b1f]',
+    green: 'bg-[#2a3b2a]',
+    red: 'bg-[#5c2626]',
+    black: 'bg-[#1a1a1a]',
+    blue: 'bg-[hsl(199,23%,14%)]',
+    default: 'bg-[#2d2d2d]',
   } as const;
   type BackgroundKey = keyof typeof backgroundClassMap;
   const contextMenu = ref<InstanceType<typeof ContextMenu>>();

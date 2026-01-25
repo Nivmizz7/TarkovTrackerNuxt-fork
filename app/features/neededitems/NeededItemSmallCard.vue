@@ -98,6 +98,7 @@
                 <StationLink
                   v-if="relatedStation"
                   :station="relatedStation"
+                  :module-id="props.need.hideoutModule.id"
                   compact
                   class="max-w-full text-[clamp(0.625rem,2vw,0.75rem)]"
                 />
