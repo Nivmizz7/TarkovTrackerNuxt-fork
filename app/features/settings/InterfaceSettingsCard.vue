@@ -15,16 +15,8 @@
           </h3>
           <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <UCheckbox
-              v-model="showTaskIds"
-              :label="$t('settings.interface.tasks.show_ids', 'Show Task IDs')"
-            />
-            <UCheckbox
               v-model="showRequiredLabels"
               :label="$t('settings.interface.tasks.show_required', 'Show Required Labels')"
-            />
-            <UCheckbox
-              v-model="showNotRequiredLabels"
-              :label="$t('settings.interface.tasks.show_optional', 'Show Optional Labels')"
             />
             <UCheckbox
               v-model="showExperienceRewards"
@@ -110,11 +102,31 @@
           <h3 class="text-surface-200 text-sm font-semibold tracking-wider uppercase">
             {{ $t('settings.interface.misc.title', 'Miscellaneous') }}
           </h3>
-          <div class="grid gap-4 md:grid-cols-2">
-            <UCheckbox
-              v-model="enableHolidayEffects"
-              :label="$t('settings.interface.misc.holiday_effects', 'Enable Holiday Effects')"
-            />
+          <div class="space-y-3">
+            <div
+              class="bg-surface-800/50 border-surface-700 flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+            >
+              <div class="space-y-0.5">
+                <p class="text-surface-200 text-sm font-medium">
+                  {{ $t('settings.general.privacy_mode', 'Privacy Mode') }}
+                </p>
+                <p class="text-surface-400 text-xs">
+                  {{
+                    $t(
+                      'settings.general.privacy_mode_hint',
+                      "Hides sensitive information while you're streaming."
+                    )
+                  }}
+                </p>
+              </div>
+              <USwitch v-model="streamerMode" :disabled="!isLoggedIn || streamerModeCooldown" />
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">
+              <UCheckbox
+                v-model="enableHolidayEffects"
+                :label="$t('settings.interface.misc.holiday_effects', 'Enable Holiday Effects')"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -122,23 +134,31 @@
   </GenericCard>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
   const preferencesStore = usePreferencesStore();
   const { t } = useI18n();
-  const showTaskIds = computed({
-    get: () => preferencesStore.getShowTaskIds,
-    set: (val) => preferencesStore.setShowTaskIds(val),
+  const { $supabase } = useNuxtApp();
+  const streamerModeCooldown = ref(false);
+  const isLoggedIn = computed(() => Boolean($supabase?.user?.loggedIn));
+  const streamerMode = computed({
+    get() {
+      return preferencesStore.getStreamerMode;
+    },
+    set(newValue) {
+      if (streamerModeCooldown.value) return;
+      preferencesStore.setStreamerMode(newValue);
+      streamerModeCooldown.value = true;
+      setTimeout(() => {
+        streamerModeCooldown.value = false;
+      }, 500);
+    },
   });
   const showRequiredLabels = computed({
     get: () => preferencesStore.getShowRequiredLabels,
     set: (val) => preferencesStore.setShowRequiredLabels(val),
-  });
-  const showNotRequiredLabels = computed({
-    get: () => preferencesStore.getShowNotRequiredLabels,
-    set: (val) => preferencesStore.setShowNotRequiredLabels(val),
   });
   const showExperienceRewards = computed({
     get: () => preferencesStore.getShowExperienceRewards,

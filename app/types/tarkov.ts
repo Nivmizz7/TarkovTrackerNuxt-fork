@@ -224,6 +224,7 @@ export interface Task {
   minPlayerLevel?: number;
   failedRequirements?: TaskRequirement[];
   traderLevelRequirements?: TaskTraderLevelRequirement[];
+  traderRequirements?: TraderRequirement[];
   factionName?: string;
   startRewards?: FinishRewards;
   finishRewards?: FinishRewards;

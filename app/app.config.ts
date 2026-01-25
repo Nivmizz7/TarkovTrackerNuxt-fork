@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck - Nuxt UI v4 config uses dynamic slot/variant types not yet in TS definitions
+// @ts-nocheck - Nuxt UI v4 config uses dynamic types that don't match strict TS expectations
 export default defineAppConfig({
   ui: {
     // ✅ Nuxt UI v4: Map semantic color names to palette names defined in @theme (tailwind.css)

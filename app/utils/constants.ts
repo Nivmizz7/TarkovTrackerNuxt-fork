@@ -50,16 +50,6 @@ export const GAME_MODE_OPTIONS = [
     description: 'Player vs Environment (Co-op)',
   },
 ];
-// Scav Karma (Fence Rep) tasks excluded from tracking
-// These "Compensation for Damage" tasks require Scav Karma validation which isn't yet implemented
-// They would always show as incomplete without proper Fence reputation tracking
-export const EXCLUDED_SCAV_KARMA_TASKS = [
-  '61e6e5e0f5b9633f6719ed95', // Compensation for Damage - Trust (Scav Karma -1 Quest)
-  '61e6e60223374d168a4576a6', // Compensation for Damage - Wager (Scav Karma -1 Quest)
-  '61e6e621bfeab00251576265', // Compensation for Damage - Collection (Scav Karma -1 Quest)
-  '61e6e615eea2935bc018a2c5', // Compensation for Damage - Barkeep (Scav Karma -1 Quest)
-  '61e6e60c5ca3b3783662be27', // Compensation for Damage - Wergild (Scav Karma -3 Quest)
-];
 // Currency item IDs to exclude from quest item tracking
 // These represent in-game currencies that are always obtainable and don't need to be tracked
 export const CURRENCY_ITEM_IDS = [
@@ -144,6 +134,8 @@ export const CACHE_CONSTANTS = {
 // Uses normalizedName for language-independent, stable identification
 export const TRADERS_WITHOUT_LOYALTY_LEVELS = [
   'fence', // Scav karma (reputation) based only
+  'lightkeeper', // In-raid trader, quest-gated only
+  'btr-driver', // In-raid service, quest-gated only
   'mr-kerman', // Arena trader
   'taran', // Arena trader
   'voevoda', // Arena trader
@@ -160,6 +152,8 @@ export const TRADERS_WITHOUT_REPUTATION = [
 ] as const;
 // Traders that require a specific task to unlock
 export const TRADER_UNLOCK_TASKS: Record<string, string> = {
+  lightkeeper: '625d700cc48e6c62a440fab5', // Getting Acquainted (Mechanic)
+  'btr-driver': '6752f6d83038f7df520c83e8', // A Helping Hand (Mechanic)
   ref: '66058cb22cee99303f1ba067', // Easy Money - Part 1 (Skier)
 } as const;
 // Trader display order (matches in-game order)
@@ -183,6 +177,57 @@ export const TRADER_ORDER = [
 ] as const;
 export const HOT_WHEELS_TASK_ID = '673f4e956f1b89c7bc0f56ef';
 export const MANUAL_FAIL_TASK_IDS: readonly string[] = [HOT_WHEELS_TASK_ID];
+// Skill display order (matches in-game character screen order)
+export const SKILL_ORDER = [
+  'Strength',
+  'Vitality',
+  'Health',
+  'StressResistance',
+  'Metabolism',
+  'Immunity',
+  'Perception',
+  'Intellect',
+  'Attention',
+  'Charisma',
+  'Pistols',
+  'Revolvers',
+  'SubmachineGuns',
+  'AssaultRifles',
+  'Shotguns',
+  'BoltActionRifles',
+  'LightMachineGuns',
+  'HeavyMachineGuns',
+  'GrenadeLaunchers',
+  'UnderbarrelLaunchers',
+  'Throwables',
+  'Melee',
+  'DMRs',
+  'AimDrills',
+  'Troubleshooting',
+  'Surgery',
+  'CovertMovement',
+  'Search',
+  'MagDrills',
+  'LightVests',
+  'HeavyVests',
+  'WeaponMaintenance',
+  'Crafting',
+  'HideoutManagement',
+] as const;
+export const SKILL_SORT_MODES = ['priority', 'ingame'] as const;
+export type SkillSortMode = (typeof SKILL_SORT_MODES)[number];
+// Sort skills by in-game order
+// Skills not in SKILL_ORDER are placed at the end, sorted alphabetically
+export function sortSkillsByGameOrder<T extends { name: string }>(skills: T[]): T[] {
+  return [...skills].sort((a, b) => {
+    const aIndex = SKILL_ORDER.indexOf(a.name as (typeof SKILL_ORDER)[number]);
+    const bIndex = SKILL_ORDER.indexOf(b.name as (typeof SKILL_ORDER)[number]);
+    if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  });
+}
 // Sort traders by in-game order using normalizedName
 // Traders not in TRADER_ORDER are placed at the end, sorted alphabetically
 export function sortTradersByGameOrder<T extends { name: string; normalizedName?: string }>(

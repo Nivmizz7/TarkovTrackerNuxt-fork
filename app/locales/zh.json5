@@ -1,6 +1,14 @@
 {
   // 本文件支持 JSON5 语法，详见 https://json5.org/
   site_name: 'Tarkov Tracker',
+  route: {
+    index: {
+      title: '仪表盘',
+    },
+    neededItems: {
+      title: '所需物品',
+    },
+  },
   app_bar: {
     overflow_menu: {
       game_mode: '游戏模式',
@@ -25,9 +33,6 @@
   },
   common: {
     refreshbutton: '重试',
-  },
-  menu: {
-    language: '语言',
   },
   maps: {
     zoom: '缩放',
@@ -209,10 +214,10 @@
           hint: '控制显示哪些任务',
           showNonSpecialTasks: '显示非Kappa安全箱或灯塔守护者任务',
           showNonSpecialTasksTooltip: '显示与Kappa安全箱或者灯塔守护者不相关的常规任务',
-          showKappaTasks: '显示Kappa安全箱任务',
-          showKappaTasksTooltip: '显示与Kappa安全箱相关的任务',
-          showLightkeeperTasks: '显示灯塔守护者发布或相关的任务',
-          showLightkeeperTasksTooltip: '显示来自于灯塔守护者或者解锁灯塔守护者相关的任务',
+          showKappaTasks: '显示"Kappa必需"任务',
+          showKappaTasksTooltip: '显示获取Kappa安全箱所需的任务',
+          showLightkeeperTasks: '显示"灯塔守护者必需"任务',
+          showLightkeeperTasksTooltip: '显示解锁灯塔守护者所需的任务',
           sharedByAllOnly: '只显示全队可用的任务',
           sharedByAllOnlyTooltip: '只显示对所有可见队员可用的任务',
         },
@@ -220,12 +225,8 @@
           hint: '调整任务卡的外观',
           showRequiredLabels: '显示"强制要求"标签',
           showRequiredLabelsTooltip: '显示Kappa安全箱和灯塔守护者任务标签',
-          showNotRequiredLabels: '显示"非强制要求"标签',
-          showNotRequiredLabelsTooltip: '显示"非Kappa任务"标签',
           showExperienceRewards: '显示经验奖励',
           showExperienceRewardsTooltip: '显示完成任务后奖励的经验数值',
-          showTaskIds: '显示任务ID',
-          showTaskIdsTooltip: '在任务卡底部显示其内部任务ID',
           showNextQuests: '显示后续任务',
           showNextQuestsTooltip: '显示完成此任务后解锁的后续任务',
           showPreviousQuests: '显示前置任务',
@@ -263,7 +264,6 @@
         next: '后续',
         more: '更多',
         andMore: '，另有 {count} 个',
-        copyTaskId: '复制任务ID',
         copyTaskLink: '复制任务链接',
         reportDataIssue: '报告数据问题',
         viewOnTarkovDev: '在 Tarkov.dev 查看',
@@ -296,7 +296,6 @@
         markfailedconfirm: '是否要将此任务标记为失败? 此操作仅用于解决数据问题，不建议使用并可能会导致任务线阻塞',
         failedbecause: '失败原因',
         failedbecauseunknown: '手动标记为失败或数据丢失',
-        nonkappa: '非Kappa保险箱前置',
         keysHeader: '推荐钥匙',
         keysSubtext: '(可能有帮助，非强制要求)',
         keysneeded: '{map} 地图需 {keys} | {map} 地图需 {keys} 其中一把',
@@ -329,13 +328,11 @@
       scrollToMap: '滚动到地图',
       scrollToTop: '滚动到顶部',
     },
-    traders: {
-      title: '商人',
-    },
     hideout: {
       title: '藏身处',
       loading: '加载藏身处数据中',
       nostationsfound: '未找到设施，可尝试修改筛选条件',
+      collapsecompleted: '折叠已完成的设施',
       primaryviews: {
         all: '全部',
         locked: '未解锁',
@@ -350,9 +347,9 @@
         upgradeunavailable: '暂无法升级',
         prerequisites: '前置条件',
         requirements: {
-          station: '需要 {stationname} 等级 {level}',
-          skill: '需要 {skillname} 技能等级 {level}',
-          trader: '需要 {tradername} 好感度等级 {loyaltylevel}',
+          station: '{stationname} {level}级',
+          skill: '{skillname} {level}级',
+          trader: '{tradername} LL{loyaltylevel}',
         },
         gameeditiondescription: '仓库基础等级由你拥有的游戏版本决定，可前往追踪器设置修改',
         settingsbutton: '前往设置',
@@ -361,9 +358,6 @@
         statusupgraded: '{name} 已升级至等级 {level}',
         statusdowngraded: '{name} 已从等级 {level}降级',
       },
-    },
-    items: {
-      title: '所需物品',
     },
     neededitems: {
       title: '所需物品',
@@ -402,6 +396,9 @@
         items_show_non_fir: '显示无需战局拾取的物品',
         empty: '无匹配搜索结果',
       },
+    },
+    needed_items: {
+      title: '所需物品',
     },
     settings: {
       title: '设置',
@@ -617,12 +614,6 @@
     contributors: '贡献者',
     changelog: '更新日志',
   },
-  module: {
-    team_settings: {
-      title: '队伍设置',
-      description: '配置你的队伍参数',
-    },
-  },
   navigation_drawer: {
     home: '总览面板',
     api: '接口文档',
@@ -633,7 +624,6 @@
     tasks: '任务',
     hideout: '藏身处',
     neededitems: '所需物品',
-    traders: '商人',
     tarkovdev: 'Tarkov.dev',
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
@@ -782,5 +772,4 @@
     error: '出错了',
   },
   'task.kappa_req': 'Kappa保险箱任务必备',
-  'task.level_req': '等级要求：{level}',
 }

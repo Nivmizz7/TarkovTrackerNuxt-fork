@@ -27,6 +27,9 @@
           </div>
           <USwitch
             :model-value="preferencesStore.getUseAutomaticLevelCalculation"
+            :ui="{
+              base: 'data-[state=unchecked]:bg-error-500 data-[state=checked]:bg-success-500',
+            }"
             @update:model-value="handleAutoLevelToggle"
           />
         </div>
@@ -43,9 +46,9 @@
             <span>{{ formatNumber(xpCalculation.totalXP.value) }} XP</span>
             <span>{{ formatNumber(xpCalculation.xpToNextLevel.value) }} to next</span>
           </div>
-          <div class="bg-surface-700 h-2 overflow-hidden rounded-full">
+          <div class="bg-surface-800/35 h-2 overflow-hidden rounded-full">
             <div
-              class="bg-primary-500 h-full transition-all"
+              class="bg-primary-500/60 h-full rounded-full transition-[width] duration-300 ease-out"
               :style="{ width: `${xpCalculation.xpProgress.value}%` }"
             ></div>
           </div>

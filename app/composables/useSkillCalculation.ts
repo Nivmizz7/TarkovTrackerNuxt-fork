@@ -11,8 +11,10 @@
  */
 import { computed } from 'vue';
 import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
 import { useTarkovStore } from '@/stores/useTarkov';
 import type { Skill, SkillRequirement, TaskObjective } from '@/types/tarkov';
+import { sortSkillsByGameOrder } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 /**
  * Extended TaskObjective with GraphQL __typename discriminator
@@ -47,6 +49,7 @@ export interface SkillMetadata {
 export function useSkillCalculation() {
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   const isTaskSuccessful = (taskId: string) =>
     tarkovStore.isTaskComplete(taskId) && !tarkovStore.isTaskFailed(taskId);
   // Computed: Skills from completed quest rewards
@@ -180,8 +183,13 @@ export function useSkillCalculation() {
     skillsMap.forEach((skill) => {
       skill.requiredLevels.sort((a, b) => a - b);
     });
-    // Sort: required skills first, then alphabetically within each group
-    return Array.from(skillsMap.values()).sort((a, b) => {
+    const skills = Array.from(skillsMap.values());
+    const sortMode = preferencesStore.getSkillSortMode;
+    if (sortMode === 'ingame') {
+      return sortSkillsByGameOrder(skills);
+    }
+    // Default 'priority' sort: required skills first, then alphabetically
+    return skills.sort((a, b) => {
       const aRequired = a.requiredByTasks.length > 0;
       const bRequired = b.requiredByTasks.length > 0;
       if (aRequired !== bRequired) return bRequired ? 1 : -1;

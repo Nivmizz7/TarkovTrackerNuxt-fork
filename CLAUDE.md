@@ -1,79 +1,36 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-# Commands
+## Commands
 
 ```bash
-npm run dev          # Dev server at http://localhost:3000 with HMR
-npm run build        # Production SPA build
-npm run preview      # Serve built bundle
-npm run format       # Prettier + ESLint fix (use this one)
-npm run lint         # Lint with zero warnings
-npx vitest           # Run tests
-npx vitest --ui      # Test dashboard
-npx vitest path/file.test.ts  # Run specific test
-supabase functions deploy [name]  # Deploy edge function
-cd workers/api-gateway && npx wrangler deploy
-cd workers/team-gateway && npx wrangler deploy
+npm run dev       # Dev :3000
+npm run build     # Prod SPA
+npm run format    # Prettier+ESLint (run before done)
+npx vitest        # Tests
 ```
 
-# Architecture
+## Architecture
 
-- **Nuxt 4 SPA** (`app/`) with file-based routing, `ssr: false`—no SSR features
-- **Features**: Domain slices (tasks, team, hideout, maps, neededitems, traders, settings, admin)
-- **Shell**: App chrome in `app/shell/` (AppBar, NavDrawer, AppFooter)
-- **State**: Three-store pattern (useMetadata, useProgress, usePreferences) + useTarkov computed facade
-- **Backend**: Supabase (auth, PostgreSQL, Realtime), Cloudflare Workers (api-gateway, team-gateway), Nitro routes
-- **Sync**: Supabase Broadcast for team real-time updates
-- **Game Modes**: Dual PvP/PvE tracking, XP system with xpOffset
+Nuxt 4 SPA (`ssr:false`), Vue 3 `<script setup>`, Tailwind v4 only (no `<style>`/hex), Supabase backend
 
-## Code Style
-
-- TypeScript + Vue 3 SFCs (`<script setup lang="ts">`)
-- **Tailwind v4 only**—no `<style>` blocks, SCSS, or scoped CSS
-- 2-space indent, 100-char width, single quotes, semicolons, trailing commas
-- Imports: alphabetically sorted, no blank lines between groups
-- Use `@/` aliases, not relative imports
-- PascalCase components, camelCase functions/composables, kebab-case routes/files
-- Tailwind v4 theme layer only—no hex colors
-- Errors: use `logger` from `@/utils/logger`
-
-# Testing
-
-- Vitest + Vue Test Utils + @nuxt/test-utils
-- Test files: `*.test.ts` in `__tests__/` folders
-- Mock external calls (Supabase, network)
-
-## Environment
-
-```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anonymous_key
-```
-
-Node.js >=24.12.0 required (see `.nvmrc`)
+- **Features**: `app/features/` domain slices (tasks, team, hideout, maps, traders, settings)
+- **State**: useMetadata + useProgress + usePreferences → useTarkov facade
+- **Style**: 2-space, 100-char, single quotes, semicolons, `@/` aliases, PascalCase components
 
 ## Rules
 
-- **Always use `.org` domain**—`tarkovtracker.org`, never `tarkovtracker.io` (old domain, no longer owned). Exception: migration code referencing the old site.
-- **No over-thinking in responses**. Sacrifice explanatory language for brevity—layman's terms only when necessary.
-- **Be concise**. Direct responses only: "Fixed X by changing Y to Z." Minimize explanation unless asked. Use file references for context.
-- **No comments** unless explicitly requested. Comments are token overhead.
-- **Run `npm run format` once** before leaving code. It handles both formatting and linting. Only show errors, skip success output.
-- **Own all issues**. Fix formatting, linting, and pre-existing bugs without being asked. Don't deflect with "these are from earlier changes."
-- **Self-assess code**. Don't ask "what does this do?" Read and understand it. Only clarify ambiguous intent ("Is this supposed to do X or Y?").
-- **Ask before acting on complex requests**. Clarify ambiguous or multi-interpretation tasks before proceeding—it's better to ask one question than redo work.
+- Be concise—"Fixed X via Y"
+- No comments unless asked
+- Own all issues—fix without being asked
+- Ask before complex/ambiguous tasks
+- No SSR, no relative imports (`../`), no hex colors
+- Errors via `logger` from `@/utils/logger`
 
-## Plan Mode
+## Testing
 
-- Make the plan extremely concise. Sacrifice grammar for the sake of concision.
-- At the end of each plan, give a list of unresolved questions to answer, if any.
+Vitest + Vue Test Utils, `*.test.ts` in `__tests__/`, mock Supabase/network
 
-## Pitfalls
+## Tarkov MCP Tools
 
-- No SSR features (SPA-only)
-- No parent-relative imports (`../..`)—use `@/` aliases
-- No hex colors—Tailwind theme only
-- Mock network calls in tests
-- Prefer early returns over deep nesting
+- State ONLY what API returned—no "likely", "probably", "appears"
+- Missing data ≠ doesn't exist: "API doesn't show [X]—check in-game"

@@ -1,6 +1,14 @@
 {
   // This file supports JSON5 notation. See https://json5.org/
   site_name: 'Tarkov Tracker',
+  route: {
+    index: {
+      title: 'Tableau de bord',
+    },
+    neededItems: {
+      title: 'Objets Nécessaires',
+    },
+  },
   app_bar: {
     overflow_menu: {
       language: 'Langue',
@@ -8,9 +16,6 @@
   },
   common: {
     refreshbutton: 'Actualiser',
-  },
-  menu: {
-    language: 'Langue',
   },
   maps: {
     zoom: 'Zoom',
@@ -199,7 +204,6 @@
         markfailedconfirm: 'Marquer cette quête comme échouée ? Ceci est uniquement pour les problèmes de données, non recommandé et peut bloquer les chaînes de quêtes.',
         failedbecause: 'Failed because',
         failedbecauseunknown: 'Failed manually or data missing',
-        nonkappa: 'Non requis pour la Kappa',
         keysneeded: '{keys} requis sur {map} | Une des {keys} requis sur {map}',
         objectiveshidden: '{count} objectifs non présent sur la carte ({uncompleted} non terminés)',
         alternatives: 'Quêtes alternatives',
@@ -213,13 +217,11 @@
       scrollToMap: 'Défiler vers la carte',
       scrollToTop: 'Retour en haut',
     },
-    traders: {
-      title: 'Marchands',
-    },
     hideout: {
       title: 'Planque',
       loading: 'Chargement des données de la planque',
       nostationsfound: 'Aucun module trouvé. Essayez de modifier vos filtres ou de mettre à jour votre niveau',
+      collapsecompleted: 'Réduire les modules terminés',
       primaryviews: {
         all: 'Toutes',
         locked: 'Vérrouillées',
@@ -227,14 +229,16 @@
         maxed: 'Niveau max',
       },
       stationcard: {
-        level: 'Available to build | Niveau {count} | Niveau {count}',
+        level: 'Disponible à construire | Niveau {count} | Niveau {count}',
+        levelnotready: 'Pas encore prêt à construire',
         nextlevel: 'Requis pour le niveau suivant',
         maxlevel: 'Niveau maximum atteint',
         upgradeunavailable: 'Amélioration non disponible',
+        prerequisites: 'Prérequis',
         requirements: {
-          station: 'Nécéssite {stationname} niveau {level}',
-          skill: 'Nécéssite {skillname} niveau {level}',
-          trader: 'Nécéssite {tradername} loyauté {loyaltylevel}',
+          station: '{stationname} niveau {level}',
+          skill: '{skillname} niveau {level}',
+          trader: '{tradername} LL{loyaltylevel}',
         },
         gameeditiondescription: 'Le niveaux de planque est calculé en fonction de votre édition de jeu. Vous pouvez changer votre édition de jeu dans les paramètres.',
         settingsbutton: 'Voir les paramètres',
@@ -243,9 +247,6 @@
         statusupgraded: 'Améliorié {name} au niveau {level}',
         statusdowngraded: 'Rétrograder {name} au niveau {level}',
       },
-    },
-    items: {
-      title: 'Items requis',
     },
     neededitems: {
       title: 'Items requis',
@@ -284,22 +285,8 @@
         items_show_non_fir: "Afficher les items requis qui n'ont pas besoin d'être trouvés en raid",
       },
     },
-    api: {
-      title: 'Documentation de l’API',
-      description: 'Accédez à vos données Tarkov Tracker de manière programmatique.',
-      note: 'Des jetons API sont nécessaires pour l’authentification.',
-      tokens_moved_title: 'Les tokens API sont gérés dans Paramètres',
-      tokens_moved_description: 'Créez et révoquez vos tokens dans Paramètres → Tokens API. Cette page conserve la documentation.',
-      tokens_moved_action: 'Ouvrir Paramètres',
-      endpoints: {
-        title: 'Points de terminaison disponibles',
-        data: {
-          description: 'Récupérez vos données de progression de jeu.',
-        },
-      },
-      usage: {
-        title: "Exemples d'utilisation",
-      },
+    needed_items: {
+      title: 'Objets Nécessaires',
     },
     settings: {
       title: 'Paramètres',
@@ -473,18 +460,6 @@
       terms_of_service: "Conditions d'utilisation",
     },
     api: {
-      title: "Documentation de l'API",
-      description: 'Accédez à vos données Tarkov Tracker par programmation',
-      note: "Les tokens d'API sont requis pour l'authentification",
-      endpoints: {
-        title: 'Endpoints disponibles',
-        data: {
-          description: 'Récupérez vos données de progression de jeu',
-        },
-      },
-      usage: {
-        title: "Exemples d'utilisation",
-      },
       stats: {
         active_tokens: 'Tokens actifs',
         rest: 'REST',
@@ -533,12 +508,6 @@
     contributors: 'Contributeurs',
     changelog: 'Journal des modifications',
   },
-  module: {
-    team_settings: {
-      title: 'Paramètres de l’équipe',
-      description: 'Gérer les paramètres de votre équipe.',
-    },
-  },
   navigation_drawer: {
     home: 'Tableau de bord',
     api: 'API',
@@ -549,7 +518,6 @@
     tasks: 'Quêtes',
     hideout: 'Planque',
     neededitems: 'Objets requis',
-    traders: 'Marchands',
     tarkovdev: 'Tarkov.dev',
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
@@ -675,5 +643,4 @@
     error: 'Erreur',
   },
   'task.kappa_req': 'Requis pour Kappa',
-  'task.level_req': 'Niveau requis : {level}',
 }

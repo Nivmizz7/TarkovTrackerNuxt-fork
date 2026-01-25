@@ -34,7 +34,6 @@ import type {
 import {
   API_GAME_MODES,
   API_SUPPORTED_LANGUAGES,
-  EXCLUDED_SCAV_KARMA_TASKS,
   GAME_MODES,
   LOCALE_TO_API_MAPPING,
   MAP_NAME_MAPPING,
@@ -349,9 +348,6 @@ export const useMetadataStore = defineStore('metadata', {
         });
       });
       return allObjectives;
-    },
-    enabledTasks: (state): Task[] => {
-      return state.tasks.filter((task) => !EXCLUDED_SCAV_KARMA_TASKS.includes(task.id));
     },
     // Get edition name by value
     getEditionName:
@@ -1595,10 +1591,7 @@ export const useMetadataStore = defineStore('metadata', {
             normalizeTaskObjectives<TaskObjective>(task.failConditions)
           ),
         }));
-      const filteredTasks = normalizedTasks.filter(
-        (task) => !EXCLUDED_SCAV_KARMA_TASKS.includes(task.id)
-      );
-      const deduped = this.dedupeObjectiveIds(filteredTasks);
+      const deduped = this.dedupeObjectiveIds(normalizedTasks);
       this.tasks = markRaw(deduped.tasks);
       // Note: Don't set tasksObjectivesHydrated here - it's managed by processTasksCoreData
       // and mergeTaskObjectives to properly track the two-phase loading

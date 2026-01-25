@@ -107,7 +107,16 @@
           :class="{ 'text-info-400': filtersVisible }"
           @click="filtersVisible = !filtersVisible"
         />
-        <TaskSettingsModal />
+        <UButton
+          variant="ghost"
+          color="neutral"
+          size="sm"
+          :class="isDrawerOpen ? 'bg-white/10 text-white' : 'text-surface-400'"
+          @click="toggleDrawer"
+        >
+          <UIcon name="i-mdi-tune" class="h-4 w-4 sm:mr-1.5" />
+          <span class="hidden text-xs sm:inline">SETTINGS</span>
+        </UButton>
       </div>
     </div>
     <!-- Secondary filters (collapsible) -->
@@ -213,8 +222,7 @@
                 {{ t('page.tasks.secondaryviews.failed', 'FAILED').toUpperCase() }}
               </span>
               <span
-                class="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
-                :class="statusCounts.failed > 0 ? 'bg-error-500' : 'bg-surface-600'"
+                class="bg-error-500 ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
               >
                 {{ statusCounts.failed }}
               </span>
@@ -370,7 +378,7 @@
   import { computed, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useTaskFiltering } from '@/composables/useTaskFiltering';
-  import TaskSettingsModal from '@/features/tasks/TaskSettingsModal.vue';
+  import { useTaskSettingsDrawer } from '@/composables/useTaskSettingsDrawer';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
@@ -391,10 +399,16 @@
   const belowMd = computed(() => width.value < 768);
   // Filter visibility - hidden by default on mobile
   const filtersVisible = ref(!belowMd.value);
+  // Settings drawer state
+  const { isOpen: isDrawerOpen, toggle: toggleDrawer } = useTaskSettingsDrawer();
   const { calculateMapTaskTotals, calculateStatusCounts, calculateTraderCounts, disabledTasks } =
     useTaskFiltering();
   const maps = computed(() => metadataStore.mapsWithSvg);
-  const traders = computed(() => metadataStore.sortedTraders);
+  const traders = computed(() =>
+    metadataStore.sortedTraders.filter((trader) =>
+      metadataStore.tasks.some((task) => task.trader?.id === trader.id)
+    )
+  );
   // Get current user's display name
   const currentUserDisplayName = computed(() => {
     return progressStore.getDisplayName('self');

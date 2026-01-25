@@ -1,6 +1,6 @@
 <template>
-  <footer class="bg-surface-900 w-full border-t border-white/10 px-6 py-6">
-    <div class="mx-auto flex w-full max-w-4xl flex-col items-center gap-5">
+  <footer class="bg-surface-900/60 border-surface-800/70 w-full border-t px-6 py-8">
+    <div class="mx-auto flex w-full max-w-4xl flex-col items-center gap-5 text-center">
       <a
         href="https://ko-fi.com/dysektai"
         target="_blank"
@@ -22,18 +22,19 @@
         <span>{{ t('footer.support_button') }}</span>
       </a>
       <p class="text-surface-400 text-xs italic">{{ t('footer.support_tagline') }}</p>
-      <div
-        class="text-surface-500 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm"
-      >
-        <router-link to="/terms-of-service" class="hover:text-surface-300 transition-colors">
+      <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
+        <router-link
+          to="/terms-of-service"
+          class="text-info-400 hover:text-info-300 transition-colors"
+        >
           {{ t('footer.terms_of_service') }}
         </router-link>
         <span class="text-surface-600">·</span>
-        <router-link to="/privacy" class="hover:text-surface-300 transition-colors">
+        <router-link to="/privacy" class="text-info-400 hover:text-info-300 transition-colors">
           {{ t('footer.privacy_policy') }}
         </router-link>
         <span class="text-surface-600">·</span>
-        <router-link to="/credits" class="hover:text-surface-300 transition-colors">
+        <router-link to="/credits" class="text-info-400 hover:text-info-300 transition-colors">
           {{ t('footer.credits') }}
         </router-link>
       </div>

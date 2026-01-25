@@ -1,6 +1,6 @@
 <template>
   <header
-    class="border-surface-700/50 bg-surface-900/95 fixed top-0 right-0 z-40 h-11 border-b shadow-[0_1px_0_rgba(0,0,0,0.4)] backdrop-blur-sm"
+    class="border-surface-700/50 bg-surface-900 fixed top-0 right-0 z-40 h-11 border-b shadow-[0_1px_0_rgba(0,0,0,0.4)]"
   >
     <div class="flex h-full items-center gap-1 px-2 sm:gap-2 sm:px-3">
       <!-- Left: Toggle Button -->
@@ -65,52 +65,78 @@
             <UIcon name="i-mdi-github" class="text-surface-300 h-4.5 w-4.5 hover:text-white" />
           </a>
         </AppTooltip>
-        <!-- Language selector -->
+        <!-- Language selector (compact) -->
         <SelectMenuFixed
           v-model="selectedLocale"
           :items="localeItems"
           value-key="value"
-          :popper="{ placement: 'bottom-end', strategy: 'fixed' }"
-          :ui="{
-            base: 'bg-surface-900/90 border border-white/15 ring-1 ring-white/10 rounded-md px-2 py-1.5 cursor-pointer',
-          }"
-          :ui-menu="{
-            container: 'z-[9999]',
-            width: 'w-max',
-            background: 'bg-surface-900',
-            shadow: 'shadow-xl',
-            rounded: 'rounded-lg',
-            ring: 'ring-1 ring-white/10',
-            padding: 'p-1',
-            option: {
-              base: 'px-3 py-2 text-sm cursor-pointer transition-colors rounded',
-              inactive: 'text-surface-200 hover:bg-surface-800 hover:text-white',
-              active: 'bg-surface-800 text-white',
-              selected: 'bg-primary-500/10 text-primary-100 ring-1 ring-primary-500',
-            },
-          }"
+          :search-input="false"
+          :content="{ side: 'bottom', align: 'end', sideOffset: 8 }"
         >
           <template #leading>
             <UIcon name="i-mdi-translate" class="text-surface-300 h-4 w-4" />
           </template>
           <template #default>
-            <span class="inline-grid">
-              <span
-                class="col-start-1 row-start-1 justify-self-start text-xs font-medium text-white/80 uppercase"
-              >
-                {{ locale }}
-              </span>
-              <span
-                class="invisible col-start-1 row-start-1 text-xs font-medium whitespace-nowrap uppercase"
-              >
-                Deutsch
-              </span>
+            <span class="text-xs font-medium text-white/80">
+              {{ selectedLocaleLabel }}
             </span>
           </template>
           <template #trailing>
             <UIcon name="i-mdi-chevron-down" class="text-surface-400 h-3 w-3" />
           </template>
         </SelectMenuFixed>
+        <!-- Account section -->
+        <template v-if="isLoggedIn">
+          <div class="bg-surface-700/50 mx-1 h-5 w-px" />
+          <UDropdownMenu
+            :items="accountItems"
+            :content="{ side: 'bottom', align: 'end', sideOffset: 0 }"
+            :modal="false"
+            :ui="{
+              content:
+                'bg-surface-800 border border-surface-600 border-t-0 rounded-t-none rounded-b-md min-w-[var(--reka-dropdown-menu-trigger-width)] ring-0 outline-none shadow-none',
+              group: 'p-1',
+              item: 'px-3 py-1.5 text-sm cursor-pointer rounded text-surface-200 data-[highlighted]:bg-surface-700 data-[highlighted]:text-white',
+              itemLeadingIcon: 'size-4 text-surface-400',
+            }"
+          >
+            <button
+              type="button"
+              class="bg-surface-800/50 border-surface-600 hover:bg-surface-800 data-[state=open]:bg-surface-800 flex items-center gap-2 rounded-md border px-2.5 py-1.5 ring-0 transition-colors outline-none data-[state=open]:rounded-b-none data-[state=open]:border-b-transparent"
+              :aria-label="t('navigation_drawer.account_menu', 'Account menu')"
+            >
+              <UAvatar :src="avatarSrc" size="2xs" alt="User avatar" />
+              <span class="text-surface-200 hidden text-sm font-medium sm:inline">
+                {{ userDisplayName }}
+              </span>
+              <UIcon
+                name="i-heroicons-chevron-down-20-solid"
+                class="text-surface-400 h-3.5 w-3.5 transition-transform duration-200 [[data-state=open]_&]:rotate-180"
+              />
+            </button>
+          </UDropdownMenu>
+        </template>
+        <template v-else>
+          <div class="bg-surface-700/50 mx-1 h-5 w-px" />
+          <UButton
+            to="/login"
+            icon="i-mdi-fingerprint"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            :label="t('navigation_drawer.login')"
+            class="hidden sm:flex"
+          />
+          <UButton
+            to="/login"
+            icon="i-mdi-fingerprint"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            class="sm:hidden"
+            :aria-label="t('navigation_drawer.login')"
+          />
+        </template>
       </div>
     </div>
   </header>
@@ -124,12 +150,39 @@
   import { useAppStore } from '@/stores/useApp';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useTarkovStore } from '@/stores/useTarkov';
   import { logger } from '@/utils/logger';
   const { t } = useI18n({ useScope: 'global' });
   const appStore = useAppStore();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
+  const tarkovStore = useTarkovStore();
   const route = useRoute();
+  const { $supabase } = useNuxtApp();
+  const isLoggedIn = computed(() => $supabase.user?.loggedIn ?? false);
+  const avatarSrc = computed(() => {
+    return preferencesStore.getStreamerMode || !$supabase.user.photoURL
+      ? '/img/default-avatar.svg'
+      : $supabase.user.photoURL;
+  });
+  const userDisplayName = computed(() => {
+    if (preferencesStore.getStreamerMode) return 'User';
+    const displayName = tarkovStore.getDisplayName();
+    if (displayName && displayName.trim() !== '') {
+      return displayName;
+    }
+    return $supabase.user.displayName || $supabase.user.username || 'User';
+  });
+  function logout() {
+    $supabase.signOut();
+  }
+  const accountItems = computed(() => [
+    {
+      label: t('navigation_drawer.logout'),
+      icon: 'i-mdi-logout',
+      onSelect: logout,
+    },
+  ]);
   const { width } = useWindowSize();
   const mdAndDown = computed(() => width.value < 960); // md breakpoint at 960px
   const isDrawerCollapsed = computed(() => {
@@ -165,12 +218,12 @@
   }
   const { locale, availableLocales } = useI18n({ useScope: 'global' });
   const localeItems = computed(() => {
-    const languageNames = new Intl.DisplayNames([locale.value], { type: 'language' });
     return availableLocales.map((localeCode) => ({
-      label: languageNames.of(localeCode) || localeCode.toUpperCase(),
+      label: localeCode.toUpperCase(),
       value: localeCode,
     }));
   });
+  const selectedLocaleLabel = computed(() => locale.value.toUpperCase());
   const selectedLocale = computed({
     get() {
       // Return the current locale string directly

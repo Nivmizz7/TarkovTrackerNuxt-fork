@@ -4,11 +4,11 @@
       <NuxtLink
         v-if="props.to && !props.href"
         :to="props.to"
-        class="group flex min-h-10 items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150"
+        class="group flex min-h-10 items-center justify-center rounded-sm border-l-2 px-3 py-2 text-sm font-medium transition-colors duration-150"
         :class="[
           isActive
-            ? 'bg-primary-500/15 border-primary-500 text-primary-400 border-l-4'
-            : 'text-surface-200 border-l-4 border-transparent hover:bg-[--state-hover] hover:text-white',
+            ? 'border-primary-500 bg-neutral-800/50 text-white'
+            : 'text-surface-300 border-transparent hover:bg-neutral-800/30 hover:text-white',
         ]"
       >
         <DrawerItemIcon :icon="props.icon" :avatar="props.avatar" :color-class="iconClasses" />
@@ -18,13 +18,13 @@
         :href="props.href"
         target="_blank"
         rel="noopener noreferrer"
-        class="group text-surface-300 flex min-h-10 items-center justify-center rounded-md border-l-4 border-transparent px-3 py-2 text-xs font-medium transition-colors duration-150 hover:bg-[--state-hover] hover:text-white"
+        class="group text-surface-300 flex min-h-10 items-center justify-center rounded-sm border-l-2 border-transparent px-3 py-2 text-xs font-medium transition-colors duration-150 hover:bg-neutral-800/30 hover:text-white"
       >
         <DrawerItemIcon :icon="props.icon" :avatar="props.avatar" :color-class="iconClasses" />
       </a>
       <div
         v-else
-        class="group flex min-h-12 cursor-not-allowed items-center justify-center rounded-md border-l-4 border-transparent px-3 py-3 text-base font-medium text-white/50 opacity-60 transition-colors duration-200"
+        class="group flex min-h-12 cursor-not-allowed items-center justify-center rounded-sm border-l-2 border-transparent px-3 py-3 text-base font-medium text-white/50 opacity-60 transition-colors duration-200"
         aria-disabled="true"
       >
         <DrawerItemIcon :icon="props.icon" :avatar="props.avatar" :color-class="iconClasses" />
@@ -34,11 +34,11 @@
       <NuxtLink
         v-if="props.to && !props.href"
         :to="props.to"
-        class="group flex min-h-10 items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150"
+        class="group flex min-h-10 items-center rounded-sm border-l-2 px-3 py-2 text-sm font-medium transition-colors duration-150"
         :class="[
           isActive
-            ? 'bg-primary-500/15 border-primary-500 text-primary-400 border-l-4'
-            : 'text-surface-200 border-l-4 border-transparent hover:bg-[--state-hover] hover:text-white',
+            ? 'border-primary-500 bg-neutral-800/50 text-white'
+            : 'text-surface-300 border-transparent hover:bg-neutral-800/30 hover:text-white',
         ]"
       >
         <DrawerItemIcon
@@ -54,7 +54,7 @@
         :href="props.href"
         target="_blank"
         rel="noopener noreferrer"
-        class="group text-surface-300 flex min-h-10 items-center rounded-md border-l-4 border-transparent px-3 py-2 text-xs font-medium transition-colors duration-150 hover:bg-[--state-hover] hover:text-white"
+        class="group text-surface-300 flex min-h-10 items-center rounded-sm border-l-2 border-transparent px-3 py-2 text-xs font-medium transition-colors duration-150 hover:bg-neutral-800/30 hover:text-white"
       >
         <DrawerItemIcon
           :icon="props.icon"
@@ -66,7 +66,7 @@
       </a>
       <div
         v-else
-        class="group flex min-h-12 cursor-not-allowed items-center rounded-md border-l-4 border-transparent px-3 py-3 text-base font-medium text-white/50 opacity-60 transition-colors duration-200"
+        class="group flex min-h-12 cursor-not-allowed items-center rounded-sm border-l-2 border-transparent px-3 py-3 text-base font-medium text-white/50 opacity-60 transition-colors duration-200"
         aria-disabled="true"
       >
         <DrawerItemIcon
@@ -102,9 +102,9 @@
     return false;
   });
   const iconClasses = computed(() => {
-    if (isActive.value) return 'text-primary-400';
+    if (isActive.value) return 'text-white';
     if (props.href) return 'text-surface-300 group-hover:text-white';
-    return 'text-surface-200 group-hover:text-white';
+    return 'text-surface-300 group-hover:text-white';
   });
   const labelText = computed(() => {
     if (props.localeKey) return t(`navigation_drawer.${props.localeKey}`);

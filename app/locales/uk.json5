@@ -1,6 +1,14 @@
 {
   // This file supports JSON5 notation. See https://json5.org/
   site_name: 'Tarkov Tracker',
+  route: {
+    index: {
+      title: 'Приладова Панель',
+    },
+    neededItems: {
+      title: 'Необхідні предмети',
+    },
+  },
   app_bar: {
     overflow_menu: {
       language: 'Мова',
@@ -8,9 +16,6 @@
   },
   common: {
     refreshbutton: 'Спробувати знову',
-  },
-  menu: {
-    language: 'Мова',
   },
   maps: {
     zoom: 'Масштаб',
@@ -199,7 +204,6 @@
         markfailedconfirm: 'Позначити це завдання як провалене? Це лише для проблем з даними, не рекомендується і може заблокувати ланцюжки завдань.',
         failedbecause: 'Failed because',
         failedbecauseunknown: 'Failed manually or data missing',
-        nonkappa: 'Не потрібні для Каппа',
         keysneeded: '{keys} потрібні на {map} | Один з {keys} потрібен на {map}',
         objectiveshidden: '{count} цілей не на цій карті ({uncompleted} не завершено)',
         alternatives: 'Альтернативні завдання',
@@ -212,28 +216,28 @@
       scrollToMap: 'Прокрутити до карти',
       scrollToTop: 'Вгору',
     },
-    traders: {
-      title: 'Торговці',
-    },
     hideout: {
       title: 'Притулок',
       loading: 'Завантажуємо дані притулка',
-      nostationsfound: 'No stations found. Try changing your filters.',
+      nostationsfound: 'Станцій не знайдено. Спробуйте змінити фільтри.',
+      collapsecompleted: 'Згорнути завершені станції',
       primaryviews: {
-        all: 'All',
-        locked: 'Locked',
-        available: 'Available',
-        maxed: 'Maxed',
+        all: 'Усі',
+        locked: 'Заблоковано',
+        available: 'Доступно',
+        maxed: 'Максимум',
       },
       stationcard: {
         level: 'Доступно до побудови | Рівень {count} | Рівень {count}',
+        levelnotready: 'Ще не готово до побудови',
         nextlevel: 'Вимоги для наступного рівня',
         maxlevel: 'Досягнуто максимального рівня станції',
-        upgradeunavailable: 'Upgrade unavailable',
+        upgradeunavailable: 'Покращення недоступне',
+        prerequisites: 'Попередні вимоги',
         requirements: {
-          station: 'Потрібно {stationname} рівня {level}',
-          skill: 'Потрібно {skillname} рівня {level}',
-          trader: 'Потрібен {tradername} рівень лояльності {loyaltylevel}',
+          station: '{stationname} рів. {level}',
+          skill: '{skillname} рів. {level}',
+          trader: '{tradername} LL{loyaltylevel}',
         },
         gameeditiondescription: 'Базовий рівень схованки визначається виданням гри, яким ви володієте. Ви можете змінити це в налаштуваннях трекера.',
         settingsbutton: 'Перейти в Налаштування',
@@ -242,9 +246,6 @@
         statusupgraded: '{name} покращено до {level} рівня',
         statusdowngraded: '{name} знижено до {level} рівня',
       },
-    },
-    items: {
-      title: 'Необхідні Предмети',
     },
     neededitems: {
       title: 'Необхідні Предмети',
@@ -282,22 +283,8 @@
         items_show_non_fir: 'Показати необхідні предмети які не повинні бути знайдені в рейді',
       },
     },
-    api: {
-      title: 'Документація API',
-      description: 'Отримуйте доступ до даних Tarkov Tracker програмно.',
-      note: 'Для автентифікації потрібні токени API.',
-      tokens_moved_title: 'API-токени тепер у розділі Налаштування',
-      tokens_moved_description: 'Створюйте та відкликайте токени у Налаштування → API Tokens. Ця сторінка залишається для документації.',
-      tokens_moved_action: 'Відкрити налаштування',
-      endpoints: {
-        title: 'Доступні ендпоінти',
-        data: {
-          description: 'Отримайте дані про свій прогрес у грі.',
-        },
-      },
-      usage: {
-        title: 'Приклади використання',
-      },
+    needed_items: {
+      title: 'Необхідні предмети',
     },
     settings: {
       title: 'Налаштування',
@@ -453,18 +440,6 @@
       terms_of_service: 'Умови використання',
     },
     api: {
-      title: 'Документація API',
-      description: 'Отримайте програмний доступ до даних Tarkov Tracker',
-      note: 'Для аутентифікації потрібні токени API',
-      endpoints: {
-        title: 'Доступні кінцеві точки',
-        data: {
-          description: 'Отримати дані про прогрес гри',
-        },
-      },
-      usage: {
-        title: 'Приклади використання',
-      },
       stats: {
         active_tokens: 'Активні токени',
         rest: 'REST',
@@ -513,12 +488,6 @@
     contributors: 'Учасники',
     changelog: 'Історія змін',
   },
-  module: {
-    team_settings: {
-      title: 'Налаштування Команди',
-      description: 'Встановіть налаштування команди.',
-    },
-  },
   navigation_drawer: {
     home: 'Головна',
     api: 'API',
@@ -529,7 +498,6 @@
     tasks: 'Завдання',
     hideout: 'Притулок',
     neededitems: 'Необхідні предмети',
-    traders: 'Торговці',
     tarkovdev: 'Tarkov.dev',
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
@@ -655,5 +623,4 @@
     error: 'Помилка',
   },
   'task.kappa_req': 'Потрібно для Каппа',
-  'task.level_req': 'Потрібний рівень: {level}',
 }

@@ -8,6 +8,7 @@ import type {
 } from '@/features/neededitems/neededitems-constants';
 import { pinia as pluginPinia } from '@/plugins/01.pinia.client';
 import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
+import type { SkillSortMode } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 // Define the state structure
@@ -49,9 +50,7 @@ export interface PreferencesState {
   showLightkeeperTasks: boolean;
   // Task appearance settings
   showRequiredLabels: boolean;
-  showNotRequiredLabels: boolean;
   showExperienceRewards: boolean;
-  showTaskIds: boolean;
   showNextQuests: boolean;
   showPreviousQuests: boolean;
   taskCardDensity: 'comfortable' | 'compact';
@@ -64,6 +63,8 @@ export interface PreferencesState {
   showMapExtracts: boolean;
   mapZoomSpeed: number;
   pinnedTaskIds: string[];
+  // Skills settings
+  skillSortMode: SkillSortMode | null;
   taskFilterPresets: { id: string; name: string; settings: Record<string, unknown> }[];
   saving?: {
     streamerMode: boolean;
@@ -111,9 +112,7 @@ export const preferencesDefaultState: PreferencesState = {
   showLightkeeperTasks: true,
   // Task appearance settings
   showRequiredLabels: true,
-  showNotRequiredLabels: true,
   showExperienceRewards: true,
-  showTaskIds: true,
   showNextQuests: true,
   showPreviousQuests: true,
   taskCardDensity: 'compact',
@@ -126,6 +125,8 @@ export const preferencesDefaultState: PreferencesState = {
   showMapExtracts: true,
   mapZoomSpeed: 1,
   pinnedTaskIds: [],
+  // Skills settings
+  skillSortMode: null,
   taskFilterPresets: [],
   saving: {
     streamerMode: false,
@@ -273,14 +274,8 @@ export const usePreferencesStore = defineStore('preferences', {
     getShowRequiredLabels: (state) => {
       return state.showRequiredLabels ?? true;
     },
-    getShowNotRequiredLabels: (state) => {
-      return state.showNotRequiredLabels ?? true;
-    },
     getShowExperienceRewards: (state) => {
       return state.showExperienceRewards ?? true;
-    },
-    getShowTaskIds: (state) => {
-      return state.showTaskIds ?? true;
     },
     getShowNextQuests: (state) => {
       return state.showNextQuests ?? true;
@@ -309,6 +304,10 @@ export const usePreferencesStore = defineStore('preferences', {
     },
     getTaskFilterPresets: (state) => {
       return state.taskFilterPresets ?? [];
+    },
+    // Skills getters
+    getSkillSortMode: (state) => {
+      return state.skillSortMode ?? 'priority';
     },
   },
   actions: {
@@ -436,14 +435,8 @@ export const usePreferencesStore = defineStore('preferences', {
     setShowRequiredLabels(show: boolean) {
       this.showRequiredLabels = show;
     },
-    setShowNotRequiredLabels(show: boolean) {
-      this.showNotRequiredLabels = show;
-    },
     setShowExperienceRewards(show: boolean) {
       this.showExperienceRewards = show;
-    },
-    setShowTaskIds(show: boolean) {
-      this.showTaskIds = show;
     },
     setShowNextQuests(show: boolean) {
       this.showNextQuests = show;
@@ -483,6 +476,10 @@ export const usePreferencesStore = defineStore('preferences', {
     removeTaskFilterPreset(id: string) {
       if (!this.taskFilterPresets) return;
       this.taskFilterPresets = this.taskFilterPresets.filter((p) => p.id !== id);
+    },
+    // Skills actions
+    setSkillSortMode(mode: SkillSortMode) {
+      this.skillSortMode = mode;
     },
   },
   // Enable automatic localStorage persistence
@@ -532,9 +529,7 @@ export const usePreferencesStore = defineStore('preferences', {
       'showLightkeeperTasks',
       // Task appearance settings
       'showRequiredLabels',
-      'showNotRequiredLabels',
       'showExperienceRewards',
-      'showTaskIds',
       'showNextQuests',
       'showPreviousQuests',
       'taskCardDensity',
@@ -545,6 +540,7 @@ export const usePreferencesStore = defineStore('preferences', {
       'mapZoomSpeed',
       'pinnedTaskIds',
       'taskFilterPresets',
+      'skillSortMode',
     ],
   },
 });
@@ -643,9 +639,7 @@ if (shouldInitPreferencesWatchers) {
                       show_non_special_tasks: preferencesState.showNonSpecialTasks,
                       show_lightkeeper_tasks: preferencesState.showLightkeeperTasks,
                       show_required_labels: preferencesState.showRequiredLabels,
-                      show_not_required_labels: preferencesState.showNotRequiredLabels,
                       show_experience_rewards: preferencesState.showExperienceRewards,
-                      show_task_ids: preferencesState.showTaskIds,
                       show_next_quests: preferencesState.showNextQuests,
                       show_previous_quests: preferencesState.showPreviousQuests,
                       task_card_density: preferencesState.taskCardDensity,

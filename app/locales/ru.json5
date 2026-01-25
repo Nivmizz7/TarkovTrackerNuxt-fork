@@ -1,6 +1,14 @@
 {
   // This file supports JSON5 notation. See https://json5.org/
   site_name: 'Tarkov Tracker',
+  route: {
+    index: {
+      title: 'Приборная панель',
+    },
+    neededItems: {
+      title: 'Необходимые предметы',
+    },
+  },
   app_bar: {
     overflow_menu: {
       language: 'Язык',
@@ -8,9 +16,6 @@
   },
   common: {
     refreshbutton: 'Попробовать снова',
-  },
-  menu: {
-    language: 'Язык',
   },
   maps: {
     zoom: 'Масштаб',
@@ -199,7 +204,6 @@
         markfailedconfirm: 'Отметить это задание как проваленное? Это только для проблем с данными, не рекомендуется и может заблокировать цепочки заданий.',
         failedbecause: 'Failed because',
         failedbecauseunknown: 'Failed manually or data missing',
-        nonkappa: 'Не требуются для Каппа',
         keysneeded: '{keys} нужны на {map} | Один из {keys} нужен на {map}',
         objectiveshidden: '{count} целей не на этой карте ({uncompleted} не завершено)',
         alternatives: 'Альтернативные задания',
@@ -212,28 +216,28 @@
       scrollToMap: 'Прокрутить к карте',
       scrollToTop: 'Наверх',
     },
-    traders: {
-      title: 'Торговцы',
-    },
     hideout: {
       title: 'Убежище',
       loading: 'Загружаем данные об убежище',
-      nostationsfound: 'No stations found. Try changing your filters.',
+      nostationsfound: 'Станции не найдены. Попробуйте изменить фильтры.',
+      collapsecompleted: 'Свернуть завершённые станции',
       primaryviews: {
-        all: 'All',
-        locked: 'Locked',
-        available: 'Available',
-        maxed: 'Maxed',
+        all: 'Все',
+        locked: 'Заблокировано',
+        available: 'Доступно',
+        maxed: 'Максимум',
       },
       stationcard: {
         level: 'Доступно к постройке | Уровень {count} | Уровень {count}',
+        levelnotready: 'Ещё не готово к постройке',
         nextlevel: 'Требования для следующего уровня',
         maxlevel: 'Достигнут максимальный уровень станции',
-        upgradeunavailable: 'Upgrade unavailable',
+        upgradeunavailable: 'Улучшение недоступно',
+        prerequisites: 'Предварительные требования',
         requirements: {
-          station: 'Требуется {stationname} уровня {level}',
-          skill: 'Требуется {skillname} уровня {level}',
-          trader: 'Требуется {tradername} уровень лояльности {loyaltylevel}',
+          station: '{stationname} ур. {level}',
+          skill: '{skillname} ур. {level}',
+          trader: '{tradername} LL{loyaltylevel}',
         },
         gameeditiondescription: 'Базовый уровень тайника определяется изданием игры, которым вы владеете. Вы можете изменить это в настройках трекера.',
         settingsbutton: 'Перейти в Настройки',
@@ -242,9 +246,6 @@
         statusupgraded: '{name} улучшено до {level} уровня',
         statusdowngraded: '{name} понижено с {level} уровня',
       },
-    },
-    items: {
-      title: 'Необходимые предметы',
     },
     neededitems: {
       title: 'Необходимые предметы',
@@ -282,22 +283,8 @@
         items_show_non_fir: 'Показать необходимые предметы которые не должны быть найдены в рейде',
       },
     },
-    api: {
-      title: 'Документация API',
-      description: 'Получайте доступ к данным Tarkov Tracker программно.',
-      note: 'Для аутентификации требуются API-токены.',
-      tokens_moved_title: 'API-токены теперь в разделе Настройки',
-      tokens_moved_description: 'Создавайте и отзывайте токены в Настройки → API Tokens. Эта страница остается для документации.',
-      tokens_moved_action: 'Открыть настройки',
-      endpoints: {
-        title: 'Доступные эндпоинты',
-        data: {
-          description: 'Получите ваши данные прогресса в игре.',
-        },
-      },
-      usage: {
-        title: 'Примеры использования',
-      },
+    needed_items: {
+      title: 'Необходимые предметы',
     },
     settings: {
       title: 'Настройки',
@@ -501,12 +488,6 @@
     contributors: 'Участники',
     changelog: 'История изменений',
   },
-  module: {
-    team_settings: {
-      title: 'Настройки Команды',
-      description: 'Установите настройки команды.',
-    },
-  },
   navigation_drawer: {
     home: 'Главная',
     api: 'API',
@@ -517,7 +498,6 @@
     tasks: 'Задания',
     hideout: 'Убежище',
     neededitems: 'Необходимые предметы',
-    traders: 'Торговцы',
     tarkovdev: 'Tarkov.dev',
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
@@ -643,5 +623,4 @@
     error: 'Ошибка',
   },
   'task.kappa_req': 'Требуется для Каппа',
-  'task.level_req': 'Требуемый уровень: {level}',
 }

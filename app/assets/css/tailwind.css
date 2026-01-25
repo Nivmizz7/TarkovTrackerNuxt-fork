@@ -34,18 +34,18 @@ html.no-smooth-scroll {
   --color-primary-800: hsl(32 42% 24%);
   --color-primary-900: hsl(30 35% 16%);
   --color-primary-950: hsl(28 30% 10%);
-  /* Secondary (brand dark) */
-  --color-secondary-50: hsl(222 33.3% 92.4%);
-  --color-secondary-100: hsl(221 31.6% 84.5%);
-  --color-secondary-200: hsl(224 23.9% 69.6%);
-  --color-secondary-300: hsl(224 21.2% 54.7%);
-  --color-secondary-400: hsl(222 26.2% 40.4%);
-  --color-secondary-500: hsl(215 50% 22.7%);
-  --color-secondary-600: hsl(216 51% 19.2%);
-  --color-secondary-700: hsl(217 52.5% 15.7%);
-  --color-secondary-800: hsl(217 56.7% 11.8%);
-  --color-secondary-900: hsl(218 62.8% 8.4%);
-  --color-secondary-950: hsl(217 64.3% 5.5%);
+  /* Secondary (muted cyan/teal - general UI accent) */
+  --color-secondary-50: hsl(185 50% 96%);
+  --color-secondary-100: hsl(185 50% 90%);
+  --color-secondary-200: hsl(185 50% 78%);
+  --color-secondary-300: hsl(185 50% 65%);
+  --color-secondary-400: hsl(185 50% 50%);
+  --color-secondary-500: hsl(185 50% 40%);
+  --color-secondary-600: hsl(185 50% 34%);
+  --color-secondary-700: hsl(185 50% 28%);
+  --color-secondary-800: hsl(185 50% 22%);
+  --color-secondary-900: hsl(185 50% 16%);
+  --color-secondary-950: hsl(185 50% 10%);
   /* Brand aliases — keep a single source of truth (primary) */
   --color-brand-50: var(--color-primary-50);
   --color-brand-100: var(--color-primary-100);
@@ -70,20 +70,20 @@ html.no-smooth-scroll {
   --color-accent-800: hsl(190 34% 15%);
   --color-accent-900: hsl(192 38% 11%);
   --color-accent-950: hsl(192 42% 8%);
-  /* Surface ladder: neutral dark with proper elevation steps */
-  /* bg(950) 12% → chrome(900) 17% → content(850) 22% → raised(800) 27% → state(700) 33% */
-  --color-surface-50: hsl(220 4% 92%);
-  --color-surface-100: hsl(220 4% 85%);
-  --color-surface-200: hsl(220 3% 74%);
-  --color-surface-300: hsl(220 3% 62%);
-  --color-surface-400: hsl(220 2% 50%);
-  --color-surface-500: hsl(220 2% 55%);
-  --color-surface-600: hsl(220 3% 45%); /* Borders/dividers */
-  --color-surface-700: hsl(220 3% 33%); /* State fallback */
-  --color-surface-800: hsl(220 3% 27%); /* Raised/interactive */
-  --color-surface-850: hsl(220 4% 22%); /* Content surfaces */
-  --color-surface-900: hsl(220 4% 17%); /* Shell chrome */
-  --color-surface-950: hsl(220 5% 12%); /* Page canvas */
+  /* Surface ladder: Tailwind Neutral (pure gray, no tint) */
+  /* bg(950) → chrome(900) → content(850) → raised(800) → state(700) */
+  --color-surface-50: hsl(0 0% 98%);
+  --color-surface-100: hsl(0 0% 96%);
+  --color-surface-200: hsl(0 0% 90%);
+  --color-surface-300: hsl(0 0% 83%);
+  --color-surface-400: hsl(0 0% 64%);
+  --color-surface-500: hsl(0 0% 45%);
+  --color-surface-600: hsl(0 0% 32%); /* Borders/dividers */
+  --color-surface-700: hsl(0 0% 25%); /* State fallback */
+  --color-surface-800: hsl(0 0% 15%); /* Raised/interactive */
+  --color-surface-850: hsl(0 0% 12%); /* Content surfaces */
+  --color-surface-900: hsl(0 0% 9%); /* Shell chrome */
+  --color-surface-950: hsl(0 0% 4%); /* Page canvas */
   /* State overlay tokens */
   --state-hover: rgba(255, 255, 255, 0.05);
   --state-pressed: rgba(255, 255, 255, 0.08);
@@ -128,30 +128,37 @@ html.no-smooth-scroll {
   --color-success-800: hsl(158 64% 22%);
   --color-success-900: hsl(158 60% 15%);
   --color-success-950: hsl(158 55% 9%);
-  /* Warning (brass) */
-  --color-warning-50: hsl(38 70% 96%);
-  --color-warning-100: hsl(38 70% 90%);
-  --color-warning-200: hsl(38 70% 80%);
-  --color-warning-300: hsl(38 70% 68%);
-  --color-warning-400: hsl(38 70% 56%);
-  --color-warning-500: hsl(38 70% 45%);
-  --color-warning-600: hsl(38 70% 38%);
-  --color-warning-700: hsl(38 70% 30%);
-  --color-warning-800: hsl(38 70% 24%);
-  --color-warning-900: hsl(38 70% 18%);
-  --color-warning-950: hsl(38 70% 12%);
-  /* Info (vibrant blue) */
-  --color-info-50: hsl(205 70% 96%);
-  --color-info-100: hsl(205 65% 90%);
-  --color-info-200: hsl(205 60% 80%);
-  --color-info-300: hsl(205 55% 68%);
-  --color-info-400: hsl(205 55% 55%);
-  --color-info-500: hsl(205 60% 45%);
-  --color-info-600: hsl(205 65% 38%);
-  --color-info-700: hsl(205 60% 30%);
-  --color-info-800: hsl(205 55% 24%);
-  --color-info-900: hsl(205 50% 18%);
-  --color-info-950: hsl(205 45% 12%);
+  /* Completed state (muted olive-green, military/tactical feel) */
+  /* Low saturation, yellow-gray bias, near-background luminance */
+  --color-completed-400: hsl(95 18% 42%);
+  --color-completed-600: hsl(95 15% 28%);
+  --color-completed-800: hsl(95 12% 18%);
+  --color-completed-900: hsl(95 10% 12%);
+  --color-completed-950: hsl(95 8% 8%);
+  /* Warning (amber) */
+  --color-warning-50: hsl(45 80% 96%);
+  --color-warning-100: hsl(45 80% 90%);
+  --color-warning-200: hsl(45 80% 80%);
+  --color-warning-300: hsl(45 80% 68%);
+  --color-warning-400: hsl(45 80% 56%);
+  --color-warning-500: hsl(45 80% 45%);
+  --color-warning-600: hsl(45 80% 38%);
+  --color-warning-700: hsl(45 80% 30%);
+  --color-warning-800: hsl(45 80% 24%);
+  --color-warning-900: hsl(45 80% 18%);
+  --color-warning-950: hsl(45 80% 12%);
+  /* Info (blue) */
+  --color-info-50: hsl(205 75% 96%);
+  --color-info-100: hsl(205 75% 90%);
+  --color-info-200: hsl(205 70% 80%);
+  --color-info-300: hsl(205 70% 68%);
+  --color-info-400: hsl(205 70% 55%);
+  --color-info-500: hsl(205 70% 45%);
+  --color-info-600: hsl(205 70% 38%);
+  --color-info-700: hsl(205 70% 30%);
+  --color-info-800: hsl(205 65% 24%);
+  --color-info-900: hsl(205 60% 18%);
+  --color-info-950: hsl(205 55% 12%);
   /* Error (muted red) */
   --color-error-50: hsl(0 55% 96%);
   --color-error-100: hsl(0 55% 90%);
@@ -335,17 +342,17 @@ html.no-smooth-scroll {
     --color-primary-800: oklch(0.395258 0.025655 78.78);
     --color-primary-900: oklch(0.291603 0.010623 73.5);
     --color-primary-950: oklch(0.209826 0.008289 84.59);
-    --color-secondary-50: oklch(0.933589 0.01289 266.7);
-    --color-secondary-100: oklch(0.865894 0.025072 265.57);
-    --color-secondary-200: oklch(0.735887 0.040669 269.31);
-    --color-secondary-300: oklch(0.602803 0.057139 269.2);
-    --color-secondary-400: oklch(0.477669 0.064863 266.44);
-    --color-secondary-500: oklch(0.327642 0.067796 257.27);
-    --color-secondary-600: oklch(0.292776 0.060937 258.3);
-    --color-secondary-700: oklch(0.256853 0.053894 259.68);
-    --color-secondary-800: oklch(0.218257 0.045393 259.58);
-    --color-secondary-900: oklch(0.182933 0.038192 260.22);
-    --color-secondary-950: oklch(0.152955 0.026875 256.54);
+    --color-secondary-50: oklch(0.96 0.02 195);
+    --color-secondary-100: oklch(0.91 0.04 195);
+    --color-secondary-200: oklch(0.82 0.06 195);
+    --color-secondary-300: oklch(0.72 0.08 195);
+    --color-secondary-400: oklch(0.6 0.09 195);
+    --color-secondary-500: oklch(0.52 0.08 195);
+    --color-secondary-600: oklch(0.46 0.07 195);
+    --color-secondary-700: oklch(0.4 0.06 195);
+    --color-secondary-800: oklch(0.34 0.05 195);
+    --color-secondary-900: oklch(0.28 0.04 195);
+    --color-secondary-950: oklch(0.22 0.03 195);
     --color-brand-50: var(--color-primary-50);
     --color-brand-100: var(--color-primary-100);
     --color-brand-200: var(--color-primary-200);
@@ -359,18 +366,18 @@ html.no-smooth-scroll {
     --color-brand-950: var(--color-primary-950);
     /* Accent: fall back to HSL values when OKLCH is unsupported; no override needed */
     /* Surface ladder (OKLCH) - proper elevation steps */
-    --color-surface-50: oklch(0.93 0.003 250);
-    --color-surface-100: oklch(0.87 0.003 250);
-    --color-surface-200: oklch(0.77 0.003 250);
-    --color-surface-300: oklch(0.67 0.003 250);
-    --color-surface-400: oklch(0.55 0.002 250);
-    --color-surface-500: oklch(0.6 0.003 250);
-    --color-surface-600: oklch(0.51 0.004 250); /* Borders */
-    --color-surface-700: oklch(0.39 0.004 250); /* State fallback */
-    --color-surface-800: oklch(0.33 0.005 250); /* Raised/interactive */
-    --color-surface-850: oklch(0.28 0.005 250); /* Content surfaces */
-    --color-surface-900: oklch(0.23 0.005 250); /* Shell chrome */
-    --color-surface-950: oklch(0.18 0.006 250); /* Page canvas */
+    --color-surface-50: oklch(0.985 0 0);
+    --color-surface-100: oklch(0.97 0 0);
+    --color-surface-200: oklch(0.92 0 0);
+    --color-surface-300: oklch(0.87 0 0);
+    --color-surface-400: oklch(0.71 0 0);
+    --color-surface-500: oklch(0.55 0 0);
+    --color-surface-600: oklch(0.44 0 0); /* Borders */
+    --color-surface-700: oklch(0.37 0 0); /* State fallback */
+    --color-surface-800: oklch(0.27 0 0); /* Raised/interactive */
+    --color-surface-850: oklch(0.23 0 0); /* Content surfaces */
+    --color-surface-900: oklch(0.2 0 0); /* Shell chrome */
+    --color-surface-950: oklch(0.14 0 0); /* Page canvas */
     --color-pvp-50: oklch(0.994254 0.002849 84.56);
     --color-pvp-100: oklch(0.97706 0.007366 80.72);
     --color-pvp-200: oklch(0.951577 0.016465 79.35);
@@ -404,28 +411,33 @@ html.no-smooth-scroll {
     --color-success-800: oklch(0.38 0.09 165);
     --color-success-900: oklch(0.3 0.07 165);
     --color-success-950: oklch(0.22 0.05 165);
-    --color-warning-50: oklch(0.979842 0.040424 33.79);
-    --color-warning-100: oklch(0.944928 0.055242 37.88);
-    --color-warning-200: oklch(0.887426 0.079061 41.27);
-    --color-warning-300: oklch(0.820109 0.104811 42.82);
-    --color-warning-400: oklch(0.75555 0.12541 42.25);
-    --color-warning-500: oklch(0.670516 0.122589 41.08);
-    --color-warning-600: oklch(0.592808 0.107501 41.21);
-    --color-warning-700: oklch(0.500742 0.089554 41.43);
-    --color-warning-800: oklch(0.428854 0.075456 41.65);
-    --color-warning-900: oklch(0.353835 0.060612 41.96);
-    --color-warning-950: oklch(0.274647 0.044681 42.41);
-    --color-info-50: oklch(0.965806 0.023152 28.92);
-    --color-info-100: oklch(0.928108 0.01565 28.97);
-    --color-info-200: oklch(0.851923 0.000264 30.84);
-    --color-info-300: oklch(0.759139 0.018897 209.18);
-    --color-info-400: oklch(0.665045 0.038728 209.45);
-    --color-info-500: oklch(0.572461 0.044586 209.64);
-    --color-info-600: oklch(0.507634 0.038566 209.62);
-    --color-info-700: oklch(0.430898 0.031386 209.59);
-    --color-info-800: oklch(0.371053 0.025729 209.55);
-    --color-info-900: oklch(0.308695 0.019754 209.5);
-    --color-info-950: oklch(0.243027 0.013319 209.42);
+    --color-completed-400: oklch(0.52 0.04 130);
+    --color-completed-600: oklch(0.38 0.03 130);
+    --color-completed-800: oklch(0.28 0.02 130);
+    --color-completed-900: oklch(0.22 0.015 130);
+    --color-completed-950: oklch(0.18 0.01 130);
+    --color-warning-50: oklch(0.98 0.04 90);
+    --color-warning-100: oklch(0.94 0.06 90);
+    --color-warning-200: oklch(0.88 0.1 90);
+    --color-warning-300: oklch(0.82 0.13 90);
+    --color-warning-400: oklch(0.76 0.15 90);
+    --color-warning-500: oklch(0.68 0.15 90);
+    --color-warning-600: oklch(0.6 0.13 90);
+    --color-warning-700: oklch(0.5 0.11 90);
+    --color-warning-800: oklch(0.43 0.09 90);
+    --color-warning-900: oklch(0.36 0.07 90);
+    --color-warning-950: oklch(0.28 0.05 90);
+    --color-info-50: oklch(0.97 0.03 240);
+    --color-info-100: oklch(0.92 0.05 240);
+    --color-info-200: oklch(0.84 0.08 240);
+    --color-info-300: oklch(0.74 0.11 240);
+    --color-info-400: oklch(0.64 0.13 240);
+    --color-info-500: oklch(0.56 0.12 240);
+    --color-info-600: oklch(0.5 0.1 240);
+    --color-info-700: oklch(0.42 0.08 240);
+    --color-info-800: oklch(0.36 0.07 240);
+    --color-info-900: oklch(0.3 0.05 240);
+    --color-info-950: oklch(0.24 0.04 240);
     --color-error-50: oklch(0.964457 0.039644 24.35);
     --color-error-100: oklch(0.906354 0.054454 20.44);
     --color-error-200: oklch(0.810351 0.082005 17.29);
@@ -534,9 +546,8 @@ html.no-smooth-scroll {
     border: 1px solid var(--color-surface-700);
     border-radius: var(--radius-lg);
   }
-  /* Card: content surfaces */
+  /* Card: content surfaces (background handled by component) */
   .card {
-    background-color: var(--color-surface-850);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
     box-shadow:
@@ -614,49 +625,29 @@ html.no-smooth-scroll {
 /* Text colors now use warm surface tokens (see @theme --color-surface-*) */
 
 /* USelectMenu: Force entire component width to match widest dropdown option */
-[data-combobox-root] {
-  width: max-content !important;
-  min-width: 100% !important;
-}
-
-[data-combobox-anchor] {
-  width: 100% !important;
-}
-
-[data-combobox-trigger] {
-  width: 100% !important;
-}
-
-[data-combobox-trigger] [data-slot='content'] {
-  text-align: left;
-  white-space: nowrap;
-}
-
-/* Force dropdown content to never truncate options */
-[data-combobox-content] {
+[id^='reka-combobox-content'] {
   width: max-content !important;
   min-width: 100% !important;
   max-width: none !important;
 }
 
-[data-combobox-viewport] {
+[id^='reka-combobox-content'] [data-slot='viewport'] {
   width: max-content !important;
   min-width: 100% !important;
   max-width: none !important;
   overflow-x: visible !important;
 }
 
-[data-combobox-group] {
+[id^='reka-combobox-content'] [data-slot='group'] {
   width: max-content !important;
   min-width: 100% !important;
 }
 
-[data-slot='item'],
-[data-combobox-item] {
+[id^='reka-combobox-content'] [data-slot='item'] {
   white-space: nowrap !important;
 }
 
-[data-slot='itemLabel'] {
+[id^='reka-combobox-content'] [data-slot='itemLabel'] {
   white-space: nowrap !important;
   display: inline-block !important;
 }
