@@ -123,6 +123,7 @@
   import type { Task, TaskObjective } from '@/types/tarkov';
   import { debounce, isDebounceRejection } from '@/utils/debounce';
   import { logger } from '@/utils/logger';
+  import { splitSearchTokens } from '@/utils/search';
   // Route meta for layout behavior
   definePageMeta({
     usesWindowScroll: true,
@@ -503,7 +504,7 @@
       logger.error('[Tasks] Debounced search update failed:', error);
     });
   });
-  const normalizedSearch = computed(() => debouncedSearch.value.toLowerCase().trim());
+  const searchTokens = computed(() => splitSearchTokens(debouncedSearch.value));
   // Cache lowercase task names to avoid repeated toLowerCase() calls in filter
   type TaskWithLowerName = Task & { _lowerName: string };
   const tasksWithLowerName = computed((): TaskWithLowerName[] => {
@@ -512,13 +513,15 @@
       _lowerName: (task.name ?? '').toLowerCase(),
     }));
   });
-  // Filter tasks by search query
+  // Filter tasks by search query - all tokens must be present in the task name
   const filteredTasks = computed((): Task[] => {
-    if (!normalizedSearch.value) {
+    const tokens = searchTokens.value;
+    if (tokens.length === 0) {
       return visibleTasks.value;
     }
-    const query = normalizedSearch.value;
-    return tasksWithLowerName.value.filter((task) => task._lowerName.includes(query)) as Task[];
+    return tasksWithLowerName.value.filter((task) =>
+      tokens.every((token) => task._lowerName.includes(token))
+    ) as Task[];
   });
   const pinnedTaskId = ref<string | null>(null);
   const pinnedTaskTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
