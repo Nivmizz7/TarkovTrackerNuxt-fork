@@ -100,7 +100,7 @@
         <div
           class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-(--color-accent-primary)"
         ></div>
-        <p class="mt-4 text-(--color-text-secondary)">Loading...</p>
+        <p class="mt-4 text-text-secondary">Loading...</p>
       </div>
       <div
         v-else-if="error"
@@ -110,7 +110,7 @@
       </div>
       <div v-else-if="details">
         <div class="mb-6">
-          <p class="mb-4 text-(--color-text-secondary)">
+          <p class="mb-4 text-text-secondary">
             <strong class="text-(--color-text-primary)">
               {{ details.client?.name || 'Unknown Application' }}
             </strong>
@@ -122,7 +122,7 @@
               <li
                 v-for="scope in details.scope?.split(' ') || []"
                 :key="scope"
-                class="text-sm text-(--color-text-secondary)"
+                class="text-sm text-text-secondary"
               >
                 {{ scope }}
               </li>
