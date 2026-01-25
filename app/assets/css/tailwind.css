@@ -1,6 +1,5 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
-@import 'leaflet/dist/leaflet.css';
 /* Smooth scrolling for hash anchor navigation */
 html {
   scroll-behavior: smooth;
@@ -10,23 +9,31 @@ html.no-smooth-scroll {
   scroll-behavior: auto;
 }
 /* Tailwind v4 + Nuxt UI v4 theme tokens */
-@theme {
-  --font-sans: 'Share Tech Mono', ui-sans-serif, system-ui, sans-serif;
-  --font-mono:
-    'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+@theme static {
+  --font-sans:
+    'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
     'Courier New', monospace;
-  /* Primary (brand tan) */
-  --color-primary-50: hsl(42 31.3% 93.7%);
-  --color-primary-100: hsl(39 28.8% 88.4%);
-  --color-primary-200: hsl(40 27.7% 76.7%);
-  --color-primary-300: hsl(40 28.1% 65.1%);
-  --color-primary-400: hsl(40 28% 53.1%);
-  --color-primary-500: hsl(39 20.5% 50.2%);
-  --color-primary-600: hsl(38 20.7% 45.5%);
-  --color-primary-700: hsl(38 21.1% 35.3%);
-  --color-primary-800: hsl(37 17.3% 26.1%);
-  --color-primary-900: hsl(33 10.6% 16.7%);
-  --color-primary-950: hsl(40 13% 9%);
+  --font-display:
+    'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  --font-mono:
+    'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 4px;
+  /* Primary (brand tan) - warmer, more saturated */
+  --color-primary-50: hsl(40 45% 95%);
+  --color-primary-100: hsl(39 42% 88%);
+  --color-primary-200: hsl(38 40% 76%);
+  --color-primary-300: hsl(37 42% 64%);
+  --color-primary-400: hsl(36 45% 52%);
+  --color-primary-500: hsl(35 48% 46%);
+  --color-primary-600: hsl(34 50% 40%);
+  --color-primary-700: hsl(33 48% 32%);
+  --color-primary-800: hsl(32 42% 24%);
+  --color-primary-900: hsl(30 35% 16%);
+  --color-primary-950: hsl(28 30% 10%);
   /* Secondary (brand dark) */
   --color-secondary-50: hsl(222 33.3% 92.4%);
   --color-secondary-100: hsl(221 31.6% 84.5%);
@@ -63,18 +70,28 @@ html.no-smooth-scroll {
   --color-accent-800: hsl(190 34% 15%);
   --color-accent-900: hsl(192 38% 11%);
   --color-accent-950: hsl(192 42% 8%);
-  /* Surface = neutral grays */
-  --color-surface-50: hsl(0 0% 97.3%);
-  --color-surface-100: hsl(240 2.4% 92%);
-  --color-surface-200: hsl(240 2.4% 83.5%);
-  --color-surface-300: hsl(240 5% 64.9%);
-  --color-surface-400: hsl(240 3.8% 46.1%);
-  --color-surface-500: hsl(240 5.2% 33.9%);
-  --color-surface-600: hsl(240 5.3% 26.1%);
-  --color-surface-700: hsl(240 5.1% 19.4%);
-  --color-surface-800: hsl(240 5.1% 11.6%);
-  --color-surface-900: hsl(0 0% 7.1%);
-  --color-surface-950: hsl(60 5.3% 3.7%);
+  /* Surface ladder: neutral dark with proper elevation steps */
+  /* bg(950) 12% → chrome(900) 17% → content(850) 22% → raised(800) 27% → state(700) 33% */
+  --color-surface-50: hsl(220 4% 92%);
+  --color-surface-100: hsl(220 4% 85%);
+  --color-surface-200: hsl(220 3% 74%);
+  --color-surface-300: hsl(220 3% 62%);
+  --color-surface-400: hsl(220 2% 50%);
+  --color-surface-500: hsl(220 2% 55%);
+  --color-surface-600: hsl(220 3% 45%); /* Borders/dividers */
+  --color-surface-700: hsl(220 3% 33%); /* State fallback */
+  --color-surface-800: hsl(220 3% 27%); /* Raised/interactive */
+  --color-surface-850: hsl(220 4% 22%); /* Content surfaces */
+  --color-surface-900: hsl(220 4% 17%); /* Shell chrome */
+  --color-surface-950: hsl(220 5% 12%); /* Page canvas */
+  /* State overlay tokens */
+  --state-hover: rgba(255, 255, 255, 0.05);
+  --state-pressed: rgba(255, 255, 255, 0.08);
+  --state-selected: rgba(198, 145, 89, 0.12);
+  /* Border tokens */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.15);
   /* PvP (in-game tan) */
   --color-pvp-50: hsl(40 60% 99%);
   --color-pvp-100: hsl(38 44.4% 96.5%);
@@ -99,54 +116,105 @@ html.no-smooth-scroll {
   --color-pve-800: hsl(199 32.4% 27.3%);
   --color-pve-900: hsl(201 32% 19.6%);
   --color-pve-950: hsl(201 31.2% 12.5%);
-  /* Success (green) */
-  --color-success-50: hsl(150 42.9% 94.5%);
-  --color-success-100: hsl(150 42.9% 89%);
-  --color-success-200: hsl(149 42.3% 78.2%);
-  --color-success-300: hsl(150 42.5% 67.3%);
-  --color-success-400: hsl(149 43% 56.7%);
-  --color-success-500: hsl(150 59.2% 41.4%);
-  --color-success-600: hsl(150 59.3% 33.7%);
-  --color-success-700: hsl(151 59.4% 26.1%);
-  --color-success-800: hsl(152 59.6% 18.4%);
-  --color-success-900: hsl(155 60% 10.8%);
-  --color-success-950: hsl(152 58.6% 5.7%);
-  /* Warning (amber) */
-  --color-warning-50: hsl(39 100% 96.1%);
-  --color-warning-100: hsl(38 96.1% 90%);
-  --color-warning-200: hsl(38 96.2% 79.4%);
-  --color-warning-300: hsl(37 95% 68.4%);
-  --color-warning-400: hsl(33 93.1% 60.4%);
-  --color-warning-500: hsl(38 92.1% 50.2%);
-  --color-warning-600: hsl(32 94.6% 43.7%);
-  --color-warning-700: hsl(26 90.5% 37.1%);
-  --color-warning-800: hsl(23 82.5% 31.4%);
-  --color-warning-900: hsl(22 77.8% 26.5%);
-  --color-warning-950: hsl(21 91.7% 14.1%);
-  /* Error (rose) */
-  --color-error-50: hsl(356 100% 97.3%);
-  --color-error-100: hsl(356 100% 94.7%);
-  --color-error-200: hsl(353 96.1% 90%);
-  --color-error-300: hsl(353 95.7% 81.8%);
-  --color-error-400: hsl(351 94.5% 71.4%);
-  --color-error-500: hsl(0 84.2% 60.2%);
-  --color-error-600: hsl(0 72.2% 50.6%);
-  --color-error-700: hsl(0 73.7% 41.8%);
-  --color-error-800: hsl(0 70% 35.3%);
-  --color-error-900: hsl(0 62.8% 30.6%);
-  --color-error-950: hsl(0 74.7% 15.5%);
-  /* Selection (violet) - used for highlights, pinned states, focus rings */
-  --color-selection-50: hsl(270 100% 98%);
-  --color-selection-100: hsl(269 100% 95%);
-  --color-selection-200: hsl(269 100% 92%);
-  --color-selection-300: hsl(269 97% 85%);
-  --color-selection-400: hsl(270 95% 75%);
-  --color-selection-500: hsl(262 83% 58%);
-  --color-selection-600: hsl(262 83% 50%);
-  --color-selection-700: hsl(263 70% 42%);
-  --color-selection-800: hsl(263 69% 35%);
-  --color-selection-900: hsl(264 67% 29%);
-  --color-selection-950: hsl(261 73% 19%);
+  /* Success (vibrant teal-green matching COMPLETE button) */
+  --color-success-50: hsl(158 60% 96%);
+  --color-success-100: hsl(158 58% 88%);
+  --color-success-200: hsl(158 56% 75%);
+  --color-success-300: hsl(158 60% 62%);
+  --color-success-400: hsl(158 64% 52%);
+  --color-success-500: hsl(158 68% 42%);
+  --color-success-600: hsl(158 70% 36%);
+  --color-success-700: hsl(158 68% 28%);
+  --color-success-800: hsl(158 64% 22%);
+  --color-success-900: hsl(158 60% 15%);
+  --color-success-950: hsl(158 55% 9%);
+  /* Warning (brass) */
+  --color-warning-50: hsl(38 70% 96%);
+  --color-warning-100: hsl(38 70% 90%);
+  --color-warning-200: hsl(38 70% 80%);
+  --color-warning-300: hsl(38 70% 68%);
+  --color-warning-400: hsl(38 70% 56%);
+  --color-warning-500: hsl(38 70% 45%);
+  --color-warning-600: hsl(38 70% 38%);
+  --color-warning-700: hsl(38 70% 30%);
+  --color-warning-800: hsl(38 70% 24%);
+  --color-warning-900: hsl(38 70% 18%);
+  --color-warning-950: hsl(38 70% 12%);
+  /* Info (vibrant blue) */
+  --color-info-50: hsl(205 70% 96%);
+  --color-info-100: hsl(205 65% 90%);
+  --color-info-200: hsl(205 60% 80%);
+  --color-info-300: hsl(205 55% 68%);
+  --color-info-400: hsl(205 55% 55%);
+  --color-info-500: hsl(205 60% 45%);
+  --color-info-600: hsl(205 65% 38%);
+  --color-info-700: hsl(205 60% 30%);
+  --color-info-800: hsl(205 55% 24%);
+  --color-info-900: hsl(205 50% 18%);
+  --color-info-950: hsl(205 45% 12%);
+  /* Error (muted red) */
+  --color-error-50: hsl(0 55% 96%);
+  --color-error-100: hsl(0 55% 90%);
+  --color-error-200: hsl(0 55% 80%);
+  --color-error-300: hsl(0 55% 70%);
+  --color-error-400: hsl(0 55% 58%);
+  --color-error-500: hsl(0 55% 45%);
+  --color-error-600: hsl(0 55% 38%);
+  --color-error-700: hsl(0 55% 30%);
+  --color-error-800: hsl(0 55% 24%);
+  --color-error-900: hsl(0 55% 18%);
+  --color-error-950: hsl(0 55% 12%);
+  /* Kappa (vibrant red) */
+  --color-kappa-50: hsl(0 80% 96%);
+  --color-kappa-100: hsl(0 80% 90%);
+  --color-kappa-200: hsl(0 80% 80%);
+  --color-kappa-300: hsl(0 80% 70%);
+  --color-kappa-400: hsl(0 80% 60%);
+  --color-kappa-500: hsl(0 80% 50%);
+  --color-kappa-600: hsl(0 80% 42%);
+  --color-kappa-700: hsl(0 80% 34%);
+  --color-kappa-800: hsl(0 80% 26%);
+  --color-kappa-900: hsl(0 80% 18%);
+  --color-kappa-950: hsl(0 80% 10%);
+  /* Lightkeeper (gold/yellow) */
+  --color-lightkeeper-50: hsl(45 90% 96%);
+  --color-lightkeeper-100: hsl(45 90% 88%);
+  --color-lightkeeper-200: hsl(45 90% 76%);
+  --color-lightkeeper-300: hsl(45 90% 64%);
+  --color-lightkeeper-400: hsl(45 90% 54%);
+  --color-lightkeeper-500: hsl(45 90% 48%);
+  --color-lightkeeper-600: hsl(45 90% 40%);
+  --color-lightkeeper-700: hsl(45 90% 32%);
+  --color-lightkeeper-800: hsl(45 90% 24%);
+  --color-lightkeeper-900: hsl(45 90% 16%);
+  --color-lightkeeper-950: hsl(45 90% 10%);
+  /* Rarity colors for loot game */
+  --color-rarity-common-100: hsl(0 0% 90%);
+  --color-rarity-common-200: hsl(0 0% 82%);
+  --color-rarity-common-400: hsl(0 0% 62%);
+  --color-rarity-uncommon-100: hsl(208 60% 88%);
+  --color-rarity-uncommon-400: hsl(208 60% 60%);
+  --color-rarity-rare-100: hsl(270 65% 88%);
+  --color-rarity-rare-400: hsl(270 65% 60%);
+  --color-rarity-epic-100: hsl(270 65% 88%);
+  --color-rarity-epic-400: hsl(270 65% 60%);
+  --color-rarity-legendary-100: hsl(45 70% 88%);
+  --color-rarity-legendary-400: hsl(45 70% 56%);
+  /* Extract marker colors */
+  --color-extract-pmc: hsl(0 75% 55%);
+  --color-extract-scav: hsl(25 75% 55%);
+  --color-extract-shared-primary: hsl(45 75% 55%);
+  --color-extract-shared-secondary: hsl(195 65% 55%);
+  --color-extract-shared-coop: hsl(195 65% 40%);
+  /* Twitch brand color */
+  --color-twitch: hsl(264 100% 64%);
+  --color-twitch-hover: hsl(264 100% 70%);
+  /* Discord brand color (#5865F2) */
+  --color-discord: hsl(235 86% 65%);
+  --color-discord-hover: hsl(235 86% 72%);
+  /* GitHub brand color */
+  --color-github: hsl(210 12% 20%);
+  --color-github-hover: hsl(210 12% 30%);
   /* Legacy Tailwind aliases mapped to semantic palettes */
   --color-gray-50: var(--color-surface-50);
   --color-gray-100: var(--color-surface-100);
@@ -226,21 +294,32 @@ html.no-smooth-scroll {
   --color-cyan-900: var(--color-secondary-900);
   --color-cyan-950: var(--color-secondary-950);
   /* Custom semantic colors for Tarkov Tracker */
-  --color-complete: #114200;
-  --color-failed: #ffcccc;
-  --color-tasklink: #00acc1;
-  --color-link: #118cf7;
-  --color-enough: #001638;
-  --color-questlink: #f5f5f5;
-  --color-objectiveahead: #193011;
-  --color-objectivecomplete: #114400;
-  --color-objectiveuncomplete: #391111;
-  --color-objectiveenough: #2e455a;
-  --color-chartbase: #ffffff;
-  --color-sitebackground: #0a0a09;
-  --color-contentbackground: #181817;
-  --color-border: #1f1f1f;
-  --color-link: hsl(187 100% 38%);
+  --color-complete: var(--color-success-700);
+  --color-failed: var(--color-error-300);
+  --color-tasklink: var(--color-info-500);
+  --color-link: hsl(208 93% 52%);
+  --color-link-hover: hsl(208 93% 65%);
+  --color-enough: var(--color-info-900);
+  --color-questlink: var(--color-surface-50);
+  --color-objectiveahead: var(--color-success-900);
+  --color-objectivecomplete: var(--color-success-800);
+  --color-objectiveuncomplete: var(--color-error-900);
+  --color-objectiveenough: var(--color-info-800);
+  --color-chartbase: var(--color-surface-50);
+  --color-sitebackground: var(--color-surface-950);
+  --color-contentbackground: var(--color-surface-900);
+  --color-border: var(--color-surface-600);
+  /* Surface ladder: bg(950) → panel(900) → card(800) → hover(700) → border(600) */
+  --color-bg: var(--color-surface-950);
+  --color-panel: var(--color-surface-900);
+  --color-raised: var(--color-surface-800);
+  --color-hover: var(--color-surface-700);
+  --color-divider: var(--color-surface-600);
+  /* Text hierarchy: primary (90%) → secondary (74%) → tertiary (56%) → disabled (38%) */
+  --color-text: #e6e6e6;
+  --color-text-secondary: #b8bcc2;
+  --color-text-muted: #8b919a;
+  --color-text-disabled: #5a5f66;
 }
 /* Modern override: use OKLCH where supported for better perceptual consistency */
 @supports (color: oklch(0 0 0)) {
@@ -279,17 +358,19 @@ html.no-smooth-scroll {
     --color-brand-900: var(--color-primary-900);
     --color-brand-950: var(--color-primary-950);
     /* Accent: fall back to HSL values when OKLCH is unsupported; no override needed */
-    --color-surface-50: oklch(0.979129 0 0);
-    --color-surface-100: oklch(0.937332 0.001336 286.37);
-    --color-surface-200: oklch(0.870523 0.002724 286.34);
-    --color-surface-300: oklch(0.711815 0.012937 286.07);
-    --color-surface-400: oklch(0.551664 0.013808 285.94);
-    --color-surface-500: oklch(0.441861 0.014617 285.79);
-    --color-surface-600: oklch(0.370323 0.01188 285.81);
-    --color-surface-700: oklch(0.307158 0.008887 285.86);
-    --color-surface-800: oklch(0.227713 0.005742 285.93);
-    --color-surface-900: oklch(0.182204 0 0);
-    --color-surface-950: oklch(0.144335 0.002191 106.67);
+    /* Surface ladder (OKLCH) - proper elevation steps */
+    --color-surface-50: oklch(0.93 0.003 250);
+    --color-surface-100: oklch(0.87 0.003 250);
+    --color-surface-200: oklch(0.77 0.003 250);
+    --color-surface-300: oklch(0.67 0.003 250);
+    --color-surface-400: oklch(0.55 0.002 250);
+    --color-surface-500: oklch(0.6 0.003 250);
+    --color-surface-600: oklch(0.51 0.004 250); /* Borders */
+    --color-surface-700: oklch(0.39 0.004 250); /* State fallback */
+    --color-surface-800: oklch(0.33 0.005 250); /* Raised/interactive */
+    --color-surface-850: oklch(0.28 0.005 250); /* Content surfaces */
+    --color-surface-900: oklch(0.23 0.005 250); /* Shell chrome */
+    --color-surface-950: oklch(0.18 0.006 250); /* Page canvas */
     --color-pvp-50: oklch(0.994254 0.002849 84.56);
     --color-pvp-100: oklch(0.97706 0.007366 80.72);
     --color-pvp-200: oklch(0.951577 0.016465 79.35);
@@ -312,79 +393,255 @@ html.no-smooth-scroll {
     --color-pve-800: oklch(0.405769 0.043568 228.42);
     --color-pve-900: oklch(0.324052 0.03313 231.99);
     --color-pve-950: oklch(0.247436 0.022404 232.37);
-    --color-success-50: oklch(0.965519 0.014927 164.73);
-    --color-success-100: oklch(0.931196 0.029926 164.27);
-    --color-success-200: oklch(0.863905 0.059052 162.68);
-    --color-success-300: oklch(0.79743 0.088319 161.44);
-    --color-success-400: oklch(0.736257 0.116315 159.14);
-    --color-success-500: oklch(0.649631 0.141844 156.41);
-    --color-success-600: oklch(0.559979 0.121157 156.43);
-    --color-success-700: oklch(0.46706 0.097494 157.65);
-    --color-success-800: oklch(0.369067 0.07332 159.01);
-    --color-success-900: oklch(0.264206 0.046811 162.19);
-    --color-success-950: oklch(0.186477 0.028937 162.03);
-    --color-warning-50: oklch(0.98104 0.018694 83.06);
-    --color-warning-100: oklch(0.949545 0.045027 81.33);
-    --color-warning-200: oklch(0.899074 0.0909 80.83);
-    --color-warning-300: oklch(0.845249 0.130158 77.76);
-    --color-warning-400: oklch(0.784963 0.150798 67.43);
-    --color-warning-500: oklch(0.76859 0.164659 70.08);
-    --color-warning-600: oklch(0.66584 0.157422 58.32);
-    --color-warning-700: oklch(0.555283 0.145505 49);
-    --color-warning-800: oklch(0.473189 0.124699 46.2);
-    --color-warning-900: oklch(0.413707 0.105365 45.9);
-    --color-warning-950: oklch(0.279124 0.074197 45.64);
-    --color-error-50: oklch(0.96941 0.015168 12.42);
-    --color-error-100: oklch(0.941366 0.029778 12.58);
-    --color-error-200: oklch(0.892447 0.05591 10);
-    --color-error-300: oklch(0.809664 0.106109 11.64);
-    --color-error-400: oklch(0.719186 0.168984 13.43);
-    --color-error-500: oklch(0.636834 0.207849 25.33);
-    --color-error-600: oklch(0.577099 0.215157 27.33);
-    --color-error-700: oklch(0.50542 0.190493 27.52);
-    --color-error-800: oklch(0.443687 0.161321 26.9);
-    --color-error-900: oklch(0.395843 0.133073 25.72);
-    --color-error-950: oklch(0.257518 0.088559 26.04);
+    --color-success-50: oklch(0.97 0.04 165);
+    --color-success-100: oklch(0.92 0.07 165);
+    --color-success-200: oklch(0.84 0.1 165);
+    --color-success-300: oklch(0.74 0.13 165);
+    --color-success-400: oklch(0.66 0.15 165);
+    --color-success-500: oklch(0.58 0.14 165);
+    --color-success-600: oklch(0.52 0.13 165);
+    --color-success-700: oklch(0.44 0.11 165);
+    --color-success-800: oklch(0.38 0.09 165);
+    --color-success-900: oklch(0.3 0.07 165);
+    --color-success-950: oklch(0.22 0.05 165);
+    --color-warning-50: oklch(0.979842 0.040424 33.79);
+    --color-warning-100: oklch(0.944928 0.055242 37.88);
+    --color-warning-200: oklch(0.887426 0.079061 41.27);
+    --color-warning-300: oklch(0.820109 0.104811 42.82);
+    --color-warning-400: oklch(0.75555 0.12541 42.25);
+    --color-warning-500: oklch(0.670516 0.122589 41.08);
+    --color-warning-600: oklch(0.592808 0.107501 41.21);
+    --color-warning-700: oklch(0.500742 0.089554 41.43);
+    --color-warning-800: oklch(0.428854 0.075456 41.65);
+    --color-warning-900: oklch(0.353835 0.060612 41.96);
+    --color-warning-950: oklch(0.274647 0.044681 42.41);
+    --color-info-50: oklch(0.965806 0.023152 28.92);
+    --color-info-100: oklch(0.928108 0.01565 28.97);
+    --color-info-200: oklch(0.851923 0.000264 30.84);
+    --color-info-300: oklch(0.759139 0.018897 209.18);
+    --color-info-400: oklch(0.665045 0.038728 209.45);
+    --color-info-500: oklch(0.572461 0.044586 209.64);
+    --color-info-600: oklch(0.507634 0.038566 209.62);
+    --color-info-700: oklch(0.430898 0.031386 209.59);
+    --color-info-800: oklch(0.371053 0.025729 209.55);
+    --color-info-900: oklch(0.308695 0.019754 209.5);
+    --color-info-950: oklch(0.243027 0.013319 209.42);
+    --color-error-50: oklch(0.964457 0.039644 24.35);
+    --color-error-100: oklch(0.906354 0.054454 20.44);
+    --color-error-200: oklch(0.810351 0.082005 17.29);
+    --color-error-300: oklch(0.717087 0.112933 16.04);
+    --color-error-400: oklch(0.613876 0.1522 15.95);
+    --color-error-500: oklch(0.514643 0.161326 16.46);
+    --color-error-600: oklch(0.456178 0.141018 16.42);
+    --color-error-700: oklch(0.38705 0.116818 16.35);
+    --color-error-800: oklch(0.333236 0.097764 16.27);
+    --color-error-900: oklch(0.27734 0.077642 16.16);
+    --color-error-950: oklch(0.218875 0.055957 15.99);
+    --color-kappa-50: oklch(0.97 0.08 25);
+    --color-kappa-100: oklch(0.92 0.12 25);
+    --color-kappa-200: oklch(0.84 0.16 25);
+    --color-kappa-300: oklch(0.76 0.18 25);
+    --color-kappa-400: oklch(0.68 0.2 25);
+    --color-kappa-500: oklch(0.6 0.22 25);
+    --color-kappa-600: oklch(0.52 0.2 25);
+    --color-kappa-700: oklch(0.44 0.17 25);
+    --color-kappa-800: oklch(0.36 0.14 25);
+    --color-kappa-900: oklch(0.28 0.11 25);
+    --color-kappa-950: oklch(0.2 0.08 25);
+    --color-lightkeeper-50: oklch(0.98 0.06 90);
+    --color-lightkeeper-100: oklch(0.93 0.12 90);
+    --color-lightkeeper-200: oklch(0.86 0.16 90);
+    --color-lightkeeper-300: oklch(0.78 0.18 90);
+    --color-lightkeeper-400: oklch(0.72 0.19 90);
+    --color-lightkeeper-500: oklch(0.68 0.18 90);
+    --color-lightkeeper-600: oklch(0.6 0.16 90);
+    --color-lightkeeper-700: oklch(0.52 0.14 90);
+    --color-lightkeeper-800: oklch(0.44 0.12 90);
+    --color-lightkeeper-900: oklch(0.36 0.1 90);
+    --color-lightkeeper-950: oklch(0.28 0.08 90);
   }
 }
 /* Nuxt UI core tokens mapped to Tarkov Tracker theme */
 :root {
-  --ui-bg: #121212;
-  --ui-bg-muted: #0a0a09;
-  --ui-bg-elevated: #1c1c1f;
-  --ui-bg-accented: #242f35;
+  --ui-bg: var(--color-surface-950);
+  --ui-bg-muted: var(--color-surface-900);
+  --ui-bg-elevated: var(--color-surface-800);
+  --ui-bg-accented: var(--color-surface-700);
   --ui-bg-inverted: #ffffff;
-  --ui-text: #f8f8f8;
-  --ui-text-muted: #a1a1aa;
-  --ui-text-highlighted: #9a8866;
-  --ui-text-dimmed: #71717a;
-  --ui-text-inverted: #f8f8f8;
-  /* Overwrite Nuxt UI defaults that pointed to neutral-700 */
-  --ui-border-accented: var(--color-primary-700);
-  --ui-color-neutral-700: var(--color-primary-700);
-  /* Set Nuxt UI primary token used by dark theme buttons */
-  --ui-primary: hsl(150 60% 40%);
+  /* Text hierarchy: avoid pure white, use warm off-whites */
+  --ui-text: #e6e6e6;
+  --ui-text-muted: #b8bcc2;
+  --ui-text-highlighted: var(--color-primary-400);
+  --ui-text-dimmed: #8b919a;
+  --ui-text-inverted: #ffffff;
+  /* Borders: clear separation */
+  --ui-border: var(--color-surface-600);
+  --ui-border-accented: var(--color-surface-500);
+  --ui-color-neutral-700: var(--color-surface-600);
+  /* Primary accent */
+  --ui-primary: var(--color-primary-500);
 }
-/* Utility: default ring color aligned to brand (darker primary) */
+/* Utility: default ring color aligned to surface (neutral) */
 .ring-default {
-  --tw-ring-color: var(--color-primary-700);
+  --tw-ring-color: var(--color-surface-700);
 }
 /* Utility: force accented ring to brand as well */
 .ring-accented {
   --tw-ring-color: var(--ui-border-accented);
 }
-/* Nav text overrides: replace gray-400 default with pure white at stepped opacities */
-.text-gray-400 {
-  color: rgba(255, 255, 255, 0.6);
+@layer base {
+  #main-content a:not(.btn):not(.button) {
+    @apply text-link transition-colors duration-150;
+  }
+  #main-content a:not(.btn):not(.button):hover {
+    @apply text-link-hover decoration-link-hover;
+  }
 }
-.text-gray-500 {
-  color: rgba(255, 255, 255, 0.7);
+@layer utilities {
+  /* Kappa color utilities */
+  .bg-kappa {
+    background-color: var(--color-kappa-500);
+  }
+  .bg-kappa\/10 {
+    background-color: rgb(from var(--color-kappa-500) r g b / 0.1);
+  }
+  .bg-kappa\/15 {
+    background-color: rgb(from var(--color-kappa-500) r g b / 0.15);
+  }
+  .text-kappa {
+    color: var(--color-kappa-400);
+  }
+  /* Lightkeeper color utilities */
+  .bg-lightkeeper {
+    background-color: var(--color-lightkeeper-500);
+  }
+  .bg-lightkeeper\/10 {
+    background-color: rgb(from var(--color-lightkeeper-500) r g b / 0.1);
+  }
+  .bg-lightkeeper\/15 {
+    background-color: rgb(from var(--color-lightkeeper-500) r g b / 0.15);
+  }
+  .text-lightkeeper {
+    color: var(--color-lightkeeper-400);
+  }
+  /* Background: solid dark base */
+  .bg-military-background {
+    background-color: var(--color-surface-950);
+  }
+  /* Panel: shell-level containers */
+  .panel {
+    background-color: var(--color-surface-900);
+    border: 1px solid var(--color-surface-700);
+    border-radius: var(--radius-lg);
+  }
+  /* Card: content surfaces */
+  .card {
+    background-color: var(--color-surface-850);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.25),
+      0 1px 3px rgba(0, 0, 0, 0.15);
+  }
+  /* Card hover: use state overlay instead of solid color */
+  .card-interactive {
+    transition: all 150ms ease-in-out;
+  }
+  .card-interactive:hover {
+    background-color: color-mix(in srgb, var(--color-surface-850), var(--state-hover));
+    transform: translateY(-1px);
+  }
+  .card-interactive:focus-visible {
+    outline: 2px solid var(--color-surface-600);
+    outline-offset: 2px;
+  }
+  /* Shadow scale for elevation */
+  .shadow-card {
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.25),
+      0 1px 3px rgba(0, 0, 0, 0.15);
+  }
+  .shadow-elevated {
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.35),
+      0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  /* Sidebar: shell chrome (same as appbar) */
+  .bg-sidebar {
+    background-color: var(--color-surface-900);
+  }
+  /* Legacy alias */
+  .bg-military-panel {
+    background-color: var(--color-surface-900);
+  }
 }
-.text-gray-300 {
-  color: rgba(255, 255, 255, 0.8);
+
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .no-spinner::-webkit-inner-spin-button,
+  .no-spinner::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .no-spinner {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
 }
-.text-gray-200 {
-  color: rgba(255, 255, 255, 0.9);
+/* Text colors now use warm surface tokens (see @theme --color-surface-*) */
+
+/* USelectMenu: Force entire component width to match widest dropdown option */
+[data-combobox-root] {
+  width: max-content !important;
+  min-width: 100% !important;
+}
+
+[data-combobox-anchor] {
+  width: 100% !important;
+}
+
+[data-combobox-trigger] {
+  width: 100% !important;
+}
+
+[data-combobox-trigger] [data-slot='content'] {
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* Force dropdown content to never truncate options */
+[data-combobox-content] {
+  width: max-content !important;
+  min-width: 100% !important;
+  max-width: none !important;
+}
+
+[data-combobox-viewport] {
+  width: max-content !important;
+  min-width: 100% !important;
+  max-width: none !important;
+  overflow-x: visible !important;
+}
+
+[data-combobox-group] {
+  width: max-content !important;
+  min-width: 100% !important;
+}
+
+[data-slot='item'],
+[data-combobox-item] {
+  white-space: nowrap !important;
+}
+
+[data-slot='itemLabel'] {
+  white-space: nowrap !important;
+  display: inline-block !important;
 }
 
 /* Restore pointer cursor on interactive elements (reset by Tailwind preflight) */
@@ -422,34 +679,6 @@ summary {
     }
   }
 
-  .scanline {
-    animation: scanline 8s linear infinite;
-  }
-  .glitch-text {
-    position: relative;
-    animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
-  }
-  .glitch-text::before,
-  .glitch-text::after {
-    content: attr(data-text);
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-  }
-  .glitch-text::before {
-    left: 2px;
-    text-shadow: -2px 0 #ff00c1;
-    clip: rect(44px, 450px, 56px, 0);
-    animation: glitch-anim 2s infinite linear alternate-reverse;
-  }
-  .glitch-text::after {
-    left: -2px;
-    text-shadow: -2px 0 #00fff9;
-    clip: rect(44px, 450px, 56px, 0);
-    animation: glitch-anim2 2s infinite linear alternate-reverse;
-  }
   .fade-enter-active,
   .fade-leave-active {
     @apply transition-opacity duration-200 ease-in-out;
@@ -458,153 +687,4 @@ summary {
   .fade-leave-to {
     opacity: 0;
   }
-}
-
-@keyframes scanline {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
-  }
-}
-@keyframes glitch-anim {
-  0% {
-    clip: rect(30px, 9999px, 10px, 0);
-  }
-  20% {
-    clip: rect(85px, 9999px, 90px, 0);
-  }
-  40% {
-    clip: rect(10px, 9999px, 50px, 0);
-  }
-  60% {
-    clip: rect(60px, 9999px, 20px, 0);
-  }
-  80% {
-    clip: rect(25px, 9999px, 35px, 0);
-  }
-  100% {
-    clip: rect(5px, 9999px, 80px, 0);
-  }
-}
-@keyframes glitch-anim2 {
-  0% {
-    clip: rect(15px, 9999px, 60px, 0);
-  }
-  20% {
-    clip: rect(50px, 9999px, 20px, 0);
-  }
-  40% {
-    clip: rect(80px, 9999px, 10px, 0);
-  }
-  60% {
-    clip: rect(30px, 9999px, 70px, 0);
-  }
-  80% {
-    clip: rect(90px, 9999px, 40px, 0);
-  }
-  100% {
-    clip: rect(10px, 9999px, 50px, 0);
-  }
-}
-@keyframes glitch-skew {
-  0% {
-    transform: skew(0deg);
-  }
-  20% {
-    transform: skew(-2deg);
-  }
-  40% {
-    transform: skew(2deg);
-  }
-  60% {
-    transform: skew(-1deg);
-  }
-  80% {
-    transform: skew(1deg);
-  }
-  100% {
-    transform: skew(0deg);
-  }
-}
-
-/* Objective highlight animation for scroll-to-objective feature.
-   Used by: TaskCard, TaskObjective, TaskObjectiveItemGroup
-   Uses --color-selection-500 (violet) for highlight states. */
-.objective-highlight {
-  --highlight-color: var(--color-selection-500);
-  animation: objective-highlight-solid 3s ease-in-out;
-  border-radius: 0.375rem;
-}
-
-@keyframes objective-highlight-solid {
-  0% {
-    outline: 2px solid transparent;
-    outline-offset: 0;
-  }
-  5% {
-    outline: 2px solid var(--highlight-color);
-    outline-offset: 0;
-  }
-  85% {
-    outline: 2px solid var(--highlight-color);
-    outline-offset: 0;
-  }
-  100% {
-    outline: 2px solid transparent;
-    outline-offset: 0;
-  }
-}
-
-/* Pinned task wrapper - applies selection ring to TaskCard root slot.
-   Uses --color-selection-500 (violet) with 50% opacity. */
-.pinned-task-wrapper [data-slot='root'] {
-  outline: 2px solid hsl(from var(--color-selection-500) h s l / 0.5);
-  outline-offset: 0px;
-}
-
-/* Leaflet dark theme overrides using CSS custom properties. */
-.leaflet-container {
-  background-color: var(--color-surface-900);
-  font-family: inherit;
-}
-.leaflet-popup-content-wrapper {
-  background-color: var(--color-surface-800) !important;
-  color: var(--color-gray-200) !important;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-}
-.leaflet-popup-tip {
-  background-color: var(--color-surface-800) !important;
-}
-.leaflet-popup-content {
-  margin: 0.75rem;
-}
-.leaflet-control-zoom a {
-  background-color: var(--color-surface-800) !important;
-  color: var(--color-gray-200) !important;
-  border-color: var(--color-surface-700) !important;
-}
-.leaflet-control-zoom a:hover {
-  background-color: var(--color-surface-700) !important;
-}
-.map-objective-popup .leaflet-popup-content-wrapper {
-  background-color: var(--color-surface-800) !important;
-  color: var(--color-gray-200) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-}
-.map-objective-popup .leaflet-popup-content {
-  margin: 10px 12px;
-}
-.map-objective-popup .leaflet-popup-tip {
-  background-color: var(--color-surface-800) !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-.extract-marker {
-  background: transparent;
-  border: none;
 }

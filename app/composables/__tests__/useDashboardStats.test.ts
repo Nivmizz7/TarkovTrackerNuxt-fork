@@ -156,7 +156,7 @@ describe('useDashboardStats', () => {
         imageLink: undefined,
         totalTasks: 1,
         completedTasks: 1,
-        percentage: '100.0',
+        percentage: 100,
       },
       {
         id: 'trader-2',
@@ -164,7 +164,7 @@ describe('useDashboardStats', () => {
         imageLink: undefined,
         totalTasks: 1,
         completedTasks: 1,
-        percentage: '100.0',
+        percentage: 100,
       },
     ]);
   });

@@ -26,7 +26,7 @@
           :class="light.colorClass"
           :style="{
             animationDelay: `${light.delay}s`,
-            boxShadow: `0 0 8px 2px ${light.glowColor}, 0 0 16px 4px ${light.glowColor}40`,
+            boxShadow: `0 0 8px 2px ${light.glowColor}, 0 0 16px 4px ${light.glowColorSoft}`,
           }"
         />
       </div>
@@ -41,28 +41,33 @@
   const { belowMd } = useSharedBreakpoints();
   // Match the drawer margin from the layout
   const marginLeft = computed(() => {
-    if (belowMd.value) return '56px';
-    return appStore.drawerRail ? '56px' : '224px';
+    if (belowMd.value) return '64px';
+    return appStore.drawerRail ? '64px' : '224px';
   });
   interface Light {
     colorClass: string;
     glowColor: string;
+    glowColorSoft: string;
     delay: number;
     drop: number;
   }
   const lightColors = [
-    { colorClass: 'bg-red-500', glowColor: '#ef4444' },
-    { colorClass: 'bg-green-500', glowColor: '#22c55e' },
-    { colorClass: 'bg-blue-500', glowColor: '#3b82f6' },
-    { colorClass: 'bg-yellow-400', glowColor: '#facc15' },
-    { colorClass: 'bg-purple-500', glowColor: '#a855f7' },
-    { colorClass: 'bg-orange-500', glowColor: '#f97316' },
-    { colorClass: 'bg-pink-500', glowColor: '#ec4899' },
-    { colorClass: 'bg-cyan-400', glowColor: '#22d3ee' },
+    { colorClass: 'bg-red-500', glowColor: '#ef4444', glowColorSoft: '#ef444440' },
+    { colorClass: 'bg-success-500', glowColor: '#3a7859', glowColorSoft: '#3a785940' },
+    { colorClass: 'bg-blue-500', glowColor: '#3b82f6', glowColorSoft: '#3b82f640' },
+    { colorClass: 'bg-yellow-400', glowColor: '#facc15', glowColorSoft: '#facc1540' },
+    { colorClass: 'bg-purple-500', glowColor: '#a855f7', glowColorSoft: '#a855f740' },
+    { colorClass: 'bg-orange-500', glowColor: '#f97316', glowColorSoft: '#f9731640' },
+    { colorClass: 'bg-pink-500', glowColor: '#ec4899', glowColorSoft: '#ec489940' },
+    { colorClass: 'bg-info-400', glowColor: '#6d9ab0', glowColorSoft: '#6d9ab040' },
   ];
   const lightCount = 25;
   const lights = computed<Light[]>(() => {
-    const fallbackColor = lightColors[0] ?? { colorClass: 'bg-red-500', glowColor: '#ef4444' };
+    const fallbackColor = lightColors[0] ?? {
+      colorClass: 'bg-red-500',
+      glowColor: '#ef4444',
+      glowColorSoft: '#ef444440',
+    };
     return Array.from({ length: lightCount }, (_, i) => {
       const color = lightColors[i % lightColors.length] ?? fallbackColor;
       // Create a wave pattern for the drop
@@ -71,6 +76,7 @@
       return {
         colorClass: color.colorClass,
         glowColor: color.glowColor,
+        glowColorSoft: color.glowColorSoft,
         delay: (i % 8) * 0.15,
         drop,
       };

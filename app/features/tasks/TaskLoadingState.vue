@@ -1,8 +1,8 @@
 <template>
   <div class="flex w-full flex-col items-center justify-center py-4">
     <div class="mb-2 flex items-center">
-      <UIcon name="i-mdi-loading" class="mr-2 h-6 w-6 animate-spin text-gray-400" />
-      <span class="text-gray-400">{{ t('page.tasks.loading') }}</span>
+      <UIcon name="i-mdi-loading" class="text-surface-400 mr-2 h-6 w-6 animate-spin" />
+      <span class="text-surface-400">{{ t('page.tasks.loading') }}</span>
     </div>
     <refresh-button />
   </div>

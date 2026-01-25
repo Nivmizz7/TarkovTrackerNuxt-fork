@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-background text-surface-200 flex min-h-screen flex-col">
+  <div class="bg-military-background text-surface-200 flex min-h-screen flex-col">
     <!-- Holiday Effects -->
     <template v-if="holidayEffectsEnabled">
       <HolidayLights />
@@ -58,10 +58,11 @@
   const holidayEffectsEnabled = computed(() => preferencesStore.getEnableHolidayEffects);
   // Use shared breakpoints to avoid duplicate listeners
   const { belowMd } = useSharedBreakpoints();
-  // Calculate margin-left based on sidebar state
   const mainMarginLeft = computed(() => {
-    if (belowMd.value) return '56px'; // Rail width on mobile
-    return appStore.drawerRail ? '56px' : '224px';
+    if (belowMd.value) {
+      return appStore.mobileDrawerExpanded ? '224px' : '64px';
+    }
+    return appStore.drawerRail ? '64px' : '224px';
   });
   const usesWindowScroll = computed(() => {
     return Boolean(route.meta?.usesWindowScroll);
@@ -74,7 +75,7 @@
     }))
   );
   const contentWrapperClass = computed(() => [
-    'min-h-0 flex-1 p-2 pt-0',
+    'flex min-h-0 flex-1 flex-col p-0',
     usesWindowScroll.value ? 'overflow-visible' : 'overflow-y-auto',
   ]);
   // Lazy-load shell components

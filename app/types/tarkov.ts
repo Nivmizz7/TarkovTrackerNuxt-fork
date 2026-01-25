@@ -288,11 +288,20 @@ export interface TarkovMap {
         stackFloors?: boolean;
       };
 }
+export interface TraderLoyaltyLevel {
+  id: string;
+  level: number;
+  requiredPlayerLevel: number;
+  requiredReputation: number;
+  requiredCommerce: number;
+  payRate?: number;
+}
 export interface Trader {
   id: string;
   name: string;
   normalizedName?: string;
   imageLink?: string;
+  levels?: TraderLoyaltyLevel[];
 }
 /**
  * Player level data with XP thresholds

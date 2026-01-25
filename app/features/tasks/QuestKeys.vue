@@ -1,8 +1,8 @@
 <template>
   <div class="inline-block">
-    <div class="mb-2 text-xs font-medium text-gray-400">
+    <div class="text-surface-400 mb-2 text-xs font-medium">
       {{ $t('page.tasks.questcard.keysHeader', 'Suggested Keys') }}
-      <span class="font-normal text-gray-500">
+      <span class="text-surface-500 font-normal">
         {{ $t('page.tasks.questcard.keysSubtext', '(may help but not always required)') }}
       </span>
     </div>

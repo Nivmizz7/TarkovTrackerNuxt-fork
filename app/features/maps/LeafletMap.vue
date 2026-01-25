@@ -5,9 +5,9 @@
       v-if="isMapUnavailable"
       class="bg-surface-900 flex h-100 w-full flex-col items-center justify-center rounded sm:h-125 lg:h-150"
     >
-      <UIcon name="i-mdi-map-marker-off" class="mb-4 h-16 w-16 text-gray-500" />
-      <h3 class="mb-2 text-lg font-semibold text-gray-300">{{ t('maps.notAvailableTitle') }}</h3>
-      <p class="max-w-md text-center text-sm text-gray-500">
+      <UIcon name="i-mdi-map-marker-off" class="text-surface-500 mb-4 h-16 w-16" />
+      <h3 class="text-surface-300 mb-2 text-lg font-semibold">{{ t('maps.notAvailableTitle') }}</h3>
+      <p class="text-surface-500 max-w-md text-center text-sm">
         {{
           t('maps.notAvailableDescription', {
             mapName: props.map?.name || t('maps.placeholder'),
@@ -22,7 +22,7 @@
         v-if="hasMultipleFloors"
         class="bg-surface-800/90 absolute top-20 left-2 z-1000 flex flex-col gap-1 rounded p-1.5"
       >
-        <span class="px-1 text-[10px] font-medium tracking-wide text-gray-400 uppercase">
+        <span class="text-surface-400 px-1 text-[10px] font-medium tracking-wide uppercase">
           {{ t('maps.floors') }}
         </span>
         <!-- Display floors in reverse order so lowest floor is at bottom, highest at top -->
@@ -84,7 +84,7 @@
           {{ t('maps.factions.scav') }}
         </UButton>
         <div class="bg-surface-900/40 flex items-center gap-2 rounded px-2 py-1">
-          <span class="text-[10px] font-semibold text-gray-400 uppercase">
+          <span class="text-surface-400 text-[10px] font-semibold uppercase">
             {{ t('maps.zoom') }}
           </span>
           <input
@@ -96,7 +96,7 @@
             class="accent-primary-500 h-1.5 w-24 cursor-pointer"
             :aria-label="t('maps.aria.zoomSpeed')"
           />
-          <span class="text-[10px] text-gray-300 tabular-nums">{{ zoomSpeedLabel }}</span>
+          <span class="text-surface-300 text-[10px] tabular-nums">{{ zoomSpeedLabel }}</span>
         </div>
       </div>
       <!-- Map container -->
@@ -106,49 +106,49 @@
         <!-- Main Objective Legend -->
         <div
           v-if="props.showLegend"
-          class="flex flex-wrap items-center gap-4 text-xs text-gray-300"
+          class="text-surface-300 flex flex-wrap items-center gap-4 text-xs"
         >
           <div class="flex items-center gap-1">
-            <div class="h-3 w-3 rounded-full bg-red-500" />
+            <div class="bg-extract-pmc h-3 w-3 rounded-full" />
             <span>{{ t('maps.legend.yourObjectives') }}</span>
           </div>
           <div class="flex items-center gap-1">
-            <div class="h-3 w-3 rounded-full bg-orange-500" />
+            <div class="bg-extract-scav h-3 w-3 rounded-full" />
             <span>{{ t('maps.legend.teamObjectives') }}</span>
           </div>
           <div v-if="showPmcExtracts" class="flex items-center gap-1">
-            <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-green-500" />
+            <UIcon name="i-mdi-exit-run" class="text-success-500 h-3 w-3" />
             <span>{{ t('maps.legend.pmcExtract') }}</span>
           </div>
           <div v-if="showScavExtracts" class="flex items-center gap-1">
-            <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-amber-400" />
+            <UIcon name="i-mdi-exit-run" class="text-extract-shared-primary h-3 w-3" />
             <span>{{ t('maps.legend.scavExtract') }}</span>
           </div>
           <div
             v-if="(showPmcExtracts || showScavExtracts) && hasSharedExtracts"
             class="flex items-center gap-1"
           >
-            <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-sky-400" />
+            <UIcon name="i-mdi-exit-run" class="text-extract-shared-secondary h-3 w-3" />
             <span>{{ t('maps.legend.sharedExtract') }}</span>
           </div>
           <div
             v-if="(showPmcExtracts || showScavExtracts) && hasCoopExtracts"
             class="flex items-center gap-1"
           >
-            <UIcon name="i-mdi-exit-run" class="h-3 w-3 text-sky-600" />
+            <UIcon name="i-mdi-exit-run" class="text-extract-shared-coop h-3 w-3" />
             <span>{{ t('maps.legend.coopExtract') }}</span>
           </div>
         </div>
         <!-- Controls Legend -->
         <div
-          class="ml-auto flex flex-wrap-reverse items-center justify-end gap-x-4 gap-y-1 text-[10px] font-medium text-gray-400"
+          class="text-surface-400 ml-auto flex flex-wrap-reverse items-center justify-end gap-x-4 gap-y-1 text-[10px] font-medium"
         >
           <div v-if="hasMultipleFloors" class="flex items-center gap-1">
-            <kbd class="bg-surface-700 rounded px-1 py-0.5 font-mono text-gray-300">Ctrl</kbd>
+            <kbd class="bg-surface-700 text-surface-300 rounded px-1 py-0.5 font-mono">Ctrl</kbd>
             <span>{{ t('maps.controls.keyboard.cycleFloors') }}</span>
           </div>
           <div class="flex items-center gap-1">
-            <kbd class="bg-surface-700 rounded px-1 py-0.5 font-mono text-gray-300">Shift</kbd>
+            <kbd class="bg-surface-700 text-surface-300 rounded px-1 py-0.5 font-mono">Shift</kbd>
             <span>{{ t('maps.controls.keyboard.zoom') }}</span>
           </div>
         </div>
@@ -157,19 +157,15 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, createApp, inject, onUnmounted, ref, toRef, watch } from 'vue';
+  import { computed, onUnmounted, ref, toRef, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useRouter } from 'vue-router';
   import { useLeafletMap } from '@/composables/useLeafletMap';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import type { TarkovMap, MapExtract } from '@/types/tarkov';
   import { logger } from '@/utils/logger';
   import { gameToLatLng, outlineToLatLngArray, isValidMapSvgConfig } from '@/utils/mapCoordinates';
-  import { MAP_MARKER_COLORS as MAP_COLORS } from '@/utils/theme-colors';
-  import LeafletObjectiveTooltip from './LeafletObjectiveTooltip.vue';
   import type L from 'leaflet';
-  import { useNuxtApp } from '#imports';
   // Types for marks (matching TarkovMap.vue structure)
   interface MapZone {
     map: { id: string };
@@ -202,12 +198,8 @@
     showLegend: true,
   });
   const { t } = useI18n({ useScope: 'global' });
-  const router = useRouter();
-  const { $i18n } = useNuxtApp();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
-  // Inject clearPinnedTask from parent (tasks.vue) to pass to tooltip
-  const clearPinnedTask = inject<(() => void) | null>('clearPinnedTask', null);
   // Check if map is unavailable
   const isMapUnavailable = computed(() => {
     return props.map?.unavailable === true;
@@ -267,222 +259,30 @@
   const popupOptions = {
     autoClose: false,
     closeOnClick: false,
-    closeButton: false, // We use our own close button
+    closeButton: true,
   };
-  // Track currently pinned popup's cleanup function to allow only one pinned popup at a time
-  let activePinnedPopupCleanup: (() => void) | null = null;
-  // Store marker references by objective ID for programmatic activation
-  const objectiveMarkers = new Map<
-    string,
-    { layer: L.Layer; getLatLng: () => L.LatLngExpression; showPopup: (pinned: boolean) => void }
-  >();
-  /**
-   * Mounts the LeafletObjectiveTooltip Vue component and returns the container element.
-   */
-  function mountObjectiveTooltip(
-    objectiveId: string,
-    onClose: () => void
-  ): { element: HTMLElement; unmount: () => void } {
-    const container = document.createElement('div');
-    const app = createApp(LeafletObjectiveTooltip, { objectiveId, onClose });
-    // Provide dependencies to the standalone app instance
-    app.provide('router', router);
-    app.provide('clearPinnedTask', clearPinnedTask);
-    app.use($i18n);
-    app.mount(container);
-    return { element: container, unmount: () => app.unmount() };
-  }
-  /**
-   * Attaches a popup to a layer that shows on hover and can be pinned on click.
-   * - On hover: shows popup (closes when mouse leaves)
-   * - On click: pins the popup (stays open until close button or click again)
-   */
-  /**
-   * Popup timing constants (in milliseconds)
-   */
-  const POPUP_HIDE_DELAY = 100; // Delay before hiding popup on mouseout
-  const attachHoverPinPopup = (
+  const attachTogglePopup = (
     layer: L.Layer,
-    objectiveId: string,
+    html: string,
     getLatLng: () => L.LatLngExpression
   ): void => {
     if (!leaflet.value || !mapInstance.value) return;
-    const popup = leaflet.value.popup({
-      ...popupOptions,
-      className: 'map-objective-popup',
-    });
-    let isPinned = false;
-    let isHovering = false;
-    let popupHideTimer: ReturnType<typeof setTimeout> | null = null;
-    let currentMountedComponent: { element: HTMLElement; unmount: () => void } | null = null;
-    // Track whether popup element listeners have been attached (prevents accumulation)
-    let popupListenersAttached = false;
-    // Store original colors for restoration when unpinned
-    const styledLayer = layer as L.CircleMarker | L.Polygon;
-    const originalFillColor = styledLayer.options?.fillColor || MAP_COLORS.SELF_OBJECTIVE;
-    const originalStrokeColor = styledLayer.options?.color || MAP_COLORS.SELF_OBJECTIVE;
-    const isCircleMarker = 'getRadius' in styledLayer;
-    const setLayerSelected = (selected: boolean) => {
-      if (!('setStyle' in styledLayer)) return;
-      if (selected) {
-        // For circle markers, only change fillColor (keep white border)
-        // For polygons, change both stroke and fill
-        if (isCircleMarker) {
-          styledLayer.setStyle({ fillColor: MAP_COLORS.SELECTED });
-        } else {
-          styledLayer.setStyle({ color: MAP_COLORS.SELECTED, fillColor: MAP_COLORS.SELECTED });
-        }
-      } else {
-        // Restore original colors
-        if (isCircleMarker) {
-          styledLayer.setStyle({ fillColor: originalFillColor });
-        } else {
-          styledLayer.setStyle({ color: originalStrokeColor, fillColor: originalFillColor });
-        }
-      }
-    };
-    const cleanupMountedComponent = () => {
-      if (currentMountedComponent) {
-        currentMountedComponent.unmount();
-        currentMountedComponent = null;
-      }
-    };
-    const showPopup = (pinned: boolean) => {
+    const popup = leaflet.value.popup(popupOptions).setContent(html);
+    const togglePopup = () => {
       if (!mapInstance.value) return;
-      // Close any other pinned popup first if we're pinning
-      if (pinned && activePinnedPopupCleanup) {
-        activePinnedPopupCleanup();
+      if (mapInstance.value.hasLayer(popup)) {
+        popup.remove();
+        return;
       }
-      isPinned = pinned;
-      // Change marker color to purple when pinned
-      if (pinned) {
-        setLayerSelected(true);
-      }
-      // Unmount previous component if exists
-      cleanupMountedComponent();
-      // Mount the Vue component
-      currentMountedComponent = mountObjectiveTooltip(objectiveId, unpinAndHide);
-      popup.setContent(currentMountedComponent.element);
       popup.setLatLng(getLatLng());
-      if (!mapInstance.value.hasLayer(popup)) {
-        popup.addTo(mapInstance.value);
-      }
-      if (pinned) {
-        activePinnedPopupCleanup = unpinAndHide;
-      }
+      popup.addTo(mapInstance.value);
     };
-    const hidePopup = () => {
-      if (!isPinned && mapInstance.value) {
-        popup.remove();
-        cleanupMountedComponent();
-      }
-    };
-    const unpinAndHide = () => {
-      isPinned = false;
-      // Restore original marker color
-      setLayerSelected(false);
-      // Clear active reference if this was the pinned popup
-      if (activePinnedPopupCleanup === unpinAndHide) {
-        activePinnedPopupCleanup = null;
-      }
-      if (mapInstance.value) {
-        popup.remove();
-        cleanupMountedComponent();
-      }
-    };
-    // Store reference for programmatic activation
-    objectiveMarkers.set(objectiveId, { layer, getLatLng, showPopup });
-    // Hover events
-    layer.on('mouseover', () => {
-      isHovering = true;
-      // Cancel any pending hide timeout
-      if (popupHideTimer) {
-        clearTimeout(popupHideTimer);
-        popupHideTimer = null;
-      }
-      if (!isPinned) {
-        showPopup(false);
-      }
-    });
-    layer.on('mouseout', () => {
-      isHovering = false;
-      // Cancel any pending hide timeout before setting a new one
-      if (popupHideTimer) {
-        clearTimeout(popupHideTimer);
-      }
-      popupHideTimer = setTimeout(() => {
-        popupHideTimer = null;
-        if (!isHovering && !isPinned) {
-          hidePopup();
-        }
-      }, POPUP_HIDE_DELAY);
-    });
-    // Click to pin
     layer.on('click', (event) => {
       leaflet.value?.DomEvent.stop(event);
-      if (isPinned) {
-        unpinAndHide();
-      } else {
-        // Close any other pinned popup first
-        if (activePinnedPopupCleanup) {
-          activePinnedPopupCleanup();
-        }
-        showPopup(true);
-      }
-    });
-    // Popup element hover handlers (stored for cleanup)
-    const handlePopupMouseEnter = () => {
-      isHovering = true;
-      // Cancel any pending hide timeout
-      if (popupHideTimer) {
-        clearTimeout(popupHideTimer);
-        popupHideTimer = null;
-      }
-    };
-    const handlePopupMouseLeave = () => {
-      isHovering = false;
-      if (!isPinned) {
-        // Cancel any pending hide timeout before setting a new one
-        if (popupHideTimer) {
-          clearTimeout(popupHideTimer);
-        }
-        popupHideTimer = setTimeout(() => {
-          popupHideTimer = null;
-          if (!isHovering) {
-            hidePopup();
-          }
-        }, POPUP_HIDE_DELAY);
-      }
-    };
-    // Handle popup element hover - only add listeners once per popup instance
-    popup.on('add', () => {
-      if (popupListenersAttached) return;
-      const popupElement = popup.getElement();
-      if (popupElement) {
-        popupElement.addEventListener('mouseenter', handlePopupMouseEnter);
-        popupElement.addEventListener('mouseleave', handlePopupMouseLeave);
-        popupListenersAttached = true;
-      }
-    });
-    // Clean up popup element listeners when popup is removed
-    popup.on('remove', () => {
-      if (!popupListenersAttached) return;
-      const popupElement = popup.getElement();
-      if (popupElement) {
-        popupElement.removeEventListener('mouseenter', handlePopupMouseEnter);
-        popupElement.removeEventListener('mouseleave', handlePopupMouseLeave);
-        popupListenersAttached = false;
-      }
+      togglePopup();
     });
     layer.on('remove', () => {
-      // Clear any pending hide timeout to prevent stale closure calls
-      if (popupHideTimer) {
-        clearTimeout(popupHideTimer);
-        popupHideTimer = null;
-      }
       popup.remove();
-      objectiveMarkers.delete(objectiveId);
-      cleanupMountedComponent();
     });
   };
   /**
@@ -493,20 +293,16 @@
     const L = leaflet.value;
     const svgConfig = props.map.svg;
     if (!isValidMapSvgConfig(svgConfig)) return;
-    // Clear any pinned popup before recreating markers
-    if (activePinnedPopupCleanup) {
-      activePinnedPopupCleanup();
-      activePinnedPopupCleanup = null;
-    }
     objectiveLayer.value.clearLayers();
-    interface MarkerEntry {
-      polygon?: L.Polygon;
-      marker?: L.CircleMarker;
-      area?: number;
-      objectiveId?: string;
-    }
-    const zoneEntries: MarkerEntry[] = [];
-    const pointEntries: MarkerEntry[] = [];
+    const zoneEntries: Array<{
+      polygon: L.Polygon;
+      area: number;
+      popupContent?: string;
+    }> = [];
+    const pointEntries: Array<{
+      marker: L.CircleMarker;
+      popupContent?: string;
+    }> = [];
     const calculateZoneArea = (outline: Array<{ x: number; z: number }>): number => {
       if (outline.length < 3) return 0;
       let sum = 0;
@@ -522,10 +318,15 @@
     props.marks.forEach((mark) => {
       const objective = metadataStore.objectives.find((obj) => obj.id === mark.id);
       const task = objective ? metadataStore.tasks.find((t) => t.id === objective.taskId) : null;
-      // Get the objective ID for the tooltip
-      const objectiveId = mark.id;
-      // Skip if no meaningful content
-      if (!task && !objective) return;
+      const popupContent =
+        task || objective
+          ? `
+          <div class="text-sm">
+            ${task ? `<div class="font-semibold">${task.name}</div>` : ''}
+            ${objective ? `<div class="text-surface-400">${objective.description}</div>` : ''}
+          </div>
+        `
+          : undefined;
       // Handle point markers (possibleLocations)
       mark.possibleLocations?.forEach((location) => {
         if (location.map.id !== props.map.id) return;
@@ -535,15 +336,15 @@
         if (!pos) return;
         const latLng = gameToLatLng(pos.x, pos.z);
         const isSelf = mark.users?.includes('self') ?? false;
-        const markerColor = isSelf ? MAP_COLORS.SELF_OBJECTIVE : MAP_COLORS.TEAM_OBJECTIVE;
+        const markerColor = isSelf ? '#ef4444' : '#f97316'; // red-500 : orange-500
         const marker = L.circleMarker([latLng.lat, latLng.lng], {
           radius: 8,
           fillColor: markerColor,
           fillOpacity: 0.8,
-          color: MAP_COLORS.MARKER_BORDER,
+          color: '#ffffff',
           weight: 2,
         });
-        pointEntries.push({ marker, objectiveId });
+        pointEntries.push({ marker, popupContent });
       });
       // Handle zone polygons
       mark.zones.forEach((zone) => {
@@ -552,7 +353,7 @@
         const latLngs = outlineToLatLngArray(zone.outline);
         if (latLngs.length < 3) return;
         const isSelf = mark.users?.includes('self') ?? false;
-        const zoneColor = isSelf ? MAP_COLORS.SELF_OBJECTIVE : MAP_COLORS.TEAM_OBJECTIVE;
+        const zoneColor = isSelf ? '#ef4444' : '#f97316';
         const polygon = L.polygon(
           latLngs.map((ll) => [ll.lat, ll.lng]),
           {
@@ -566,29 +367,35 @@
         zoneEntries.push({
           polygon,
           area: calculateZoneArea(zone.outline),
-          objectiveId,
+          popupContent,
         });
       });
     });
     // Add larger zones first so smaller zones stay on top (clickable)
     zoneEntries
-      .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
-      .forEach(({ polygon, objectiveId }) => {
-        if (!polygon) return;
-        if (objectiveId) {
-          // Attach hover/pin popup - shows on hover, pins on click
-          attachHoverPinPopup(polygon, objectiveId, () => polygon.getBounds().getCenter());
+      .sort((a, b) => b.area - a.area)
+      .forEach(({ polygon, popupContent }) => {
+        if (popupContent) {
+          attachTogglePopup(polygon, popupContent, () => polygon.getBounds().getCenter());
+          polygon.bindTooltip(popupContent, {
+            className: 'map-zone-tooltip',
+            opacity: 0.95,
+            sticky: true,
+          });
         }
         polygon.on('mouseover', () => polygon.setStyle({ fillOpacity: 0.35, weight: 3 }));
         polygon.on('mouseout', () => polygon.setStyle({ fillOpacity: 0.2, weight: 2 }));
         objectiveLayer.value!.addLayer(polygon);
       });
     // Add point markers last so they render above zones
-    pointEntries.forEach(({ marker, objectiveId }) => {
-      if (!marker) return;
-      if (objectiveId) {
-        // Attach hover/pin popup - shows on hover, pins on click
-        attachHoverPinPopup(marker, objectiveId, () => marker.getLatLng());
+    pointEntries.forEach(({ marker, popupContent }) => {
+      if (popupContent) {
+        attachTogglePopup(marker, popupContent, () => marker.getLatLng());
+        marker.bindTooltip(popupContent, {
+          className: 'map-zone-tooltip',
+          opacity: 0.95,
+          direction: 'top',
+        });
       }
       objectiveLayer.value!.addLayer(marker);
     });
@@ -619,23 +426,23 @@
       let markerColor: string;
       switch (extract.faction) {
         case 'pmc':
-          markerColor = MAP_COLORS.PMC_EXTRACT;
+          markerColor = '#22c55e'; // green-500
           break;
         case 'scav':
-          markerColor = MAP_COLORS.SCAV_EXTRACT;
+          markerColor = '#f59e0b'; // amber-500
           break;
         case 'shared':
-          markerColor = isCoop ? MAP_COLORS.COOP_EXTRACT : MAP_COLORS.SHARED_EXTRACT;
+          markerColor = isCoop ? '#0284c7' : '#38bdf8'; // sky-600 : sky-400
           break;
         default:
-          markerColor = MAP_COLORS.DEFAULT_EXTRACT;
+          markerColor = '#3b82f6'; // blue-500
           break;
       }
       const extractDot = L.circleMarker([latLng.lat, latLng.lng], {
         radius: 3,
         fillColor: markerColor,
         fillOpacity: 1,
-        color: MAP_COLORS.EXTRACT_DOT_BORDER,
+        color: '#0b0b0f',
         weight: 1,
         opacity: 1,
         interactive: false,
@@ -731,37 +538,49 @@
     },
     { immediate: true }
   );
-  /**
-   * Activates (pins) the popup for a specific objective marker.
-   * Called programmatically from outside the component.
-   */
-  const activateObjectivePopup = (objectiveId: string): boolean => {
-    const markerData = objectiveMarkers.get(objectiveId);
-    if (!markerData) return false;
-    markerData.showPopup(true);
-    return true;
-  };
-  /**
-   * Closes the currently active/pinned popup and deselects the marker.
-   */
-  const closeActivePopup = (): void => {
-    if (activePinnedPopupCleanup) {
-      activePinnedPopupCleanup();
-    }
-  };
-  // Expose methods for parent components
-  defineExpose({
-    activateObjectivePopup,
-    closeActivePopup,
-    refreshView,
-  });
   // Cleanup
   onUnmounted(() => {
-    // Clean up any pinned popup before unmounting
-    if (activePinnedPopupCleanup) {
-      activePinnedPopupCleanup();
-    }
-    objectiveMarkers.clear();
     clearMarkers();
   });
 </script>
+<style>
+  /* Override Leaflet default styles for dark theme */
+  .leaflet-container {
+    background-color: rgb(var(--color-surface-900));
+    font-family: inherit;
+  }
+  .leaflet-popup-content-wrapper {
+    background-color: #1a1a1e !important;
+    color: #e5e5e5 !important;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+  .leaflet-popup-tip {
+    background-color: #1a1a1e !important;
+  }
+  .leaflet-popup-content {
+    margin: 0.75rem;
+  }
+  .leaflet-control-zoom a {
+    background-color: rgb(var(--color-surface-800)) !important;
+    color: rgb(var(--color-gray-200)) !important;
+    border-color: rgb(var(--color-surface-700)) !important;
+  }
+  .leaflet-control-zoom a:hover {
+    background-color: rgb(var(--color-surface-700)) !important;
+  }
+  /* Zone hover tooltip styling */
+  .map-zone-tooltip {
+    background-color: #1a1a1e !important;
+    color: #e5e5e5 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    padding: 6px 8px;
+  }
+  /* Extract marker styling */
+  .extract-marker {
+    background: transparent;
+    border: none;
+  }
+</style>

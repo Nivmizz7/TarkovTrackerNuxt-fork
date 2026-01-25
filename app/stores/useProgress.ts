@@ -726,6 +726,33 @@ export const useProgressStore = defineStore('progress', () => {
         return 0;
     }
   };
+  const tasksState = computed<Record<string, number>>(() => {
+    const state: Record<string, number> = {};
+    const tasks = metadataStore.tasks as Task[];
+    if (!tasks.length) return {};
+    const store = teamStores.value['self'];
+    const currentData = getGameModeData(store);
+    const completions = currentData?.taskCompletions ?? {};
+    // We can use the unlockedTasks computed, but be careful of reactivity loops if it depends on this.
+    // unlockedTasks depends on tasks, visibleTeamStores, getGameModeData. It doesn't depend on tasksState.
+    // However, unlockedTasks is Record<taskId, Record<teamId, boolean>>
+    for (const task of tasks) {
+      const taskId = task.id;
+      const completion = completions[taskId];
+      if (completion?.complete && !completion?.failed) {
+        state[taskId] = 3; // Complete
+      } else if (completion?.failed) {
+        state[taskId] = 4; // Failed
+      } else if (completion) {
+        state[taskId] = 2; // Active (Started)
+      } else if (unlockedTasks.value[taskId]?.['self']) {
+        state[taskId] = 1; // Available
+      } else {
+        state[taskId] = 0; // Locked
+      }
+    }
+    return state;
+  });
   const migrateDuplicateObjectiveProgress = (duplicateObjectiveIds: Map<string, string[]>) => {
     if (!duplicateObjectiveIds.size) return;
     const migrateObjectiveMap = (
@@ -765,6 +792,7 @@ export const useProgressStore = defineStore('progress', () => {
     visibleTeamStores,
     tasksCompletions,
     tasksFailed,
+    tasksState,
     gameEditionData,
     traderLevelsAchieved,
     playerFaction,

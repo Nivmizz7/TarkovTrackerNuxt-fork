@@ -7,9 +7,9 @@
           variant="ghost"
           class="flex w-full items-center justify-between rounded-none py-2 sm:p-3"
         >
-          <span class="text-base font-medium text-gray-200">
+          <span class="text-surface-200 text-base font-medium">
             {{ item.label }}
-            <span class="font-normal text-gray-400">&nbsp;-&nbsp;{{ displayTime }}</span>
+            <span class="text-surface-400 font-normal">&nbsp;-&nbsp;{{ displayTime }}</span>
           </span>
           <UIcon
             name="i-mdi-chevron-down"
@@ -19,7 +19,7 @@
         </UButton>
       </template>
       <template #content>
-        <div class="bg-gray-900/50 p-4">
+        <div class="bg-surface-900/50 p-4">
           <LeafletMapComponent
             v-if="selectedMap"
             :map="selectedMap"

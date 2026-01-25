@@ -14,11 +14,6 @@
 </template>
 <script setup lang="ts">
   import { onMounted } from 'vue';
-  const route = useRoute();
-  const redirectPath = computed(() => {
-    const value = route.query.redirect;
-    return typeof value === 'string' && value.startsWith('/') ? value : '';
-  });
   onMounted(async () => {
     // Check if this is a popup window (has opener)
     const isPopup = window.opener && !window.opener.closed;
@@ -38,7 +33,7 @@
       // Wait a moment for the session to be established
       await new Promise((resolve) => setTimeout(resolve, 500));
       // Navigate to dashboard
-      await navigateTo(redirectPath.value || '/', { replace: true });
+      await navigateTo('/', { replace: true });
     }
   });
 </script>

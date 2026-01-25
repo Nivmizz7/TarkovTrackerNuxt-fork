@@ -1,56 +1,52 @@
 <template>
-  <ul class="flex flex-col gap-1 px-1">
-    <DrawerItem
-      icon="i-heroicons-squares-2x2"
-      icon-color="brand-400"
-      locale-key="home"
-      to="/"
-      :is-collapsed="props.isCollapsed"
-    ></DrawerItem>
-    <DrawerItem
-      icon="i-heroicons-clipboard-document-list"
-      icon-color="accent-400"
-      locale-key="tasks"
-      to="/tasks"
-      :is-collapsed="props.isCollapsed"
-    ></DrawerItem>
-    <DrawerItem
-      icon="i-heroicons-cube"
-      icon-color="brand-300"
-      locale-key="neededitems"
-      to="/neededitems"
-      :is-collapsed="props.isCollapsed"
-    ></DrawerItem>
-    <DrawerItem
-      icon="i-heroicons-briefcase"
-      icon-color="accent-300"
-      locale-key="traders"
-      to="/traders"
-      :is-collapsed="props.isCollapsed"
-    ></DrawerItem>
-    <DrawerItem
-      icon="i-heroicons-home"
-      icon-color="accent-300"
-      locale-key="hideout"
-      to="/hideout"
-      :is-collapsed="props.isCollapsed"
-    ></DrawerItem>
-    <DrawerItem
-      icon="i-heroicons-user-group"
-      icon-color="brand-400"
-      locale-key="team"
-      to="/team"
-      :is-collapsed="props.isCollapsed"
-    ></DrawerItem>
-    <DrawerItem
-      icon="i-heroicons-cog-6-tooth"
-      locale-key="settings"
-      to="/settings"
-      :is-collapsed="props.isCollapsed"
-    ></DrawerItem>
-  </ul>
+  <div>
+    <div v-if="!props.isCollapsed" class="px-4 py-1">
+      <h3 class="text-surface-400 text-xs font-semibold tracking-wider uppercase">
+        {{ t('navigation_drawer.section_navigation', 'Navigation') }}
+      </h3>
+    </div>
+    <ul class="flex flex-col gap-0.5 px-1">
+      <DrawerItem
+        icon="i-heroicons-squares-2x2"
+        locale-key="home"
+        to="/"
+        :is-collapsed="props.isCollapsed"
+      ></DrawerItem>
+      <DrawerItem
+        icon="i-heroicons-clipboard-document-list"
+        locale-key="tasks"
+        to="/tasks"
+        :is-collapsed="props.isCollapsed"
+      ></DrawerItem>
+      <DrawerItem
+        icon="i-heroicons-cube"
+        locale-key="neededitems"
+        to="/needed-items"
+        :is-collapsed="props.isCollapsed"
+      ></DrawerItem>
+      <DrawerItem
+        icon="i-heroicons-home"
+        locale-key="hideout"
+        to="/hideout"
+        :is-collapsed="props.isCollapsed"
+      ></DrawerItem>
+      <DrawerItem
+        icon="i-heroicons-user-group"
+        locale-key="team"
+        to="/team"
+        :is-collapsed="props.isCollapsed"
+      ></DrawerItem>
+      <DrawerItem
+        icon="i-heroicons-cog-6-tooth"
+        locale-key="settings"
+        to="/settings"
+        :is-collapsed="props.isCollapsed"
+      ></DrawerItem>
+    </ul>
+  </div>
 </template>
 <script setup>
+  import { useI18n } from 'vue-i18n';
   import DrawerItem from '@/features/drawer/DrawerItem.vue';
   const props = defineProps({
     isCollapsed: {
@@ -58,4 +54,5 @@
       required: true,
     },
   });
+  const { t } = useI18n({ useScope: 'global' });
 </script>

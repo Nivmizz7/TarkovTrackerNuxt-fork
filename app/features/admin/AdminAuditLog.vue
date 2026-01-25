@@ -118,7 +118,7 @@
 <template>
   <GenericCard
     icon="i-mdi-history"
-    icon-color="info-400"
+    icon-color="info"
     highlight-color="secondary"
     :fill-height="false"
     title="Admin Audit Log"
@@ -140,7 +140,7 @@
       <div class="px-4 py-4">
         <!-- Loading state -->
         <div v-if="isLoading" class="flex items-center justify-center py-8">
-          <UIcon name="i-mdi-loading" class="size-6 animate-spin text-neutral-400" />
+          <UIcon name="i-mdi-loading" class="text-surface-400 size-6 animate-spin" />
         </div>
         <!-- Error state -->
         <UAlert
@@ -152,7 +152,7 @@
           :description="errorDescription || undefined"
         />
         <!-- Empty state -->
-        <div v-else-if="logs.length === 0" class="py-8 text-center text-neutral-400">
+        <div v-else-if="logs.length === 0" class="text-surface-400 py-8 text-center">
           <UIcon name="i-mdi-clipboard-text-off" class="mb-2 size-8" />
           <p>No admin actions recorded yet</p>
         </div>
@@ -161,7 +161,7 @@
           <div
             v-for="log in logs"
             :key="log.id"
-            class="rounded-lg border border-neutral-700 bg-neutral-800/50 p-3"
+            class="border-surface-700 bg-surface-800/50 rounded-lg border p-3"
           >
             <div class="flex items-start justify-between gap-2">
               <div class="flex flex-wrap items-center gap-2">
@@ -169,18 +169,18 @@
                   <UIcon :name="getActionIcon(log.action)" class="mr-1 size-3" />
                   {{ log.action }}
                 </UBadge>
-                <span class="text-xs text-neutral-400">by</span>
+                <span class="text-surface-400 text-xs">by</span>
                 <UBadge color="neutral" variant="outline" size="xs" class="font-mono">
                   {{ getAdminDisplay(log) }}
                 </UBadge>
               </div>
-              <span class="text-xs text-neutral-500">
+              <span class="text-surface-500 text-xs">
                 {{ formatDate(log.created_at) }}
               </span>
             </div>
-            <div v-if="log.details" class="mt-2 text-xs text-neutral-400">
+            <div v-if="log.details" class="text-surface-400 mt-2 text-xs">
               <pre
-                class="overflow-x-auto rounded bg-neutral-900 p-2 font-mono text-xs whitespace-pre-wrap"
+                class="bg-surface-900 overflow-x-auto rounded p-2 font-mono text-xs whitespace-pre-wrap"
                 >{{ JSON.stringify(log.details, null, 2) }}</pre
               >
             </div>
