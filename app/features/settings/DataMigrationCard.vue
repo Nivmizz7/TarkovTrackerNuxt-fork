@@ -3,7 +3,7 @@
     <template #title>Data Migration</template>
     <template #content>
       <p class="mb-4">Migrate your progress data from the old TarkovTracker site.</p>
-      <div class="mb-3 rounded-lg bg-gray-800 p-4">
+      <div class="bg-surface-800 mb-3 rounded-lg p-4">
         <MigrationSteps />
         <form @submit.prevent="migration.fetchWithApiToken">
           <UInput
@@ -35,7 +35,7 @@
             </div>
             <UAlert
               v-else-if="migration.apiFetchSuccess?.value"
-              color="green"
+              color="success"
               variant="soft"
               class="mt-0 mr-4 mb-0 grow"
               title="Data ready to import"
@@ -105,13 +105,13 @@
               <div
                 v-for="task in migration.failedTasks.value"
                 :key="task.id"
-                class="border-b border-gray-700 pb-2 last:border-0"
+                class="border-surface-700 border-b pb-2 last:border-0"
               >
                 <div class="flex items-center">
                   <span>Task ID: {{ task.id }}</span>
-                  <UBadge size="xs" color="red" class="ml-2">Failed</UBadge>
+                  <UBadge size="xs" color="error" class="ml-2">Failed</UBadge>
                 </div>
-                <div class="text-sm text-gray-400">
+                <div class="text-surface-400 text-sm">
                   This task will remain marked as failed after migration.
                 </div>
               </div>

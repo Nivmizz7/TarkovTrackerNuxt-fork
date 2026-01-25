@@ -36,7 +36,7 @@
                 </template>
                 <template v-else-if="props.need.needType == 'hideoutModule'">
                   <StationLink v-if="relatedStation" :station="relatedStation" />
-                  <span v-else class="text-sm text-gray-300">Unknown station</span>
+                  <span v-else class="text-surface-300 text-sm">Unknown station</span>
                 </template>
               </span>
             </span>
@@ -53,7 +53,7 @@
                   <UIcon
                     name="i-mdi-check-circle"
                     class="h-5 w-5"
-                    :class="isCollected ? 'text-success-400' : 'text-gray-300'"
+                    :class="isCollected ? 'text-success-400' : 'text-surface-300'"
                   />
                 </template>
                 <template v-else>
@@ -113,7 +113,7 @@
                               <station-link :station="relatedStation" class="justify-center" />
                             </template>
                             <template v-else>
-                              <span class="text-sm text-gray-300">Unknown station</span>
+                              <span class="text-surface-300 text-sm">Unknown station</span>
                             </template>
                           </div>
                           <div class="ml-1">
@@ -306,7 +306,7 @@
     return {
       'bg-gradient-to-l from-complete to-surface':
         selfCompletedNeed.value || currentCount.value >= neededCount.value,
-      'bg-gray-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
+      'bg-surface-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
     };
   });
   const isSingleItem = computed(() => neededCount.value === 1);

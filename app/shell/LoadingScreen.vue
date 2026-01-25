@@ -5,7 +5,7 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="loading-screen-title"
-    class="fixed inset-x-0 top-16 bottom-0 z-50 flex items-center justify-center bg-gray-950"
+    class="bg-surface-950 fixed inset-x-0 top-16 bottom-0 z-50 flex items-center justify-center"
   >
     <div class="flex flex-col items-center gap-6 px-4">
       <!-- Loading Spinner or Error Icon -->
@@ -21,16 +21,16 @@
       <div class="flex flex-col items-center gap-2 text-center">
         <h2
           id="loading-screen-title"
-          class="focus-visible:ring-primary-500 rounded-sm text-xl font-semibold text-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950"
+          class="focus-visible:ring-primary-500 text-surface-100 focus-visible:ring-offset-surface-950 rounded-sm text-xl font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
           {{ hasErrors ? 'Loading Issue' : 'Loading Tarkov Tracker' }}
         </h2>
-        <p class="text-sm text-gray-400">
+        <p class="text-surface-400 text-sm">
           {{ hasErrors ? 'Some data failed to load' : 'Downloading required game data...' }}
         </p>
       </div>
       <!-- Loading Progress Details -->
-      <div class="flex flex-col gap-2 text-xs text-gray-500">
+      <div class="text-surface-500 flex flex-col gap-2 text-xs">
         <div class="flex items-center gap-2">
           <UIcon
             :name="getStatusIcon(metadataStore.loading, metadataStore.error)"
@@ -61,11 +61,11 @@
         </div>
       </div>
       <!-- User Reassurance or Error Actions -->
-      <div v-if="!hasErrors" class="mt-4 max-w-md text-center text-xs text-gray-600">
+      <div v-if="!hasErrors" class="text-surface-600 mt-4 max-w-md text-center text-xs">
         This may take a moment on first load. Data will be cached for future visits.
       </div>
       <div v-else class="mt-4 flex flex-col items-center gap-3">
-        <p class="max-w-md text-center text-xs text-gray-500">
+        <p class="text-surface-500 max-w-md text-center text-xs">
           The app can still work with partial data. You can retry or continue anyway.
         </p>
         <div class="flex gap-3">
@@ -191,7 +191,7 @@
     const baseClass = 'h-4 w-4';
     if (error) return `${baseClass} text-error-500`;
     if (loading) return `${baseClass} animate-spin text-primary-500`;
-    return `${baseClass} text-green-500`;
+    return `${baseClass} text-success-500`;
   }
   function handleRetry() {
     // Reset dismissal status so the loading screen can appear again if retry fails

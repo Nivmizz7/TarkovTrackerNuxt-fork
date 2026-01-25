@@ -109,23 +109,25 @@ const defaultGlobalStubs = {
     template:
       '<button data-testid="u-button" :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
   },
-  UCheckbox: {
-    props: ['modelValue', 'disabled'],
-    emits: ['update:modelValue'],
-    template:
-      '<input type="checkbox" data-testid="u-checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
-  },
   UIcon: true,
   UInput: true,
   UModal: true,
-  // USelectMenu emits numeric values via value-key="value" in the real component.
-  // The Number() conversion matches the real behavior where edition.value is a number.
+  UTabs: {
+    template: '<div><slot name="gameplay" /><slot name="interface" /><slot name="account" /></div>',
+  },
   USelectMenu: {
-    props: ['modelValue', 'options'],
+    props: ['modelValue', 'items', 'options'],
     emits: ['update:modelValue'],
     template:
-      '<select data-testid="u-select" @change="$emit(\'update:modelValue\', Number($event.target.value))"><option v-for="opt in options" :key="opt.value" :value="opt.value">{{ opt.title }}</option></select>',
+      '<select data-testid="u-select" @change="$emit(\'update:modelValue\', Number($event.target.value))"><option v-for="opt in (items || options || [])" :key="opt.value || opt" :value="opt.value || opt">{{ opt.label || opt.title || opt }}</option></select>',
   },
+  USwitch: {
+    props: ['modelValue', 'disabled'],
+    emits: ['update:modelValue'],
+    template:
+      '<input type="checkbox" data-testid="u-switch" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
+  },
+  UTooltip: { template: '<span><slot /></span>' },
 };
 // Helper to configure mock state for each test
 const configureMockState = (
@@ -216,8 +218,8 @@ describe('settings page', () => {
       const wrapper = await mountSuspended(SettingsPage, {
         global: { stubs: defaultGlobalStubs },
       });
-      const checkbox = wrapper.find('[data-testid="u-checkbox"]');
-      expect(checkbox.exists()).toBe(true);
+      const toggle = wrapper.find('[data-testid="u-switch"]');
+      expect(toggle.exists()).toBe(true);
     });
     it('renders with streamer mode enabled', async () => {
       configureMockState({ streamerMode: true });

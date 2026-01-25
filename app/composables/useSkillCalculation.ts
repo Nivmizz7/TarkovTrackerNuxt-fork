@@ -101,14 +101,16 @@ export function useSkillCalculation() {
   // This mirrors the XP pattern - user enters their actual game value
   const setTotalSkillLevel = (skillName: string, totalLevel: number) => {
     // Validation: Ensure totalLevel is a finite number and >= 0
-    if (typeof totalLevel !== 'number' || !Number.isFinite(totalLevel) || totalLevel < 0) {
+    if (typeof totalLevel !== 'number' || !Number.isFinite(totalLevel)) {
       logger.warn(
         `[useSkillCalculation] Invalid totalLevel "${totalLevel}" for skill "${skillName}"`
       );
       return;
     }
-    // Coerce to integer as skill levels in Tarkov are whole numbers (0-51)
-    const validatedLevel = Math.floor(totalLevel);
+    // Clamp level between 0 and 51
+    let validatedLevel = Math.floor(totalLevel);
+    if (validatedLevel < 0) validatedLevel = 0;
+    if (validatedLevel > 51) validatedLevel = 51;
     const questLevel = calculatedQuestSkills.value[skillName] || 0;
     const offset = validatedLevel - questLevel;
     tarkovStore.setSkillOffset(skillName, offset);

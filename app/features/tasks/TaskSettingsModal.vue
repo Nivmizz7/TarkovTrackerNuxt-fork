@@ -4,7 +4,13 @@
     :title="t('page.tasks.settings.title', 'Task Settings')"
     :description="t('page.tasks.settings.description', 'Configure task filters and appearance')"
   >
-    <UButton variant="ghost" color="neutral" size="sm" class="text-gray-400" @click="isOpen = true">
+    <UButton
+      variant="ghost"
+      color="neutral"
+      size="sm"
+      class="text-surface-400"
+      @click="isOpen = true"
+    >
       <UIcon name="i-mdi-tune" class="h-4 w-4 sm:mr-1.5" />
       <span class="hidden text-xs sm:inline">SETTINGS</span>
     </UButton>
@@ -40,7 +46,7 @@
               <p class="text-primary-400 text-xs font-semibold tracking-wide uppercase">
                 {{ t('page.tasks.settings.tabs.filters', 'TASK FILTERS') }}
               </p>
-              <p class="mt-1 text-xs text-gray-500">
+              <p class="text-surface-500 mt-1 text-xs">
                 {{ t('page.tasks.settings.filters.hint', 'Control which tasks appear.') }}
               </p>
             </div>
@@ -72,7 +78,7 @@
               <p class="text-primary-400 text-xs font-semibold tracking-wide uppercase">
                 {{ t('page.tasks.settings.tabs.appearance', 'APPEARANCE') }}
               </p>
-              <p class="mt-1 text-xs text-gray-500">
+              <p class="text-surface-500 mt-1 text-xs">
                 {{ t('page.tasks.settings.appearance.hint', 'Tune how task cards look.') }}
               </p>
             </div>
@@ -113,7 +119,7 @@
               <p class="text-primary-400 text-xs font-semibold tracking-wide uppercase">
                 {{ t('page.tasks.settings.tabs.advanced', 'ADVANCED') }}
               </p>
-              <p class="mt-1 text-xs text-gray-500">
+              <p class="text-surface-500 mt-1 text-xs">
                 {{
                   t(
                     'page.tasks.settings.advanced.hint',
@@ -131,7 +137,7 @@
               class="flex flex-col gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
-                <p class="text-xs text-gray-300">
+                <p class="text-surface-300 text-xs">
                   {{
                     t(
                       'page.tasks.settings.advanced.repairFailedHint',
@@ -139,7 +145,7 @@
                     )
                   }}
                 </p>
-                <p class="text-[11px] text-gray-500">
+                <p class="text-surface-500 text-[11px]">
                   {{
                     t(
                       'page.tasks.settings.advanced.repairFailedCount',

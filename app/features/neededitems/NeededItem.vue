@@ -43,6 +43,10 @@
       type: Boolean,
       default: false,
     },
+    cardStyle: {
+      type: String,
+      default: 'expanded',
+    },
   });
   const progressStore = useProgressStore();
   const tarkovStore = useTarkovStore();
@@ -202,7 +206,7 @@
     return closest[0]?.stationId ?? craftSources.value[0]?.stationId ?? '';
   });
   const craftableIconClass = computed(() => {
-    return isCraftableAvailable.value ? 'text-success-400' : 'text-red-500';
+    return isCraftableAvailable.value ? 'text-success-400' : 'text-error-500';
   });
   const goToCraftStation = async () => {
     if (!craftStationTargetId.value) {
@@ -415,5 +419,6 @@
     craftableTitle,
     isCraftable,
     goToCraftStation,
+    cardStyle: computed(() => props.cardStyle as 'compact' | 'expanded'),
   });
 </script>

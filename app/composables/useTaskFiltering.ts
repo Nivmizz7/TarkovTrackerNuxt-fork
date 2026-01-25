@@ -592,23 +592,37 @@ export function useTaskFiltering() {
     sortMode: TaskSortMode,
     sortDirection: TaskSortDirection
   ): Task[] => {
-    switch (sortMode) {
-      case 'alphabetical':
-        return sortTasksByName(taskList, sortDirection);
-      case 'level':
-        return sortTasksByLevel(taskList, sortDirection);
-      case 'impact':
-        return sortTasksByImpact(taskList, userView, sortDirection);
-      case 'trader':
-        return sortTasksByTrader(taskList, sortDirection);
-      case 'teammates':
-        return sortTasksByTeammatesAvailable(taskList, sortDirection);
-      case 'xp':
-        return sortTasksByXp(taskList, sortDirection);
-      case 'none':
-      default:
-        return sortDirection === 'desc' ? [...taskList].reverse() : [...taskList];
+    const pinnedIds = preferencesStore.getPinnedTaskIds;
+    // Partition tasks into pinned and unpinned
+    const pinnedTasks: Task[] = [];
+    const unpinnedTasks: Task[] = [];
+    for (const task of taskList) {
+      if (pinnedIds.includes(task.id)) {
+        pinnedTasks.push(task);
+      } else {
+        unpinnedTasks.push(task);
+      }
     }
+    const applySort = (tasks: Task[]) => {
+      switch (sortMode) {
+        case 'alphabetical':
+          return sortTasksByName(tasks, sortDirection);
+        case 'level':
+          return sortTasksByLevel(tasks, sortDirection);
+        case 'impact':
+          return sortTasksByImpact(tasks, userView, sortDirection);
+        case 'trader':
+          return sortTasksByTrader(tasks, sortDirection);
+        case 'teammates':
+          return sortTasksByTeammatesAvailable(tasks, sortDirection);
+        case 'xp':
+          return sortTasksByXp(tasks, sortDirection);
+        case 'none':
+        default:
+          return sortDirection === 'desc' ? [...tasks].reverse() : [...tasks];
+      }
+    };
+    return [...applySort(pinnedTasks), ...applySort(unpinnedTasks)];
   };
   /**
    * Main function to update visible tasks based on all filters

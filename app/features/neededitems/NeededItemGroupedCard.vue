@@ -1,9 +1,9 @@
 <template>
-  <div class="flex h-full flex-col rounded-lg bg-gray-800">
+  <div class="bg-surface-800 flex h-full flex-col rounded-lg">
     <!-- Top section: Image + Name side by side -->
     <div class="flex items-center gap-3 p-3">
       <!-- Item image -->
-      <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-gray-900">
+      <div class="bg-surface-900 relative h-16 w-16 shrink-0 overflow-hidden rounded">
         <GameItem
           :src="groupedItem.item.image512pxLink || groupedItem.item.iconLink"
           :item-name="groupedItem.item.name"
@@ -30,7 +30,7 @@
           </AppTooltip>
         </div>
         <div class="mt-1 flex items-center gap-1">
-          <span class="text-xs text-gray-400">Total:</span>
+          <span class="text-surface-400 text-xs">Total:</span>
           <span
             class="text-lg font-bold"
             :class="isComplete ? 'text-success-400' : 'text-primary-400'"
@@ -48,10 +48,10 @@
       :class="activeFilter === 'tasks' || activeFilter === 'hideout' ? '' : 'grid grid-cols-2'"
     >
       <!-- Tasks section -->
-      <div v-if="activeFilter !== 'hideout'" class="bg-gray-800 p-2">
+      <div v-if="activeFilter !== 'hideout'" class="bg-surface-800 p-2">
         <div
           v-if="activeFilter === 'all' || activeFilter === 'completed'"
-          class="mb-1.5 flex items-center gap-1 text-gray-400"
+          class="text-surface-400 mb-1.5 flex items-center gap-1"
         >
           <UIcon name="i-mdi-clipboard-list" class="h-3.5 w-3.5" />
           <span class="font-medium">Tasks</span>
@@ -87,7 +87,7 @@
               :class="
                 groupedItem.taskNonFirCurrent >= groupedItem.taskNonFir
                   ? 'text-success-400'
-                  : 'text-gray-400'
+                  : 'text-surface-400'
               "
             />
             <span
@@ -103,17 +103,17 @@
           </div>
           <span
             v-if="groupedItem.taskFir === 0 && groupedItem.taskNonFir === 0"
-            class="text-gray-500"
+            class="text-surface-500"
           >
             -
           </span>
         </div>
       </div>
       <!-- Hideout section -->
-      <div v-if="activeFilter !== 'tasks'" class="bg-gray-800 p-2">
+      <div v-if="activeFilter !== 'tasks'" class="bg-surface-800 p-2">
         <div
           v-if="activeFilter === 'all' || activeFilter === 'completed'"
-          class="mb-1.5 flex items-center gap-1 text-gray-400"
+          class="text-surface-400 mb-1.5 flex items-center gap-1"
         >
           <UIcon name="i-mdi-home" class="h-3.5 w-3.5" />
           <span class="font-medium">Hideout</span>
@@ -149,7 +149,7 @@
               :class="
                 groupedItem.hideoutNonFirCurrent >= groupedItem.hideoutNonFir
                   ? 'text-success-400'
-                  : 'text-gray-400'
+                  : 'text-surface-400'
               "
             />
             <span
@@ -165,7 +165,7 @@
           </div>
           <span
             v-if="groupedItem.hideoutFir === 0 && groupedItem.hideoutNonFir === 0"
-            class="text-gray-500"
+            class="text-surface-500"
           >
             -
           </span>

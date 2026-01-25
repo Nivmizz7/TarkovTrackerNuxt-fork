@@ -140,6 +140,28 @@ export const CACHE_CONSTANTS = {
   DEFAULT_TTL_HOURS: 12,
   MAX_TTL_HOURS: 24,
 } as const;
+// Traders that don't have traditional loyalty levels (LL1-4)
+// Uses normalizedName for language-independent, stable identification
+export const TRADERS_WITHOUT_LOYALTY_LEVELS = [
+  'fence', // Scav karma (reputation) based only
+  'mr-kerman', // Arena trader
+  'taran', // Arena trader
+  'voevoda', // Arena trader
+  'radio-station', // Not a traditional trader
+] as const;
+// Traders with non-standard or no reputation tracking (hide rep input entirely)
+export const TRADERS_WITHOUT_REPUTATION = [
+  'lightkeeper', // In-raid trader with special unlock system
+  'btr-driver', // Service-based, uses scav karma for access
+  'mr-kerman', // Arena trader
+  'taran', // Arena trader
+  'voevoda', // Arena trader
+  'radio-station', // Not a traditional trader
+] as const;
+// Traders that require a specific task to unlock
+export const TRADER_UNLOCK_TASKS: Record<string, string> = {
+  ref: '66058cb22cee99303f1ba067', // Easy Money - Part 1 (Skier)
+} as const;
 // Trader display order (matches in-game order)
 // Uses normalizedName for language-independent, stable identification
 export const TRADER_ORDER = [

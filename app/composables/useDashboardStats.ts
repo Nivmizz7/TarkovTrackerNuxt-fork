@@ -225,10 +225,12 @@ export function useDashboardStats() {
         return {
           id: trader.id,
           name: trader.name,
+          normalizedName: trader.normalizedName,
           imageLink: trader.imageLink,
+          levels: trader.levels,
           totalTasks,
           completedTasks,
-          percentage: totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : '0.0',
+          percentage: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 1000) / 10 : 0,
         };
       })
       .filter((stats) => stats.totalTasks > 0); // Only show traders with at least 1 task

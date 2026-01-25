@@ -74,7 +74,7 @@ const setup = async (
       t: (_key: string, fallback?: string) => fallback ?? _key,
     }),
   }));
-  const { default: NeededItemsPage } = await import('@/pages/neededitems.vue');
+  const { default: NeededItemsPage } = await import('@/pages/needed-items.vue');
   return NeededItemsPage;
 };
 const defaultGlobalStubs = {

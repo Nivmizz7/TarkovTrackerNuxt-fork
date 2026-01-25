@@ -1,8 +1,9 @@
 <template>
   <UCard
-    class="relative overflow-hidden border border-white/10 bg-[hsl(240_5%_7%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_10px_30px_rgba(0,0,0,0.35)]"
-    :class="taskClasses"
-    :ui="{ body: cardBodyClass }"
+    :id="`task-${task.id}`"
+    class="bg-surface-800 card relative divide-none overflow-hidden shadow-md ring-0"
+    :class="[taskClasses, 'rounded-md']"
+    :ui="{ body: 'p-0 sm:p-0 flex flex-col h-full', footer: 'p-0 sm:p-0 border-t-0' }"
     @contextmenu.prevent="openOverflowMenu"
   >
     <div
@@ -16,346 +17,422 @@
         class="h-24 w-24"
       />
     </div>
-    <div class="relative z-10 flex h-full flex-col" :class="isCompact ? 'gap-3' : 'gap-4'">
-      <!--1) Header: identity + state -->
-      <div class="flex items-start justify-between gap-3">
-        <div class="flex min-w-0 items-center gap-2">
-          <AppTooltip :text="task?.name">
-            <router-link
-              :to="`/tasks?task=${task.id}`"
-              class="text-primary-400 hover:text-primary-300 flex min-w-0 items-center gap-2 no-underline"
-            >
-              <div class="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-gray-800">
-                <img
-                  v-if="task?.trader?.imageLink"
-                  :src="task.trader.imageLink"
-                  :alt="task?.trader?.name || 'Trader'"
-                  class="h-full w-full object-cover"
-                />
-                <UIcon v-else name="i-mdi-account-circle" class="h-full w-full text-gray-400" />
-              </div>
-              <img
-                v-if="isFactionTask"
-                :src="factionImage"
-                :alt="task?.factionName"
-                class="h-6 w-6 shrink-0 object-contain invert"
-              />
-              <span class="min-w-0 truncate text-sm font-semibold text-gray-100 sm:text-base">
-                {{ task?.name }}
-              </span>
-            </router-link>
-          </AppTooltip>
-          <!-- External link icons -->
-          <div class="ml-2 flex shrink-0 items-center gap-1.5">
-            <AppTooltip
-              v-if="task.wikiLink"
-              :text="t('page.tasks.questcard.viewOnWiki', 'View on Wiki')"
-            >
-              <a
-                :href="task.wikiLink"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 inline-flex items-center justify-center rounded p-1 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                :aria-label="t('page.tasks.questcard.viewOnWiki', 'View on Wiki')"
-                @click.stop
+    <div class="relative z-10 flex h-full flex-col">
+      <!-- 1) Identity + Header (Padded) -->
+      <div class="flex flex-col" :class="compactClasses.header">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex min-w-0 items-center gap-2">
+            <AppTooltip :text="task?.name">
+              <router-link
+                :to="`/tasks?task=${task.id}`"
+                class="text-link hover:text-link-hover flex min-w-0 items-center gap-2 no-underline"
               >
-                <img src="/img/logos/wikilogo.webp" alt="Wiki" aria-hidden="true" class="h-5 w-5" />
-              </a>
-            </AppTooltip>
-            <AppTooltip :text="t('page.tasks.questcard.viewOnTarkovDev', 'View on Tarkov.dev')">
-              <a
-                :href="tarkovDevTaskUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 inline-flex items-center justify-center rounded p-1 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                :aria-label="t('page.tasks.questcard.viewOnTarkovDev', 'View on Tarkov.dev')"
-                @click.stop
-              >
+                <div class="bg-surface-800 h-9 w-9 shrink-0 overflow-hidden rounded-full">
+                  <img
+                    v-if="task?.trader?.imageLink"
+                    :src="task.trader.imageLink"
+                    :alt="task?.trader?.name || 'Trader'"
+                    class="h-full w-full object-cover"
+                  />
+                  <UIcon
+                    v-else
+                    name="i-mdi-account-circle"
+                    class="text-surface-400 h-full w-full"
+                  />
+                </div>
                 <img
-                  src="/img/logos/tarkovdevlogo.webp"
-                  alt="tarkov.dev"
-                  aria-hidden="true"
-                  class="h-5 w-5"
+                  v-if="isFactionTask"
+                  :src="factionImage"
+                  :alt="task?.factionName"
+                  class="h-6 w-6 shrink-0 object-contain invert"
                 />
-              </a>
+                <span class="text-surface-100 min-w-0 truncate text-sm font-semibold sm:text-base">
+                  {{ task?.name }}
+                </span>
+              </router-link>
             </AppTooltip>
+            <!-- External link icons -->
+            <div class="ml-2 flex shrink-0 items-center gap-1.5">
+              <AppTooltip
+                v-if="task.wikiLink"
+                :text="t('page.tasks.questcard.viewOnWiki', 'View on Wiki')"
+              >
+                <a
+                  :href="task.wikiLink"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 text-surface-400 hover:text-surface-200 inline-flex items-center justify-center rounded p-1 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  :aria-label="t('page.tasks.questcard.viewOnWiki', 'View on Wiki')"
+                  @click.stop
+                >
+                  <img
+                    src="/img/logos/wikilogo.webp"
+                    alt="Wiki"
+                    aria-hidden="true"
+                    class="h-5 w-5"
+                  />
+                </a>
+              </AppTooltip>
+              <AppTooltip :text="t('page.tasks.questcard.viewOnTarkovDev', 'View on Tarkov.dev')">
+                <a
+                  :href="tarkovDevTaskUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 text-surface-400 hover:text-surface-200 inline-flex items-center justify-center rounded p-1 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  :aria-label="t('page.tasks.questcard.viewOnTarkovDev', 'View on Tarkov.dev')"
+                  @click.stop
+                >
+                  <img
+                    src="/img/logos/tarkovdevlogo.webp"
+                    alt="tarkov.dev"
+                    aria-hidden="true"
+                    class="h-5 w-5"
+                  />
+                </a>
+              </AppTooltip>
+            </div>
           </div>
-        </div>
-        <div class="flex flex-wrap items-center justify-end gap-1.5">
-          <AppTooltip
-            v-if="(task.minPlayerLevel ?? 0) > 0"
-            :text="
-              t(
-                'page.tasks.questcard.levelBadgeTooltip',
-                { level: task.minPlayerLevel },
-                `Minimum player level ${task.minPlayerLevel} required to unlock this quest`
-              )
-            "
-          >
-            <UBadge
+          <div class="scrollbar-none flex items-center justify-end gap-1.5 overflow-x-auto">
+            <!-- Pin Button -->
+            <UButton
               size="xs"
-              :color="meetsLevelRequirement ? 'success' : 'error'"
-              variant="soft"
-              class="cursor-help text-[11px]"
+              variant="ghost"
+              :color="isPinned ? 'primary' : 'neutral'"
+              :icon="isPinned ? 'i-mdi-pin' : 'i-mdi-pin-outline'"
+              class="shrink-0"
+              :aria-label="isPinned ? 'Unpin task' : 'Pin task'"
+              @click.stop="togglePin"
+            />
+            <AppTooltip
+              v-if="(task.minPlayerLevel ?? 0) > 0"
+              :text="
+                t(
+                  'page.tasks.questcard.levelBadgeTooltip',
+                  { level: task.minPlayerLevel },
+                  `Minimum player level ${task.minPlayerLevel} required to unlock this quest`
+                )
+              "
             >
-              {{ t('page.tasks.questcard.levelBadge', { count: task.minPlayerLevel }) }}
-            </UBadge>
-          </AppTooltip>
-          <AppTooltip
-            :text="
-              isGlobalTask
-                ? t(
-                    'page.tasks.questcard.globalTaskTooltip',
-                    'This task can be completed on any map'
-                  )
-                : task?.map?.name || t('page.tasks.questcard.anyMap', 'Any')
-            "
-          >
+              <UBadge
+                size="xs"
+                :color="meetsLevelRequirement ? 'success' : 'error'"
+                variant="soft"
+                class="shrink-0 cursor-help text-[11px]"
+              >
+                {{ t('page.tasks.questcard.levelBadge', { count: task.minPlayerLevel }) }}
+              </UBadge>
+            </AppTooltip>
+            <AppTooltip :text="task?.map?.name || t('page.tasks.questcard.anyMap', 'Any')">
+              <UBadge
+                size="xs"
+                color="neutral"
+                variant="soft"
+                class="inline-flex max-w-40 shrink-0 items-center gap-1 text-[11px]"
+              >
+                <UIcon
+                  :name="task?.map?.name ? 'i-mdi-map-marker' : 'i-mdi-earth'"
+                  aria-hidden="true"
+                  class="h-3 w-3"
+                />
+                <span class="truncate">
+                  {{ task?.map?.name || t('page.tasks.questcard.anyMap', 'Any') }}
+                </span>
+              </UBadge>
+            </AppTooltip>
             <UBadge
+              v-if="objectiveProgress.total > 0"
               size="xs"
-              :color="isGlobalTask ? 'info' : 'neutral'"
+              color="neutral"
               variant="soft"
-              class="inline-flex max-w-40 items-center gap-1 text-[11px]"
-              :class="isGlobalTask ? 'border-info-500/30 border' : ''"
+              class="inline-flex shrink-0 items-center gap-1 text-[11px]"
+            >
+              <UIcon name="i-mdi-progress-check" aria-hidden="true" class="h-3 w-3" />
+              {{ t('page.tasks.questcard.progress', objectiveProgress) }}
+            </UBadge>
+            <UBadge
+              v-if="isFailed"
+              size="xs"
+              color="error"
+              variant="soft"
+              class="shrink-0 text-[11px]"
+            >
+              {{ t('page.dashboard.stats.failed.stat', 'Failed') }}
+            </UBadge>
+            <AppTooltip
+              v-if="isInvalid && !isFailed"
+              :text="
+                t(
+                  'page.tasks.questcard.blockedTooltip',
+                  'This quest is permanently blocked and can never be completed due to choices made in other quests'
+                )
+              "
+            >
+              <UBadge
+                size="xs"
+                color="neutral"
+                variant="soft"
+                class="shrink-0 cursor-help text-[11px]"
+              >
+                {{ t('page.tasks.questcard.blocked', 'Blocked') }}
+              </UBadge>
+            </AppTooltip>
+            <AppTooltip
+              v-if="preferencesStore.getShowRequiredLabels && task.kappaRequired"
+              :text="
+                t(
+                  'page.tasks.questcard.kappaTooltip',
+                  'This quest is required to obtain the Kappa Secure Container'
+                )
+              "
+            >
+              <UBadge
+                size="xs"
+                color="kappa"
+                variant="soft"
+                class="shrink-0 cursor-help text-[11px]"
+              >
+                {{ t('page.tasks.questcard.kappa', 'Kappa') }}
+              </UBadge>
+            </AppTooltip>
+            <AppTooltip
+              v-if="preferencesStore.getShowRequiredLabels && task.lightkeeperRequired"
+              :text="
+                t(
+                  'page.tasks.questcard.lightkeeperTooltip',
+                  'This quest is required to unlock the Lightkeeper trader'
+                )
+              "
+            >
+              <UBadge
+                size="xs"
+                color="lightkeeper"
+                variant="soft"
+                class="shrink-0 cursor-help text-[11px]"
+              >
+                {{ t('page.tasks.questcard.lightkeeper', 'Lightkeeper') }}
+              </UBadge>
+            </AppTooltip>
+            <AppTooltip
+              v-if="preferencesStore.getShowRequiredLabels && minExclusiveEdition"
+              :text="
+                t(
+                  'page.tasks.questcard.editionExclusiveTooltip',
+                  { editions: minExclusiveEdition.title },
+                  `This quest is only available to players with ${minExclusiveEdition.title} edition`
+                )
+              "
+            >
+              <UBadge
+                size="xs"
+                color="primary"
+                variant="soft"
+                class="shrink-0 cursor-help text-[11px]"
+              >
+                {{ exclusiveEditionBadge }}
+              </UBadge>
+            </AppTooltip>
+            <!-- XP display - shown for all task statuses when setting is enabled -->
+            <div
+              v-if="preferencesStore.getShowExperienceRewards && task.experience"
+              class="text-surface-400 flex shrink-0 items-center gap-1 text-xs"
             >
               <UIcon
-                :name="isGlobalTask || !task?.map?.name ? 'i-mdi-earth' : 'i-mdi-map-marker'"
+                name="i-mdi-star"
                 aria-hidden="true"
-                class="h-3 w-3"
+                class="text-warning-500 h-4 w-4 shrink-0"
               />
-              <span class="truncate">
-                {{
-                  isGlobalTask
-                    ? t('page.tasks.questcard.globalTask', 'Any Map')
-                    : task?.map?.name || t('page.tasks.questcard.anyMap', 'Any')
-                }}
-              </span>
-            </UBadge>
-          </AppTooltip>
-          <UBadge
-            v-if="objectiveProgress.total > 0"
-            size="xs"
-            color="neutral"
-            variant="soft"
-            class="inline-flex items-center gap-1 text-[11px]"
-          >
-            <UIcon name="i-mdi-progress-check" aria-hidden="true" class="h-3 w-3" />
-            {{ t('page.tasks.questcard.progress', objectiveProgress) }}
-          </UBadge>
-          <UBadge v-if="isFailed" size="xs" color="error" variant="soft" class="text-[11px]">
-            {{ t('page.dashboard.stats.failed.stat', 'Failed') }}
-          </UBadge>
-          <AppTooltip
-            v-if="isInvalid && !isFailed"
-            :text="
-              t(
-                'page.tasks.questcard.blockedTooltip',
-                'This quest is permanently blocked and can never be completed due to choices made in other quests'
-              )
-            "
-          >
-            <UBadge size="xs" color="neutral" variant="soft" class="cursor-help text-[11px]">
-              {{ t('page.tasks.questcard.blocked', 'Blocked') }}
-            </UBadge>
-          </AppTooltip>
-          <AppTooltip
-            v-if="preferencesStore.getShowRequiredLabels && task.kappaRequired"
-            :text="
-              t(
-                'page.tasks.questcard.kappaTooltip',
-                'This quest is required to obtain the Kappa Secure Container'
-              )
-            "
-          >
-            <UBadge size="xs" color="error" variant="soft" class="cursor-help text-[11px]">
-              {{ t('page.tasks.questcard.kappa', 'Kappa') }}
-            </UBadge>
-          </AppTooltip>
-          <AppTooltip
-            v-if="preferencesStore.getShowRequiredLabels && task.lightkeeperRequired"
-            :text="
-              t(
-                'page.tasks.questcard.lightkeeperTooltip',
-                'This quest is required to unlock the Lightkeeper trader'
-              )
-            "
-          >
-            <UBadge size="xs" color="warning" variant="soft" class="cursor-help text-[11px]">
-              {{ t('page.tasks.questcard.lightkeeper', 'Lightkeeper') }}
-            </UBadge>
-          </AppTooltip>
-          <AppTooltip
-            v-if="preferencesStore.getShowRequiredLabels && minExclusiveEdition"
-            :text="
-              t(
-                'page.tasks.questcard.editionExclusiveTooltip',
-                { editions: minExclusiveEdition.title },
-                `This quest is only available to players with ${minExclusiveEdition.title} edition`
-              )
-            "
-          >
-            <UBadge size="xs" color="primary" variant="soft" class="cursor-help text-[11px]">
-              {{ exclusiveEditionBadge }}
-            </UBadge>
-          </AppTooltip>
-          <!-- XP display - shown for all task statuses when setting is enabled -->
-          <div
-            v-if="preferencesStore.getShowExperienceRewards && task.experience"
-            class="flex items-center gap-1 text-xs text-gray-400"
-          >
-            <UIcon name="i-mdi-star" aria-hidden="true" class="h-4 w-4 shrink-0 text-yellow-500" />
-            <span>{{ formatNumber(task.experience) }} XP</span>
-          </div>
-          <!-- Action buttons in header for consistent positioning -->
-          <template v-if="actionButtonState !== 'none'">
-            <!-- Locked: Mark Available button -->
-            <UButton
-              v-if="actionButtonState === 'locked'"
-              :size="actionButtonSize"
-              color="primary"
-              variant="soft"
-              class="shrink-0"
-              @click.stop="markTaskAvailable()"
-            >
-              {{ t('page.tasks.questcard.availablebutton', 'Mark Available') }}
-            </UButton>
-            <!-- Complete: Mark Uncompleted/Reset Failed button -->
-            <UButton
-              v-else-if="actionButtonState === 'complete'"
-              :size="actionButtonSize"
-              color="primary"
-              variant="soft"
-              class="shrink-0"
-              @click.stop="markTaskUncomplete()"
-            >
-              {{
-                isFailed
-                  ? t('page.tasks.questcard.resetfailed', 'Reset Failed')
-                  : t('page.tasks.questcard.uncompletebutton', 'Mark Uncompleted')
-              }}
-            </UButton>
-            <!-- Hot Wheels: Both Complete and Fail buttons -->
-            <div v-else-if="actionButtonState === 'hotwheels'" class="flex shrink-0 flex-col gap-1">
+              <span class="whitespace-nowrap">{{ formatNumber(task.experience) }} XP</span>
+            </div>
+            <!-- Action buttons in header for consistent positioning -->
+            <template v-if="actionButtonState !== 'none'">
+              <!-- Locked: Mark Available button -->
               <UButton
+                v-if="actionButtonState === 'locked'"
+                :size="actionButtonSize"
+                color="primary"
+                variant="soft"
+                class="shrink-0"
+                @click.stop="markTaskAvailable()"
+              >
+                {{ t('page.tasks.questcard.availablebutton', 'Mark Available') }}
+              </UButton>
+              <!-- Complete: Mark Uncompleted/Reset Failed button -->
+              <UButton
+                v-else-if="actionButtonState === 'complete'"
+                :size="actionButtonSize"
+                color="primary"
+                variant="soft"
+                class="shrink-0"
+                @click.stop="markTaskUncomplete()"
+              >
+                {{
+                  isFailed
+                    ? t('page.tasks.questcard.resetfailed', 'Reset Failed')
+                    : t('page.tasks.questcard.uncompletebutton', 'Mark Uncompleted')
+                }}
+              </UButton>
+              <!-- Hot Wheels: Both Complete and Fail buttons -->
+              <div
+                v-else-if="actionButtonState === 'hotwheels'"
+                class="flex shrink-0 flex-col gap-1"
+              >
+                <UButton
+                  :size="actionButtonSize"
+                  color="success"
+                  :ui="completeButtonUi"
+                  @click.stop="markTaskComplete()"
+                >
+                  {{ t('page.tasks.questcard.completebutton', 'Complete').toUpperCase() }}
+                </UButton>
+                <UButton
+                  :size="actionButtonSize"
+                  color="error"
+                  variant="soft"
+                  @click.stop="markTaskFailed()"
+                >
+                  {{ t('page.tasks.questcard.failbutton', 'Fail') }}
+                </UButton>
+              </div>
+              <!-- Available: Complete button -->
+              <UButton
+                v-else-if="actionButtonState === 'available'"
                 :size="actionButtonSize"
                 color="success"
                 :ui="completeButtonUi"
+                class="shrink-0"
                 @click.stop="markTaskComplete()"
               >
                 {{ t('page.tasks.questcard.completebutton', 'Complete').toUpperCase() }}
               </UButton>
+            </template>
+            <!-- Menu button -->
+            <AppTooltip v-if="isOurFaction" :text="t('page.tasks.questcard.more', 'More')">
               <UButton
-                :size="actionButtonSize"
-                color="error"
-                variant="soft"
-                @click.stop="markTaskFailed()"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                class="shrink-0"
+                :aria-label="t('page.tasks.questcard.more', 'More')"
+                @click="openOverflowMenu"
               >
-                {{ t('page.tasks.questcard.failbutton', 'Fail') }}
+                <UIcon name="i-mdi-dots-horizontal" aria-hidden="true" class="h-5 w-5" />
               </UButton>
-            </div>
-            <!-- Available: Complete button -->
-            <UButton
-              v-else-if="actionButtonState === 'available'"
-              :size="actionButtonSize"
-              color="success"
-              :ui="completeButtonUi"
-              class="shrink-0"
-              @click.stop="markTaskComplete()"
-            >
-              {{ t('page.tasks.questcard.completebutton', 'Complete').toUpperCase() }}
-            </UButton>
+            </AppTooltip>
+          </div>
+        </div>
+        <!-- Extra Info Strips (padded area) -->
+        <div v-if="lockedBefore > 0" class="text-surface-400 text-xs">
+          <span class="text-surface-500">
+            {{ t('page.tasks.questcard.requires', 'Requires') }}:
+          </span>
+          <template v-if="pendingParentTasks.length">
+            <span class="ml-2 inline-flex flex-wrap items-center gap-1.5">
+              <AppTooltip
+                v-for="parent in displayedPendingParents"
+                :key="parent.id"
+                :text="parent.name"
+              >
+                <router-link
+                  :to="`/tasks?task=${parent.id}`"
+                  class="text-surface-200 inline-flex max-w-[16rem] items-center rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] hover:bg-white/10"
+                >
+                  <span class="truncate">{{ parent.name }}</span>
+                </router-link>
+              </AppTooltip>
+              <span v-if="extraPendingParentsCount > 0" class="text-surface-500">
+                +{{ extraPendingParentsCount }}
+              </span>
+            </span>
           </template>
-          <!-- Menu button -->
-          <AppTooltip v-if="isOurFaction" :text="t('page.tasks.questcard.more', 'More')">
-            <UButton
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              class="shrink-0"
-              :aria-label="t('page.tasks.questcard.more', 'More')"
-              @click="openOverflowMenu"
-            >
-              <UIcon name="i-mdi-dots-horizontal" aria-hidden="true" class="h-5 w-5" />
-            </UButton>
-          </AppTooltip>
+          <template v-else>
+            <span class="text-surface-300 ml-2">{{ lockedBefore }}</span>
+          </template>
+        </div>
+        <div v-if="isFailed" class="text-error-300 text-xs">
+          <span class="text-error-200/70">
+            {{ t('page.tasks.questcard.failedbecause', 'Failed because') }}:
+          </span>
+          <template v-if="failureSources.length > 0">
+            <span class="ml-2 inline-flex flex-wrap items-center gap-1.5">
+              <router-link
+                v-for="source in failureSources"
+                :key="source.id"
+                :to="`/tasks?task=${source.id}`"
+                class="border-error-500/30 bg-error-500/10 text-error-200 hover:bg-error-500/20 inline-flex max-w-[16rem] items-center rounded-md border px-2 py-0.5 text-[11px]"
+              >
+                {{ source.name }}
+              </router-link>
+            </span>
+          </template>
+          <span v-else class="text-error-200/80 ml-2">
+            {{ t('page.tasks.questcard.failedbecauseunknown', 'Failed manually or data missing') }}
+          </span>
+        </div>
+        <div v-if="showNeededBy" class="text-surface-400 text-xs">
+          <span class="text-surface-500">
+            <UIcon name="i-mdi-account-multiple-outline" class="mr-1 inline h-4 w-4" />
+            {{
+              t(
+                'page.tasks.questcard.neededby',
+                { names: neededByDisplayText },
+                `Needed by: ${neededByDisplayText}`
+              )
+            }}
+          </span>
         </div>
       </div>
-      <!-- 2) Top strip: Before (only show when there are pending prerequisites) -->
-      <div v-if="lockedBefore > 0" class="text-xs text-gray-400">
-        <span class="text-gray-500">{{ t('page.tasks.questcard.requires', 'Requires') }}:</span>
-        <template v-if="pendingParentTasks.length">
-          <span class="ml-2 inline-flex flex-wrap items-center gap-1.5">
-            <AppTooltip
-              v-for="parent in displayedPendingParents"
-              :key="parent.id"
-              :text="parent.name"
-            >
-              <router-link
-                :to="`/tasks?task=${parent.id}`"
-                class="inline-flex max-w-[16rem] items-center rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-gray-200 hover:bg-white/10"
-              >
-                <span class="truncate">{{ parent.name }}</span>
-              </router-link>
-            </AppTooltip>
-            <span v-if="extraPendingParentsCount > 0" class="text-gray-500">
-              +{{ extraPendingParentsCount }}
-            </span>
-          </span>
-        </template>
-        <template v-else>
-          <span class="ml-2 text-gray-300">{{ lockedBefore }}</span>
-        </template>
+      <!-- 2) Body: objectives (Full Width) -->
+      <div
+        class="bg-surface-900/40 border-surface-700/30 ring-surface-700/30 border-y ring-1 ring-inset"
+      >
+        <div
+          class="hover:bg-surface-700/20 flex cursor-pointer items-center justify-between transition-colors select-none"
+          :class="compactClasses.objectivesToggle"
+          @click="objectivesVisible = !objectivesVisible"
+        >
+          <div class="text-surface-400 text-[10px] font-bold tracking-wider uppercase">
+            {{ t('page.tasks.questcard.objectives', 'Objectives') }}
+          </div>
+          <UButton
+            icon="i-mdi-chevron-down"
+            variant="ghost"
+            color="neutral"
+            size="xs"
+            :class="{ 'rotate-180': objectivesVisible }"
+            class="pointer-events-none transition-transform duration-200"
+          />
+        </div>
+        <Transition
+          enter-active-class="transition duration-150 ease-out"
+          enter-from-class="opacity-0 -translate-y-1"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition duration-100 ease-in"
+          leave-from-class="opacity-100 translate-y-0"
+          leave-to-class="opacity-0 -translate-y-1"
+        >
+          <div
+            v-if="objectivesVisible"
+            class="border-surface-700/30 space-y-3 border-t"
+            :class="compactClasses.objectivesBody"
+          >
+            <QuestKeys v-if="task?.neededKeys?.length" :needed-keys="task.neededKeys" />
+            <QuestObjectivesSkeleton
+              v-if="showObjectivesSkeleton"
+              :objectives="relevantViewObjectives"
+              :irrelevant-count="irrelevantObjectives.length"
+              :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
+            />
+            <QuestObjectives
+              v-else
+              :objectives="relevantViewObjectives"
+              :irrelevant-count="irrelevantObjectives.length"
+              :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
+            />
+          </div>
+        </Transition>
       </div>
-      <div v-if="isFailed" class="text-xs text-red-300">
-        <span class="text-red-200/70">
-          {{ t('page.tasks.questcard.failedbecause', 'Failed because') }}:
-        </span>
-        <template v-if="failureSources.length > 0">
-          <span class="ml-2 inline-flex flex-wrap items-center gap-1.5">
-            <router-link
-              v-for="source in failureSources"
-              :key="source.id"
-              :to="`/tasks?task=${source.id}`"
-              class="inline-flex max-w-[16rem] items-center rounded-md border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[11px] text-red-200 hover:bg-red-500/20"
-            >
-              {{ source.name }}
-            </router-link>
-          </span>
-        </template>
-        <span v-else class="ml-2 text-red-200/80">
-          {{ t('page.tasks.questcard.failedbecauseunknown', 'Failed manually or data missing') }}
-        </span>
-      </div>
-      <div v-if="showNeededBy" class="text-xs text-gray-400">
-        <span class="text-gray-500">
-          <UIcon name="i-mdi-account-multiple-outline" class="mr-1 inline h-4 w-4" />
-          {{
-            t(
-              'page.tasks.questcard.neededby',
-              { names: neededByDisplayText },
-              `Needed by: ${neededByDisplayText}`
-            )
-          }}
-        </span>
-      </div>
-      <!-- 3) Body: objectives -->
-      <div class="space-y-3">
-        <QuestKeys v-if="task?.neededKeys?.length" :needed-keys="task.neededKeys" />
-        <QuestObjectivesSkeleton
-          v-if="showObjectivesSkeleton"
-          :objectives="relevantViewObjectives"
-          :irrelevant-count="irrelevantObjectives.length"
-          :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
-        />
-        <QuestObjectives
-          v-else
-          :objectives="relevantViewObjectives"
-          :irrelevant-count="irrelevantObjectives.length"
-          :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
-        />
-      </div>
-      <!-- 4) Chain info -->
-      <div v-if="afterHasContent" class="text-xs text-gray-400">
+      <!-- 3) Footer Strips (Padded) -->
+      <div v-if="afterHasContent" class="text-surface-400 text-xs" :class="compactClasses.footer">
         <AppTooltip
           v-if="unlocksNextCount > 0"
           :text="
@@ -365,11 +442,11 @@
             )
           "
         >
-          <span class="cursor-help border-b border-dotted border-gray-500">
+          <span class="border-surface-500 cursor-help border-b border-dotted">
             {{ t('page.tasks.questcard.unlocksNext', 'Unlocks next') }}: {{ unlocksNextCount }}
           </span>
         </AppTooltip>
-        <span v-if="unlocksNextCount > 0 && impactCount > 0" class="mx-2 text-gray-600">•</span>
+        <span v-if="unlocksNextCount > 0 && impactCount > 0" class="text-surface-600 mx-2">•</span>
         <AppTooltip
           v-if="impactCount > 0"
           :text="
@@ -379,13 +456,16 @@
             )
           "
         >
-          <span class="cursor-help border-b border-dotted border-gray-500">
+          <span class="border-surface-500 cursor-help border-b border-dotted">
             {{ t('page.tasks.questcard.impact', 'Impact') }}: {{ impactCount }}
           </span>
         </AppTooltip>
       </div>
-      <!--5) Rewards Summary Section -->
+    </div>
+    <!-- 4) Rewards Summary Section (Fixed to bottom, Full Width) -->
+    <template #footer>
       <TaskCardRewards
+        :is-compact="isCompact"
         :task-id="task.id"
         :trader-standing-rewards="traderStandingRewards"
         :skill-rewards="skillRewards"
@@ -396,7 +476,7 @@
         :child-tasks="childTasks"
         @item-context-menu="openItemContextMenu"
       />
-    </div>
+    </template>
     <!-- Overflow / Context Menu -->
     <ContextMenu ref="taskContextMenu">
       <template #default="{ close }">
@@ -483,7 +563,6 @@
   import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useTaskActions, type TaskActionPayload } from '@/composables/useTaskActions';
-  import { useTaskFiltering } from '@/composables/useTaskFiltering';
   import { isTaskSuccessful, useTaskState } from '@/composables/useTaskState';
   import QuestObjectivesSkeleton from '@/features/tasks/QuestObjectivesSkeleton.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
@@ -535,19 +614,20 @@
   const tarkovStore = useTarkovStore();
   const preferencesStore = usePreferencesStore();
   const metadataStore = useMetadataStore();
-  const { isGlobalTask: isGlobalTaskFn } = useTaskFiltering();
   const formatNumber = useLocaleNumberFormatter();
   const taskContextMenu = ref<ContextMenuRef | null>(null);
   const itemContextMenu = ref<ContextMenuRef | null>(null);
   const selectedItem = ref<{ id: string; wikiLink?: string } | null>(null);
+  // Consolidated task state using composable (reduces store lookups)
+  const { isComplete, isFailed, isLocked, isInvalid } = useTaskState(() => props.task.id);
+  // Objectives visibility - auto-collapsed if task is completed
+  const objectivesVisible = ref(!isComplete.value);
   // Use extracted task actions composable
   const { markTaskComplete, markTaskUncomplete, markTaskAvailable, markTaskFailed } =
     useTaskActions(
       () => props.task,
       (payload) => emit('on-task-action', payload)
     );
-  // Consolidated task state using composable (reduces store lookups)
-  const { isComplete, isFailed, isLocked, isInvalid } = useTaskState(() => props.task.id);
   // Helper for status array checks
   const hasStatus = (status: string[] | undefined, statuses: string[]) => {
     const normalized = (status ?? []).map((entry) => entry.toLowerCase());
@@ -575,15 +655,18 @@
   });
   const taskClasses = computed(() => {
     if (isComplete.value && !isFailed.value) return 'border-success-500/25 bg-success-500/10';
-    if (isFailed.value) return 'border-error-500/25 bg-error-500/10'; // Red for failed
-    if (isInvalid.value) return 'border-neutral-500/25 bg-neutral-500/10 opacity-60'; // Gray for blocked
-    if (isLocked.value) return 'border-amber-500/25 bg-amber-500/10'; // Amber/orange for locked
-    return 'border-white/10';
+    if (isFailed.value) return 'border-error-500/25 bg-error-500/10';
+    if (isInvalid.value) return 'border-surface-500/20 bg-surface-500/5 opacity-60';
+    if (isLocked.value) return 'border-white/12 bg-surface-900/10';
+    return 'border-white/12';
   });
   const isCompact = computed(() => preferencesStore.getTaskCardDensity === 'compact');
-  const cardBodyClass = computed(() => {
-    return isCompact.value ? 'p-3 flex flex-col' : 'p-4 flex flex-col';
-  });
+  const compactClasses = computed(() => ({
+    header: isCompact.value ? 'gap-2 px-3 py-2' : 'gap-3 px-4 py-3',
+    objectivesToggle: isCompact.value ? 'px-3 py-2' : 'px-4 py-3',
+    objectivesBody: isCompact.value ? 'px-3 py-3' : 'px-4 py-4',
+    footer: isCompact.value ? 'px-3 pt-1.5 pb-2' : 'px-4 pt-2 pb-3',
+  }));
   const showBackgroundIcon = computed(
     () => isLocked.value || isFailed.value || isComplete.value || isInvalid.value
   );
@@ -609,8 +692,8 @@
   const backgroundIconColor = computed(() => {
     if (isFailed.value) return 'text-error-400';
     if (isComplete.value) return 'text-success-400';
-    if (isInvalid.value) return 'text-neutral-400';
-    if (isLocked.value) return 'text-amber-400';
+    if (isInvalid.value) return 'text-surface-400';
+    if (isLocked.value) return 'text-warning-400';
     return 'text-brand-200';
   });
   const lockedBehind = computed(() => {
@@ -677,6 +760,8 @@
   const showHotWheelsFail = computed(
     () => isHotWheelsTask.value && !isComplete.value && !isLocked.value
   );
+  const isPinned = computed(() => preferencesStore.getPinnedTaskIds.includes(props.task.id));
+  const togglePin = () => preferencesStore.togglePinnedTask(props.task.id);
   /**
    * Action button state for cleaner template logic.
    * Returns which action button(s) should be shown.
@@ -690,7 +775,6 @@
     return 'available';
   });
   const onMapView = computed(() => preferencesStore.getTaskPrimaryView === 'maps');
-  const isGlobalTask = computed(() => isGlobalTaskFn(props.task));
   // Get objectives from props or fall back to store when props are stale
   // This handles the case where visibleTasks holds old task objects after objectives merge
   const taskObjectives = computed(() => {

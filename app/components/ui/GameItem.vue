@@ -32,7 +32,7 @@
           imageClasses,
         ]"
       >
-        <UIcon name="i-mdi-loading" class="h-6 w-6 animate-spin text-gray-400" />
+        <UIcon name="i-mdi-loading" class="text-surface-400 h-6 w-6 animate-spin" />
       </div>
     </div>
     <!-- Full item display mode (for TarkovItem compatibility) -->
@@ -59,7 +59,7 @@
         />
       </div>
       <!-- Simple count display for single items -->
-      <div v-else-if="props.count" class="mr-2 text-sm font-medium text-gray-300">
+      <div v-else-if="props.count" class="text-surface-300 mr-2 text-sm font-medium">
         {{ formatNumber(props.count) }}
       </div>
       <div
@@ -78,7 +78,7 @@
             :href="props.devLink"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            class="text-surface-200 inline-flex items-center justify-center rounded p-1.5 transition-colors hover:bg-white/20 hover:text-white"
             @click.stop
           >
             <img src="/img/logos/tarkovdevlogo.webp" alt="tarkov.dev" class="h-5 w-5" />
@@ -89,7 +89,7 @@
             :href="props.wikiLink"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            class="text-surface-200 inline-flex items-center justify-center rounded p-1.5 transition-colors hover:bg-white/20 hover:text-white"
             @click.stop
           >
             <img src="/img/logos/wikilogo.webp" alt="Wiki" class="h-5 w-5" />
@@ -121,7 +121,7 @@
           />
           <div
             v-if="props.wikiLink || props.devLink || props.itemName"
-            class="my-1 border-t border-gray-700"
+            class="border-surface-700 my-1 border-t"
           />
         </template>
         <!-- Item Options -->
@@ -165,7 +165,7 @@
         </template>
         <div
           v-if="props.itemName && (props.wikiLink || props.devLink)"
-          class="my-1 border-t border-gray-700"
+          class="border-surface-700 my-1 border-t"
         />
         <ContextMenuItem
           v-if="props.itemName"
