@@ -260,15 +260,15 @@
   }>();
   const formatNumber = useLocaleNumberFormatter();
   const backgroundClassMap = {
-    violet: 'bg-[#392d44]',
-    grey: 'bg-[#3d3d3d]',
-    yellow: 'bg-[#756742]',
-    orange: 'bg-[#7c4b1f]',
-    green: 'bg-[#2a3b2a]',
-    red: 'bg-[#5c2626]',
-    black: 'bg-[#1a1a1a]',
-    blue: 'bg-[hsl(199,23%,14%)]',
-    default: 'bg-[#2d2d2d]',
+    violet: 'bg-[hsl(271,12%,16%)]',
+    grey: 'bg-[hsl(0,0%,17%)]',
+    yellow: 'bg-[hsl(44,17%,26%)]',
+    orange: 'bg-[hsl(28,36%,22%)]',
+    green: 'bg-[hsl(120,10%,14%)]',
+    red: 'bg-[hsl(0,25%,18%)]',
+    black: 'bg-[hsl(0,0%,7%)]',
+    blue: 'bg-[hsl(195,20%,13%)]',
+    default: 'bg-[hsl(0,0%,13%)]',
   } as const;
   type BackgroundKey = keyof typeof backgroundClassMap;
   const contextMenu = ref<InstanceType<typeof ContextMenu>>();
