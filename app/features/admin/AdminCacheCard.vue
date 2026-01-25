@@ -247,8 +247,8 @@
 <template>
   <GenericCard
     icon="i-mdi-cached"
-    icon-color="warning-400"
-    highlight-color="tan"
+    icon-color="warning"
+    highlight-color="warning"
     :fill-height="false"
     title="Cache Management"
     title-classes="text-lg font-semibold"
@@ -267,9 +267,9 @@
         <!-- Purge buttons -->
         <div class="grid gap-4 md:grid-cols-2">
           <!-- Tarkov Data Cache -->
-          <div class="rounded-lg border border-neutral-700 bg-neutral-800/50 p-4">
-            <h4 class="mb-2 font-medium text-neutral-200">Tarkov Data Cache</h4>
-            <p class="mb-3 text-sm text-neutral-400">
+          <div class="border-surface-700 bg-surface-800/50 rounded-lg border p-4">
+            <h4 class="text-surface-200 mb-2 font-medium">Tarkov Data Cache</h4>
+            <p class="text-surface-400 mb-3 text-sm">
               Clears cached game data (tasks, hideout, items). Users will fetch fresh data from
               tarkov.dev API.
             </p>
@@ -287,7 +287,7 @@
           <!-- Full Cache -->
           <div class="border-error-700/50 bg-error-900/20 rounded-lg border p-4">
             <h4 class="text-error-300 mb-2 font-medium">Full Cache Purge</h4>
-            <p class="mb-3 text-sm text-neutral-400">
+            <p class="text-surface-400 mb-3 text-sm">
               Clears ALL cached content including static assets. Use sparingly - increases load on
               origin.
             </p>
@@ -322,9 +322,9 @@
           <div class="bg-error-500/20 rounded-full p-2">
             <UIcon name="i-mdi-alert" class="text-error-400 size-6" />
           </div>
-          <h3 class="text-lg font-semibold text-neutral-100">Confirm Full Cache Purge</h3>
+          <h3 class="text-surface-100 text-lg font-semibold">Confirm Full Cache Purge</h3>
         </div>
-        <p class="mb-6 text-neutral-300">
+        <p class="text-surface-300 mb-6">
           This will clear ALL cached content from Cloudflare, including static assets, fonts, and
           JavaScript bundles. This may temporarily increase load times for all users.
         </p>

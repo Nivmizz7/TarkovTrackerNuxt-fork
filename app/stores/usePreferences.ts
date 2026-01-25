@@ -33,11 +33,16 @@ export interface PreferencesState {
   neededItemsGroupByItem: boolean;
   neededItemsHideNonFirSpecialEquipment: boolean;
   neededItemsKappaOnly: boolean;
+  neededItemsSortBy: 'priority' | 'name' | 'category' | 'count' | null;
+  neededItemsSortDirection: 'asc' | 'desc' | null;
+  neededItemsHideOwned: boolean;
+  neededItemsCardStyle: 'compact' | 'expanded' | null;
   itemsHideNonFIR: boolean;
   hideGlobalTasks: boolean;
   hideNonKappaTasks: boolean;
   neededitemsStyle: string | null;
   hideoutPrimaryView?: string | null;
+  hideoutCollapseCompleted: boolean;
   localeOverride: string | null;
   // Task filter settings
   showNonSpecialTasks: boolean;
@@ -58,6 +63,8 @@ export interface PreferencesState {
   // Map display settings
   showMapExtracts: boolean;
   mapZoomSpeed: number;
+  pinnedTaskIds: string[];
+  taskFilterPresets: { id: string; name: string; settings: Record<string, unknown> }[];
   saving?: {
     streamerMode: boolean;
     hideGlobalTasks: boolean;
@@ -88,11 +95,16 @@ export const preferencesDefaultState: PreferencesState = {
   neededItemsGroupByItem: false,
   neededItemsHideNonFirSpecialEquipment: false,
   neededItemsKappaOnly: false,
+  neededItemsSortBy: 'priority',
+  neededItemsSortDirection: 'desc',
+  neededItemsHideOwned: false,
+  neededItemsCardStyle: 'expanded',
   itemsHideNonFIR: false,
   hideGlobalTasks: false,
   hideNonKappaTasks: false,
   neededitemsStyle: null,
   hideoutPrimaryView: null,
+  hideoutCollapseCompleted: false,
   localeOverride: null,
   // Task filter settings (all shown by default)
   showNonSpecialTasks: true,
@@ -113,6 +125,8 @@ export const preferencesDefaultState: PreferencesState = {
   // Map display settings
   showMapExtracts: true,
   mapZoomSpeed: 1,
+  pinnedTaskIds: [],
+  taskFilterPresets: [],
   saving: {
     streamerMode: false,
     hideGlobalTasks: false,
@@ -215,6 +229,18 @@ export const usePreferencesStore = defineStore('preferences', {
     getNeededItemsKappaOnly: (state) => {
       return state.neededItemsKappaOnly ?? false;
     },
+    getNeededItemsSortBy: (state) => {
+      return state.neededItemsSortBy ?? 'priority';
+    },
+    getNeededItemsSortDirection: (state) => {
+      return state.neededItemsSortDirection ?? 'desc';
+    },
+    getNeededItemsHideOwned: (state) => {
+      return state.neededItemsHideOwned ?? false;
+    },
+    getNeededItemsCardStyle: (state) => {
+      return state.neededItemsCardStyle ?? 'expanded';
+    },
     itemsNeededHideNonFIR: (state) => {
       return state.itemsHideNonFIR ?? false;
     },
@@ -277,6 +303,12 @@ export const usePreferencesStore = defineStore('preferences', {
     // Map display getters
     getShowMapExtracts: (state) => {
       return state.showMapExtracts ?? true;
+    },
+    getPinnedTaskIds: (state) => {
+      return state.pinnedTaskIds ?? [];
+    },
+    getTaskFilterPresets: (state) => {
+      return state.taskFilterPresets ?? [];
     },
   },
   actions: {
@@ -354,6 +386,18 @@ export const usePreferencesStore = defineStore('preferences', {
     setNeededItemsKappaOnly(kappaOnly: boolean) {
       this.neededItemsKappaOnly = kappaOnly;
     },
+    setNeededItemsSortBy(sortBy: 'priority' | 'name' | 'category' | 'count') {
+      this.neededItemsSortBy = sortBy;
+    },
+    setNeededItemsSortDirection(direction: 'asc' | 'desc') {
+      this.neededItemsSortDirection = direction;
+    },
+    setNeededItemsHideOwned(hide: boolean) {
+      this.neededItemsHideOwned = hide;
+    },
+    setNeededItemsCardStyle(style: 'compact' | 'expanded') {
+      this.neededItemsCardStyle = style;
+    },
     setItemsNeededHideNonFIR(hide: boolean) {
       this.itemsHideNonFIR = hide;
       // Persistence handled automatically by plugin
@@ -423,6 +467,23 @@ export const usePreferencesStore = defineStore('preferences', {
     setShowMapExtracts(show: boolean) {
       this.showMapExtracts = show;
     },
+    togglePinnedTask(taskId: string) {
+      if (!this.pinnedTaskIds) this.pinnedTaskIds = [];
+      const index = this.pinnedTaskIds.indexOf(taskId);
+      if (index === -1) {
+        this.pinnedTaskIds.push(taskId);
+      } else {
+        this.pinnedTaskIds.splice(index, 1);
+      }
+    },
+    addTaskFilterPreset(preset: { id: string; name: string; settings: Record<string, unknown> }) {
+      if (!this.taskFilterPresets) this.taskFilterPresets = [];
+      this.taskFilterPresets.push(preset);
+    },
+    removeTaskFilterPreset(id: string) {
+      if (!this.taskFilterPresets) return;
+      this.taskFilterPresets = this.taskFilterPresets.filter((p) => p.id !== id);
+    },
   },
   // Enable automatic localStorage persistence
   persist: {
@@ -456,6 +517,10 @@ export const usePreferencesStore = defineStore('preferences', {
       'neededItemsGroupByItem',
       'neededItemsHideNonFirSpecialEquipment',
       'neededItemsKappaOnly',
+      'neededItemsSortBy',
+      'neededItemsSortDirection',
+      'neededItemsHideOwned',
+      'neededItemsCardStyle',
       'itemsHideNonFIR',
       'hideGlobalTasks',
       'hideNonKappaTasks',
@@ -478,6 +543,8 @@ export const usePreferencesStore = defineStore('preferences', {
       'enableHolidayEffects',
       'showMapExtracts',
       'mapZoomSpeed',
+      'pinnedTaskIds',
+      'taskFilterPresets',
     ],
   },
 });

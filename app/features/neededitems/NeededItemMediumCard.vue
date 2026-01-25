@@ -49,13 +49,13 @@
       <template v-if="props.need.needType == 'taskObjective'">
         <div class="line-clamp-2 text-center">
           <task-link v-if="relatedTask" :task="relatedTask" />
-          <span v-else class="text-sm text-gray-300">Unknown task</span>
+          <span v-else class="text-surface-300 text-sm">Unknown task</span>
         </div>
       </template>
       <template v-else-if="props.need.needType == 'hideoutModule'">
         <div class="flex items-center justify-center text-center">
           <station-link v-if="relatedStation" :station="relatedStation" class="justify-center" />
-          <span v-else class="text-sm text-gray-300">Unknown station</span>
+          <span v-else class="text-surface-300 text-sm">Unknown station</span>
           <span class="ml-1 text-sm">{{ props.need.hideoutModule.level }}</span>
         </div>
       </template>
@@ -136,7 +136,7 @@
     return {
       'bg-gradient-to-t from-complete to-surface':
         selfCompletedNeed.value || currentCount.value >= neededCount.value,
-      'bg-gray-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
+      'bg-surface-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
       'shadow-md': true,
     };
   });

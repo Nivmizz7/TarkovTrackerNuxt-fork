@@ -59,9 +59,9 @@
     <!-- Experience rewards -->
     <div
       v-if="preferencesStore.getShowExperienceRewards && task.experience"
-      class="mt-2 flex items-center justify-end gap-1 text-sm text-gray-400"
+      class="text-surface-400 mt-2 flex items-center justify-end gap-1 text-sm"
     >
-      <UIcon name="i-mdi-star" class="h-4 w-4 text-yellow-500" />
+      <UIcon name="i-mdi-star" class="text-warning-500 h-4 w-4" />
       <span>{{ formatNumber(task.experience) }} XP</span>
     </div>
   </div>

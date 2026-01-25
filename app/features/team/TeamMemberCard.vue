@@ -25,7 +25,7 @@
             alt="Level badge"
           />
           <div class="text-center">
-            <div class="text-xs tracking-wide text-gray-500 uppercase dark:text-gray-400">
+            <div class="text-surface-500 dark:text-surface-400 text-xs tracking-wide uppercase">
               {{ $t('navigation_drawer.level') }}
             </div>
             <div class="mt-1 text-3xl leading-none font-bold sm:text-4xl">
@@ -36,7 +36,7 @@
       </div>
       <!-- Task progress and actions -->
       <div
-        class="flex items-center justify-between border-t border-gray-200 pt-2 dark:border-gray-700"
+        class="border-surface-200 dark:border-surface-700 flex items-center justify-between border-t pt-2"
       >
         <div class="text-sm">
           <i18n-t

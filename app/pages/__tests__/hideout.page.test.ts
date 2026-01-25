@@ -45,9 +45,16 @@ vi.mock('@/composables/useHideoutFiltering', () => ({
 }));
 vi.mock('@/stores/useMetadata', () => ({
   useMetadataStore: () => ({
-    hideoutStations: [station],
+    hideoutStations: ref([station]),
   }),
 }));
+vi.mock('pinia', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('pinia')>();
+  return {
+    ...actual,
+    storeToRefs: (store: Record<string, unknown>) => store,
+  };
+});
 vi.mock('@/stores/useProgress', () => ({
   useProgressStore: () => ({
     hideoutLevels: { 'station-1': { self: 1 } },

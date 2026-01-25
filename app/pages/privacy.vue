@@ -2,7 +2,9 @@
   <UContainer class="px-4 py-8">
     <div class="prose prose-gray dark:prose-invert mx-auto max-w-4xl">
       <h1 class="mb-2 text-4xl font-bold">Privacy Policy</h1>
-      <p class="mb-12 text-sm text-gray-500 dark:text-gray-400">Last Updated: November 28, 2025</p>
+      <p class="text-surface-500 dark:text-surface-400 mb-12 text-sm">
+        Last Updated: November 28, 2025
+      </p>
       <div class="space-y-12">
         <!-- INTRODUCTION -->
         <section>
@@ -459,7 +461,7 @@
                 href="https://supabase.com/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 underline"
+                class="text-link hover:text-link-hover underline"
               >
                 supabase.com/privacy
               </a>
@@ -470,7 +472,7 @@
                 href="https://www.cloudflare.com/privacypolicy/"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 underline"
+                class="text-link hover:text-link-hover underline"
               >
                 cloudflare.com/privacypolicy
               </a>
@@ -481,7 +483,7 @@
                 href="https://discord.com/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 underline"
+                class="text-link hover:text-link-hover underline"
               >
                 discord.com/privacy
               </a>
@@ -492,7 +494,7 @@
                 href="https://policies.google.com/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 underline"
+                class="text-link hover:text-link-hover underline"
               >
                 policies.google.com/privacy
               </a>
@@ -520,7 +522,7 @@
               href="https://github.com/tarkovtracker-org"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 underline"
+              class="text-link hover:text-link-hover underline"
             >
               github.com/tarkovtracker-org
             </a>
@@ -634,7 +636,7 @@
                 href="https://github.com/tarkovtracker-org"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 underline"
+                class="text-link hover:text-link-hover underline"
               >
                 github.com/tarkovtracker-org
               </a>

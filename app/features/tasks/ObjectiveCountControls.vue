@@ -7,7 +7,7 @@
             type="button"
             :disabled="disabled || currentCount <= 0"
             :aria-label="t('page.tasks.questcard.decrease', 'Decrease')"
-            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 flex h-7 w-7 items-center justify-center rounded-l-md text-gray-300 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 text-surface-300 flex h-7 w-7 items-center justify-center rounded-l-md transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
             @click="$emit('decrease')"
           >
             <UIcon name="i-mdi-minus" aria-hidden="true" class="h-4 w-4" />
@@ -17,7 +17,7 @@
       <!-- Editable count display -->
       <div
         v-if="!isEditing"
-        class="flex h-7 min-w-14 items-center justify-center px-2 text-[11px] font-semibold text-gray-100 tabular-nums hover:bg-white/10"
+        class="text-surface-100 flex h-7 min-w-14 items-center justify-center px-2 text-[11px] font-semibold tabular-nums hover:bg-white/10"
         :title="t('page.tasks.questcard.clickToEdit', 'Click to edit')"
         @click="startEditing"
       >
@@ -31,12 +31,12 @@
           type="number"
           :min="0"
           :max="neededCount"
-          class="focus:border-primary-500 h-6 w-10 rounded border border-white/20 bg-white/10 px-1 text-center text-[11px] font-semibold text-gray-100 tabular-nums focus:outline-none"
+          class="focus:border-surface-400 text-surface-100 h-6 w-10 rounded border border-white/20 bg-white/10 px-1 text-center text-[11px] font-semibold tabular-nums focus:outline-none"
           @blur="commitEdit"
           @keydown.enter="commitEdit"
           @keydown.escape="cancelEdit"
         />
-        <span class="text-[11px] font-semibold text-gray-100">/{{ neededCount }}</span>
+        <span class="text-surface-100 text-[11px] font-semibold">/{{ neededCount }}</span>
       </div>
       <AppTooltip :text="t('page.tasks.questcard.increase', 'Increase')">
         <span class="inline-flex">
@@ -44,7 +44,7 @@
             type="button"
             :disabled="disabled || currentCount >= neededCount"
             :aria-label="t('page.tasks.questcard.increase', 'Increase')"
-            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 flex h-7 w-7 items-center justify-center rounded-r-md text-gray-300 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 text-surface-300 flex h-7 w-7 items-center justify-center rounded-r-md transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
             @click="$emit('increase')"
           >
             <UIcon name="i-mdi-plus" aria-hidden="true" class="h-4 w-4" />
@@ -72,7 +72,7 @@
         :class="
           currentCount >= neededCount
             ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
-            : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
+            : 'text-surface-300 border-white/10 bg-white/5 hover:bg-white/10'
         "
         @click="$emit('toggle')"
       >

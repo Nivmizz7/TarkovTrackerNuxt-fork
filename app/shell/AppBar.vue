@@ -1,6 +1,6 @@
 <template>
   <header
-    class="from-surface-800/95 to-surface-950/95 border-primary-800/60 fixed top-0 right-0 z-40 h-16 border-b bg-linear-to-tr shadow-[0_1px_0_rgba(0,0,0,0.4)] backdrop-blur-sm"
+    class="border-surface-700/50 bg-surface-900/95 fixed top-0 right-0 z-40 h-16 border-b shadow-[0_1px_0_rgba(0,0,0,0.4)] backdrop-blur-sm"
   >
     <div class="flex h-full items-center gap-1 px-2 sm:gap-3 sm:px-3">
       <!-- Left: Toggle Button -->
@@ -11,6 +11,8 @@
           color="neutral"
           size="xl"
           aria-label="Toggle Menu Drawer"
+          :class="{ 'rotate-180': isDrawerCollapsed }"
+          class="transition-transform duration-200"
           @click.stop="changeNavigationDrawer"
         />
       </AppTooltip>
@@ -30,36 +32,41 @@
             <UIcon name="i-heroicons-arrow-path" class="text-primary-500 h-6 w-6 animate-spin" />
           </span>
         </AppTooltip>
-        <!-- Game mode quick toggle -->
-        <div
-          class="bg-surface-900/90 flex items-center overflow-hidden rounded-md border border-white/15 ring-1 ring-white/10"
-          role="group"
-          aria-label="Toggle game mode"
-        >
-          <button
-            type="button"
-            class="focus:ring-pvp-400 inline-flex items-center gap-0.5 px-1.5 py-1 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
-            :class="pvpClasses"
-            :disabled="dataLoading"
-            @click="switchMode(GAME_MODES.PVP)"
+        <!-- Community Links -->
+        <AppTooltip :text="t('footer.call_to_action.discord')">
+          <a
+            href="https://discord.gg/M8nBgA2sT6"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="hover:bg-surface-700 flex h-9 w-9 items-center justify-center rounded-md transition-colors"
           >
-            <UIcon name="i-mdi-sword-cross" class="hidden h-4 w-4 sm:block md:h-5 md:w-5" />
-            PvP
-          </button>
-          <div class="h-6 w-px bg-white/15 sm:h-8" aria-hidden="true" />
-          <button
-            type="button"
-            class="focus:ring-pve-400 inline-flex items-center gap-0.5 px-1.5 py-1 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
-            :class="pveClasses"
-            :disabled="dataLoading"
-            @click="switchMode(GAME_MODES.PVE)"
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="text-surface-300 hover:text-white"
+              :style="{ color: 'var(--color-discord)' }"
+            >
+              <path
+                d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09c-.01-.02-.04-.03-.07-.03c-1.5.26-2.93.71-4.27 1.33c-.01 0-.02.01-.03.02c-2.72 4.07-3.47 8.03-3.1 11.95c0 .02.01.04.03.05c1.8 1.32 3.53 2.12 5.24 2.65c.03.01.06 0 .07-.02c.4-.55.76-1.13 1.07-1.74c.02-.04 0-.08-.04-.09c-.57-.22-1.11-.48-1.64-.78c-.04-.02-.04-.08-.01-.11c.11-.08.22-.17.33-.25c.02-.02.05-.02.07-.01c3.44 1.57 7.15 1.57 10.55 0c.02-.01.05-.01.07.01c.11.09.22.17.33.26c.04.03.04.09-.01.11c-.52.31-1.07.56-1.64.78c-.04.01-.05.06-.04.09c.32.61.68 1.19 1.07 1.74c.03.01.06.02.09.01c1.72-.53 3.45-1.33 5.25-2.65c.02-.01.03-.03.03-.05c.44-4.53-.73-8.46-3.1-11.95c-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.83 2.12-1.89 2.12z"
+              />
+            </svg>
+          </a>
+        </AppTooltip>
+        <AppTooltip :text="t('footer.call_to_action.github')">
+          <a
+            href="https://github.com/tarkovtracker-org/TarkovTrackerNuxt"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="hover:bg-surface-700 flex h-9 w-9 items-center justify-center rounded-md transition-colors"
           >
-            <UIcon name="i-mdi-account-group" class="hidden h-4 w-4 sm:block md:h-5 md:w-5" />
-            PvE
-          </button>
-        </div>
+            <UIcon name="i-mdi-github" class="text-surface-300 h-5 w-5 hover:text-white" />
+          </a>
+        </AppTooltip>
         <!-- Language selector -->
-        <USelectMenu
+        <SelectMenuFixed
           v-model="selectedLocale"
           :items="localeItems"
           value-key="value"
@@ -69,7 +76,7 @@
           }"
           :ui-menu="{
             container: 'z-[9999]',
-            width: 'w-auto min-w-32',
+            width: 'w-max',
             background: 'bg-surface-900',
             shadow: 'shadow-xl',
             rounded: 'rounded-lg',
@@ -82,18 +89,28 @@
               selected: 'bg-primary-500/10 text-primary-100 ring-1 ring-primary-500',
             },
           }"
-          class="h-auto min-w-0"
         >
           <template #leading>
             <UIcon name="i-mdi-translate" class="text-surface-300 h-4 w-4" />
           </template>
           <template #default>
-            <span class="text-xs font-medium text-white/80 uppercase">{{ locale }}</span>
+            <span class="inline-grid">
+              <span
+                class="col-start-1 row-start-1 justify-self-start text-xs font-medium text-white/80 uppercase"
+              >
+                {{ locale }}
+              </span>
+              <span
+                class="invisible col-start-1 row-start-1 text-xs font-medium whitespace-nowrap uppercase"
+              >
+                Deutsch
+              </span>
+            </span>
           </template>
           <template #trailing>
             <UIcon name="i-mdi-chevron-down" class="text-surface-400 h-3 w-3" />
           </template>
-        </USelectMenu>
+        </SelectMenuFixed>
       </div>
     </div>
   </header>
@@ -107,52 +124,21 @@
   import { useAppStore } from '@/stores/useApp';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
-  import { useTarkovStore } from '@/stores/useTarkov';
-  import { GAME_MODES, type GameMode } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   const { t } = useI18n({ useScope: 'global' });
   const appStore = useAppStore();
-  const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
   const route = useRoute();
   const { width } = useWindowSize();
   const mdAndDown = computed(() => width.value < 960); // md breakpoint at 960px
-  const navBarIcon = computed(() => {
+  const isDrawerCollapsed = computed(() => {
     if (mdAndDown.value) {
-      return appStore.mobileDrawerExpanded ? 'i-mdi-menu-open' : 'i-mdi-menu';
+      return !appStore.mobileDrawerExpanded;
     }
-    return appStore.drawerRail ? 'i-mdi-menu' : 'i-mdi-menu-open';
+    return appStore.drawerRail;
   });
-  const currentGameMode = computed(() => {
-    return tarkovStore.getCurrentGameMode();
-  });
-  const pveClasses = computed(() =>
-    currentGameMode.value === GAME_MODES.PVE
-      ? 'bg-pve-500 hover:bg-pve-600 text-white shadow-[0_0_0_4px_rgba(0,0,0,0.45)] ring-2 ring-white/60 ring-inset outline outline-2 outline-white/40'
-      : 'bg-pve-950/80 text-pve-400 hover:bg-pve-900/90'
-  );
-  const pvpClasses = computed(() =>
-    currentGameMode.value === GAME_MODES.PVP
-      ? 'bg-pvp-800 hover:bg-pvp-700 text-pvp-100 shadow-[0_0_0_4px_rgba(0,0,0,0.45)] ring-2 ring-white/60 ring-inset outline outline-2 outline-white/40'
-      : 'bg-pvp-950/80 text-pvp-400 hover:bg-pvp-900/90'
-  );
-  async function switchMode(mode: GameMode) {
-    if (mode !== currentGameMode.value && !dataLoading.value) {
-      dataLoading.value = true;
-      try {
-        await tarkovStore.switchGameMode(mode);
-        metadataStore.updateLanguageAndGameMode();
-        await metadataStore.fetchAllData();
-        dataError.value = false;
-      } catch (err) {
-        logger.error('[AppBar] Error switching mode:', err);
-        dataError.value = true;
-      } finally {
-        dataLoading.value = false;
-      }
-    }
-  }
+  const navBarIcon = computed(() => 'i-mdi-menu-open');
   const { loading: dataLoading, hideoutLoading } = storeToRefs(metadataStore);
   const dataError = ref(false);
   const pageTitle = computed(() =>

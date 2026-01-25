@@ -31,6 +31,10 @@ const createDefaultProps = () => ({
   hideTeamItems: false,
   hideNonFirSpecialEquipment: false,
   kappaOnly: false,
+  sortBy: 'priority' as const,
+  sortDirection: 'desc' as const,
+  hideOwned: false,
+  cardStyle: 'expanded' as const,
 });
 const createDefaultGlobal = () => ({
   mocks: {

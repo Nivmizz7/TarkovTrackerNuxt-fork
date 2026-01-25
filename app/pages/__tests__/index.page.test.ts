@@ -24,7 +24,7 @@ const createDashboardStatsMock = (
       imageLink: string | null;
       completedTasks: number;
       totalTasks: number;
-      percentage: string;
+      percentage: number;
     }>;
   } = {}
 ) => {
@@ -48,7 +48,7 @@ const createDashboardStatsMock = (
         imageLink: null,
         completedTasks: 2,
         totalTasks: 4,
-        percentage: '50.0',
+        percentage: 50,
       },
     ],
   } = options;
@@ -94,6 +94,10 @@ const setup = async (
   vi.doMock('@/stores/useTarkov', () => ({
     useTarkovStore: () => ({
       playerLevel: playerLevelSpy,
+      getTraderLevel: vi.fn(() => 1),
+      getTraderReputation: vi.fn(() => 0),
+      setTraderLevel: vi.fn(),
+      setTraderReputation: vi.fn(),
     }),
   }));
   vi.doMock('@/stores/usePreferences', () => ({
@@ -185,11 +189,13 @@ describe('dashboard page', () => {
       });
       const progressCards = wrapper.findAll('[data-testid="progress-card"]');
       expect(progressCards.length).toBeGreaterThan(0);
-      // First progress card should show completed data
-      const firstCard = progressCards[0];
-      if (!firstCard) throw new Error('Expected firstCard to be defined');
-      expect(firstCard.attributes('data-completed')).toBe('10');
-      expect(firstCard.attributes('data-total')).toBe('10');
+      const tasksCard = progressCards.find((card) => {
+        const label = card.attributes('data-label') || '';
+        return label.toLowerCase().includes('tasks');
+      });
+      if (!tasksCard) throw new Error('Expected tasksCard to be defined');
+      expect(tasksCard.attributes('data-completed')).toBe('10');
+      expect(tasksCard.attributes('data-total')).toBe('10');
     });
     it('renders mixed status state', async () => {
       const { DashboardPage } = await setup({
@@ -220,7 +226,7 @@ describe('dashboard page', () => {
           imageLink: null,
           completedTasks: i * 10,
           totalTasks: 100,
-          percentage: `${i * 10}.0`,
+          percentage: i * 10,
         })),
       });
       const wrapper = await mountSuspended(DashboardPage, {
@@ -249,7 +255,7 @@ describe('dashboard page', () => {
             imageLink: null,
             completedTasks: 5,
             totalTasks: 10,
-            percentage: '50.0',
+            percentage: 50,
           },
           {
             id: 'therapist',
@@ -257,7 +263,7 @@ describe('dashboard page', () => {
             imageLink: null,
             completedTasks: 8,
             totalTasks: 12,
-            percentage: '66.7',
+            percentage: 66.7,
           },
         ],
       });
