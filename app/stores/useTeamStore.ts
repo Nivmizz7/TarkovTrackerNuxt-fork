@@ -2,16 +2,26 @@ import { defineStore } from 'pinia';
 import { computed, nextTick, ref, watch, type Ref } from 'vue';
 import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
 import { useSupabaseListener } from '@/composables/supabase/useSupabaseListener';
-import { actions, defaultState, getters } from '@/stores/progressState';
-import type { UserState } from '@/stores/progressState';
+import { actions, defaultState, getters, type UserState } from '@/stores/progressState';
 import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
 import { useTarkovStore } from '@/stores/useTarkov';
-import { getCurrentGameMode } from '@/stores/utils/gameMode';
 import type { MemberProfile, TeamGetters, TeamState } from '@/types/tarkov';
 import { GAME_MODES } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Store } from 'pinia';
+import { useToast } from '#imports';
+/**
+ * Helper to get current game mode
+ */
+function getCurrentGameMode(): 'pvp' | 'pve' {
+  try {
+    const tarkovStore = useTarkovStore();
+    return (tarkovStore.getCurrentGameMode?.() as 'pvp' | 'pve') || GAME_MODES.PVP;
+  } catch {
+    return GAME_MODES.PVP;
+  }
+}
 /**
  * Helper to extract team ID from system store for the current game mode
  * Reads directly from state to avoid getter reactivity issues
@@ -434,7 +444,7 @@ export function useTeammateStores() {
       try {
         for (const teammate of newTeammatesArray) {
           if (!teammateStores.value[teammate]) {
-            await createTeammateStore(teammate);
+            createTeammateStore(teammate);
           }
         }
       } catch (error) {
@@ -446,12 +456,12 @@ export function useTeammateStores() {
           clearTimeout(pendingRetryTimeout.value);
         }
         // Basic retry once after a short delay for transient issues
-        pendingRetryTimeout.value = setTimeout(async () => {
+        pendingRetryTimeout.value = setTimeout(() => {
           pendingRetryTimeout.value = null;
           try {
             for (const teammate of newTeammatesArray) {
               if (!teammateStores.value[teammate]) {
-                await createTeammateStore(teammate);
+                createTeammateStore(teammate);
               }
             }
             toast.add({ title: 'Teammate data loaded on retry', color: 'primary' });
@@ -468,8 +478,9 @@ export function useTeammateStores() {
     }
   );
   // Create a store for a specific teammate
-  const createTeammateStore = async (teammateId: string) => {
+  const createTeammateStore = (teammateId: string) => {
     try {
+      // Define the teammate store
       const storeDefinition = defineStore(`teammate-${teammateId}`, {
         state: () => JSON.parse(JSON.stringify(defaultState)),
         getters: getters,

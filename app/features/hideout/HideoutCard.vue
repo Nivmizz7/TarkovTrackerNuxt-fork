@@ -7,7 +7,10 @@
     :fill-height="false"
     :show-divider="false"
     class="relative rounded-lg"
+    :class="cardHighlightClasses"
     header-classes="pb-2"
+    @mouseenter="dismissHighlight"
+    @focusin="dismissHighlight"
   >
     <template #header>
       <div class="flex items-center justify-between pb-2 text-xl">
@@ -48,6 +51,19 @@
                 </template>
               </span>
             </div>
+            <div
+              v-if="highlightedLevel"
+              class="border-primary-500/60 bg-primary-500/10 text-primary-200 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold"
+            >
+              <UIcon name="i-mdi-link-variant" class="h-3.5 w-3.5" />
+              <i18n-t
+                keypath="page.hideout.stationcard.level"
+                scope="global"
+                :plural="highlightedLevel.level"
+              >
+                <template #level>{{ highlightedLevel.level }}</template>
+              </i18n-t>
+            </div>
           </div>
         </div>
         <!-- Collapse Toggle -->
@@ -78,7 +94,11 @@
         <!-- Next level requirements -->
         <div v-if="nextLevel" class="space-y-3">
           <!-- Item Requirements Section -->
-          <div v-if="hasItemRequirements" class="bg-surface-800 rounded-lg p-3">
+          <div
+            v-if="hasItemRequirements"
+            class="bg-surface-800 rounded-lg p-3 relative"
+            :class="moduleHighlightClasses"
+          >
             <div class="mb-3 flex items-center text-base font-medium">
               <UIcon
                 name="i-mdi-package-variant-closed-check"
@@ -269,19 +289,44 @@
   import { useToast } from '#imports';
   const GenericCard = defineAsyncComponent(() => import('@/components/ui/GenericCard.vue'));
   const HideoutRequirement = defineAsyncComponent(() => import('./HideoutRequirement.vue'));
-  const props = withDefaults(defineProps<{ station: HideoutStation; collapsed?: boolean }>(), {
-    collapsed: false,
-  });
+  const props = withDefaults(
+    defineProps<{
+      station: HideoutStation;
+      collapsed?: boolean;
+      highlighted?: boolean;
+      highlightModuleId?: string | null;
+    }>(),
+    {
+      collapsed: false,
+      highlighted: false,
+      highlightModuleId: null,
+    }
+  );
   const progressStore = useProgressStore();
   const tarkovStore = useTarkovStore();
   const { t } = useI18n({ useScope: 'global' });
   const toast = useToast();
   const isContentVisible = ref(!props.collapsed);
+  const highlightDismissed = ref(false);
   watch(
     () => props.collapsed,
     (newValue) => {
+      if (highlightActive.value) {
+        isContentVisible.value = true;
+        return;
+      }
       isContentVisible.value = !newValue;
     }
+  );
+  watch(
+    () => [props.highlighted, props.highlightModuleId],
+    ([highlighted, highlightModuleId]) => {
+      if (highlighted || highlightModuleId) {
+        highlightDismissed.value = false;
+        isContentVisible.value = true;
+      }
+    },
+    { immediate: true }
   );
   const stationAnchorId = computed(() => `station-${props.station.id}`);
   const upgradeButtonUi = {
@@ -399,6 +444,32 @@
     );
   });
   const stationAvatar = computed(() => props.station.imageLink);
+  const highlightedLevel = computed(() => {
+    if (!props.highlightModuleId) return null;
+    return props.station.levels.find((level) => level.id === props.highlightModuleId) || null;
+  });
+  const highlightActive = computed(() => {
+    return (props.highlighted || highlightedLevel.value) && !highlightDismissed.value;
+  });
+  const highlightMatchesNext = computed(() => {
+    if (!highlightedLevel.value || !nextLevel.value) return false;
+    return highlightedLevel.value.id === nextLevel.value.id;
+  });
+  const highlightTargetsModule = computed(() => {
+    return highlightMatchesNext.value && hasItemRequirements.value;
+  });
+  const cardHighlightClasses = computed(() => {
+    if (!highlightActive.value || highlightTargetsModule.value) return '';
+    return 'after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:ring-2 after:ring-primary-400/70 after:ring-offset-2 after:ring-offset-surface-900 after:content-[""] after:animate-pulse';
+  });
+  const moduleHighlightClasses = computed(() => {
+    if (!highlightActive.value || !highlightTargetsModule.value) return '';
+    return 'after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:ring-2 after:ring-primary-400/70 after:ring-offset-2 after:ring-offset-surface-800 after:content-[""] after:animate-pulse';
+  });
+  const dismissHighlight = () => {
+    if (!highlightActive.value) return;
+    highlightDismissed.value = true;
+  };
   const upgradeStation = () => {
     // Store next level to a variable because it can change mid-function
     const upgradeLevel = nextLevel.value;

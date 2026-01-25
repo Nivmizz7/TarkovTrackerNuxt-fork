@@ -27,7 +27,14 @@
   const props = defineProps<{
     station: Pick<HideoutStation, 'id' | 'name' | 'imageLink'>;
     compact?: boolean;
+    moduleId?: string | null;
   }>();
   const stationIcon = computed(() => props.station.imageLink);
-  const stationHref = computed(() => `/hideout?station=${props.station.id}`);
+  const stationHref = computed(() => ({
+    path: '/hideout',
+    query: {
+      station: props.station.id,
+      ...(props.moduleId ? { module: props.moduleId } : {}),
+    },
+  }));
 </script>

@@ -161,6 +161,8 @@ export const TARKOV_TASKS_CORE_QUERY = `
 const ITEM_REF_FRAGMENT = `
   fragment ItemRef on Item {
     id
+    iconLink
+    image512pxLink
     backgroundColor
     properties {
       ... on ItemPropertiesWeapon {
@@ -185,6 +187,7 @@ export const TARKOV_TASKS_OBJECTIVES_QUERY = `
     gridImageLink
     baseImageLink
     iconLink
+    backgroundColor
   }
   fragment CategoryData on ItemCategory {
     id

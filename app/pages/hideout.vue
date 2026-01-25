@@ -84,6 +84,10 @@
           :collapsed="
             getStationStatus(hStation.id) === 'maxed' && preferencesStore.hideoutCollapseCompleted
           "
+          :highlighted="highlightedStationId === hStation.id"
+          :highlight-module-id="
+            highlightedStationId === hStation.id ? highlightedModuleId : undefined
+          "
         />
       </div>
     </div>
@@ -91,7 +95,7 @@
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-  import { computed, defineAsyncComponent, nextTick, watch } from 'vue';
+  import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRoute, useRouter } from 'vue-router';
   import { useHideoutFiltering } from '@/composables/useHideoutFiltering';
@@ -113,6 +117,8 @@
   const { hideoutStations } = storeToRefs(metadataStore);
   const progressStore = useProgressStore();
   const preferencesStore = usePreferencesStore();
+  const highlightedStationId = ref<string | null>(null);
+  const highlightedModuleId = ref<string | null>(null);
   // Hideout filtering composable
   const { activePrimaryView, isStoreLoading, visibleStations, stationCounts } =
     useHideoutFiltering();
@@ -170,32 +176,22 @@
       const stationElement = document.getElementById(`station-${stationId}`);
       if (stationElement) {
         stationElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Add a brief highlight effect
-        stationElement.classList.add(
-          'ring-2',
-          'ring-surface-400',
-          'ring-offset-2',
-          'ring-offset-surface-900'
-        );
-        setTimeout(() => {
-          stationElement.classList.remove(
-            'ring-2',
-            'ring-surface-400',
-            'ring-offset-2',
-            'ring-offset-surface-900'
-          );
-        }, 2000);
       }
     }, 100);
   };
   const handleStationQueryParam = () => {
-    const stationId = route.query.station as string;
+    const stationQuery = route.query.station;
+    const moduleQuery = route.query.module;
+    const stationId = Array.isArray(stationQuery) ? stationQuery[0] : stationQuery;
+    const moduleId = Array.isArray(moduleQuery) ? moduleQuery[0] : moduleQuery;
     if (!stationId || isStoreLoading.value) return;
     // Determine station status and set appropriate filter
     const status = getStationStatus(stationId);
     if (activePrimaryView.value !== status) {
       activePrimaryView.value = status;
     }
+    highlightedStationId.value = stationId;
+    highlightedModuleId.value = moduleId || null;
     // Scroll to the station after filters are applied
     scrollToStation(stationId);
     // Clear the query param to avoid re-triggering on filter changes
@@ -203,9 +199,9 @@
   };
   // Watch for station query param and handle it when data is loaded
   watch(
-    [() => route.query.station, isStoreLoading],
-    ([stationQueryParam, loading]) => {
-      if (stationQueryParam && !loading) {
+    [() => route.query.station, () => route.query.module, isStoreLoading],
+    ([stationQueryParam, moduleQueryParam, loading]) => {
+      if ((stationQueryParam || moduleQueryParam) && !loading) {
         handleStationQueryParam();
       }
     },

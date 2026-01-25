@@ -16,7 +16,7 @@
     </div>
     <!-- Station Info for Hideout (only shown when relatedStation is passed) -->
     <div v-if="needType === 'hideoutModule' && relatedStation" class="mr-2 flex items-center">
-      <station-link :station="relatedStation" />
+      <station-link :station="relatedStation" :module-id="hideoutModuleId" />
       <span class="ml-1">{{ hideoutLevel }}</span>
     </div>
   </div>
@@ -32,6 +32,7 @@
     playerLevel: number;
     relatedStation?: Pick<HideoutStation, 'id' | 'name'> | null;
     hideoutLevel?: number;
+    hideoutModuleId?: string | null;
   }>();
   const showLevelRequirement = computed(
     () => props.levelRequired > 0 && props.levelRequired > props.playerLevel
