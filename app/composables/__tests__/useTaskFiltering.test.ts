@@ -296,7 +296,7 @@ describe('useTaskFiltering', () => {
         'self',
         'available'
       );
-      expect(countsWithGlobal['map-1']).toBeGreaterThan(countsWithoutGlobal['map-1']);
+      expect(countsWithGlobal['map-1']).toBeGreaterThan(countsWithoutGlobal['map-1'] ?? 0);
     });
     it('adds same global count to all maps', async () => {
       const { taskFiltering, metadataStore } = await setup();

@@ -60,6 +60,6 @@ export function objectiveHasMapLocation(
   const objectiveGps = metadataStore.objectiveGPS?.[taskId] ?? [];
   const isOnAnyMap = objectiveMaps.some((mapInfo) => mapInfo.objectiveID === objective.id);
   const gpsInfo = objectiveGps.find((gps) => gps.objectiveID === objective.id);
-  const hasGpsCoordinates = gpsInfo && (gpsInfo.x !== undefined || gpsInfo.y !== undefined);
+  const hasGpsCoordinates = !!gpsInfo && (gpsInfo.x !== undefined || gpsInfo.y !== undefined);
   return isOnAnyMap && hasGpsCoordinates;
 }
