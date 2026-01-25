@@ -5,7 +5,8 @@
     :highlight-color="getHighlightColor()"
     :avatar-height="50"
     :fill-height="false"
-    class="relative overflow-visible rounded-lg"
+    :show-divider="false"
+    class="relative rounded-lg"
     header-classes="pb-2"
   >
     <template #header>
@@ -23,17 +24,14 @@
             </span>
             <div
               v-if="!upgradeDisabled"
-              class="rounded-md px-2.5 py-0.5"
+              class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold leading-none"
               :class="
                 prerequisitesMet
-                  ? 'bg-success-500/20 border-success-500/50 border'
-                  : 'border-error-500/50 bg-error-500/20 border'
+                  ? 'bg-success-500/20 border-success-500/50 text-success-400'
+                  : 'border-error-500/50 bg-error-500/20 text-error-400'
               "
             >
-              <span
-                class="text-xs font-semibold"
-                :class="prerequisitesMet ? 'text-success-400' : 'text-error-400'"
-              >
+              <span class="whitespace-nowrap">
                 <template v-if="prerequisitesMet">
                   <i18n-t
                     keypath="page.hideout.stationcard.level"
@@ -62,24 +60,9 @@
           @click="isContentVisible = !isContentVisible"
         />
       </div>
-      <!-- Divider -->
-      <div v-if="isContentVisible" class="border-surface-700 mx-4 border-b"></div>
     </template>
     <template #content>
       <div v-if="isContentVisible">
-        <!-- Station description -->
-        <div
-          v-if="currentLevel"
-          class="text-surface-300 mx-2 mb-3 text-left text-sm leading-relaxed"
-        >
-          {{ getStashAdjustedDescription(currentLevel.description) }}
-        </div>
-        <div
-          v-else-if="nextLevel"
-          class="text-surface-300 mx-2 mb-3 text-left text-sm leading-relaxed"
-        >
-          {{ getStashAdjustedDescription(nextLevel.description) }}
-        </div>
         <!-- Stash station special content -->
         <div
           v-if="props.station.normalizedName === SPECIAL_STATIONS.STASH"
@@ -419,21 +402,6 @@
     );
   });
   const stationAvatar = computed(() => props.station.imageLink);
-  const getStashAdjustedDescription = (description: string | undefined) => {
-    // Only modify description for stash station
-    if (props.station.normalizedName !== SPECIAL_STATIONS.STASH) {
-      return description;
-    }
-    // Check if user has an edition with max stash (Unheard editions have defaultStashLevel: 5)
-    const editionId = tarkovStore.getGameEdition();
-    const editionData = progressStore.gameEditionData.find((e) => e.value === editionId);
-    const hasMaxStash = (editionData?.defaultStashLevel ?? 0) >= 5;
-    // For editions with max stash, show static description with 10x72
-    if (hasMaxStash) {
-      return 'Maximum size stash (10x72)';
-    }
-    return description;
-  };
   const upgradeStation = () => {
     // Store next level to a variable because it can change mid-function
     const upgradeLevel = nextLevel.value;
