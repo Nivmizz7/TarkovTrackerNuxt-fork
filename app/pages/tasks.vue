@@ -138,6 +138,12 @@
   import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
   import type { Task, TaskObjective } from '@/types/tarkov';
+  import type {
+    TaskFilterAndSortOptions,
+    TaskPrimaryView,
+    TaskSecondaryView,
+  } from '@/types/taskFilter';
+  import { isValidPrimaryView } from '@/types/taskFilter';
   import { debounce, isDebounceRejection } from '@/utils/debounce';
   import { fuzzyMatchScore } from '@/utils/fuzzySearch';
   import { logger } from '@/utils/logger';
@@ -322,11 +328,6 @@
     }));
   });
   const lightkeeperTraderId = computed(() => metadataStore.getTraderByName('lightkeeper')?.id);
-  const TASK_PRIMARY_VIEWS = ['all', 'maps', 'traders'] as const;
-  type TaskPrimaryView = (typeof TASK_PRIMARY_VIEWS)[number];
-  const isTaskPrimaryView = (value: unknown): value is TaskPrimaryView => {
-    return typeof value === 'string' && TASK_PRIMARY_VIEWS.includes(value as TaskPrimaryView);
-  };
   const getQueryString = (
     value: LocationQueryValue | LocationQueryValue[] | undefined
   ): string | undefined => {
@@ -400,11 +401,11 @@
     const viewParam = getQueryString(route.query.view);
     const mapParam = getQueryString(route.query.map);
     const traderParam = getQueryString(route.query.trader);
-    const normalizedView = isTaskPrimaryView(viewParam) ? viewParam : undefined;
+    const normalizedView = isValidPrimaryView(viewParam) ? viewParam : undefined;
     if (!hasInitializedRouteSync.value) {
       hasInitializedRouteSync.value = true;
       if (!normalizedView) {
-        const storedView = isTaskPrimaryView(preferencesStore.getTaskPrimaryView)
+        const storedView = isValidPrimaryView(preferencesStore.getTaskPrimaryView)
           ? preferencesStore.getTaskPrimaryView
           : 'all';
         syncRoute(
@@ -456,23 +457,23 @@
     [getTaskPrimaryView, getTaskMapView, getTaskTraderView],
     ([primaryView, mapView, traderView], [prevPrimaryView]) => {
       if (isSyncingFromRoute.value) return;
-      const normalizedPrimary = isTaskPrimaryView(primaryView) ? primaryView : 'all';
+      const normalizedPrimary = isValidPrimaryView(primaryView) ? primaryView : 'all';
       const shouldReplace = normalizedPrimary === prevPrimaryView;
       syncRoute(buildViewQuery(normalizedPrimary, mapView, traderView), shouldReplace);
     }
   );
   const refreshVisibleTasks = () => {
-    updateVisibleTasks(
-      getTaskPrimaryView.value,
-      getTaskSecondaryView.value,
-      getTaskUserView.value,
-      getTaskMapView.value,
-      getTaskTraderView.value,
-      mergedMaps.value,
-      tasksLoading.value,
-      getTaskSortMode.value,
-      getTaskSortDirection.value
-    ).catch((error) => {
+    const options: TaskFilterAndSortOptions = {
+      primaryView: getTaskPrimaryView.value as TaskPrimaryView,
+      secondaryView: getTaskSecondaryView.value as TaskSecondaryView,
+      userView: getTaskUserView.value,
+      mapView: getTaskMapView.value,
+      traderView: getTaskTraderView.value,
+      mergedMaps: mergedMaps.value,
+      sortMode: getTaskSortMode.value,
+      sortDirection: getTaskSortDirection.value,
+    };
+    updateVisibleTasks(options, tasksLoading.value).catch((error) => {
       logger.error('[Tasks] Failed to refresh tasks:', error);
     });
   };
