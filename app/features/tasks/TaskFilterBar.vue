@@ -383,6 +383,7 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTeamStore } from '@/stores/useTeamStore';
+  import type { TaskSecondaryView } from '@/types/taskFilter';
   import { TASK_SORT_MODES, type TaskSortDirection, type TaskSortMode } from '@/types/taskSort';
   defineProps<{
     searchQuery: string;
@@ -499,7 +500,7 @@
   });
   const traderCounts = computed(() => {
     const userView = preferencesStore.getTaskUserView;
-    const secondaryView = preferencesStore.getTaskSecondaryView;
+    const secondaryView = preferencesStore.getTaskSecondaryView as TaskSecondaryView;
     return calculateTraderCounts(userView, secondaryView);
   });
   const mergedMaps = computed(() => {
@@ -519,7 +520,7 @@
       metadataStore.tasks,
       preferencesStore.getHideGlobalTasks,
       preferencesStore.getTaskUserView,
-      preferencesStore.getTaskSecondaryView
+      preferencesStore.getTaskSecondaryView as TaskSecondaryView
     );
   });
   // Primary view (all / maps / traders)
