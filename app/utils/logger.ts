@@ -5,6 +5,11 @@ const levelPriority: Record<LogLevel, number> = {
   warn: 2,
   error: 3,
 };
+interface ViteEnv {
+  VITE_LOG_LEVEL?: string;
+  DEV?: boolean;
+}
+const env = (import.meta as unknown as { env: ViteEnv }).env;
 /**
  * Type guard to check if a value is a valid LogLevel
  */
@@ -12,12 +17,12 @@ function isLogLevel(value: unknown): value is LogLevel {
   return typeof value === 'string' && value in levelPriority;
 }
 // Default to "warn" to keep consoles clean; can be raised with VITE_LOG_LEVEL=info|debug
-const rawEnvLevel = import.meta.env.VITE_LOG_LEVEL;
+const rawEnvLevel = env.VITE_LOG_LEVEL;
 const normalizedLevel = typeof rawEnvLevel === 'string' ? rawEnvLevel.toLowerCase() : undefined;
 const configuredLevel: LogLevel | undefined = isLogLevel(normalizedLevel)
   ? normalizedLevel
   : undefined;
-const LOG_LEVEL: LogLevel = configuredLevel ?? (import.meta.env.DEV ? 'info' : 'warn');
+const LOG_LEVEL: LogLevel = configuredLevel ?? (env.DEV ? 'info' : 'warn');
 const shouldLog = (level: LogLevel) => levelPriority[level] >= levelPriority[LOG_LEVEL];
 export const logger = {
   debug: (...args: unknown[]) => {
@@ -38,7 +43,7 @@ export const logger = {
  */
 function createDevLogger(method: 'debug' | 'warn' | 'error') {
   return (message: string, ...args: unknown[]): void => {
-    if (import.meta.env.DEV) {
+    if (env.DEV) {
       console[method](`[DEV] ${message}`, ...args);
     }
   };
