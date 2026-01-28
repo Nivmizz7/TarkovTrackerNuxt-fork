@@ -741,6 +741,7 @@ export function useTaskFiltering() {
       userView,
     });
     const counts = { all: 0, available: 0, locked: 0, completed: 0, failed: 0 };
+    // filterTasksByTypeSettings already handles edition, prestige, and type filtering
     const taskList = filterTasksByTypeSettings(metadataStore.tasks);
     // Get prestige filtering data
     const userPrestigeLevel = tarkovStore.getPrestigeLevel();
