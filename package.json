@@ -19,6 +19,7 @@
     "eslint": "^9.39.2",
     "graphology": "^0.26.0",
     "graphology-types": "^0.24.8",
+    "iceberg-js": "^0.8.1",
     "ipaddr.js": "^2.3.0",
     "leaflet": "^1.9.4",
     "nuxt": "^4.3.0",
