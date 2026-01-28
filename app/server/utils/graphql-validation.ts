@@ -48,7 +48,12 @@ export function validateGraphQLResponse<T>(
   }
   // Check for missing or invalid data field (covers both missing property and null/undefined value)
   if (response.data === null || response.data === undefined) {
-    throw new GraphQLResponseError('GraphQL response missing or invalid data field');
+    const errors = Array.isArray(response.errors) ? response.errors : [];
+    if (errors.length > 0) {
+      const errorMessages = errors.map((e) => e.message).join('; ');
+      throw new GraphQLResponseError(`GraphQL API error: ${errorMessages}`, errors);
+    }
+    throw new GraphQLResponseError('GraphQL response missing data field');
   }
   const errors = Array.isArray(response.errors) ? response.errors : [];
   const hasErrors = errors.length > 0;
