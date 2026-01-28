@@ -175,6 +175,12 @@ export const TRADER_ORDER = [
   'voevoda', // Arena trader
   'radio-station', // Radio operator
 ] as const;
+// Tasks that require Scav Karma validation which isn't yet implemented
+// These would always show as incomplete without proper Fence reputation tracking
+export const EXCLUDED_SCAV_KARMA_TASKS = [
+  '61e6e5e0f5b9633f6719ed95', // Compensation for Damage - Trust (Scav Karma -1 Quest)
+  '61e6e60223374d168a4576a6', // Compensation for Damage - Wager (Scav Karma -1 Quest)
+];
 export const HOT_WHEELS_TASK_ID = '673f4e956f1b89c7bc0f56ef';
 export const MANUAL_FAIL_TASK_IDS: readonly string[] = [HOT_WHEELS_TASK_ID];
 // Skill display order (matches in-game character screen order)
