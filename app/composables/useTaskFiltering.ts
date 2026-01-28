@@ -741,7 +741,7 @@ export function useTaskFiltering() {
       userView,
     });
     const counts = { all: 0, available: 0, locked: 0, completed: 0, failed: 0 };
-    const taskList = metadataStore.tasks;
+    const taskList = filterTasksByTypeSettings(metadataStore.tasks);
     // Get prestige filtering data
     const userPrestigeLevel = tarkovStore.getPrestigeLevel();
     const prestigeTaskMap = metadataStore.prestigeTaskMap;
@@ -757,6 +757,7 @@ export function useTaskFiltering() {
         const taskPrestigeLevel = prestigeTaskMap.get(task.id);
         if (taskPrestigeLevel !== userPrestigeLevel) continue;
       }
+      if (EXCLUDED_SCAV_KARMA_TASKS.includes(task.id)) continue;
       if (isAllUsersView(userView)) {
         const teamIds = Object.keys(progressStore.visibleTeamStores || {});
         const relevantTeamIds = teamIds.filter((teamId) => {
