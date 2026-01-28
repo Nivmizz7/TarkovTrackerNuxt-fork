@@ -1,4 +1,4 @@
-// @ts-expect-error - defineAppConfig is auto-imported by Nuxt
+// @ts-nocheck - Nuxt UI v4 config uses dynamic types that don't match strict TS expectations
 export default defineAppConfig({
   ui: {
     // ✅ Nuxt UI v4: Map semantic color names to palette names defined in @theme (tailwind.css)
@@ -27,10 +27,12 @@ export default defineAppConfig({
       },
     },
     // Tooltip configuration - neutral colors for readability
+    // IMPORTANT: content must set text color explicitly to prevent inheritance from trigger
     tooltip: {
       slots: {
-        content: 'bg-surface-800 px-2.5 py-1.5 rounded-md shadow-lg border border-surface-700',
-        text: 'text-white font-normal',
+        content:
+          'z-[9999] bg-surface-800 text-surface-100 px-2.5 py-1.5 rounded-md shadow-lg border border-surface-700',
+        text: 'font-normal',
         arrow: 'fill-surface-800',
       },
     },
@@ -43,6 +45,20 @@ export default defineAppConfig({
         content: 'z-[9999]',
       },
     },
+    // DropdownMenu configuration for account menu and other dropdowns
+    dropdownMenu: {
+      slots: {
+        trigger: 'ring-0 outline-none',
+        content:
+          'bg-surface-900 border border-surface-700 rounded-lg shadow-xl z-[9999] min-w-[140px] ring-0',
+        group: 'p-1',
+        label: 'px-2 py-1.5 text-xs font-semibold text-surface-400',
+        separator: '-mx-1 my-1 h-px bg-surface-700',
+        item: 'px-3 py-2 text-sm cursor-pointer transition-colors rounded text-surface-300 data-[highlighted]:bg-surface-800 data-[highlighted]:text-white',
+        itemLeadingIcon: 'text-surface-400 shrink-0 size-4',
+        itemTrailingIcon: 'text-surface-400 shrink-0 size-4',
+      },
+    },
     input: {
       slots: {
         base: 'placeholder:text-surface-500',
@@ -50,7 +66,7 @@ export default defineAppConfig({
       variants: {
         variant: {
           outline:
-            'text-surface-100 bg-surface-800 border border-surface-700 focus:border-surface-600 focus:ring-1 focus:ring-primary-500/30',
+            'text-surface-100 bg-surface-800 border border-surface-700 focus:border-surface-500 ring-0 outline-none',
         },
       },
     },
@@ -63,45 +79,46 @@ export default defineAppConfig({
       slots: {
         base: 'relative w-full',
         input:
-          'h-11 bg-surface-900 border border-white/15 text-surface-50 placeholder:text-surface-500 rounded-md pl-10 pr-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-white/20',
+          'h-11 bg-surface-900 border border-white/15 text-surface-50 placeholder:text-surface-500 rounded-md pl-10 pr-3 py-2 focus:border-surface-500 ring-0 outline-none',
         leading: 'absolute inset-y-0 left-3 flex items-center pointer-events-none text-surface-300',
         options: 'z-[9999] max-h-60 overflow-auto !w-max',
       },
     },
-    // SelectMenu configuration
+    // SelectMenu configuration (Nuxt UI v4 slots)
     selectMenu: {
-      popper: {
-        strategy: 'fixed',
-        placement: 'bottom-start',
-      },
       slots: {
-        root: 'w-max min-w-full',
-        base: 'w-full',
-        trigger: 'w-full justify-between',
-        leading: 'shrink-0',
-        trailing: 'shrink-0',
-        viewport:
-          'bg-surface-900 border border-surface-700 rounded-lg shadow-xl overflow-visible z-[9999]',
-        group: 'py-1',
-        item: 'px-3 py-2 text-sm cursor-pointer transition-colors whitespace-nowrap text-left',
-        itemActive: 'bg-surface-800 text-white',
-        itemInactive: 'text-surface-300 hover:bg-surface-800 hover:text-white',
-        itemSelected: 'bg-surface-700 text-white font-semibold',
-        itemLabel: 'text-left whitespace-nowrap',
+        base: 'bg-surface-900 border border-surface-700 rounded-md px-3 py-2 cursor-pointer ring-0 outline-none',
+        leading: 'shrink-0 text-surface-300',
+        trailing: 'shrink-0 text-surface-400',
+        value: 'text-surface-100',
+        placeholder: 'text-surface-500',
+        content:
+          'bg-surface-900 border border-surface-700 rounded-lg shadow-xl z-[9999] !w-[var(--reka-combobox-trigger-width)]',
+        viewport: 'p-1 max-h-60 overflow-y-auto',
+        group: '',
         empty: 'px-3 py-2 text-sm text-surface-500 text-center',
-        divider: 'border-surface-700',
+        label: 'px-2 py-1.5 text-xs font-semibold text-surface-400',
         separator: '-mx-1 my-1 h-px bg-surface-700',
+        item: 'px-3 py-2 text-sm cursor-pointer transition-colors rounded text-surface-300 data-[highlighted]:bg-surface-800 data-[highlighted]:text-white data-[state=checked]:bg-surface-700 data-[state=checked]:text-white data-[state=checked]:font-medium',
+        itemLeadingIcon: 'text-surface-400 shrink-0',
+        itemLeadingAvatar: 'shrink-0',
+        itemLeadingChip: 'shrink-0',
+        itemLabel: 'whitespace-nowrap',
+        itemTrailing: 'ms-auto',
+        itemTrailingIcon: 'text-surface-400 shrink-0',
       },
     },
     // Modal configuration with proper z-index stacking
     modal: {
       slots: {
-        // Overlay must be above all content (z-50)
-        overlay: 'fixed inset-0 z-[60] bg-surface-900/75 backdrop-blur-sm',
-        // Container for centering and scrolling
-        container: 'fixed inset-0 z-[60] overflow-y-auto flex items-start justify-center p-4',
+        // Overlay must be above all content
+        overlay: 'fixed inset-0 z-[60] bg-surface-900/75',
+        // Content panel - must be above overlay with proper centering
+        content:
+          'fixed inset-0 z-[61] flex items-center justify-center p-4 overflow-y-auto pointer-events-none',
         // Actual modal content wrapper
-        wrapper: 'relative w-full max-w-md',
+        wrapper:
+          'relative w-full max-w-md bg-surface-800 border border-surface-700 rounded-lg shadow-xl pointer-events-auto',
       },
     },
     // Badge configuration for custom colors
@@ -169,48 +186,34 @@ export default defineAppConfig({
         },
       },
     },
-    // Switch/Toggle configuration for better dark mode visibility
+    // Switch/Toggle configuration - red when off, green when on
     switch: {
       slots: {
-        root: 'relative inline-flex shrink-0 cursor-pointer',
-        base: 'group inline-flex items-center',
-        track:
-          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ease-in-out focus:outline-none',
-        thumb:
-          'pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out',
-        container: 'flex items-center',
+        base: 'data-[state=unchecked]:bg-error-500',
       },
       variants: {
         color: {
-          primary:
-            'peer-focus-visible:ring-2 peer-focus-visible:ring-success-500 peer-focus-visible:ring-offset-2 peer-checked:bg-success-600 peer-checked:border-success-600 bg-surface-700 border-surface-600',
-          success:
-            'peer-focus-visible:ring-2 peer-focus-visible:ring-success-500 peer-focus-visible:ring-offset-2 peer-checked:bg-success-600 peer-checked:border-success-600 bg-surface-700 border-surface-600',
-          neutral:
-            'peer-focus-visible:ring-2 peer-focus-visible:ring-surface-500 peer-focus-visible:ring-offset-2 peer-checked:bg-surface-600 peer-checked:border-surface-500 bg-surface-700 border-surface-600',
+          primary: {
+            base: 'data-[state=checked]:bg-success-500 focus-visible:outline-success-500',
+          },
+          success: {
+            base: 'data-[state=checked]:bg-success-500 focus-visible:outline-success-500',
+          },
+          neutral: {
+            base: 'data-[state=checked]:bg-success-500 focus-visible:outline-success-500',
+          },
         },
       },
       defaultVariants: {
         color: 'success',
       },
     },
-    // Checkbox configuration for better visibility
+    // Checkbox configuration - neutral styling, primary accent when checked
     checkbox: {
       slots: {
         root: 'relative flex items-start',
-        base: 'h-4 w-4 shrink-0 rounded border transition-all',
-        icon: 'h-4 w-4',
-      },
-      variants: {
-        color: {
-          primary:
-            'border-success-500 bg-success-600 text-white ring-success-500 focus-visible:ring-2',
-          success:
-            'border-success-500 bg-success-600 text-white ring-success-500 focus-visible:ring-2',
-        },
-      },
-      defaultVariants: {
-        color: 'success',
+        base: 'h-4 w-4 shrink-0 rounded border transition-all border-surface-500 data-[state=unchecked]:bg-surface-800 data-[state=checked]:bg-primary-500 data-[state=checked]:border-primary-500',
+        icon: 'h-4 w-4 text-surface-900',
       },
     },
   },

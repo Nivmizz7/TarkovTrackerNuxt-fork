@@ -93,14 +93,6 @@
             {{ t('page.tasks.questcard.lightkeeperrequired', 'LIGHTKEEPER REQUIRED') }}
           </UBadge>
         </div>
-        <!-- Not Required label (Non-Kappa) -->
-        <div v-if="preferencesStore.getShowNotRequiredLabels && nonKappa" class="mb-1 flex">
-          <div class="mr-1">
-            <UBadge size="xs" color="error" variant="outline">
-              {{ t('page.tasks.questcard.nonkappa') }}
-            </UBadge>
-          </div>
-        </div>
         <InfoRow
           v-if="activeUserView === 'all' && neededBy.length > 0"
           icon="mdi-account-multiple-outline"

@@ -24,29 +24,21 @@
       </span>
       <!-- Standing -->
       <template v-for="standing in traderStandingRewards" :key="`standing-${standing.trader.id}`">
-        <div class="bg-secondary-500/10 inline-flex items-center gap-1 rounded px-1.5 py-0.5">
-          <UIcon
-            name="i-mdi-handshake"
-            aria-hidden="true"
-            class="text-secondary-400/80 h-3.5 w-3.5"
-          />
+        <div class="bg-surface-800 inline-flex items-center gap-1 rounded px-1.5 py-0.5">
+          <UIcon name="i-mdi-handshake" aria-hidden="true" class="text-surface-400 h-3.5 w-3.5" />
           <span
             class="font-medium"
             :class="standing.standing >= 0 ? 'text-success-400' : 'text-error-400'"
           >
             {{ standing.standing >= 0 ? '+' : '' }}{{ standing.standing.toFixed(2) }}
           </span>
-          <span class="text-surface-300">{{ standing.trader.name }}</span>
+          <span class="text-surface-100">{{ standing.trader.name }}</span>
         </div>
       </template>
       <!-- Skill -->
       <template v-for="skill in skillRewards" :key="`skill-${skill.name}`">
         <div class="inline-flex items-center gap-1">
-          <UIcon
-            name="i-mdi-arm-flex"
-            aria-hidden="true"
-            class="text-secondary-400/80 h-3.5 w-3.5"
-          />
+          <UIcon name="i-mdi-arm-flex" aria-hidden="true" class="text-secondary-400 h-3.5 w-3.5" />
           <span class="text-secondary-300 font-medium">+{{ skill.level }}</span>
           <span>{{ skill.name }}</span>
         </div>
@@ -54,7 +46,7 @@
       <!-- Trader Unlock -->
       <div
         v-if="displayedTraderUnlock?.name"
-        class="bg-warning-500/10 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
+        class="bg-warning-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
       >
         <UIcon
           name="i-mdi-lock-open-variant"
@@ -66,7 +58,7 @@
       <!-- Item Rewards Summary -->
       <div
         v-if="itemRewards.length > 0"
-        class="bg-success-500/10 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
+        class="bg-success-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
       >
         <UIcon
           name="i-mdi-package-variant"
@@ -86,7 +78,7 @@
       <!-- Offer Unlock Summary -->
       <div
         v-if="offerUnlockRewards.length > 0"
-        class="bg-info-500/10 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
+        class="bg-info-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
       >
         <UIcon name="i-mdi-cart-check" aria-hidden="true" class="text-info-400 h-3.5 w-3.5" />
         <span class="text-info-300 font-medium">
@@ -98,6 +90,14 @@
             )
           }}
         </span>
+      </div>
+      <!-- Experience Reward -->
+      <div
+        v-if="showExperienceRewards && experience"
+        class="bg-warning-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
+      >
+        <UIcon name="i-mdi-star" aria-hidden="true" class="text-warning-400 h-3.5 w-3.5" />
+        <span class="text-warning-300 font-medium">{{ formatNumber(experience) }} XP</span>
       </div>
       <!-- Arrow spacer -->
       <div class="flex-1"></div>
@@ -124,11 +124,11 @@
         class="border-surface-700/30 bg-surface-900/30 border-t p-4"
         :class="{ 'p-3': isCompact }"
       >
-        <div class="flex flex-col gap-6 lg:flex-row">
-          <!-- Left: Previous Quests -->
-          <div v-if="parentTasks.length > 0" class="shrink-0 space-y-2 lg:w-48">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <!-- 1: Previous Tasks -->
+          <div v-if="showPreviousTasks && parentTasks.length > 0" class="space-y-2">
             <div class="text-surface-500 text-[10px] font-bold tracking-wider uppercase">
-              {{ t('page.tasks.questcard.previousQuests', 'Previous') }}
+              {{ t('page.tasks.questcard.previousTasks', 'Previous Tasks') }}
             </div>
             <div class="flex flex-col gap-1.5">
               <router-link
@@ -142,94 +142,86 @@
               </router-link>
             </div>
           </div>
-          <!-- Middle: Item Rewards and Offer Unlocks -->
-          <div
-            v-if="itemRewards.length > 0 || offerUnlockRewards.length > 0"
-            class="flex flex-1 flex-col gap-6 sm:flex-row"
-          >
-            <!-- Item Rewards -->
-            <div v-if="itemRewards.length > 0" class="min-w-0 flex-1 space-y-3">
-              <div class="text-surface-500 text-[10px] font-bold tracking-wider uppercase">
-                {{ t('page.tasks.questcard.rewardItems', 'Items') }}
-              </div>
-              <div class="flex flex-wrap gap-2">
-                <AppTooltip
-                  v-for="(reward, index) in itemRewards"
-                  :key="`item-${reward.item?.id || index}`"
-                  :text="getItemTooltip(reward.item)"
-                >
-                  <component
-                    :is="reward.item?.id ? 'a' : 'span'"
-                    :href="
-                      reward.item?.id ? `https://tarkov.dev/item/${reward.item?.id}` : undefined
-                    "
-                    :target="reward.item?.id ? '_blank' : undefined"
-                    :rel="reward.item?.id ? 'noopener noreferrer' : undefined"
-                    class="group bg-surface-800/80 ring-surface-700/50 hover:bg-surface-700/80 hover:ring-surface-600 relative flex flex-col items-center gap-1 rounded-lg p-2 ring-1 transition-all"
-                    @contextmenu.prevent.stop="$emit('item-context-menu', $event, reward.item)"
-                    @click.stop
-                  >
-                    <img
-                      v-if="reward.item?.iconLink"
-                      :src="reward.item?.iconLink"
-                      :alt="reward.item?.name"
-                      class="h-14 w-14 object-contain"
-                    />
-                    <div class="flex flex-col items-center gap-0.5">
-                      <span class="text-surface-200 max-w-16 truncate text-center text-[10px]">
-                        {{ reward.item?.shortName || reward.item?.name || '' }}
-                      </span>
-                      <span v-if="reward.count > 1" class="text-surface-400 text-[10px] font-bold">
-                        x{{ formatNumber(reward.count) }}
-                      </span>
-                    </div>
-                  </component>
-                </AppTooltip>
-              </div>
+          <!-- 2: Item Rewards (always visible) -->
+          <div class="space-y-3">
+            <div class="text-surface-500 text-[10px] font-bold tracking-wider uppercase">
+              {{ t('page.tasks.questcard.rewardItems', 'Items') }}
             </div>
-            <!-- Offer Unlocks -->
-            <div v-if="offerUnlockRewards.length > 0" class="min-w-0 flex-1 space-y-3">
-              <div class="text-surface-500 text-[10px] font-bold tracking-wider uppercase">
-                {{ t('page.tasks.questcard.unlocksPurchase', 'Purchase Unlocks') }}
-              </div>
-              <div class="flex flex-wrap gap-2">
-                <AppTooltip
-                  v-for="offer in offerUnlockRewards"
-                  :key="`offer-${offer.id}`"
-                  :text="getItemTooltip(offer.item)"
+            <div v-if="itemRewards.length > 0" class="flex flex-wrap gap-2">
+              <AppTooltip
+                v-for="(reward, index) in itemRewards"
+                :key="`item-${reward.item?.id || index}`"
+                :text="getItemTooltip(reward.item)"
+              >
+                <component
+                  :is="reward.item?.id ? 'a' : 'span'"
+                  :href="reward.item?.id ? `https://tarkov.dev/item/${reward.item?.id}` : undefined"
+                  :target="reward.item?.id ? '_blank' : undefined"
+                  :rel="reward.item?.id ? 'noopener noreferrer' : undefined"
+                  class="group bg-surface-800/80 ring-surface-700/50 hover:bg-surface-700/80 hover:ring-surface-600 relative flex flex-col items-center gap-1 rounded-lg p-2 ring-1 transition-all"
+                  @contextmenu.prevent.stop="$emit('item-context-menu', $event, reward.item)"
+                  @click.stop
                 >
-                  <component
-                    :is="offer.item?.id ? 'a' : 'span'"
-                    :href="offer.item?.id ? `https://tarkov.dev/item/${offer.item?.id}` : undefined"
-                    :target="offer.item?.id ? '_blank' : undefined"
-                    :rel="offer.item?.id ? 'noopener noreferrer' : undefined"
-                    class="group bg-surface-800/80 ring-surface-700/50 hover:bg-surface-700/80 hover:ring-surface-600 relative flex flex-col items-center gap-1 rounded-lg p-2 ring-1 transition-all"
-                    @contextmenu.prevent.stop="$emit('item-context-menu', $event, offer.item)"
-                    @click.stop
-                  >
-                    <img
-                      v-if="offer.item?.iconLink"
-                      :src="offer.item?.iconLink"
-                      :alt="offer.item?.name"
-                      class="h-14 w-14 object-contain"
-                    />
-                    <div class="flex flex-col items-center gap-0.5 text-center">
-                      <span class="text-surface-200 max-w-16 truncate text-[10px]">
-                        {{ offer.item?.shortName || offer.item?.name || '' }}
-                      </span>
-                      <span class="text-surface-500 text-[9px] font-medium uppercase">
-                        {{ offer.trader.name }} LL{{ offer.level }}
-                      </span>
-                    </div>
-                  </component>
-                </AppTooltip>
-              </div>
+                  <img
+                    v-if="reward.item?.iconLink"
+                    :src="reward.item?.iconLink"
+                    :alt="reward.item?.name"
+                    class="h-14 w-14 object-contain"
+                  />
+                  <div class="flex flex-col items-center gap-0.5">
+                    <span class="text-surface-200 max-w-16 truncate text-center text-[10px]">
+                      {{ reward.item?.shortName || reward.item?.name || '' }}
+                    </span>
+                    <span v-if="reward.count > 1" class="text-surface-400 text-[10px] font-bold">
+                      x{{ formatNumber(reward.count) }}
+                    </span>
+                  </div>
+                </component>
+              </AppTooltip>
             </div>
           </div>
-          <!-- Right: Next Quests -->
-          <div v-if="childTasks.length > 0" class="shrink-0 space-y-2 lg:w-48">
+          <!-- 3: Offer Unlocks (always visible) -->
+          <div class="space-y-3">
             <div class="text-surface-500 text-[10px] font-bold tracking-wider uppercase">
-              {{ t('page.tasks.questcard.nextQuests', 'Unlocks Next') }}
+              {{ t('page.tasks.questcard.unlocksPurchase', 'Unlocks Purchase') }}
+            </div>
+            <div v-if="offerUnlockRewards.length > 0" class="flex flex-wrap gap-2">
+              <AppTooltip
+                v-for="offer in offerUnlockRewards"
+                :key="`offer-${offer.id}`"
+                :text="getItemTooltip(offer.item)"
+              >
+                <component
+                  :is="offer.item?.id ? 'a' : 'span'"
+                  :href="offer.item?.id ? `https://tarkov.dev/item/${offer.item?.id}` : undefined"
+                  :target="offer.item?.id ? '_blank' : undefined"
+                  :rel="offer.item?.id ? 'noopener noreferrer' : undefined"
+                  class="group bg-surface-800/80 ring-surface-700/50 hover:bg-surface-700/80 hover:ring-surface-600 relative flex flex-col items-center gap-1 rounded-lg p-2 ring-1 transition-all"
+                  @contextmenu.prevent.stop="$emit('item-context-menu', $event, offer.item)"
+                  @click.stop
+                >
+                  <img
+                    v-if="offer.item?.iconLink"
+                    :src="offer.item?.iconLink"
+                    :alt="offer.item?.name"
+                    class="h-14 w-14 object-contain"
+                  />
+                  <div class="flex flex-col items-center gap-0.5 text-center">
+                    <span class="text-surface-200 max-w-16 truncate text-[10px]">
+                      {{ offer.item?.shortName || offer.item?.name || '' }}
+                    </span>
+                    <span class="text-surface-500 text-[9px] font-medium uppercase">
+                      {{ offer.trader.name }} LL{{ offer.level }}
+                    </span>
+                  </div>
+                </component>
+              </AppTooltip>
+            </div>
+          </div>
+          <!-- 4: Next Tasks -->
+          <div v-if="showNextTasks && childTasks.length > 0" class="space-y-2">
+            <div class="text-surface-500 text-[10px] font-bold tracking-wider uppercase">
+              {{ t('page.tasks.questcard.nextTasks', 'Next Tasks') }}
             </div>
             <div class="flex flex-col gap-1.5">
               <router-link
@@ -251,8 +243,13 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { usePreferencesStore } from '@/stores/usePreferences';
   import type { Task } from '@/types/tarkov';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
+  const preferencesStore = usePreferencesStore();
+  const showNextTasks = computed(() => preferencesStore.getShowNextQuests);
+  const showPreviousTasks = computed(() => preferencesStore.getShowPreviousQuests);
+  const showExperienceRewards = computed(() => preferencesStore.getShowExperienceRewards);
   interface TraderStanding {
     trader: { id: string; name: string };
     standing: number;
@@ -283,6 +280,7 @@
     offerUnlockRewards: OfferUnlock[];
     parentTasks: Task[];
     childTasks: Task[];
+    experience?: number;
     isCompact?: boolean;
   }>();
   defineEmits<{
@@ -303,14 +301,17 @@
       props.skillRewards.length > 0 ||
       displayedTraderUnlock.value != null ||
       props.itemRewards.length > 0 ||
-      props.offerUnlockRewards.length > 0
+      props.offerUnlockRewards.length > 0 ||
+      (showExperienceRewards.value && (props.experience ?? 0) > 0)
     );
   });
   const hasDetailedRewards = computed(() => {
     return props.itemRewards.length > 0 || props.offerUnlockRewards.length > 0;
   });
   const hasExpandableDetails = computed(() => {
-    return hasDetailedRewards.value || props.childTasks.length > 0 || props.parentTasks.length > 0;
+    const hasVisibleNextTasks = showNextTasks.value && props.childTasks.length > 0;
+    const hasVisiblePreviousTasks = showPreviousTasks.value && props.parentTasks.length > 0;
+    return hasDetailedRewards.value || hasVisibleNextTasks || hasVisiblePreviousTasks;
   });
   const getItemTooltip = (item?: { shortName?: string; name?: string }) => {
     const name = item?.shortName || item?.name || t('page.tasks.questcard.item', 'Item');

@@ -1,6 +1,10 @@
 <template>
-  <div>
-    <div class="px-4 py-6">
+  <div class="flex min-h-full overflow-x-hidden">
+    <!-- Main content area -->
+    <div
+      class="min-w-0 flex-1 px-4 py-6 transition-[padding] duration-200"
+      :class="{ 'pr-80': isSettingsDrawerOpen }"
+    >
       <TaskLoadingState v-if="isLoading" />
       <div v-else>
         <!-- Task Filter Bar -->
@@ -55,6 +59,17 @@
         </div>
       </div>
     </div>
+    <!-- Settings Drawer (slides in from right, scrolls with page) -->
+    <Transition
+      enter-active-class="transition-all duration-200 ease-out"
+      enter-from-class="translate-x-full opacity-0"
+      enter-to-class="translate-x-0 opacity-100"
+      leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="translate-x-0 opacity-100"
+      leave-to-class="translate-x-full opacity-0"
+    >
+      <TaskSettingsDrawer v-if="isSettingsDrawerOpen" />
+    </Transition>
     <Teleport to="body">
       <Transition
         enter-active-class="transition ease-out duration-200"
@@ -113,9 +128,11 @@
   import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
   import { useTarkovTime } from '@/composables/useTarkovTime';
   import { useTaskFiltering } from '@/composables/useTaskFiltering';
+  import { useTaskSettingsDrawer } from '@/composables/useTaskSettingsDrawer';
   import TaskCard from '@/features/tasks/TaskCard.vue';
   import TaskEmptyState from '@/features/tasks/TaskEmptyState.vue';
   import TaskLoadingState from '@/features/tasks/TaskLoadingState.vue';
+  import TaskSettingsDrawer from '@/features/tasks/TaskSettingsDrawer.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
@@ -167,6 +184,8 @@
   // Game edition for filtering (reactive to trigger refresh when edition changes)
   const userGameEdition = computed(() => tarkovStore.getGameEdition());
   const { tarkovTime } = useTarkovTime();
+  // Settings drawer state
+  const { isOpen: isSettingsDrawerOpen } = useTaskSettingsDrawer();
   // Maps with static/fixed raid times (don't follow normal day/night cycle)
   const STATIC_TIME_MAPS: Record<string, string> = {
     '55f2d3fd4bdc2d5f408b4567': '15:28 / 03:28', // Factory

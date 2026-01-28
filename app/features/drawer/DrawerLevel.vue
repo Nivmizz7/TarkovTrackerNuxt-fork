@@ -11,33 +11,20 @@
       </div>
     </template>
     <template v-else>
-      <div
-        class="w-full overflow-hidden rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 backdrop-blur-sm"
-      >
-        <div class="flex min-w-0 items-center gap-2.5">
+      <div class="w-full">
+        <div class="flex min-w-0 items-center gap-2.5 rounded-md bg-white/5 px-2.5 py-2">
           <span class="shrink-0 leading-none">
-            <div class="group relative h-11 w-11 overflow-hidden">
+            <div class="relative h-11 w-11 overflow-hidden">
               <template v-if="isDataReady && groupIcon">
-                <NuxtImg
-                  v-if="!factionImageLoadFailed"
-                  :src="pmcFactionIcon"
-                  class="absolute top-0 left-0 z-20 mt-0.5 max-w-11 px-0.5 opacity-0 invert transition-opacity duration-1000 ease-in-out group-hover:opacity-100"
-                  width="44"
-                  height="44"
-                  @error="handleFactionImageError"
-                />
                 <NuxtImg
                   v-if="!groupImageLoadFailed"
                   :src="groupIcon"
-                  class="absolute top-0 left-0 z-10 max-w-11 opacity-100 transition-opacity duration-1000 ease-in-out group-hover:opacity-0"
+                  class="max-w-11"
                   width="44"
                   height="44"
                   @error="handleGroupImageError"
                 />
-                <div
-                  v-if="factionImageLoadFailed && groupImageLoadFailed"
-                  class="flex h-11 w-11 items-center justify-center rounded bg-white/5"
-                >
+                <div v-else class="flex h-11 w-11 items-center justify-center rounded bg-white/5">
                   <UIcon name="i-heroicons-photo" class="text-surface-600 h-5 w-5" />
                 </div>
               </template>
@@ -156,9 +143,9 @@
               {{ formatNumber(xpCalculation.xpToNextLevel.value) }} needed
             </span>
           </div>
-          <div class="bg-surface-800 h-1 overflow-hidden rounded-full">
+          <div class="bg-surface-800/35 h-2 overflow-hidden rounded-full">
             <div
-              class="bg-primary-500 h-full transition-all duration-300"
+              class="bg-primary-500/60 h-full rounded-full transition-[width] duration-300 ease-out"
               :style="{ width: `${xpCalculation.xpProgress.value}%` }"
             ></div>
           </div>
@@ -202,15 +189,11 @@
       !metadataStore.loading && metadataStore.playerLevels.length > 0 && tarkovStore.getPMCFaction()
     );
   });
-  const pmcFactionIcon = computed(() => {
-    return `/img/factions/${tarkovStore.getPMCFaction()}.webp`;
-  });
   const groupIcon = computed(() => {
     const level = displayedLevel.value;
     const entry = playerLevels.value.find((pl) => pl.level === level);
     return entry?.levelBadgeImageLink ?? '';
   });
-  const factionImageLoadFailed = ref(false);
   const groupImageLoadFailed = ref(false);
   const editingLevel = ref(false);
   const levelInputValue = ref(tarkovStore.playerLevel());
@@ -248,16 +231,9 @@
   function navigateToSettings() {
     router.push('/settings');
   }
-  watch(pmcFactionIcon, () => {
-    factionImageLoadFailed.value = false;
-  });
   watch(groupIcon, () => {
     groupImageLoadFailed.value = false;
   });
-  function handleFactionImageError(event) {
-    logger.warn('Failed to load faction image', { src: event?.target?.src });
-    factionImageLoadFailed.value = true;
-  }
   function handleGroupImageError(event) {
     logger.warn('Failed to load group image', { src: event?.target?.src });
     groupImageLoadFailed.value = true;

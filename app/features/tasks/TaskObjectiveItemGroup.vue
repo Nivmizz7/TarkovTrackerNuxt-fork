@@ -31,7 +31,7 @@
         </AppTooltip>
         <span
           v-if="row.meta.foundInRaid"
-          class="bg-warning-500/10 text-warning-300 rounded px-1 py-0.5 text-[10px] font-semibold"
+          class="bg-kappa-500/20 text-kappa-300 rounded px-1 py-0.5 text-[10px] font-semibold"
         >
           FiR
         </span>

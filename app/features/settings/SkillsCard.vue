@@ -8,19 +8,31 @@
     title-classes="text-lg font-semibold"
   >
     <template #title-right>
-      <UTooltip
-        :text="
-          $t(
-            'settings.skills.explanation',
-            'Quest rewards are auto-calculated. Enter your total skill level (max 51) to adjust the offset.'
-          )
-        "
-      >
-        <UIcon name="i-mdi-information" class="text-surface-400 h-4 w-4" />
-      </UTooltip>
+      <UButtonGroup size="xs">
+        <UButton
+          :label="$t('settings.skills.sort.priority', 'Priority')"
+          :variant="skillSortMode === 'priority' ? 'solid' : 'outline'"
+          :color="skillSortMode === 'priority' ? 'primary' : 'neutral'"
+          @click="setSkillSortMode('priority')"
+        />
+        <UButton
+          :label="$t('settings.skills.sort.ingame', 'In-Game')"
+          :variant="skillSortMode === 'ingame' ? 'solid' : 'outline'"
+          :color="skillSortMode === 'ingame' ? 'primary' : 'neutral'"
+          @click="setSkillSortMode('ingame')"
+        />
+      </UButtonGroup>
     </template>
     <template #content>
       <div class="space-y-4 px-4 py-4">
+        <p class="text-surface-400 text-xs">
+          {{
+            $t(
+              'settings.skills.explanation',
+              'Quest rewards are auto-calculated. Enter your total skill level (max 51) to adjust the offset.'
+            )
+          }}
+        </p>
         <div
           v-if="allGameSkills.length > 0"
           class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
@@ -149,9 +161,16 @@
   import { computed, ref } from 'vue';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { useSkillCalculation } from '@/composables/useSkillCalculation';
+  import { usePreferencesStore } from '@/stores/usePreferences';
+  import type { SkillSortMode } from '@/utils/constants';
   const skillCalculation = useSkillCalculation();
+  const preferencesStore = usePreferencesStore();
   const allGameSkills = computed(() => skillCalculation.allGameSkills.value);
   const showAllSkills = ref(false);
+  const skillSortMode = computed(() => preferencesStore.getSkillSortMode);
+  const setSkillSortMode = (mode: SkillSortMode) => {
+    preferencesStore.setSkillSortMode(mode);
+  };
   const toast = useToast();
   const breakpoints = useBreakpoints(breakpointsTailwind);
   const columnsPerRow = computed(() => {
@@ -160,20 +179,15 @@
     if (breakpoints.greaterOrEqual('sm').value) return 2;
     return 1;
   });
-  const lastRequiredLevelIndex = computed(() => {
-    const skills = allGameSkills.value;
-    for (let index = skills.length - 1; index >= 0; index -= 1) {
-      if ((skills[index]?.requiredLevels?.length ?? 0) > 0) return index;
-    }
-    return -1;
+  const skillsWithRequirementsCount = computed(() => {
+    return allGameSkills.value.filter((skill) => (skill.requiredLevels?.length ?? 0) > 0).length;
   });
   const collapsedVisibleCount = computed(() => {
     const total = allGameSkills.value.length;
-    const lastRequiredIndex = lastRequiredLevelIndex.value;
+    const requiredCount = skillsWithRequirementsCount.value;
     if (total === 0) return 0;
-    if (lastRequiredIndex < 0) return total;
-    const rawCount = lastRequiredIndex + 1;
-    return Math.min(total, Math.ceil(rawCount / columnsPerRow.value) * columnsPerRow.value);
+    if (requiredCount === 0) return total;
+    return Math.min(total, Math.ceil(requiredCount / columnsPerRow.value) * columnsPerRow.value);
   });
   const hasShowAllToggle = computed(() => {
     return collapsedVisibleCount.value < allGameSkills.value.length;

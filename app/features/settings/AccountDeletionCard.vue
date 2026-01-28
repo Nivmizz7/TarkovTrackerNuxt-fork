@@ -1,10 +1,12 @@
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useSystemStore } from '@/stores/useSystemStore';
   import { resetTarkovSync, useTarkovStore } from '@/stores/useTarkov';
   import { useTeamStore } from '@/stores/useTeamStore';
+  import { LIMITS } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   defineOptions({
     inheritAttrs: false,
@@ -18,6 +20,8 @@
     resetAll: [];
   }>();
   const { $supabase } = useNuxtApp();
+  const { t } = useI18n();
+  const toast = useToast();
   const preferencesStore = usePreferencesStore();
   const systemStore = useSystemStore();
   const teamStore = useTeamStore();
@@ -33,6 +37,21 @@
   const showUsername = ref(false);
   const showEmail = ref(false);
   const showAccountId = ref(false);
+  const displayNameMaxLength = LIMITS.DISPLAY_NAME_MAX_LENGTH;
+  const localDisplayName = ref(tarkovStore.getDisplayName() || '');
+  const isSavingDisplayName = ref(false);
+  const displayName = computed(() => tarkovStore.getDisplayName());
+  const currentModeLabel = computed(() =>
+    (tarkovStore.getCurrentGameMode() || 'pvp').toUpperCase()
+  );
+  const hasDisplayNameChanges = computed(() => {
+    const trimmed = localDisplayName.value.trim();
+    const initial = displayName.value || '';
+    return trimmed !== initial && trimmed.length > 0;
+  });
+  watch(displayName, (newName) => {
+    localDisplayName.value = newName || '';
+  });
   const maskedUsername = computed(() => {
     const username = $supabase?.user?.username;
     if (!username) return 'N/A';
@@ -61,6 +80,50 @@
   const isLoggedIn = computed(() => {
     return Boolean($supabase?.user?.loggedIn);
   });
+  const saveDisplayName = async () => {
+    const trimmed = localDisplayName.value.trim();
+    if (!trimmed) {
+      toast.add({
+        title: t('settings.display_name.validation_error', 'Validation Error'),
+        description: t('settings.display_name.empty_error', 'Display name cannot be empty'),
+        color: 'error',
+      });
+      return;
+    }
+    if (trimmed.length > displayNameMaxLength) {
+      toast.add({
+        title: t('settings.display_name.validation_error', 'Validation Error'),
+        description: t('settings.display_name.max_error', { max: displayNameMaxLength }),
+        color: 'error',
+      });
+      return;
+    }
+    isSavingDisplayName.value = true;
+    try {
+      const sanitized = trimmed.substring(0, displayNameMaxLength);
+      tarkovStore.setDisplayName(sanitized);
+      localDisplayName.value = sanitized;
+      toast.add({
+        title: t('settings.display_name.saved_title', 'Display Name Saved'),
+        description: t('settings.display_name.saved_description', {
+          mode: currentModeLabel.value,
+        }),
+        color: 'success',
+      });
+    } catch (error) {
+      logger.error('[Settings] Error saving display name:', error);
+      toast.add({
+        title: t('settings.display_name.save_failed_title', 'Save Failed'),
+        description: t(
+          'settings.display_name.save_failed_description',
+          'Failed to save display name. Please try again.'
+        ),
+        color: 'error',
+      });
+    } finally {
+      isSavingDisplayName.value = false;
+    }
+  };
   type AuthProvider = 'discord' | 'twitch' | 'google' | 'github';
   interface UserWithProviders {
     providers?: string[] | null;
@@ -269,6 +332,56 @@
     >
       <template #content>
         <div class="p-4">
+          <div class="border-surface-700 bg-surface-800/50 mb-6 rounded-lg border p-4">
+            <div class="mb-3 text-base font-bold">
+              {{ $t('settings.display_name.title', 'Display Name') }}
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2">
+                <p class="text-surface-200 text-sm font-semibold">
+                  {{ $t('settings.display_name.label', 'Display Name') }}
+                </p>
+                <UTooltip
+                  :text="
+                    $t(
+                      'settings.display_name.explanation',
+                      'Your display name is shown to teammates and in the navigation. Each game mode (PVP/PVE) has a separate display name.'
+                    )
+                  "
+                >
+                  <UIcon name="i-mdi-information" class="text-surface-400 h-4 w-4" />
+                </UTooltip>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <UInput
+                  v-model="localDisplayName"
+                  :maxlength="displayNameMaxLength"
+                  :placeholder="
+                    $t('settings.display_name.placeholder', 'Enter your display name...')
+                  "
+                  class="min-w-48 flex-1"
+                  @keyup.enter="saveDisplayName"
+                />
+                <UButton
+                  icon="i-mdi-check"
+                  color="primary"
+                  variant="soft"
+                  size="sm"
+                  :disabled="!hasDisplayNameChanges || isSavingDisplayName"
+                  :loading="isSavingDisplayName"
+                  :aria-label="$t('settings.display_name.save', 'Save')"
+                  @click="saveDisplayName"
+                />
+              </div>
+              <p class="text-surface-400 text-xs">
+                {{
+                  $t('settings.display_name.mode_hint', {
+                    mode: currentModeLabel,
+                  })
+                }}
+              </p>
+            </div>
+          </div>
           <template v-if="isLoggedIn">
             <div class="border-surface-700 bg-surface-800/50 mb-6 rounded-lg border p-4">
               <div class="mb-3 text-base font-bold">

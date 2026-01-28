@@ -12,7 +12,7 @@
     <UIcon
       :name="objectiveIcon.startsWith('mdi-') ? `i-${objectiveIcon}` : objectiveIcon"
       aria-hidden="true"
-      class="mt-0.5 h-4 w-4 shrink-0"
+      class="mt-1.5 h-4 w-4 shrink-0"
       :class="isComplete ? 'text-success-300' : 'text-surface-400 group-hover:text-surface-300'"
     />
     <div class="flex flex-1 flex-wrap items-center gap-2">

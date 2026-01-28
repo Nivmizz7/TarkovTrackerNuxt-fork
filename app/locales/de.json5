@@ -1,6 +1,14 @@
 {
   // This file supports JSON5 notation. See https://json5.org/
   site_name: 'Tarkov Tracker',
+  route: {
+    index: {
+      title: 'Dashboard',
+    },
+    neededItems: {
+      title: 'Benötigte Gegenstände',
+    },
+  },
   app_bar: {
     overflow_menu: {
       game_mode: 'Spielmodus',
@@ -25,9 +33,6 @@
   },
   common: {
     refreshbutton: 'Erneut versuchen',
-  },
-  menu: {
-    language: 'Sprache',
   },
   maps: {
     zoom: 'Zoom',
@@ -205,7 +210,6 @@
         impact: 'Auswirkung',
         next: 'Nächste',
         more: 'Mehr',
-        copyTaskId: 'Aufgaben-ID kopieren',
         copyTaskLink: 'Aufgaben-Link kopieren',
         reportDataIssue: 'Datenproblem melden',
         viewOnTarkovDev: 'Auf Tarkov.dev ansehen',
@@ -238,7 +242,6 @@
         markfailedconfirm: 'Diese Aufgabe als fehlgeschlagen markieren? Dies ist nur für Datenprobleme gedacht, wird nicht empfohlen und kann Aufgabenketten blockieren.',
         failedbecause: 'Fehlgeschlagen wegen',
         failedbecauseunknown: 'Manuell fehlgeschlagen oder Daten fehlen',
-        nonkappa: 'Nicht für Kappa benötigt',
         keysHeader: 'Empfohlene Schlüssel',
         keysSubtext: '(können helfen, aber nicht immer erforderlich)',
         keysneeded: '{keys} auf {map} | Einer von {keys} auf {map}',
@@ -268,13 +271,11 @@
       scrollToMap: 'Zur Karte scrollen',
       scrollToTop: 'Nach oben scrollen',
     },
-    traders: {
-      title: 'Händler',
-    },
     hideout: {
       title: 'Versteck',
       loading: 'Lade Versteck-Daten',
       nostationsfound: 'Keine Stationen gefunden. Versuche deine Filter zu ändern.',
+      collapsecompleted: 'Fertige Stationen einklappen',
       primaryviews: {
         all: 'Alle',
         locked: 'Gesperrt',
@@ -289,9 +290,9 @@
         upgradeunavailable: 'Upgrade nicht verfügbar',
         prerequisites: 'Voraussetzungen',
         requirements: {
-          station: 'Benötigt {stationname} Stufe {level}',
-          skill: 'Benötigt {skillname} Stufe {level}',
-          trader: 'Benötigt {tradername} Treuestufe {loyaltylevel}',
+          station: '{stationname} Stufe {level}',
+          skill: '{skillname} Stufe {level}',
+          trader: '{tradername} LL{loyaltylevel}',
         },
         gameeditiondescription: 'Die Basisstufe des Lagers wird durch die Spieledition bestimmt. Du kannst dies in den Tracker-Einstellungen ändern.',
         settingsbutton: 'Einstellungen öffnen',
@@ -300,9 +301,6 @@
         statusupgraded: '{name} auf Stufe {level} ausgebaut',
         statusdowngraded: '{name} von Stufe {level} herabgestuft',
       },
-    },
-    items: {
-      title: 'Benötigte Gegenstände',
     },
     neededitems: {
       title: 'Benötigte Gegenstände',
@@ -342,22 +340,8 @@
         empty: 'Keine Gegenstände entsprechen deiner Suche.',
       },
     },
-    api: {
-      title: 'API-Dokumentation',
-      description: 'Greife programmatisch auf deine Tarkov Tracker-Daten zu.',
-      note: 'API-Tokens sind für die Authentifizierung erforderlich.',
-      tokens_moved_title: 'API-Tokens werden in den Einstellungen verwaltet',
-      tokens_moved_description: 'Erstelle und widerrufe Tokens unter Einstellungen → API Tokens. Diese Seite enthält weiterhin die API-Dokumentation und Endpunkt-Details.',
-      tokens_moved_action: 'Einstellungen öffnen',
-      endpoints: {
-        title: 'Verfügbare Endpunkte',
-        data: {
-          description: 'Rufe deine Spielfortschrittsdaten ab.',
-        },
-      },
-      usage: {
-        title: 'Anwendungsbeispiele',
-      },
+    needed_items: {
+      title: 'Benötigte Gegenstände',
     },
     settings: {
       title: 'Einstellungen',
@@ -516,37 +500,6 @@
     privacy: {
       title: 'Datenschutzrichtlinie',
     },
-    api: {
-      title: 'API-Dokumentation',
-      description: 'Greife programmatisch auf deine Tarkov Tracker-Daten zu',
-      note: 'API-Tokens sind für die Authentifizierung erforderlich',
-      endpoints: {
-        title: 'Verfügbare Endpunkte',
-        data: {
-          description: 'Rufe deine Spielfortschrittsdaten ab',
-        },
-      },
-      usage: {
-        title: 'Anwendungsbeispiele',
-      },
-      stats: {
-        active_tokens: 'Aktive Tokens',
-        rest: 'REST',
-        api_type: 'API-Typ',
-        secure: 'Sicher',
-        bearer_auth: 'Bearer-Auth',
-        realtime: 'Echtzeit',
-        data_access: 'Datenzugriff',
-      },
-      chips: {
-        secure_auth: 'Sichere Authentifizierung',
-        secure_tooltip: 'Tokens verwenden Bearer-Authentifizierung im Authorization-Header',
-        realtime_data: 'Echtzeit-Daten',
-        realtime_tooltip: 'Deine Fortschrittsdaten sind durch Echtzeit-Synchronisation immer aktuell',
-        json_api: 'JSON API',
-        json_tooltip: 'Alle Antworten sind im JSON-Format mit konsistenter Struktur',
-      },
-    },
   },
   footer: {
     call_to_action: {
@@ -567,12 +520,6 @@
     contributors: 'Mitwirkende',
     changelog: 'Änderungsprotokoll',
   },
-  module: {
-    team_settings: {
-      title: 'Team-Einstellungen',
-      description: 'Konfiguriere deine Team-Einstellungen.',
-    },
-  },
   navigation_drawer: {
     home: 'Dashboard',
     api: 'API',
@@ -583,7 +530,6 @@
     tasks: 'Aufgaben',
     hideout: 'Versteck',
     neededitems: 'Benötigte Gegenstände',
-    traders: 'Händler',
     tarkovdev: 'Tarkov.dev',
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
@@ -730,5 +676,4 @@
     error: 'Fehler',
   },
   'task.kappa_req': 'Erforderlich für Kappa',
-  'task.level_req': 'Level erforderlich: {level}',
 }

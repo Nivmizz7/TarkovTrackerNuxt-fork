@@ -3,10 +3,7 @@
     <UTabs :items="tabs" class="w-full">
       <template #gameplay>
         <div class="space-y-4 py-4">
-          <div class="grid gap-4 md:grid-cols-2">
-            <DisplayNameCard />
-            <ExperienceCard />
-          </div>
+          <ExperienceCard />
           <GenericCard
             icon="mdi-gamepad-variant"
             icon-color="accent"
@@ -16,7 +13,7 @@
             title-classes="text-lg font-semibold"
           >
             <template #content>
-              <div class="grid gap-4 px-4 py-4 md:grid-cols-2 lg:grid-cols-3">
+              <div class="grid gap-4 px-4 py-4 md:grid-cols-2 lg:grid-cols-2">
                 <div class="space-y-2">
                   <p class="text-surface-200 text-sm font-semibold">
                     {{ $t('settings.game_profile.game_edition', 'Game Edition') }}
@@ -63,29 +60,6 @@
       </template>
       <template #account>
         <div class="space-y-4 py-4">
-          <GenericCard
-            icon="mdi-eye-off"
-            icon-color="surface"
-            :fill-height="false"
-            :title="$t('settings.general.privacy_mode', 'Privacy Mode')"
-            title-classes="text-lg font-semibold"
-          >
-            <template #content>
-              <div class="flex items-center justify-between gap-3 px-4 py-4">
-                <div class="flex items-center gap-2">
-                  <span class="text-surface-200 text-sm">
-                    {{
-                      $t(
-                        'settings.general.privacy_mode_hint',
-                        "Hides sensitive information while you're streaming."
-                      )
-                    }}
-                  </span>
-                </div>
-                <USwitch v-model="streamerMode" :disabled="!isLoggedIn || streamerModeCooldown" />
-              </div>
-            </template>
-          </GenericCard>
           <GenericCard
             icon="mdi-key-chain"
             icon-color="secondary"
@@ -312,12 +286,10 @@
   import GenericCard from '@/components/ui/GenericCard.vue';
   import AccountDeletionCard from '@/features/settings/AccountDeletionCard.vue';
   import ApiTokens from '@/features/settings/ApiTokens.vue';
-  import DisplayNameCard from '@/features/settings/DisplayNameCard.vue';
   import ExperienceCard from '@/features/settings/ExperienceCard.vue';
   import InterfaceSettingsCard from '@/features/settings/InterfaceSettingsCard.vue';
   import SkillsCard from '@/features/settings/SkillsCard.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
-  import { usePreferencesStore } from '@/stores/usePreferences';
   import { useSystemStore, useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { GAME_MODES } from '@/utils/constants';
@@ -331,7 +303,6 @@
   const { $supabase } = useNuxtApp();
   const toast = useToast();
   const metadataStore = useMetadataStore();
-  const preferencesStore = usePreferencesStore();
   const { hasInitiallyLoaded } = useSystemStoreWithSupabase();
   const systemStore = useSystemStore();
   const tarkovStore = useTarkovStore();
@@ -341,7 +312,6 @@
   const showResetPvEDialog = ref(false);
   const showResetAllDialog = ref(false);
   const resetAllConfirmText = ref('');
-  const streamerModeCooldown = ref(false);
   const tabs = computed(() => [
     { slot: 'gameplay', label: t('settings.tabs.gameplay', 'Gameplay'), icon: 'i-mdi-controller' },
     { slot: 'interface', label: t('settings.tabs.interface', 'Interface'), icon: 'i-mdi-palette' },
@@ -349,19 +319,6 @@
   ]);
   const isLoggedIn = computed(() => Boolean($supabase?.user?.loggedIn));
   const isAdmin = computed(() => hasInitiallyLoaded.value && systemStore.isAdmin);
-  const streamerMode = computed({
-    get() {
-      return preferencesStore.getStreamerMode;
-    },
-    set(newValue) {
-      if (streamerModeCooldown.value) return;
-      preferencesStore.setStreamerMode(newValue);
-      streamerModeCooldown.value = true;
-      setTimeout(() => {
-        streamerModeCooldown.value = false;
-      }, 500);
-    },
-  });
   const gameEditionOptions = computed(() =>
     metadataStore.editions.map((edition) => ({
       label: edition.title,

@@ -52,8 +52,11 @@ const mockFetch = vi.fn(async (input: FetchInput, _init?: RequestInit) => {
   throw new Error(`Unmocked fetch call to: ${url}. Add a mock for this URL in test-setup.ts`);
 });
 vi.stubGlobal('$fetch', mockFetch);
-// Auto-unmount VTU wrappers after each test
-enableAutoUnmount(afterEach);
+try {
+  enableAutoUnmount(afterEach);
+} catch {
+  // Already enabled - safe to ignore when isolate: false causes re-evaluation
+}
 // Global setup for Nuxt testing
 beforeAll(() => {
   // Mock console methods that might be noisy in tests

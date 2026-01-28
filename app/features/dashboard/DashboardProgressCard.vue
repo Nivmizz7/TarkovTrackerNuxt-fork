@@ -30,9 +30,9 @@
       </div>
       <div class="text-3xl font-bold" :class="percentageColorClass">{{ percentageDisplay }}%</div>
     </div>
-    <div class="bg-surface-850 relative h-2.5 overflow-hidden rounded-full">
+    <div class="bg-surface-800/35 relative h-2 overflow-hidden rounded-full">
       <div
-        class="absolute inset-y-0 left-0 rounded-full transition-all duration-300 ease-out"
+        class="absolute inset-y-0 left-0 rounded-full transition-[width] duration-300 ease-out"
         :class="holidayEffectsEnabled ? 'candy-cane' : barGradientClass"
         :style="{ width: `${percentage}%` }"
         role="progressbar"
@@ -84,42 +84,42 @@
       iconBg: 'bg-primary-600/15',
       icon: 'text-primary-400',
       percentage: 'text-primary-400',
-      bar: 'from-primary-600 to-primary-400 bg-gradient-to-r',
+      bar: 'bg-primary-500/60',
     },
     neutral: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-surface-700',
       icon: 'text-surface-300',
       percentage: 'text-surface-50',
-      bar: 'bg-surface-400',
+      bar: 'bg-surface-400/60',
     },
     info: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-info-600/15',
       icon: 'text-info-400',
       percentage: 'text-info-400',
-      bar: 'from-info-600 to-info-400 bg-gradient-to-r',
+      bar: 'bg-info-500/60',
     },
     success: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-success-600/15',
       icon: 'text-success-400',
       percentage: 'text-success-400',
-      bar: 'from-success-600 to-success-400 bg-gradient-to-r',
+      bar: 'bg-success-500/60',
     },
     kappa: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-kappa-600/15',
       icon: 'text-kappa-400',
       percentage: 'text-kappa-400',
-      bar: 'from-kappa-600 to-kappa-400 bg-gradient-to-r',
+      bar: 'bg-kappa-500/60',
     },
     lightkeeper: {
       hover: 'hover:border-surface-600',
       iconBg: 'bg-lightkeeper-600/15',
       icon: 'text-lightkeeper-400',
       percentage: 'text-lightkeeper-400',
-      bar: 'from-lightkeeper-600 to-lightkeeper-400 bg-gradient-to-r',
+      bar: 'bg-lightkeeper-500/60',
     },
   };
   const hoverBorderClass = computed(() => colorClasses[props.color].hover);

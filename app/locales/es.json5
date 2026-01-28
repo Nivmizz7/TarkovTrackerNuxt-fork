@@ -1,7 +1,14 @@
 {
   // This file supports JSON5 notation. See https://json5.org/
-  hello_world: 'Hola mundo',
   site_name: 'Tarkov Tracker',
+  route: {
+    index: {
+      title: 'Panel',
+    },
+    neededItems: {
+      title: 'Objetos Necesarios',
+    },
+  },
   app_bar: {
     overflow_menu: {
       language: 'Idioma',
@@ -9,9 +16,6 @@
   },
   common: {
     refreshbutton: 'Intentar de nuevo',
-  },
-  menu: {
-    language: 'Idioma',
   },
   maps: {
     zoom: 'Zoom',
@@ -177,7 +181,6 @@
         markfailedconfirm: '¿Marcar esta misión como fallida? Esto es solo para problemas de datos, no se recomienda y puede bloquear cadenas de misiones.',
         failedbecause: 'Failed because',
         failedbecauseunknown: 'Failed manually or data missing',
-        nonkappa: 'No se requiere Kappa',
         keysneeded: '{keys} necesaria en {map} | {keys} necesarias en {map}',
         objectiveshidden: '{count} objetivos no están en este mapa ({uncompleted} sin completar)',
         alternatives: 'Misiones alternativas',
@@ -190,13 +193,11 @@
       scrollToMap: 'Desplazar al mapa',
       scrollToTop: 'Volver arriba',
     },
-    traders: {
-      title: 'Comerciantes',
-    },
     hideout: {
       title: 'Escondite',
       loading: 'Cargando datos del escondite',
       nostationsfound: 'No se encontraron estaciones. Intenta cambiar los filtros.',
+      collapsecompleted: 'Colapsar estaciones completadas',
       primaryviews: {
         all: 'Todas',
         locked: 'Bloqueadas',
@@ -205,13 +206,15 @@
       },
       stationcard: {
         level: 'Disponible para construir | Nivel {count} | Nivel {count}',
+        levelnotready: 'Aún no está listo para construir',
         nextlevel: 'Requisitos para el próximo nivel',
         maxlevel: 'Nivel máximo de estación alcanzado',
         upgradeunavailable: 'No se puede mejorar esta estación',
+        prerequisites: 'Requisitos previos',
         requirements: {
-          station: 'Requiere nivel {level} de {stationname}',
-          skill: 'Requiere nivel {level} de {skillname}',
-          trader: 'Requiere nivel de lealtad {loyaltylevel} de {tradername}',
+          station: '{stationname} nivel {level}',
+          skill: '{skillname} nivel {level}',
+          trader: '{tradername} LL{loyaltylevel}',
         },
         gameeditiondescription: 'El nivel base del escondite está determinado por la edición del juego que posees. Puedes cambiar esto en la configuración del rastreador.',
         settingsbutton: 'Ir a Configuración',
@@ -220,9 +223,6 @@
         statusupgraded: 'Mejorado {name} a nivel {level}',
         statusdowngraded: 'Degradado {name} desde el nivel {level}',
       },
-    },
-    items: {
-      title: 'Objetos Necesarios',
     },
     neededitems: {
       title: 'Objetos Necesarios',
@@ -260,22 +260,8 @@
         items_show_non_fir: 'Mostrar objetos necesarios que no necesitan ser encontrados en incursión',
       },
     },
-    api: {
-      title: 'Documentación de la API',
-      description: 'Accede a tus datos de Tarkov Tracker de forma programática.',
-      note: 'Se requieren tokens de API para la autenticación.',
-      tokens_moved_title: 'Los tokens de API ahora se gestionan en Configuración',
-      tokens_moved_description: 'Crea y revoca tokens en Configuración → Tokens de API. Esta página mantiene la documentación.',
-      tokens_moved_action: 'Abrir Configuración',
-      endpoints: {
-        title: 'Endpoints disponibles',
-        data: {
-          description: 'Recupera tus datos de progreso del juego.',
-        },
-      },
-      usage: {
-        title: 'Ejemplos de uso',
-      },
+    needed_items: {
+      title: 'Objetos Necesarios',
     },
     settings: {
       title: 'Configuración',
@@ -430,37 +416,6 @@
       privacy_policy: 'Política de privacidad',
       terms_of_service: 'Términos de servicio',
     },
-    api: {
-      title: 'Documentación de la API',
-      description: 'Accede a tus datos de Tarkov Tracker programáticamente',
-      note: 'Se requieren tokens de API para la autenticación',
-      endpoints: {
-        title: 'Endpoints disponibles',
-        data: {
-          description: 'Recupera tus datos de progreso del juego',
-        },
-      },
-      usage: {
-        title: 'Ejemplos de uso',
-      },
-      stats: {
-        active_tokens: 'Tokens activos',
-        rest: 'REST',
-        api_type: 'Tipo de API',
-        secure: 'Seguro',
-        bearer_auth: 'Auth Bearer',
-        realtime: 'Tiempo real',
-        data_access: 'Acceso a datos',
-      },
-      chips: {
-        secure_auth: 'Autenticación segura',
-        secure_tooltip: 'Los tokens usan autenticación Bearer en el encabezado Authorization',
-        realtime_data: 'Datos en tiempo real',
-        realtime_tooltip: 'Tus datos de progreso siempre están actualizados a través de sincronización en tiempo real',
-        json_api: 'API JSON',
-        json_tooltip: 'Todas las respuestas están en formato JSON con estructura consistente',
-      },
-    },
     not_found: {
       title: 'Página no encontrada',
       not_found_description: 'Lo sentimos, no se ha encontrado la página.',
@@ -491,12 +446,6 @@
     contributors: 'Colaboradores',
     changelog: 'Registro de cambios',
   },
-  module: {
-    team_settings: {
-      title: 'Configuración del equipo',
-      description: 'Configura los ajustes de tu equipo.',
-    },
-  },
   navigation_drawer: {
     home: 'Panel',
     api: 'API',
@@ -507,7 +456,6 @@
     tasks: 'Misiones',
     hideout: 'Escondite',
     neededitems: 'Objetos Necesarios',
-    traders: 'Comerciantes',
     tarkovdev: 'Tarkov.dev',
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
@@ -633,5 +581,4 @@
     error: 'Error',
   },
   'task.kappa_req': 'Requerido para Kappa',
-  'task.level_req': 'Nivel requerido: {level}',
 }

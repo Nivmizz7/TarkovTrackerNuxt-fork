@@ -1,15 +1,19 @@
 <template>
   <UCard
     :id="`task-${task.id}`"
-    class="bg-surface-800 card relative divide-none overflow-hidden shadow-md ring-0"
+    class="card relative divide-none overflow-hidden shadow-md ring-0"
     :class="[taskClasses, 'rounded-md']"
     :ui="{ body: 'p-0 sm:p-0 flex flex-col h-full', footer: 'p-0 sm:p-0 border-t-0' }"
     @contextmenu.prevent="openOverflowMenu"
   >
     <div
+      v-if="isComplete && !isFailed"
+      class="bg-completed-600/[0.03] pointer-events-none absolute inset-0 z-0"
+    />
+    <div
       v-if="showBackgroundIcon"
-      class="pointer-events-none absolute inset-0 z-0 flex rotate-12 transform items-center justify-center p-8 opacity-15"
-      :class="backgroundIconColor"
+      class="pointer-events-none absolute inset-0 z-0 flex rotate-12 transform items-center justify-center p-8"
+      :class="[backgroundIconColor, isComplete && !isFailed ? 'opacity-[0.08]' : 'opacity-15']"
     >
       <UIcon
         :name="backgroundIcon.startsWith('mdi-') ? `i-${backgroundIcon}` : backgroundIcon"
@@ -17,7 +21,10 @@
         class="h-24 w-24"
       />
     </div>
-    <div class="relative z-10 flex h-full flex-col">
+    <div
+      class="relative z-10 flex h-full flex-col"
+      :class="{ 'opacity-80': isComplete && !isFailed }"
+    >
       <!-- 1) Identity + Header (Padded) -->
       <div class="flex flex-col" :class="compactClasses.header">
         <div class="flex items-start justify-between gap-3">
@@ -122,12 +129,63 @@
                 {{ t('page.tasks.questcard.levelBadge', { count: task.minPlayerLevel }) }}
               </UBadge>
             </AppTooltip>
-            <AppTooltip :text="task?.map?.name || t('page.tasks.questcard.anyMap', 'Any')">
+            <AppTooltip
+              v-if="fenceRepRequirement"
+              :text="
+                t(
+                  'page.tasks.questcard.fenceRepTooltip',
+                  {
+                    rep:
+                      fenceRepRequirement.value >= 0
+                        ? `+${fenceRepRequirement.value}`
+                        : fenceRepRequirement.value,
+                  },
+                  `Requires Fence reputation of ${fenceRepRequirement.value >= 0 ? 'at least' : 'at most'} ${fenceRepRequirement.value}`
+                )
+              "
+            >
+              <UBadge
+                size="xs"
+                :color="meetsFenceRepRequirement ? 'success' : 'error'"
+                variant="soft"
+                class="shrink-0 cursor-help text-[11px]"
+              >
+                {{
+                  t('page.tasks.questcard.fenceRepBadge', {
+                    rep:
+                      fenceRepRequirement.value >= 0
+                        ? `+${fenceRepRequirement.value}`
+                        : fenceRepRequirement.value,
+                  })
+                }}
+              </UBadge>
+            </AppTooltip>
+            <AppTooltip
+              v-for="req in traderLevelReqs"
+              :key="req.id"
+              :text="
+                t(
+                  'page.tasks.questcard.traderLevelTooltip',
+                  { trader: req.trader.name, level: req.level },
+                  `Requires ${req.trader.name} Loyalty Level ${req.level}`
+                )
+              "
+            >
+              <UBadge
+                size="xs"
+                :color="req.met ? 'success' : 'error'"
+                variant="soft"
+                class="shrink-0 cursor-help text-[11px]"
+              >
+                {{ req.trader.name }} LL{{ req.level }}
+              </UBadge>
+            </AppTooltip>
+            <AppTooltip :text="locationTooltip">
               <UBadge
                 size="xs"
                 color="neutral"
                 variant="soft"
-                class="inline-flex max-w-40 shrink-0 items-center gap-1 text-[11px]"
+                class="inline-flex max-w-40 shrink-0 cursor-help items-center gap-1 text-[11px]"
               >
                 <UIcon
                   :name="task?.map?.name ? 'i-mdi-map-marker' : 'i-mdi-earth'"
@@ -139,16 +197,6 @@
                 </span>
               </UBadge>
             </AppTooltip>
-            <UBadge
-              v-if="objectiveProgress.total > 0"
-              size="xs"
-              color="neutral"
-              variant="soft"
-              class="inline-flex shrink-0 items-center gap-1 text-[11px]"
-            >
-              <UIcon name="i-mdi-progress-check" aria-hidden="true" class="h-3 w-3" />
-              {{ t('page.tasks.questcard.progress', objectiveProgress) }}
-            </UBadge>
             <UBadge
               v-if="isFailed"
               size="xs"
@@ -231,26 +279,14 @@
                 {{ exclusiveEditionBadge }}
               </UBadge>
             </AppTooltip>
-            <!-- XP display - shown for all task statuses when setting is enabled -->
-            <div
-              v-if="preferencesStore.getShowExperienceRewards && task.experience"
-              class="text-surface-400 flex shrink-0 items-center gap-1 text-xs"
-            >
-              <UIcon
-                name="i-mdi-star"
-                aria-hidden="true"
-                class="text-warning-500 h-4 w-4 shrink-0"
-              />
-              <span class="whitespace-nowrap">{{ formatNumber(task.experience) }} XP</span>
-            </div>
             <!-- Action buttons in header for consistent positioning -->
-            <template v-if="actionButtonState !== 'none'">
+            <div v-if="actionButtonState !== 'none'" class="ml-2 shrink-0">
               <!-- Locked: Mark Available button -->
               <UButton
                 v-if="actionButtonState === 'locked'"
                 :size="actionButtonSize"
-                color="primary"
-                class="shrink-0"
+                color="neutral"
+                variant="soft"
                 @click.stop="markTaskAvailable()"
               >
                 {{ t('page.tasks.questcard.availablebutton', 'Mark Available') }}
@@ -259,8 +295,8 @@
               <UButton
                 v-else-if="actionButtonState === 'complete'"
                 :size="actionButtonSize"
-                color="info"
-                class="shrink-0"
+                color="neutral"
+                variant="soft"
                 @click.stop="markTaskUncomplete()"
               >
                 {{
@@ -270,21 +306,20 @@
                 }}
               </UButton>
               <!-- Hot Wheels: Both Complete and Fail buttons -->
-              <div
-                v-else-if="actionButtonState === 'hotwheels'"
-                class="flex shrink-0 flex-col gap-1"
-              >
+              <div v-else-if="actionButtonState === 'hotwheels'" class="flex flex-col gap-1">
                 <UButton
                   :size="actionButtonSize"
                   color="success"
-                  :ui="completeButtonUi"
+                  variant="soft"
+                  class="px-3 font-semibold"
                   @click.stop="markTaskComplete()"
                 >
-                  {{ t('page.tasks.questcard.completebutton', 'Complete').toUpperCase() }}
+                  {{ t('page.tasks.questcard.completebutton', 'Complete') }}
                 </UButton>
                 <UButton
                   :size="actionButtonSize"
                   color="error"
+                  variant="soft"
                   @click.stop="markTaskFailed()"
                 >
                   {{ t('page.tasks.questcard.failbutton', 'Fail') }}
@@ -295,13 +330,13 @@
                 v-else-if="actionButtonState === 'available'"
                 :size="actionButtonSize"
                 color="success"
-                :ui="completeButtonUi"
-                class="shrink-0"
+                variant="soft"
+                class="px-3 font-semibold"
                 @click.stop="markTaskComplete()"
               >
-                {{ t('page.tasks.questcard.completebutton', 'Complete').toUpperCase() }}
+                {{ t('page.tasks.questcard.completebutton', 'Complete') }}
               </UButton>
-            </template>
+            </div>
             <!-- Menu button -->
             <AppTooltip v-if="isOurFaction" :text="t('page.tasks.questcard.more', 'More')">
               <UButton
@@ -377,11 +412,40 @@
             }}
           </span>
         </div>
+        <div v-if="afterHasContent" class="text-surface-400 text-xs">
+          <AppTooltip
+            v-if="unlocksNextCount > 0"
+            :text="
+              t(
+                'page.tasks.questcard.unlocksNextTooltip',
+                'Number of quests that become available after completing this task'
+              )
+            "
+          >
+            <span class="border-surface-500 cursor-help border-b border-dotted">
+              {{ t('page.tasks.questcard.unlocksNext', 'Unlocks next') }}: {{ unlocksNextCount }}
+            </span>
+          </AppTooltip>
+          <span v-if="unlocksNextCount > 0 && impactCount > 0" class="text-surface-600 mx-2">
+            •
+          </span>
+          <AppTooltip
+            v-if="impactCount > 0"
+            :text="
+              t(
+                'page.tasks.questcard.impactTooltip',
+                'Number of incomplete quests that depend on this task being completed'
+              )
+            "
+          >
+            <span class="border-surface-500 cursor-help border-b border-dotted">
+              {{ t('page.tasks.questcard.impact', 'Impact') }}: {{ impactCount }}
+            </span>
+          </AppTooltip>
+        </div>
       </div>
       <!-- 2) Body: objectives (Full Width) -->
-      <div
-        class="bg-surface-900/40 border-surface-700/30 ring-surface-700/30 border-y ring-1 ring-inset"
-      >
+      <div class="border-surface-700/50 border-t">
         <div
           class="hover:bg-surface-700/20 flex cursor-pointer items-center justify-between transition-colors select-none"
           :class="compactClasses.objectivesToggle"
@@ -407,11 +471,7 @@
           leave-from-class="opacity-100 translate-y-0"
           leave-to-class="opacity-0 -translate-y-1"
         >
-          <div
-            v-if="objectivesVisible"
-            class="border-surface-700/30 space-y-3 border-t"
-            :class="compactClasses.objectivesBody"
-          >
+          <div v-if="objectivesVisible" class="space-y-3" :class="compactClasses.objectivesBody">
             <QuestKeys v-if="task?.neededKeys?.length" :needed-keys="task.neededKeys" />
             <QuestObjectivesSkeleton
               v-if="showObjectivesSkeleton"
@@ -428,38 +488,8 @@
           </div>
         </Transition>
       </div>
-      <!-- 3) Footer Strips (Padded) -->
-      <div v-if="afterHasContent" class="text-surface-400 text-xs" :class="compactClasses.footer">
-        <AppTooltip
-          v-if="unlocksNextCount > 0"
-          :text="
-            t(
-              'page.tasks.questcard.unlocksNextTooltip',
-              'Number of quests that become available after completing this task'
-            )
-          "
-        >
-          <span class="border-surface-500 cursor-help border-b border-dotted">
-            {{ t('page.tasks.questcard.unlocksNext', 'Unlocks next') }}: {{ unlocksNextCount }}
-          </span>
-        </AppTooltip>
-        <span v-if="unlocksNextCount > 0 && impactCount > 0" class="text-surface-600 mx-2">•</span>
-        <AppTooltip
-          v-if="impactCount > 0"
-          :text="
-            t(
-              'page.tasks.questcard.impactTooltip',
-              'Number of incomplete quests that depend on this task being completed'
-            )
-          "
-        >
-          <span class="border-surface-500 cursor-help border-b border-dotted">
-            {{ t('page.tasks.questcard.impact', 'Impact') }}: {{ impactCount }}
-          </span>
-        </AppTooltip>
-      </div>
     </div>
-    <!-- 4) Rewards Summary Section (Fixed to bottom, Full Width) -->
+    <!-- 3) Rewards Summary Section (Fixed to bottom, Full Width) -->
     <template #footer>
       <TaskCardRewards
         :is-compact="isCompact"
@@ -471,6 +501,7 @@
         :offer-unlock-rewards="offerUnlockRewards"
         :parent-tasks="parentTasks"
         :child-tasks="childTasks"
+        :experience="task.experience"
         @item-context-menu="openItemContextMenu"
       />
     </template>
@@ -499,14 +530,6 @@
           :label="t('page.tasks.questcard.copyTaskLink', 'Copy Task Link')"
           @click="
             copyTaskLink();
-            close();
-          "
-        />
-        <ContextMenuItem
-          icon="i-mdi-content-copy"
-          :label="t('page.tasks.questcard.copyTaskId', 'Copy Task ID')"
-          @click="
-            copyTaskId();
             close();
           "
         />
@@ -568,7 +591,6 @@
   import type { GameEdition, Task, TaskObjective } from '@/types/tarkov';
   import { HOT_WHEELS_TASK_ID } from '@/utils/constants';
   import { getExclusiveEditionsForTask } from '@/utils/editionHelpers';
-  import { useLocaleNumberFormatter } from '@/utils/formatters';
   type ContextMenuRef = { open: (event: MouseEvent) => void };
   // Module-level constants (moved from reactive scope)
   const MAX_DISPLAYED_NAMES = 3;
@@ -611,7 +633,6 @@
   const tarkovStore = useTarkovStore();
   const preferencesStore = usePreferencesStore();
   const metadataStore = useMetadataStore();
-  const formatNumber = useLocaleNumberFormatter();
   const taskContextMenu = ref<ContextMenuRef | null>(null);
   const itemContextMenu = ref<ContextMenuRef | null>(null);
   const selectedItem = ref<{ id: string; wikiLink?: string } | null>(null);
@@ -638,6 +659,47 @@
     const minLevel = props.task.minPlayerLevel ?? 0;
     return minLevel <= 0 || tarkovStore.playerLevel() >= minLevel;
   });
+  const fenceTrader = computed(() =>
+    metadataStore.traders.find((t) => t.normalizedName === 'fence')
+  );
+  const fenceRepRequirement = computed(() => {
+    if (!props.task.traderRequirements?.length || !fenceTrader.value) return null;
+    const fenceReq = props.task.traderRequirements.find(
+      (req) => req.trader.id === fenceTrader.value!.id
+    );
+    return fenceReq ?? null;
+  });
+  const meetsFenceRepRequirement = computed(() => {
+    if (!fenceRepRequirement.value || !fenceTrader.value) return true;
+    const userRep = tarkovStore.getTraderReputation(fenceTrader.value.id);
+    const reqValue = fenceRepRequirement.value.value;
+    if (reqValue >= 0) {
+      return userRep >= reqValue;
+    } else {
+      return userRep <= reqValue;
+    }
+  });
+  const traderLevelReqs = computed(() => {
+    if (!props.task.traderLevelRequirements?.length) return [];
+    return props.task.traderLevelRequirements.map((req) => {
+      const userLevel = tarkovStore.getTraderLevel(req.trader.id);
+      return {
+        ...req,
+        met: userLevel >= req.level,
+      };
+    });
+  });
+  const locationTooltip = computed(() => {
+    const mapName = props.task?.map?.name;
+    if (mapName) {
+      return t(
+        'page.tasks.questcard.locationTooltip',
+        { map: mapName },
+        `Quest objectives are on ${mapName}`
+      );
+    }
+    return t('page.tasks.questcard.anyLocationTooltip', 'Quest can be completed on any map');
+  });
   const exclusiveEditions = computed<GameEdition[]>(() =>
     getExclusiveEditionsForTask(props.task.id, metadataStore.editions)
   );
@@ -651,20 +713,17 @@
     return EDITION_SHORT_NAMES[minExclusiveEdition.value.title] || minExclusiveEdition.value.title;
   });
   const taskClasses = computed(() => {
-    if (isComplete.value && !isFailed.value)
-      return 'border-success-500/40 bg-success-950/60 ring-1 ring-inset ring-success-500/20';
-    if (isFailed.value)
-      return 'border-error-500/40 bg-error-950/50 ring-1 ring-inset ring-error-500/20';
-    if (isInvalid.value) return 'border-surface-500/20 bg-surface-500/5 opacity-60';
-    if (isLocked.value) return 'border-white/12 bg-surface-900/10';
-    return 'border-white/12';
+    if (isComplete.value && !isFailed.value) return 'border-completed-600/25 bg-surface-900';
+    if (isFailed.value) return 'border-error-600/50 bg-error-950';
+    if (isInvalid.value) return 'border-surface-700/40 bg-surface-900 opacity-60';
+    if (isLocked.value) return 'border-surface-700/40 bg-surface-900';
+    return 'border-surface-700/40 bg-surface-900';
   });
   const isCompact = computed(() => preferencesStore.getTaskCardDensity === 'compact');
   const compactClasses = computed(() => ({
     header: isCompact.value ? 'gap-2 px-3 py-2' : 'gap-3 px-4 py-3',
     objectivesToggle: isCompact.value ? 'px-3 py-2' : 'px-4 py-3',
     objectivesBody: isCompact.value ? 'px-3 py-3' : 'px-4 py-4',
-    footer: isCompact.value ? 'px-3 pt-1.5 pb-2' : 'px-4 pt-2 pb-3',
   }));
   const showBackgroundIcon = computed(
     () => isLocked.value || isFailed.value || isComplete.value || isInvalid.value
@@ -690,7 +749,7 @@
   });
   const backgroundIconColor = computed(() => {
     if (isFailed.value) return 'text-error-400';
-    if (isComplete.value) return 'text-success-400';
+    if (isComplete.value) return 'text-completed-400';
     if (isInvalid.value) return 'text-surface-400';
     if (isLocked.value) return 'text-warning-400';
     return 'text-brand-200';
@@ -751,9 +810,6 @@
   const traderUnlockReward = computed(() => props.task.finishRewards?.traderUnlock);
   const itemRewards = computed(() => props.task.finishRewards?.items ?? []);
   const offerUnlockRewards = computed(() => props.task.finishRewards?.offerUnlock ?? []);
-  const completeButtonUi = {
-    base: 'bg-success-500 hover:bg-success-600 active:bg-success-700 text-white border border-success-700',
-  };
   const actionButtonSize = computed(() => (xs.value ? 'xs' : 'sm'));
   const isHotWheelsTask = computed(() => props.task.id === HOT_WHEELS_TASK_ID);
   const showHotWheelsFail = computed(
@@ -833,13 +889,6 @@
     // No objectives yet - show skeleton while loading or not yet hydrated
     return metadataStore.tasksObjectivesPending || !metadataStore.tasksObjectivesHydrated;
   });
-  const objectiveProgress = computed(() => {
-    const total = relevantViewObjectives.value.length;
-    const done = relevantViewObjectives.value.filter((objective) => {
-      return tarkovStore.isTaskObjectiveComplete(objective.id);
-    }).length;
-    return { done, total };
-  });
   const tarkovDevTaskUrl = computed(() => `https://tarkov.dev/task/${props.task.id}`);
   const openOverflowMenu = (event: MouseEvent) => {
     taskContextMenu.value?.open(event);
@@ -894,7 +943,6 @@
     document.execCommand('copy');
     document.body.removeChild(textarea);
   };
-  const copyTaskId = () => copyTextToClipboard(props.task.id);
   const copyTaskLink = () => {
     const href = router.resolve(`/tasks?task=${props.task.id}`).href;
     return copyTextToClipboard(`${window.location.origin}${href}`);
