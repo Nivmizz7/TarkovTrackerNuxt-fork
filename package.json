@@ -10,7 +10,7 @@
     "@nuxt/image": "^2.0.0",
     "@nuxt/ui": "^4.3.0",
     "@pinia/nuxt": "^0.11.3",
-    "@supabase/supabase-js": "^2.90.1",
+    "@supabase/supabase-js": "^2.93.2",
     "@unhead/vue": "^2.1.2",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "@vueuse/core": "^14.1.0",
@@ -31,7 +31,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260114.0",
+    "@cloudflare/workers-types": "^4.20260128.0",
     "@nuxt/test-utils": "^3.23.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/d3": "^7.4.3",
@@ -43,12 +43,12 @@
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "fake-indexeddb": "^5.0.2",
-    "happy-dom": "^20.2.0",
+    "happy-dom": "^20.4.0",
     "jsdom": "^27.4.0",
     "postcss": "^8.5.6",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "supabase": "^2.72.7",
+    "supabase": "^2.72.9",
     "tailwindcss": "^4.1.18",
     "vitest": "^3.2.4"
   },
