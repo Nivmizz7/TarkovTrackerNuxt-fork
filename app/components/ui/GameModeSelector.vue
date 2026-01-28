@@ -3,7 +3,7 @@
   <div class="w-full">
     <div class="flex justify-center">
       <div class="w-full">
-        <USelectMenu
+        <SelectMenuFixed
           v-model="selectedGameMode"
           :items="gameModeOptions as any"
           option-attribute="label"
@@ -25,7 +25,7 @@
               <span>{{ item.label }}</span>
             </div>
           </template>
-        </USelectMenu>
+        </SelectMenuFixed>
       </div>
     </div>
   </div>

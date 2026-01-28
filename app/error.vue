@@ -2,12 +2,6 @@
   <div
     class="bg-surface-950 relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4 text-center font-mono sm:p-6 lg:p-8"
   >
-    <!-- CRT Scanline Effect -->
-    <div class="pointer-events-none absolute inset-0 z-0 opacity-10">
-      <div
-        class="scanline via-primary-500/10 absolute inset-0 h-full w-full bg-linear-to-b from-transparent to-transparent"
-      ></div>
-    </div>
     <!-- Background Grid -->
     <div
       class="absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] mask-[radial-gradient(ellipse_at_center,black_40%,transparent_100%)] bg-size-[40px_40px]"
@@ -15,13 +9,11 @@
     <div class="relative z-10 w-full max-w-2xl space-y-6 sm:space-y-8 lg:space-y-10">
       <!-- Icon/Illustration with Glitch Effect -->
       <div
-        class="group bg-surface-900 hover:ring-primary-500/50 relative mx-auto flex h-24 w-24 cursor-pointer items-center justify-center rounded-full ring-1 ring-white/10 transition-all sm:h-32 sm:w-32 lg:h-40 lg:w-40"
-        @click="triggerGlitch"
+        class="group bg-surface-900 hover:ring-primary-500/50 relative mx-auto flex h-24 w-24 items-center justify-center rounded-full ring-1 ring-white/10 transition-all sm:h-32 sm:w-32 lg:h-40 lg:w-40"
       >
         <UIcon
           name="i-mdi-radar"
-          class="text-primary-500 h-12 w-12 transition-all duration-100 sm:h-16 sm:w-16 lg:h-20 lg:w-20"
-          :class="{ 'animate-pulse': !isGlitching, 'text-error-500 translate-x-1': isGlitching }"
+          class="text-primary-500 h-12 w-12 animate-pulse transition-all duration-100 sm:h-16 sm:w-16 lg:h-20 lg:w-20"
         />
         <div
           class="bg-surface-950 absolute -top-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full ring-1 ring-white/10 sm:-top-2 sm:-right-2 sm:h-10 sm:w-10 lg:h-12 lg:w-12"
@@ -33,8 +25,6 @@
       <div class="space-y-2 sm:space-y-3 lg:space-y-4">
         <h1
           class="text-surface-50 text-3xl font-bold tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl"
-          :class="{ 'glitch-text': isGlitching }"
-          :data-text="errorTitle"
         >
           {{ errorTitle }}
         </h1>
@@ -186,7 +176,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted } from 'vue';
+  import { computed, onMounted, onUnmounted } from 'vue';
   import { useLootGame, getRarityBadgeClass } from '@/composables/useLootGame';
   import type { NuxtError } from '#app';
   const props = defineProps({
@@ -205,14 +195,6 @@
       ? 'The page you are looking for has been extracted or does not exist.'
       : 'An unexpected error occurred while processing your request.'
   );
-  const isGlitching = ref(false);
-  const triggerGlitch = () => {
-    if (isGlitching.value) return;
-    isGlitching.value = true;
-    setTimeout(() => (isGlitching.value = false), 200);
-    setTimeout(() => (isGlitching.value = true), 300);
-    setTimeout(() => (isGlitching.value = false), 400);
-  };
   // --- Loot Mini-Game Logic ---
   const {
     lootState,
@@ -230,7 +212,7 @@
     if (e.key.toLowerCase() === cheatCode[cheatCodeIndex]) {
       cheatCodeIndex++;
       if (cheatCodeIndex === cheatCode.length) {
-        activateEasterEgg(triggerGlitch);
+        activateEasterEgg();
         cheatCodeIndex = 0;
       }
     } else {

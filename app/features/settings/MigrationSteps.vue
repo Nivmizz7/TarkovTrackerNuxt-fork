@@ -11,7 +11,7 @@
         <a
           href="https://tarkovtracker.io/settings"
           target="_blank"
-          class="text-blue-400 no-underline hover:underline"
+          class="text-info-400 no-underline hover:underline"
         >
           tarkovtracker.io/settings
         </a>

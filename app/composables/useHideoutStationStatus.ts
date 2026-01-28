@@ -1,0 +1,52 @@
+import { useProgressStore } from '@/stores/useProgress';
+import { useTarkovStore } from '@/stores/useTarkov';
+import type {
+  HideoutLevel,
+  HideoutStation,
+  SkillRequirement,
+  StationLevelRequirement,
+  TraderRequirement,
+} from '@/types/tarkov';
+export type HideoutStationStatus = 'available' | 'locked' | 'maxed';
+export const useHideoutStationStatus = () => {
+  const progressStore = useProgressStore();
+  const tarkovStore = useTarkovStore();
+  const getCurrentLevel = (station: HideoutStation): number =>
+    progressStore.hideoutLevels?.[station.id]?.self ?? 0;
+  const getNextLevel = (station: HideoutStation): HideoutLevel | null => {
+    const currentLevel = getCurrentLevel(station);
+    return station.levels.find((level) => level.level === currentLevel + 1) || null;
+  };
+  const isStationReqMet = (requirement: StationLevelRequirement): boolean => {
+    const currentStationLevel = progressStore.hideoutLevels?.[requirement.station.id]?.self || 0;
+    return currentStationLevel >= requirement.level;
+  };
+  const isSkillReqMet = (requirement: SkillRequirement): boolean => {
+    if (!requirement?.name || typeof requirement?.level !== 'number') return true;
+    const currentSkills = (tarkovStore.getCurrentProgressData?.() || {}).skills || {};
+    const currentLevel =
+      currentSkills?.[requirement.name] ?? tarkovStore.getSkillLevel(requirement.name);
+    return currentLevel >= requirement.level;
+  };
+  const isTraderReqMet = (requirement: TraderRequirement): boolean => {
+    if (!requirement?.trader?.id || typeof requirement?.value !== 'number') return true;
+    const currentLevel = tarkovStore.getTraderLevel(requirement.trader.id);
+    return currentLevel >= requirement.value;
+  };
+  const arePrereqsMet = (nextLevel: HideoutLevel | null): boolean => {
+    if (!nextLevel) return false;
+    return nextLevel.stationLevelRequirements?.every(isStationReqMet) ?? true;
+  };
+  const getStationStatus = (station: HideoutStation): HideoutStationStatus => {
+    const nextLevel = getNextLevel(station);
+    if (!nextLevel) return 'maxed';
+    return arePrereqsMet(nextLevel) ? 'available' : 'locked';
+  };
+  return {
+    arePrereqsMet,
+    getStationStatus,
+    isSkillReqMet,
+    isStationReqMet,
+    isTraderReqMet,
+  };
+};

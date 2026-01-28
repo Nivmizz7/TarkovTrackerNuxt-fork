@@ -7,7 +7,7 @@
       <div class="px-4 pb-4">
         <p class="mb-3">This will import your progress data into your PvP profile:</p>
         <!-- Game Mode Selection - Fixed to PvP Only -->
-        <div class="mb-4 rounded-lg bg-gray-800 p-3">
+        <div class="bg-surface-800 mb-4 rounded-lg p-3">
           <div class="flex items-center">
             <UIcon name="i-mdi-sword-cross" class="mr-2 h-4 w-4" />
             <span class="font-medium">Target Game Mode: PvP</span>
@@ -31,7 +31,7 @@
           @show-objectives-details="$emit('show-objectives-details')"
           @show-failed-tasks-details="$emit('show-failed-tasks-details')"
         />
-        <p class="mt-5 font-bold text-red-500">Warning: This action cannot be undone!</p>
+        <p class="text-error-500 mt-5 font-bold">Warning: This action cannot be undone!</p>
       </div>
       <template #footer>
         <div class="flex justify-end px-4 pb-4">

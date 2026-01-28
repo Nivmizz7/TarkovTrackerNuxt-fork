@@ -1,37 +1,48 @@
 <template>
   <div class="container mx-auto min-h-[calc(100vh-250px)] space-y-4 px-4 py-6">
-    <div class="flex justify-center">
-      <div class="w-full max-w-4xl rounded-lg bg-[hsl(240,5%,5%)] px-4 py-3">
-        <div class="flex flex-wrap justify-center gap-2">
-          <UButton
-            v-for="view in primaryViews"
-            :key="view.view"
-            :icon="`i-${view.icon}`"
-            :variant="'ghost'"
-            :color="'neutral'"
-            size="md"
-            class="shrink-0"
-            :class="{
-              'border-primary-500 rounded-none border-b-2': activePrimaryView === view.view,
-            }"
-            @click="activePrimaryView = view.view"
-          >
-            <span class="text-xs sm:text-sm">{{ view.title.toUpperCase() }}</span>
-            <span
-              :class="[
-                'ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm',
-                view.badgeColor,
-              ]"
+    <div class="flex flex-col gap-4">
+      <div class="flex justify-center">
+        <div
+          class="bg-surface-900 border-surface-700/50 w-full max-w-4xl rounded-lg border px-4 py-3 shadow-sm"
+        >
+          <div class="flex flex-wrap justify-center gap-2">
+            <UButton
+              v-for="view in primaryViews"
+              :key="view.view"
+              :icon="`i-${view.icon}`"
+              :variant="'ghost'"
+              :color="'neutral'"
+              size="md"
+              class="shrink-0"
+              :class="{
+                'border-surface-200 rounded-none border-b-2': activePrimaryView === view.view,
+              }"
+              @click="activePrimaryView = view.view"
             >
-              {{ view.count }}
-            </span>
-          </UButton>
+              <span class="text-xs sm:text-sm">{{ view.title.toUpperCase() }}</span>
+              <span
+                :class="[
+                  'ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm',
+                  view.badgeColor,
+                ]"
+              >
+                {{ view.count }}
+              </span>
+            </UButton>
+          </div>
         </div>
+      </div>
+      <div class="flex justify-end px-2">
+        <UCheckbox
+          v-model="preferencesStore.hideoutCollapseCompleted"
+          :label="$t('page.hideout.collapsecompleted') || 'Collapse completed stations'"
+          color="success"
+        />
       </div>
     </div>
     <div>
       <div v-if="isStoreLoading" class="text-surface-200 flex flex-col items-center gap-3 py-10">
-        <UIcon name="i-heroicons-arrow-path" class="text-primary-500 h-8 w-8 animate-spin" />
+        <UIcon name="i-heroicons-arrow-path" class="text-info-400 h-8 w-8 animate-spin" />
         <div class="flex items-center gap-2 text-sm">
           {{ $t('page.hideout.loading') }}
           <RefreshButton />
@@ -51,6 +62,13 @@
           v-for="(hStation, hIndex) in visibleStations"
           :key="hIndex"
           :station="hStation"
+          :collapsed="
+            getStationStatus(hStation.id) === 'maxed' && preferencesStore.hideoutCollapseCompleted
+          "
+          :highlighted="highlightedStationId === hStation.id"
+          :highlight-module-id="
+            highlightedStationId === hStation.id ? highlightedModuleId : undefined
+          "
         />
       </div>
     </div>
@@ -58,11 +76,12 @@
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-  import { computed, defineAsyncComponent, nextTick, watch } from 'vue';
+  import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRoute, useRouter } from 'vue-router';
   import { useHideoutFiltering } from '@/composables/useHideoutFiltering';
   import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
   // Page metadata
   useSeoMeta({
@@ -78,6 +97,9 @@
   const metadataStore = useMetadataStore();
   const { hideoutStations } = storeToRefs(metadataStore);
   const progressStore = useProgressStore();
+  const preferencesStore = usePreferencesStore();
+  const highlightedStationId = ref<string | null>(null);
+  const highlightedModuleId = ref<string | null>(null);
   // Hideout filtering composable
   const { activePrimaryView, isStoreLoading, visibleStations, stationCounts } =
     useHideoutFiltering();
@@ -87,28 +109,28 @@
       icon: 'mdi-tag-arrow-up-outline',
       view: 'available',
       count: stationCounts.value.available,
-      badgeColor: 'bg-primary-500',
+      badgeColor: 'bg-info-600',
     },
     {
       title: t('page.hideout.primaryviews.maxed'),
       icon: 'mdi-arrow-collapse-up',
       view: 'maxed',
       count: stationCounts.value.maxed,
-      badgeColor: 'bg-green-600',
+      badgeColor: 'bg-success-600',
     },
     {
       title: t('page.hideout.primaryviews.locked'),
       icon: 'mdi-lock',
       view: 'locked',
       count: stationCounts.value.locked,
-      badgeColor: 'bg-gray-600',
+      badgeColor: 'bg-surface-600',
     },
     {
       title: t('page.hideout.primaryviews.all'),
       icon: 'mdi-clipboard-check',
       view: 'all',
       count: stationCounts.value.all,
-      badgeColor: 'bg-blue-600',
+      badgeColor: 'bg-secondary-600',
     },
   ]);
   // Handle deep linking to a specific station via ?station=stationId query param
@@ -135,32 +157,22 @@
       const stationElement = document.getElementById(`station-${stationId}`);
       if (stationElement) {
         stationElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Add a brief highlight effect
-        stationElement.classList.add(
-          'ring-2',
-          'ring-primary-500',
-          'ring-offset-2',
-          'ring-offset-surface-900'
-        );
-        setTimeout(() => {
-          stationElement.classList.remove(
-            'ring-2',
-            'ring-primary-500',
-            'ring-offset-2',
-            'ring-offset-surface-900'
-          );
-        }, 2000);
       }
     }, 100);
   };
   const handleStationQueryParam = () => {
-    const stationId = route.query.station as string;
+    const stationQuery = route.query.station;
+    const moduleQuery = route.query.module;
+    const stationId = Array.isArray(stationQuery) ? stationQuery[0] : stationQuery;
+    const moduleId = Array.isArray(moduleQuery) ? moduleQuery[0] : moduleQuery;
     if (!stationId || isStoreLoading.value) return;
     // Determine station status and set appropriate filter
     const status = getStationStatus(stationId);
     if (activePrimaryView.value !== status) {
       activePrimaryView.value = status;
     }
+    highlightedStationId.value = stationId;
+    highlightedModuleId.value = moduleId || null;
     // Scroll to the station after filters are applied
     scrollToStation(stationId);
     // Clear the query param to avoid re-triggering on filter changes
@@ -168,9 +180,9 @@
   };
   // Watch for station query param and handle it when data is loaded
   watch(
-    [() => route.query.station, isStoreLoading],
-    ([stationQueryParam, loading]) => {
-      if (stationQueryParam && !loading) {
+    [() => route.query.station, () => route.query.module, isStoreLoading],
+    ([stationQueryParam, moduleQueryParam, loading]) => {
+      if ((stationQueryParam || moduleQueryParam) && !loading) {
         handleStationQueryParam();
       }
     },

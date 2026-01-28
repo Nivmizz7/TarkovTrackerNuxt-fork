@@ -1,9 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const appDir = resolve(__dirname, 'app');
+const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+const appVersion = packageJson.version ?? 'dev';
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   ssr: false,
@@ -11,15 +14,10 @@ export default defineNuxtConfig({
   ignore: ['**/__tests__/**', '**/*.test.*', '**/*.spec.*'],
   runtimeConfig: {
     // Server-only (private) runtime config
-    supabaseUrl:
-      process.env.SB_URL || process.env.SUPABASE_URL || process.env.NUXT_SUPABASE_URL || '',
+    supabaseUrl: process.env.SB_URL || process.env.SUPABASE_URL || '',
     supabaseServiceKey:
       process.env.SB_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-    supabaseAnonKey:
-      process.env.SB_ANON_KEY ||
-      process.env.SUPABASE_ANON_KEY ||
-      process.env.NUXT_SUPABASE_ANON_KEY ||
-      '',
+    supabaseAnonKey: process.env.SB_ANON_KEY || process.env.SUPABASE_ANON_KEY || '',
     // API protection configuration (server-only)
     apiProtection: {
       // Comma-separated list of allowed hosts (e.g., "tarkovtracker.org,www.tarkovtracker.org")
@@ -38,15 +36,10 @@ export default defineNuxtConfig({
     },
     public: {
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      appVersion: process.env.NUXT_PUBLIC_APP_VERSION || appVersion,
       teamGatewayUrl: process.env.NUXT_PUBLIC_TEAM_GATEWAY_URL || '',
       tokenGatewayUrl: process.env.NUXT_PUBLIC_TOKEN_GATEWAY_URL || '',
-      supabaseUrl:
-        process.env.SB_URL || process.env.SUPABASE_URL || process.env.NUXT_SUPABASE_URL || '',
-      supabaseAnonKey:
-        process.env.SB_ANON_KEY ||
-        process.env.SUPABASE_ANON_KEY ||
-        process.env.NUXT_SUPABASE_ANON_KEY ||
-        '',
+      // Admin middleware watch timeout (milliseconds)
       adminWatchTimeoutMs: Number(process.env.ADMIN_WATCH_TIMEOUT_MS || '5000') || 5000,
     },
   },
@@ -71,6 +64,7 @@ export default defineNuxtConfig({
   routeRules: {
     // Prerender the index page for zero-invocation loading of the SPA shell
     '/': { prerender: true },
+    '/neededitems': { redirect: '/needed-items' },
     // Explicit long-term caching for build assets
     '/_nuxt/**': {
       headers: { 'cache-control': 'public,max-age=31536000,immutable' },
@@ -130,7 +124,7 @@ export default defineNuxtConfig({
         },
         {
           rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap',
+          href: 'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap',
         },
       ],
     },
@@ -165,6 +159,8 @@ export default defineNuxtConfig({
         'success',
         'warning',
         'error',
+        'kappa',
+        'lightkeeper',
       ],
     },
   },

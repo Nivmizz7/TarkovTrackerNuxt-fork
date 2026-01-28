@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-surface-800 overflow-hidden rounded shadow-md"
+    class="bg-surface-850 overflow-hidden rounded-lg border border-white/10 shadow-md"
     :class="{ 'h-full': props.fillHeight, [props.cardClass]: true }"
   >
     <div class="m-0 h-full p-0">
@@ -80,17 +80,18 @@
 </template>
 <script setup lang="ts">
   import { computed } from 'vue';
+  import type { SemanticColor } from '@/types/theme';
   interface Props {
     // Header props
     title?: string;
     subtitle?: string;
     icon?: string;
     avatar?: string;
-    iconColor?: string;
+    iconColor?: SemanticColor | 'white';
     titleClasses?: string;
     headerClasses?: string;
     // Styling props
-    highlightColor?: 'green' | 'blue' | 'red' | 'tan' | 'purple' | 'secondary' | 'accent';
+    highlightColor?: SemanticColor;
     fillHeight?: boolean;
     showDivider?: boolean;
     // Layout props
@@ -125,35 +126,40 @@
   const hasFooter = computed(() => !!slots.footer);
   const highlightClasses = computed(() => {
     const classes: Record<string, boolean> = {};
-    // Map highlight colors to Tailwind gradient classes
     switch (props.highlightColor) {
-      case 'green':
-        classes[
-          'bg-gradient-to-r from-[rgba(1,36,0,0.15)] via-[rgba(15,121,9,0.15)] to-[rgba(0,83,0,0.15)]'
-        ] = true;
-        break;
-      case 'blue':
-        classes[
-          'bg-gradient-to-r from-[rgba(0,0,36,0.15)] via-[rgba(0,0,121,0.15)] to-[rgba(0,0,83,0.15)]'
-        ] = true;
-        break;
-      case 'red':
-        classes[
-          'bg-gradient-to-r from-[rgba(36,0,0,0.15)] via-[rgba(121,0,0,0.15)] to-[rgba(83,0,0,0.15)]'
-        ] = true;
-        break;
-      case 'tan':
-        classes[
-          'bg-gradient-to-r from-[rgba(36,36,0,0.15)] via-[rgba(121,121,0,0.15)] to-[rgba(83,83,0,0.15)]'
-        ] = true;
-        break;
-      case 'purple':
-        classes[
-          'bg-gradient-to-r from-[rgba(36,0,36,0.15)] via-[rgba(121,0,121,0.15)] to-[rgba(83,0,83,0.15)]'
-        ] = true;
+      case 'primary':
+        classes['bg-gradient-to-br from-primary-800 via-primary-700 to-primary-600'] = true;
         break;
       case 'secondary':
-        classes['bg-gradient-to-br from-brand-700 via-brand-300 to-brand-500'] = true;
+        classes['bg-gradient-to-br from-secondary-800 via-secondary-700 to-secondary-600'] = true;
+        break;
+      case 'success':
+        classes['bg-gradient-to-br from-success-800 via-success-700 to-success-600'] = true;
+        break;
+      case 'warning':
+        classes['bg-gradient-to-br from-warning-800 via-warning-700 to-warning-600'] = true;
+        break;
+      case 'error':
+        classes['bg-gradient-to-br from-error-800 via-error-700 to-error-600'] = true;
+        break;
+      case 'info':
+        classes['bg-gradient-to-br from-info-800 via-info-700 to-info-600'] = true;
+        break;
+      case 'surface':
+        classes['bg-gradient-to-br from-surface-800 via-surface-700 to-surface-600'] = true;
+        break;
+      case 'pvp':
+        classes['bg-gradient-to-br from-pvp-800 via-pvp-700 to-pvp-600'] = true;
+        break;
+      case 'pve':
+        classes['bg-gradient-to-br from-pve-800 via-pve-700 to-pve-600'] = true;
+        break;
+      case 'kappa':
+        classes['bg-gradient-to-br from-kappa-800 via-kappa-700 to-kappa-600'] = true;
+        break;
+      case 'lightkeeper':
+        classes['bg-gradient-to-br from-lightkeeper-800 via-lightkeeper-700 to-lightkeeper-600'] =
+          true;
         break;
       case 'accent':
       default:

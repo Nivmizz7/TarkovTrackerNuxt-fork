@@ -18,7 +18,10 @@
     <div v-if="item" class="flex h-12 shrink-0 items-center justify-center px-2 pt-2">
       <div class="line-clamp-2 text-center text-sm leading-tight">
         {{ item.name }}
-        <AppTooltip v-if="props.need.foundInRaid" text="Found in Raid required">
+        <AppTooltip
+          v-if="props.need.foundInRaid"
+          :text="$t('neededItems.fir_required', 'Found in Raid required')"
+        >
           <UIcon
             name="i-mdi-checkbox-marked-circle-outline"
             class="ml-0.5 inline-block h-3.5 w-3.5"
@@ -49,13 +52,22 @@
       <template v-if="props.need.needType == 'taskObjective'">
         <div class="line-clamp-2 text-center">
           <task-link v-if="relatedTask" :task="relatedTask" />
-          <span v-else class="text-sm text-gray-300">Unknown task</span>
+          <span v-else class="text-surface-300 text-sm">
+            {{ $t('neededItems.unknown_task', 'Unknown Task') }}
+          </span>
         </div>
       </template>
       <template v-else-if="props.need.needType == 'hideoutModule'">
         <div class="flex items-center justify-center text-center">
-          <station-link v-if="relatedStation" :station="relatedStation" class="justify-center" />
-          <span v-else class="text-sm text-gray-300">Unknown station</span>
+          <station-link
+            v-if="relatedStation"
+            :station="relatedStation"
+            :module-id="props.need.hideoutModule.id"
+            class="justify-center"
+          />
+          <span v-else class="text-surface-300 text-sm">
+            {{ $t('neededItems.unknown_station', 'Unknown Station') }}
+          </span>
           <span class="ml-1 text-sm">{{ props.need.hideoutModule.level }}</span>
         </div>
       </template>
@@ -136,7 +148,7 @@
     return {
       'bg-gradient-to-t from-complete to-surface':
         selfCompletedNeed.value || currentCount.value >= neededCount.value,
-      'bg-gray-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
+      'bg-surface-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
       'shadow-md': true,
     };
   });

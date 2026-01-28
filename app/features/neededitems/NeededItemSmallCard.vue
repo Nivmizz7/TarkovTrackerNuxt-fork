@@ -14,7 +14,7 @@
         :class="[
           itemCardClasses,
           {
-            'hover:ring-primary-400 hover:ring-opacity-50 cursor-pointer transition-all hover:ring-2 active:scale-[0.98]':
+            'cursor-pointer transition-all active:scale-[0.98]':
               hasItem && isSingleItem && !selfCompletedNeed,
           },
         ]"
@@ -56,11 +56,30 @@
               size="small"
               simple-mode
               fill
-              class="h-full w-full"
+              :class="[
+                'h-full w-full',
+                isSingleItem && !selfCompletedNeed ? 'cursor-pointer!' : '',
+              ]"
             />
+            <!-- Compact Mode Controls Overlay -->
+            <div
+              v-if="cardStyle === 'compact' && !isSingleItem && !selfCompletedNeed"
+              class="absolute inset-x-0 bottom-0 z-20 flex justify-center bg-black/70 p-1"
+              @click.stop
+            >
+              <ItemCountControls
+                :current-count="currentCount"
+                :needed-count="neededCount"
+                size="xs"
+                @decrease="$emit('decreaseCount')"
+                @increase="$emit('increaseCount')"
+                @toggle="$emit('toggleCount')"
+                @set-count="(count) => $emit('setCount', count)"
+              />
+            </div>
           </div>
-          <!-- Card content -->
-          <div class="flex flex-1 flex-col p-2">
+          <!-- Card content (Expanded only) -->
+          <div v-if="cardStyle === 'expanded'" class="flex flex-1 flex-col p-2">
             <!-- Item name -->
             <div class="flex min-h-10 items-start justify-center">
               <span
@@ -82,17 +101,18 @@
                 <StationLink
                   v-if="relatedStation"
                   :station="relatedStation"
+                  :module-id="props.need.hideoutModule.id"
                   compact
                   class="max-w-full text-[clamp(0.625rem,2vw,0.75rem)]"
                 />
-                <span class="ml-1 text-[clamp(0.625rem,2vw,0.75rem)] text-gray-400">
+                <span class="text-surface-400 ml-1 text-[clamp(0.625rem,2vw,0.75rem)]">
                   {{ props.need.hideoutModule.level }}
                 </span>
               </template>
             </div>
             <!-- Requirements (Level & Tasks Before) -->
             <div
-              class="flex min-h-10 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[clamp(0.625rem,1.8vw,0.75rem)] text-gray-400"
+              class="text-surface-400 flex min-h-10 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[clamp(0.625rem,1.8vw,0.75rem)]"
             >
               <span
                 v-if="levelRequired > 0 && levelRequired > playerLevel"
@@ -184,6 +204,7 @@
     lockedBefore,
     item,
     imageItem,
+    cardStyle,
   } = inject(neededItemKey, createDefaultNeededItemContext());
   const hasItem = computed(() => Boolean(item.value));
   // Simplified UI for single-quantity items
@@ -197,16 +218,15 @@
     return {
       'bg-gradient-to-t from-complete to-surface':
         selfCompletedNeed.value || currentCount.value >= neededCount.value,
-      'bg-gray-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
+      'bg-surface-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
     };
   });
   const imageContainerClasses = computed(() => {
     const baseLayoutClasses =
-      'relative z-0 aspect-[4/3] w-full shrink-0 origin-bottom overflow-hidden rounded-t-lg';
-    const transitionClasses = 'transition-transform duration-150 ease-out will-change-transform';
-    const hoverClasses =
-      'hover:z-20 hover:-translate-y-1 hover:scale-[1.08] hover:shadow-2xl hover:ring-1 hover:ring-white/10';
-    return [baseLayoutClasses, transitionClasses, hoverClasses];
+      'relative z-0 aspect-[4/3] w-full shrink-0 origin-bottom overflow-hidden';
+    const roundedClasses = cardStyle.value === 'compact' ? 'rounded-lg' : 'rounded-t-lg';
+    const cursorClass = isSingleItem.value && !selfCompletedNeed.value ? 'cursor-pointer' : '';
+    return [baseLayoutClasses, roundedClasses, cursorClass];
   });
   const itemCountTagClasses = computed(() => {
     return {

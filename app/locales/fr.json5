@@ -1,6 +1,14 @@
 {
   // This file supports JSON5 notation. See https://json5.org/
   site_name: 'Tarkov Tracker',
+  route: {
+    index: {
+      title: 'Tableau de bord',
+    },
+    neededItems: {
+      title: 'Objets Nécessaires',
+    },
+  },
   app_bar: {
     overflow_menu: {
       language: 'Langue',
@@ -8,9 +16,6 @@
   },
   common: {
     refreshbutton: 'Actualiser',
-  },
-  menu: {
-    language: 'Langue',
   },
   maps: {
     zoom: 'Zoom',
@@ -90,6 +95,9 @@
       traders: {
         title: 'Progression des marchands',
         viewTasks: 'Voir les quêtes de {name}',
+        tasks: 'quêtes',
+        loyaltyLevel: 'Niveau de fidélité',
+        reputation: 'Réputation',
       },
       stats: {
         available: {
@@ -196,7 +204,6 @@
         markfailedconfirm: 'Marquer cette quête comme échouée ? Ceci est uniquement pour les problèmes de données, non recommandé et peut bloquer les chaînes de quêtes.',
         failedbecause: 'Failed because',
         failedbecauseunknown: 'Failed manually or data missing',
-        nonkappa: 'Non requis pour la Kappa',
         keysneeded: '{keys} requis sur {map} | Une des {keys} requis sur {map}',
         objectiveshidden: '{count} objectifs non présent sur la carte ({uncompleted} non terminés)',
         alternatives: 'Quêtes alternatives',
@@ -210,13 +217,11 @@
       scrollToMap: 'Défiler vers la carte',
       scrollToTop: 'Retour en haut',
     },
-    traders: {
-      title: 'Marchands',
-    },
     hideout: {
       title: 'Planque',
       loading: 'Chargement des données de la planque',
       nostationsfound: 'Aucun module trouvé. Essayez de modifier vos filtres ou de mettre à jour votre niveau',
+      collapsecompleted: 'Réduire les modules terminés',
       primaryviews: {
         all: 'Toutes',
         locked: 'Vérrouillées',
@@ -224,14 +229,16 @@
         maxed: 'Niveau max',
       },
       stationcard: {
-        level: 'Available to build | Niveau {count} | Niveau {count}',
+        level: 'Disponible à construire | Niveau {count} | Niveau {count}',
+        levelnotready: 'Pas encore prêt à construire',
         nextlevel: 'Requis pour le niveau suivant',
         maxlevel: 'Niveau maximum atteint',
         upgradeunavailable: 'Amélioration non disponible',
+        prerequisites: 'Prérequis',
         requirements: {
-          station: 'Nécéssite {stationname} niveau {level}',
-          skill: 'Nécéssite {skillname} niveau {level}',
-          trader: 'Nécéssite {tradername} loyauté {loyaltylevel}',
+          station: '{stationname} niveau {level}',
+          skill: '{skillname} niveau {level}',
+          trader: '{tradername} LL{loyaltylevel}',
         },
         gameeditiondescription: 'Le niveaux de planque est calculé en fonction de votre édition de jeu. Vous pouvez changer votre édition de jeu dans les paramètres.',
         settingsbutton: 'Voir les paramètres',
@@ -240,9 +247,6 @@
         statusupgraded: 'Améliorié {name} au niveau {level}',
         statusdowngraded: 'Rétrograder {name} au niveau {level}',
       },
-    },
-    items: {
-      title: 'Items requis',
     },
     neededitems: {
       title: 'Items requis',
@@ -281,22 +285,8 @@
         items_show_non_fir: "Afficher les items requis qui n'ont pas besoin d'être trouvés en raid",
       },
     },
-    api: {
-      title: 'Documentation de l’API',
-      description: 'Accédez à vos données Tarkov Tracker de manière programmatique.',
-      note: 'Des jetons API sont nécessaires pour l’authentification.',
-      tokens_moved_title: 'Les tokens API sont gérés dans Paramètres',
-      tokens_moved_description: 'Créez et révoquez vos tokens dans Paramètres → Tokens API. Cette page conserve la documentation.',
-      tokens_moved_action: 'Ouvrir Paramètres',
-      endpoints: {
-        title: 'Points de terminaison disponibles',
-        data: {
-          description: 'Récupérez vos données de progression de jeu.',
-        },
-      },
-      usage: {
-        title: "Exemples d'utilisation",
-      },
+    needed_items: {
+      title: 'Objets Nécessaires',
     },
     settings: {
       title: 'Paramètres',
@@ -468,20 +458,10 @@
       continue_github: 'Continuer avec GitHub',
       privacy_policy: 'Politique de confidentialité',
       terms_of_service: "Conditions d'utilisation",
+      popup_blocked_title: 'Popup bloqué',
+      popup_blocked_description: 'Votre navigateur a bloqué la fenêtre de connexion. Redirection en cours...',
     },
     api: {
-      title: "Documentation de l'API",
-      description: 'Accédez à vos données Tarkov Tracker par programmation',
-      note: "Les tokens d'API sont requis pour l'authentification",
-      endpoints: {
-        title: 'Endpoints disponibles',
-        data: {
-          description: 'Récupérez vos données de progression de jeu',
-        },
-      },
-      usage: {
-        title: "Exemples d'utilisation",
-      },
       stats: {
         active_tokens: 'Tokens actifs',
         rest: 'REST',
@@ -530,12 +510,6 @@
     contributors: 'Contributeurs',
     changelog: 'Journal des modifications',
   },
-  module: {
-    team_settings: {
-      title: 'Paramètres de l’équipe',
-      description: 'Gérer les paramètres de votre équipe.',
-    },
-  },
   navigation_drawer: {
     home: 'Tableau de bord',
     api: 'API',
@@ -546,7 +520,6 @@
     tasks: 'Quêtes',
     hideout: 'Planque',
     neededitems: 'Objets requis',
-    traders: 'Marchands',
     tarkovdev: 'Tarkov.dev',
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
@@ -554,6 +527,16 @@
     tarkovmonitor: 'Tarkov Monitor',
     credits: 'Crédits',
     settings: 'Paramètres',
+    section_navigation: 'Navigation',
+    section_external: 'External',
+    account_menu: 'Account menu',
+    edition_label: 'Edition',
+    mode_auto: 'Auto',
+    mode_manual: 'Manual',
+    level_display_auto: 'Level {level} (automatic calculation enabled)',
+    level_display_editable: 'Level {level}, click or press Enter to edit',
+    increment_level: 'Increase level',
+    decrement_level: 'Decrease level',
   },
   settings: {
     title: 'Paramètres',
@@ -561,6 +544,8 @@
       title: 'Paramètres généraux',
       language: 'Langue',
       streamer_mode: 'Mode streamer',
+      privacy_mode: 'Privacy Mode',
+      privacy_mode_hint: "Hides sensitive information while you're streaming.",
       streamer_mode_hint: 'Masque les informations sensibles pendant que vous diffusez.',
       login_required: 'Connectez-vous pour activer ces paramètres.',
     },
@@ -568,6 +553,9 @@
       title: 'Profil de jeu',
       game_edition: 'Édition du jeu',
       pmc_faction: 'Faction',
+    },
+    game_settings: {
+      title: 'Game Settings',
     },
     data_management: {
       title: 'Gestion des données',
@@ -588,6 +576,62 @@
       reset_confirm: 'Réinitialiser',
       reset_hint: 'Réinitialisez votre progression pour des modes de jeu spécifiques ou toutes les données.',
     },
+    account_data: {
+      title: 'Account & Data Management',
+      account_info_title: 'Account Information',
+      username_label: 'Username',
+      email_label: 'Email',
+      auth_method_label: 'Auth Method',
+      member_since_label: 'Member since',
+      account_id_label: 'Account ID',
+      unknown_label: 'Unknown',
+      data_reset_title: 'Data Reset',
+      account_deletion_title: 'Account Deletion',
+      login_required_delete: 'Log in to delete your account',
+      action_show: 'Show',
+      action_hide: 'Hide',
+      show_username: 'Show username',
+      hide_username: 'Hide username',
+      show_email: 'Show email',
+      hide_email: 'Hide email',
+      show_account_id: 'Show account id',
+      hide_account_id: 'Hide account id',
+      copy_account_id: 'Copy account id',
+      account_id_copied: 'Account id copied',
+      confirm_delete_title: 'Confirm Account Deletion',
+      irreversible_title: 'This action is irreversible!',
+      irreversible_description: 'All your data will be permanently deleted and cannot be recovered.',
+      what_deleted_title: 'What will be deleted',
+      delete_item_progress: 'Your progress tracking data',
+      delete_item_teams: 'Team memberships and owned teams',
+      delete_item_tokens: 'API tokens and settings',
+      delete_item_personal: 'All personal information',
+      not_affect_tarkov: 'This does not affect your Escape from Tarkov account, only Tarkov Tracker data.',
+      team_transfer_title: 'Team Ownership Transfer',
+      team_transfer_description: 'If you own any teams, ownership will be automatically transferred to the oldest member in each team. Teams without other members will be deleted.',
+      security_confirmation_title: 'Security Confirmation',
+      security_confirmation_description: 'Account deletion requires typing the exact confirmation phrase below. This action is permanent and cannot be undone.',
+      confirm_phrase_value: 'DELETE MY ACCOUNT',
+      confirm_phrase_label: 'Type \"{phrase}\" to confirm:',
+      confirm_phrase_error: 'Please type exactly: {phrase}',
+      delete_forever: 'Delete Account Forever',
+      delete_success_title: 'Account Deleted Successfully',
+      delete_success_description: 'Your account and all associated data have been permanently deleted.',
+      cleanup_pending: 'Some data cleanup is still in progress and will complete shortly.',
+      redirect_message: 'Thank you for using TarkovTracker. You will be redirected to the dashboard.',
+      go_to_dashboard: 'Go to Dashboard',
+    },
+    display_name: {
+      validation_error: 'Validation Error',
+      empty_error: 'Display name cannot be empty',
+      max_error: 'Display name cannot exceed {max} characters',
+      saved_title: 'Display Name Saved',
+      saved_description: 'Your {mode} display name has been updated',
+      save_failed_title: 'Save Failed',
+      save_failed_description: 'Failed to save display name. Please try again.',
+      cleared_title: 'Display Name Cleared',
+      cleared_description: 'Your {mode} display name has been cleared',
+    },
     danger_zone: {
       title: 'Zone de danger',
     },
@@ -601,5 +645,4 @@
     error: 'Erreur',
   },
   'task.kappa_req': 'Requis pour Kappa',
-  'task.level_req': 'Niveau requis : {level}',
 }

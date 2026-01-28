@@ -6,7 +6,7 @@ import { usePreferencesStore } from '@/stores/usePreferences';
 import { useTarkovStore } from '@/stores/useTarkov';
 import { useTeammateStores, useTeamStore } from '@/stores/useTeamStore';
 import type { GameEdition, Task, TaskRequirement } from '@/types/tarkov';
-import { GAME_MODES, SPECIAL_STATIONS } from '@/utils/constants';
+import { GAME_MODES, SPECIAL_STATIONS, TRADER_UNLOCK_TASKS } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { perfEnd, perfStart } from '@/utils/perf';
 import { computeInvalidProgress } from '@/utils/progressInvalidation';
@@ -191,6 +191,7 @@ export const useProgressStore = defineStore('progress', () => {
         level: number;
         faction: string;
         completions: Record<string, { complete?: boolean; failed?: boolean }>;
+        traders: Record<string, { level?: number; reputation?: number }>;
       }
     >();
     for (const teamId of teamIds) {
@@ -200,6 +201,7 @@ export const useProgressStore = defineStore('progress', () => {
         level: getLevel(teamId),
         faction: currentData?.pmcFaction ?? 'USEC',
         completions: currentData?.taskCompletions ?? {},
+        traders: currentData?.traders ?? {},
       });
     }
     const tasksById = new Map(tasks.map((task) => [task.id, task]));
@@ -284,8 +286,34 @@ export const useProgressStore = defineStore('progress', () => {
           visiting.delete(taskId);
           return false;
         }
-        // Trader gating intentionally disabled until real trader level/rep is wired.
-        // TODO: Use trader level/rep from currentData.traders[traderId], not player level.
+        // Fence reputation check - only Fence trader requirements gate availability
+        // Other trader level/rep requirements are display-only, not gating
+        if (task.traderRequirements?.length) {
+          const fenceTrader = metadataStore.traders.find((t) => t.normalizedName === 'fence');
+          if (fenceTrader) {
+            const fenceReq = task.traderRequirements.find(
+              (req) => req.trader.id === fenceTrader.id
+            );
+            if (fenceReq) {
+              const userFenceRep = teamData.traders?.[fenceTrader.id]?.reputation ?? 0;
+              // Positive requirement: user needs at least this much karma
+              // Negative requirement: user needs at most this much (or worse) karma
+              if (fenceReq.value >= 0) {
+                if (userFenceRep < fenceReq.value) {
+                  memo.set(taskId, false);
+                  visiting.delete(taskId);
+                  return false;
+                }
+              } else {
+                if (userFenceRep > fenceReq.value) {
+                  memo.set(taskId, false);
+                  visiting.delete(taskId);
+                  return false;
+                }
+              }
+            }
+          }
+        }
         // Prerequisites check
         if (task.taskRequirements) {
           for (const req of task.taskRequirements) {
@@ -305,6 +333,16 @@ export const useProgressStore = defineStore('progress', () => {
           memo.set(taskId, false);
           visiting.delete(taskId);
           return false;
+        }
+        // Trader unlock check - some traders require completing a specific task to unlock
+        const traderName = task.trader?.normalizedName || task.trader?.name?.toLowerCase();
+        if (traderName) {
+          const unlockTaskId = TRADER_UNLOCK_TASKS[traderName];
+          if (unlockTaskId && !isTaskComplete(teamData.completions[unlockTaskId])) {
+            memo.set(taskId, false);
+            visiting.delete(taskId);
+            return false;
+          }
         }
         memo.set(taskId, true);
         visiting.delete(taskId);
@@ -726,6 +764,33 @@ export const useProgressStore = defineStore('progress', () => {
         return 0;
     }
   };
+  const tasksState = computed<Record<string, number>>(() => {
+    const state: Record<string, number> = {};
+    const tasks = metadataStore.tasks as Task[];
+    if (!tasks.length) return {};
+    const store = teamStores.value['self'];
+    const currentData = getGameModeData(store);
+    const completions = currentData?.taskCompletions ?? {};
+    // We can use the unlockedTasks computed, but be careful of reactivity loops if it depends on this.
+    // unlockedTasks depends on tasks, visibleTeamStores, getGameModeData. It doesn't depend on tasksState.
+    // However, unlockedTasks is Record<taskId, Record<teamId, boolean>>
+    for (const task of tasks) {
+      const taskId = task.id;
+      const completion = completions[taskId];
+      if (completion?.complete && !completion?.failed) {
+        state[taskId] = 3; // Complete
+      } else if (completion?.failed) {
+        state[taskId] = 4; // Failed
+      } else if (completion) {
+        state[taskId] = 2; // Active (Started)
+      } else if (unlockedTasks.value[taskId]?.['self']) {
+        state[taskId] = 1; // Available
+      } else {
+        state[taskId] = 0; // Locked
+      }
+    }
+    return state;
+  });
   const migrateDuplicateObjectiveProgress = (duplicateObjectiveIds: Map<string, string[]>) => {
     if (!duplicateObjectiveIds.size) return;
     const migrateObjectiveMap = (
@@ -765,6 +830,7 @@ export const useProgressStore = defineStore('progress', () => {
     visibleTeamStores,
     tasksCompletions,
     tasksFailed,
+    tasksState,
     gameEditionData,
     traderLevelsAchieved,
     playerFaction,

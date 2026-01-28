@@ -1,0 +1,212 @@
+<template>
+  <div class="scrollbar-none flex items-center justify-end gap-1.5 overflow-x-auto">
+    <!-- Pin Button -->
+    <UButton
+      size="xs"
+      variant="ghost"
+      :color="isPinned ? 'primary' : 'neutral'"
+      :icon="isPinned ? 'i-mdi-pin' : 'i-mdi-pin-outline'"
+      class="shrink-0"
+      :aria-label="isPinned ? 'Unpin task' : 'Pin task'"
+      @click.stop="emit('togglePin')"
+    />
+    <!-- Level Badge -->
+    <AppTooltip
+      v-if="(task.minPlayerLevel ?? 0) > 0"
+      :text="
+        t(
+          'page.tasks.questcard.levelBadgeTooltip',
+          { level: task.minPlayerLevel },
+          `Minimum player level ${task.minPlayerLevel} required to unlock this quest`
+        )
+      "
+    >
+      <UBadge
+        size="xs"
+        :color="meetsLevelRequirement ? 'success' : 'error'"
+        variant="soft"
+        class="shrink-0 cursor-help text-[11px]"
+      >
+        {{ t('page.tasks.questcard.levelBadge', { count: task.minPlayerLevel }) }}
+      </UBadge>
+    </AppTooltip>
+    <!-- Fence Rep Badge -->
+    <AppTooltip
+      v-if="fenceRepRequirement"
+      :text="
+        t(
+          'page.tasks.questcard.fenceRepTooltip',
+          {
+            rep:
+              fenceRepRequirement.value >= 0
+                ? `+${fenceRepRequirement.value}`
+                : fenceRepRequirement.value,
+          },
+          `Requires Fence reputation of ${fenceRepRequirement.value >= 0 ? 'at least' : 'at most'} ${fenceRepRequirement.value}`
+        )
+      "
+    >
+      <UBadge
+        size="xs"
+        :color="meetsFenceRepRequirement ? 'success' : 'error'"
+        variant="soft"
+        class="shrink-0 cursor-help text-[11px]"
+      >
+        {{
+          t('page.tasks.questcard.fenceRepBadge', {
+            rep:
+              fenceRepRequirement.value >= 0
+                ? `+${fenceRepRequirement.value}`
+                : fenceRepRequirement.value,
+          })
+        }}
+      </UBadge>
+    </AppTooltip>
+    <!-- Trader Level Badges -->
+    <AppTooltip
+      v-for="req in traderLevelReqs"
+      :key="req.id"
+      :text="
+        t(
+          'page.tasks.questcard.traderLevelTooltip',
+          { trader: req.trader.name, level: req.level },
+          `Requires ${req.trader.name} Loyalty Level ${req.level}`
+        )
+      "
+    >
+      <UBadge
+        size="xs"
+        :color="req.met ? 'success' : 'error'"
+        variant="soft"
+        class="shrink-0 cursor-help text-[11px]"
+      >
+        {{ req.trader.name }} LL{{ req.level }}
+      </UBadge>
+    </AppTooltip>
+    <!-- Location Badge -->
+    <AppTooltip :text="locationTooltip">
+      <UBadge
+        size="xs"
+        :color="isGlobalTask ? 'info' : 'neutral'"
+        variant="soft"
+        class="inline-flex max-w-40 shrink-0 cursor-help items-center gap-1 text-[11px]"
+        :class="isGlobalTask ? 'border-info-500/30 border' : ''"
+      >
+        <UIcon
+          :name="isGlobalTask || !task?.map?.name ? 'i-mdi-earth' : 'i-mdi-map-marker'"
+          aria-hidden="true"
+          class="h-3 w-3"
+        />
+        <span class="truncate">
+          {{ task?.map?.name || t('page.tasks.questcard.anyMap', 'Any') }}
+        </span>
+      </UBadge>
+    </AppTooltip>
+    <!-- Failed Badge -->
+    <UBadge v-if="isFailed" size="xs" color="error" variant="soft" class="shrink-0 text-[11px]">
+      {{ t('page.dashboard.stats.failed.stat', 'Failed') }}
+    </UBadge>
+    <!-- Blocked Badge -->
+    <AppTooltip
+      v-if="isInvalid && !isFailed"
+      :text="
+        t(
+          'page.tasks.questcard.blockedTooltip',
+          'This quest is permanently blocked and can never be completed due to choices made in other quests'
+        )
+      "
+    >
+      <UBadge size="xs" color="neutral" variant="soft" class="shrink-0 cursor-help text-[11px]">
+        {{ t('page.tasks.questcard.blocked', 'Blocked') }}
+      </UBadge>
+    </AppTooltip>
+    <!-- Kappa Badge -->
+    <AppTooltip
+      v-if="showRequiredLabels && task.kappaRequired"
+      :text="
+        t(
+          'page.tasks.questcard.kappaTooltip',
+          'This quest is required to obtain the Kappa Secure Container'
+        )
+      "
+    >
+      <UBadge size="xs" color="kappa" variant="soft" class="shrink-0 cursor-help text-[11px]">
+        {{ t('page.tasks.questcard.kappa', 'Kappa') }}
+      </UBadge>
+    </AppTooltip>
+    <!-- Lightkeeper Badge -->
+    <AppTooltip
+      v-if="showRequiredLabels && task.lightkeeperRequired"
+      :text="
+        t(
+          'page.tasks.questcard.lightkeeperTooltip',
+          'This quest is required to unlock the Lightkeeper trader'
+        )
+      "
+    >
+      <UBadge size="xs" color="lightkeeper" variant="soft" class="shrink-0 cursor-help text-[11px]">
+        {{ t('page.tasks.questcard.lightkeeper', 'Lightkeeper') }}
+      </UBadge>
+    </AppTooltip>
+    <!-- Edition Badge -->
+    <AppTooltip
+      v-if="showRequiredLabels && exclusiveEditionBadge"
+      :text="
+        t(
+          'page.tasks.questcard.editionExclusiveTooltip',
+          { editions: exclusiveEditionBadge },
+          `This quest is only available to players with ${exclusiveEditionBadge} edition`
+        )
+      "
+    >
+      <UBadge size="xs" color="primary" variant="soft" class="shrink-0 cursor-help text-[11px]">
+        {{ exclusiveEditionBadge }}
+      </UBadge>
+    </AppTooltip>
+    <!-- Action Buttons Slot -->
+    <slot name="actions" />
+    <!-- Menu Button -->
+    <AppTooltip v-if="isOurFaction" :text="t('page.tasks.questcard.more', 'More')">
+      <UButton
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        class="shrink-0"
+        :aria-label="t('page.tasks.questcard.more', 'More')"
+        @click="emit('openMenu', $event)"
+      >
+        <UIcon name="i-mdi-dots-horizontal" aria-hidden="true" class="h-5 w-5" />
+      </UButton>
+    </AppTooltip>
+  </div>
+</template>
+<script setup lang="ts">
+  import { useI18n } from 'vue-i18n';
+  import type { Task, TraderRequirement } from '@/types/tarkov';
+  export interface TraderLevelRequirementWithMet {
+    id: string;
+    trader: { id: string; name: string };
+    level: number;
+    met: boolean;
+  }
+  defineProps<{
+    task: Task;
+    isPinned: boolean;
+    isOurFaction: boolean;
+    meetsLevelRequirement: boolean;
+    fenceRepRequirement: TraderRequirement | null;
+    meetsFenceRepRequirement: boolean;
+    traderLevelReqs: TraderLevelRequirementWithMet[];
+    isGlobalTask: boolean;
+    locationTooltip: string;
+    isFailed: boolean;
+    isInvalid: boolean;
+    showRequiredLabels: boolean;
+    exclusiveEditionBadge: string;
+  }>();
+  const emit = defineEmits<{
+    togglePin: [];
+    openMenu: [event: MouseEvent];
+  }>();
+  const { t } = useI18n({ useScope: 'global' });
+</script>

@@ -1,4 +1,5 @@
 {
+  "version": "1.0.0",
   "__pinnedNotes": {
     "@vueuse/core": "Previously pinned to 13.9.0 due to Nuxt/@nuxt/ui/reka-ui compatibility; updated to ^14.1.0 after upgrading Nuxt/@nuxt/ui."
   },
@@ -71,7 +72,7 @@
     "build": "nuxt build",
     "deps": "npx taze --r --I",
     "dev": "nuxt dev",
-    "format": "prettier --write \"app/**/*.{js,ts,tsx,vue,json,json5,css,scss,md}\" \"docs/**/*.{md,markdown}\" \"nuxt.config.ts\" \"app.config.ts\" \"vitest.config.ts\" \"test-setup.ts\" && eslint app --fix",
+    "format": "prettier --write \"app/**/*.{js,ts,tsx,vue,json,json5,css,scss,md}\" \"docs/**/*.{md,markdown}\" \"nuxt.config.ts\" \"app/app.config.ts\" \"vitest.config.ts\" \"test-setup.ts\" && eslint app --fix",
     "generate": "nuxt generate",
     "lint": "eslint app --max-warnings=0",
     "lint:fix": "eslint app --fix",
@@ -79,6 +80,8 @@
     "prepare": "husky",
     "preview": "nuxt preview",
     "supabase:types": "supabase gen types typescript --linked > supabase/functions/_shared/database.types.ts",
+    "test": "NODE_OPTIONS='--max-old-space-size=4096' vitest run",
+    "test:watch": "NODE_OPTIONS='--max-old-space-size=4096' vitest",
     "test:api-gateway": "vitest --config workers/api-gateway/vitest.config.ts"
   },
   "type": "module"

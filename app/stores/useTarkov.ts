@@ -756,7 +756,6 @@ export async function initializeTarkovSync() {
                 : null,
           };
         }
-        // Old format without wrapper (treat as guest/unknown)
         return { storedUserId: null, timestamp: null };
       } catch {
         return null;
@@ -764,13 +763,17 @@ export async function initializeTarkovSync() {
     };
     const notifyLocalIgnored = (description: string) => {
       if (!import.meta.client || hasShownLocalIgnoreToast) return;
-      const toast = useToast();
-      toast.add({
-        title: 'Local progress ignored',
-        description,
-        color: 'warning',
-      });
-      hasShownLocalIgnoreToast = true;
+      try {
+        const toast = useToast();
+        toast.add({
+          title: 'Local progress ignored',
+          description,
+          color: 'warning',
+        });
+        hasShownLocalIgnoreToast = true;
+      } catch (e) {
+        logger.warn('[TarkovStore] Could not show toast notification:', e);
+      }
     };
     const resetStoreToDefault = () => {
       const freshState = deepClone(defaultState);

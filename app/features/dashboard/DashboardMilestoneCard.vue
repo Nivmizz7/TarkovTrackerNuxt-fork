@@ -1,8 +1,8 @@
 <template>
   <div
     :class="[
-      'relative overflow-hidden rounded-xl border p-6 transition-all',
-      isAchieved ? achievedClasses : 'bg-surface-900/50 border-surface-700/30 opacity-50',
+      'relative overflow-hidden rounded-md border px-4 py-3 transition-all',
+      isAchieved ? achievedClasses : 'bg-surface-900/50 border-white/12 opacity-50',
     ]"
   >
     <div class="relative z-10">
@@ -16,7 +16,8 @@
   </div>
 </template>
 <script setup lang="ts">
-  export type MilestoneColor = 'primary' | 'info' | 'success' | 'warning' | 'purple';
+  import { computed } from 'vue';
+  export type MilestoneColor = 'primary' | 'info' | 'success' | 'kappa' | 'lightkeeper';
   const props = withDefaults(
     defineProps<{
       title: string;
@@ -33,38 +34,38 @@
   const colorClasses: Record<MilestoneColor, { achieved: string; icon: string }> = {
     primary: {
       achieved: [
-        'from-primary-900/40 to-surface-900 border-primary-600/50',
-        'shadow-primary-900/20 bg-linear-to-br shadow-lg',
+        'from-primary-900/40 to-surface-900 border-white/15',
+        'shadow-primary-900/20 bg-gradient-to-br shadow-lg',
       ].join(' '),
       icon: 'text-primary-400',
     },
     info: {
       achieved: [
         'from-info-900/40 to-surface-900 border-info-600/50',
-        'shadow-info-900/20 bg-linear-to-br shadow-lg',
+        'shadow-info-900/20 bg-gradient-to-br shadow-lg',
       ].join(' '),
       icon: 'text-info-400',
     },
     success: {
       achieved: [
         'from-success-900/40 to-surface-900 border-success-600/50',
-        'shadow-success-900/20 bg-linear-to-br shadow-lg',
+        'shadow-success-900/20 bg-gradient-to-br shadow-lg',
       ].join(' '),
       icon: 'text-success-400',
     },
-    warning: {
+    kappa: {
       achieved: [
-        'from-warning-900/40 to-surface-900 border-warning-600/50',
-        'shadow-warning-900/20 bg-linear-to-br shadow-lg',
+        'from-kappa-900/40 to-surface-900 border-kappa-600/50',
+        'shadow-kappa-900/20 bg-gradient-to-br shadow-lg',
       ].join(' '),
-      icon: 'text-warning-400',
+      icon: 'text-kappa-400',
     },
-    purple: {
+    lightkeeper: {
       achieved: [
-        'from-purple-900/40 to-surface-900 border-purple-600/50',
-        'shadow-purple-900/20 bg-linear-to-br shadow-lg',
+        'from-lightkeeper-900/40 to-surface-900 border-lightkeeper-600/50',
+        'shadow-lightkeeper-900/20 bg-gradient-to-br shadow-lg',
       ].join(' '),
-      icon: 'text-purple-400',
+      icon: 'text-lightkeeper-400',
     },
   };
   const achievedClasses = computed(() => colorClasses[props.color].achieved);

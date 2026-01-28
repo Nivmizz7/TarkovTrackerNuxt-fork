@@ -1,7 +1,14 @@
 {
   // This file supports JSON5 notation. See https://json5.org/
-  hello_world: 'Hola mundo',
   site_name: 'Tarkov Tracker',
+  route: {
+    index: {
+      title: 'Panel',
+    },
+    neededItems: {
+      title: 'Objetos Necesarios',
+    },
+  },
   app_bar: {
     overflow_menu: {
       language: 'Idioma',
@@ -9,9 +16,6 @@
   },
   common: {
     refreshbutton: 'Intentar de nuevo',
-  },
-  menu: {
-    language: 'Idioma',
   },
   maps: {
     zoom: 'Zoom',
@@ -91,6 +95,9 @@
       traders: {
         title: 'Progreso de comerciantes',
         viewTasks: 'Ver las Misiones de {name}',
+        tasks: 'misiones',
+        loyaltyLevel: 'Nivel de lealtad',
+        reputation: 'Reputación',
       },
       stats: {
         available: {
@@ -174,7 +181,6 @@
         markfailedconfirm: '¿Marcar esta misión como fallida? Esto es solo para problemas de datos, no se recomienda y puede bloquear cadenas de misiones.',
         failedbecause: 'Failed because',
         failedbecauseunknown: 'Failed manually or data missing',
-        nonkappa: 'No se requiere Kappa',
         keysneeded: '{keys} necesaria en {map} | {keys} necesarias en {map}',
         objectiveshidden: '{count} objetivos no están en este mapa ({uncompleted} sin completar)',
         alternatives: 'Misiones alternativas',
@@ -187,13 +193,11 @@
       scrollToMap: 'Desplazar al mapa',
       scrollToTop: 'Volver arriba',
     },
-    traders: {
-      title: 'Comerciantes',
-    },
     hideout: {
       title: 'Escondite',
       loading: 'Cargando datos del escondite',
       nostationsfound: 'No se encontraron estaciones. Intenta cambiar los filtros.',
+      collapsecompleted: 'Colapsar estaciones completadas',
       primaryviews: {
         all: 'Todas',
         locked: 'Bloqueadas',
@@ -202,13 +206,15 @@
       },
       stationcard: {
         level: 'Disponible para construir | Nivel {count} | Nivel {count}',
+        levelnotready: 'Aún no está listo para construir',
         nextlevel: 'Requisitos para el próximo nivel',
         maxlevel: 'Nivel máximo de estación alcanzado',
         upgradeunavailable: 'No se puede mejorar esta estación',
+        prerequisites: 'Requisitos previos',
         requirements: {
-          station: 'Requiere nivel {level} de {stationname}',
-          skill: 'Requiere nivel {level} de {skillname}',
-          trader: 'Requiere nivel de lealtad {loyaltylevel} de {tradername}',
+          station: '{stationname} nivel {level}',
+          skill: '{skillname} nivel {level}',
+          trader: '{tradername} LL{loyaltylevel}',
         },
         gameeditiondescription: 'El nivel base del escondite está determinado por la edición del juego que posees. Puedes cambiar esto en la configuración del rastreador.',
         settingsbutton: 'Ir a Configuración',
@@ -217,9 +223,6 @@
         statusupgraded: 'Mejorado {name} a nivel {level}',
         statusdowngraded: 'Degradado {name} desde el nivel {level}',
       },
-    },
-    items: {
-      title: 'Objetos Necesarios',
     },
     neededitems: {
       title: 'Objetos Necesarios',
@@ -257,22 +260,8 @@
         items_show_non_fir: 'Mostrar objetos necesarios que no necesitan ser encontrados en incursión',
       },
     },
-    api: {
-      title: 'Documentación de la API',
-      description: 'Accede a tus datos de Tarkov Tracker de forma programática.',
-      note: 'Se requieren tokens de API para la autenticación.',
-      tokens_moved_title: 'Los tokens de API ahora se gestionan en Configuración',
-      tokens_moved_description: 'Crea y revoca tokens en Configuración → Tokens de API. Esta página mantiene la documentación.',
-      tokens_moved_action: 'Abrir Configuración',
-      endpoints: {
-        title: 'Endpoints disponibles',
-        data: {
-          description: 'Recupera tus datos de progreso del juego.',
-        },
-      },
-      usage: {
-        title: 'Ejemplos de uso',
-      },
+    needed_items: {
+      title: 'Objetos Necesarios',
     },
     settings: {
       title: 'Configuración',
@@ -426,37 +415,8 @@
       continue_github: 'Continuar con GitHub',
       privacy_policy: 'Política de privacidad',
       terms_of_service: 'Términos de servicio',
-    },
-    api: {
-      title: 'Documentación de la API',
-      description: 'Accede a tus datos de Tarkov Tracker programáticamente',
-      note: 'Se requieren tokens de API para la autenticación',
-      endpoints: {
-        title: 'Endpoints disponibles',
-        data: {
-          description: 'Recupera tus datos de progreso del juego',
-        },
-      },
-      usage: {
-        title: 'Ejemplos de uso',
-      },
-      stats: {
-        active_tokens: 'Tokens activos',
-        rest: 'REST',
-        api_type: 'Tipo de API',
-        secure: 'Seguro',
-        bearer_auth: 'Auth Bearer',
-        realtime: 'Tiempo real',
-        data_access: 'Acceso a datos',
-      },
-      chips: {
-        secure_auth: 'Autenticación segura',
-        secure_tooltip: 'Los tokens usan autenticación Bearer en el encabezado Authorization',
-        realtime_data: 'Datos en tiempo real',
-        realtime_tooltip: 'Tus datos de progreso siempre están actualizados a través de sincronización en tiempo real',
-        json_api: 'API JSON',
-        json_tooltip: 'Todas las respuestas están en formato JSON con estructura consistente',
-      },
+      popup_blocked_title: 'Popup bloqueado',
+      popup_blocked_description: 'Tu navegador bloqueó la ventana de inicio de sesión. Redirigiendo ahora...',
     },
     not_found: {
       title: 'Página no encontrada',
@@ -488,12 +448,6 @@
     contributors: 'Colaboradores',
     changelog: 'Registro de cambios',
   },
-  module: {
-    team_settings: {
-      title: 'Configuración del equipo',
-      description: 'Configura los ajustes de tu equipo.',
-    },
-  },
   navigation_drawer: {
     home: 'Panel',
     api: 'API',
@@ -504,7 +458,6 @@
     tasks: 'Misiones',
     hideout: 'Escondite',
     neededitems: 'Objetos Necesarios',
-    traders: 'Comerciantes',
     tarkovdev: 'Tarkov.dev',
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
@@ -512,6 +465,16 @@
     tarkovmonitor: 'Tarkov Monitor',
     credits: 'Créditos',
     settings: 'Configuración',
+    section_navigation: 'Navigation',
+    section_external: 'External',
+    account_menu: 'Account menu',
+    edition_label: 'Edition',
+    mode_auto: 'Auto',
+    mode_manual: 'Manual',
+    level_display_auto: 'Level {level} (automatic calculation enabled)',
+    level_display_editable: 'Level {level}, click or press Enter to edit',
+    increment_level: 'Increase level',
+    decrement_level: 'Decrease level',
   },
   settings: {
     title: 'Configuración',
@@ -519,6 +482,8 @@
       title: 'Configuración general',
       language: 'Idioma',
       streamer_mode: 'Modo streamer',
+      privacy_mode: 'Privacy Mode',
+      privacy_mode_hint: "Hides sensitive information while you're streaming.",
       streamer_mode_hint: 'Oculta información sensible mientras transmites.',
       login_required: 'Inicia sesión para habilitar estas configuraciones.',
     },
@@ -526,6 +491,9 @@
       title: 'Perfil del juego',
       game_edition: 'Edición del juego',
       pmc_faction: 'Facción',
+    },
+    game_settings: {
+      title: 'Game Settings',
     },
     data_management: {
       title: 'Gestión de datos',
@@ -546,6 +514,62 @@
       reset_confirm: 'Restablecer',
       reset_hint: 'Restablece tu progreso para modos de juego específicos o todos los datos.',
     },
+    account_data: {
+      title: 'Account & Data Management',
+      account_info_title: 'Account Information',
+      username_label: 'Username',
+      email_label: 'Email',
+      auth_method_label: 'Auth Method',
+      member_since_label: 'Member since',
+      account_id_label: 'Account ID',
+      unknown_label: 'Unknown',
+      data_reset_title: 'Data Reset',
+      account_deletion_title: 'Account Deletion',
+      login_required_delete: 'Log in to delete your account',
+      action_show: 'Show',
+      action_hide: 'Hide',
+      show_username: 'Show username',
+      hide_username: 'Hide username',
+      show_email: 'Show email',
+      hide_email: 'Hide email',
+      show_account_id: 'Show account id',
+      hide_account_id: 'Hide account id',
+      copy_account_id: 'Copy account id',
+      account_id_copied: 'Account id copied',
+      confirm_delete_title: 'Confirm Account Deletion',
+      irreversible_title: 'This action is irreversible!',
+      irreversible_description: 'All your data will be permanently deleted and cannot be recovered.',
+      what_deleted_title: 'What will be deleted',
+      delete_item_progress: 'Your progress tracking data',
+      delete_item_teams: 'Team memberships and owned teams',
+      delete_item_tokens: 'API tokens and settings',
+      delete_item_personal: 'All personal information',
+      not_affect_tarkov: 'This does not affect your Escape from Tarkov account, only Tarkov Tracker data.',
+      team_transfer_title: 'Team Ownership Transfer',
+      team_transfer_description: 'If you own any teams, ownership will be automatically transferred to the oldest member in each team. Teams without other members will be deleted.',
+      security_confirmation_title: 'Security Confirmation',
+      security_confirmation_description: 'Account deletion requires typing the exact confirmation phrase below. This action is permanent and cannot be undone.',
+      confirm_phrase_value: 'DELETE MY ACCOUNT',
+      confirm_phrase_label: 'Type \"{phrase}\" to confirm:',
+      confirm_phrase_error: 'Please type exactly: {phrase}',
+      delete_forever: 'Delete Account Forever',
+      delete_success_title: 'Account Deleted Successfully',
+      delete_success_description: 'Your account and all associated data have been permanently deleted.',
+      cleanup_pending: 'Some data cleanup is still in progress and will complete shortly.',
+      redirect_message: 'Thank you for using TarkovTracker. You will be redirected to the dashboard.',
+      go_to_dashboard: 'Go to Dashboard',
+    },
+    display_name: {
+      validation_error: 'Validation Error',
+      empty_error: 'Display name cannot be empty',
+      max_error: 'Display name cannot exceed {max} characters',
+      saved_title: 'Display Name Saved',
+      saved_description: 'Your {mode} display name has been updated',
+      save_failed_title: 'Save Failed',
+      save_failed_description: 'Failed to save display name. Please try again.',
+      cleared_title: 'Display Name Cleared',
+      cleared_description: 'Your {mode} display name has been cleared',
+    },
     danger_zone: {
       title: 'Zona de peligro',
     },
@@ -559,5 +583,4 @@
     error: 'Error',
   },
   'task.kappa_req': 'Requerido para Kappa',
-  'task.level_req': 'Nivel requerido: {level}',
 }

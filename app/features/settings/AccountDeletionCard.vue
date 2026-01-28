@@ -1,364 +1,27 @@
-<template>
-  <div class="account-deletion-card" :class="$attrs.class">
-    <GenericCard
-      icon="mdi-account-cog"
-      icon-color="error-400"
-      highlight-color="red"
-      :title="$t('settings.account.title', 'Account Management')"
-      title-classes="text-lg font-semibold"
-    >
-      <template #title-right>
-        <UAlert
-          v-if="!isLoggedIn"
-          icon="i-mdi-lock"
-          color="warning"
-          variant="soft"
-          class="inline-flex items-center p-1 text-sm"
-        >
-          <template #description>
-            <span class="text-sm">
-              {{ $t('settings.account.login_required', 'Log in to manage your account.') }}
-            </span>
-          </template>
-        </UAlert>
-      </template>
-      <template #content>
-        <div class="p-4">
-          <!-- Logged out state -->
-          <template v-if="!isLoggedIn">
-            <div class="mb-6 rounded-lg border border-gray-700 bg-gray-800/30 p-4 opacity-60">
-              <div class="mb-3 text-base font-bold text-gray-500">Account Information</div>
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <div class="mb-2 flex items-center">
-                    <UIcon name="i-mdi-account" class="mr-2 h-4.5 w-4.5 text-gray-500" />
-                    <span class="text-sm text-gray-500">Username: —</span>
-                  </div>
-                  <div class="mb-2 flex items-center">
-                    <UIcon name="i-mdi-email" class="mr-2 h-4.5 w-4.5 text-gray-500" />
-                    <span class="text-sm text-gray-500">Email: —</span>
-                  </div>
-                </div>
-                <div>
-                  <div class="mb-2 flex items-center">
-                    <UIcon name="i-mdi-login" class="mr-2 h-4.5 w-4.5 text-gray-500" />
-                    <span class="text-sm text-gray-500">Auth Method: —</span>
-                  </div>
-                  <div class="flex items-center">
-                    <UIcon name="i-mdi-calendar" class="mr-2 h-4.5 w-4.5 text-gray-500" />
-                    <span class="text-sm text-gray-500">Member since: —</span>
-                  </div>
-                </div>
-              </div>
-              <div class="my-3 border-t border-gray-700"></div>
-              <div class="flex items-center">
-                <UIcon name="i-mdi-identifier" class="mr-2 h-4.5 w-4.5 text-gray-500" />
-                <span class="text-sm text-gray-500">Account ID: —</span>
-              </div>
-            </div>
-            <!-- Deletion Warning (disabled state) -->
-            <UAlert
-              icon="i-mdi-alert-circle"
-              color="neutral"
-              variant="soft"
-              class="mb-4 opacity-60"
-              title="Permanent Account Deletion"
-            >
-              <template #description>
-                <div class="mb-2 text-sm">
-                  This action cannot be undone. All your data will be permanently deleted.
-                </div>
-                <ul class="mb-3 ml-4 list-disc text-sm">
-                  <li>Your progress tracking data</li>
-                  <li>Team memberships and owned teams</li>
-                  <li>API tokens and settings</li>
-                  <li>All personal information</li>
-                </ul>
-                <div class="text-sm font-bold">
-                  This does
-                  <span class="underline">not</span>
-                  affect your Escape from Tarkov account, only Tarkov Tracker data.
-                </div>
-              </template>
-            </UAlert>
-            <div class="mt-6 flex justify-center">
-              <UButton
-                color="error"
-                variant="soft"
-                size="lg"
-                icon="i-mdi-delete-forever"
-                disabled
-                class="cursor-not-allowed px-6 py-3 font-semibold opacity-50"
-              >
-                {{ $t('settings.account.begin_deletion', 'Begin Account Deletion') }}
-              </UButton>
-            </div>
-          </template>
-          <!-- Logged in state -->
-          <template v-else>
-            <!-- Account Information (Moved to Top) -->
-            <div class="mb-6 rounded-lg border border-gray-700 bg-gray-800/50 p-4">
-              <div class="mb-3 text-base font-bold">Account Information</div>
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <div class="mb-2 flex items-center">
-                    <UIcon name="i-mdi-account" class="mr-2 h-4.5 w-4.5 text-gray-400" />
-                    <span class="text-sm">
-                      <span class="text-gray-400">Username:</span>
-                      <span class="ml-1 font-mono font-medium">{{ maskedUsername }}</span>
-                    </span>
-                    <AppTooltip :text="showUsername ? 'Hide' : 'Show'">
-                      <UButton
-                        size="xs"
-                        variant="ghost"
-                        :icon="showUsername ? 'i-mdi-eye-off' : 'i-mdi-eye'"
-                        color="neutral"
-                        class="ml-1"
-                        @click="showUsername = !showUsername"
-                      />
-                    </AppTooltip>
-                  </div>
-                  <div class="mb-2 flex items-center">
-                    <UIcon name="i-mdi-email" class="mr-2 h-4.5 w-4.5 text-gray-400" />
-                    <span class="text-sm">
-                      <span class="text-gray-400">Email:</span>
-                      <span class="ml-1 font-mono font-medium">{{ maskedEmail }}</span>
-                    </span>
-                    <AppTooltip :text="showEmail ? 'Hide' : 'Show'">
-                      <UButton
-                        size="xs"
-                        variant="ghost"
-                        :icon="showEmail ? 'i-mdi-eye-off' : 'i-mdi-eye'"
-                        color="neutral"
-                        class="ml-1"
-                        @click="showEmail = !showEmail"
-                      />
-                    </AppTooltip>
-                  </div>
-                </div>
-                <div>
-                  <div class="mb-2 flex items-center">
-                    <UIcon name="i-mdi-login" class="mr-2 h-4.5 w-4.5 text-gray-400" />
-                    <span class="flex flex-wrap items-center gap-1 text-sm">
-                      <span class="mr-1 text-gray-400">Auth Method:</span>
-                      <template v-if="providers.length > 0">
-                        <UBadge
-                          v-for="p in providers"
-                          :key="p"
-                          size="xs"
-                          :color="getProviderColor(p)"
-                          variant="solid"
-                          :class="['text-white', p === 'github' && 'bg-[#24292e]! text-white!']"
-                        >
-                          <UIcon :name="getProviderIcon(p)" class="mr-1 h-4 w-4" />
-                          {{ getProviderLabel(p) }}
-                        </UBadge>
-                      </template>
-                      <span v-else class="text-gray-500">Unknown</span>
-                    </span>
-                  </div>
-                  <div class="flex items-center">
-                    <UIcon name="i-mdi-calendar" class="mr-2 h-4.5 w-4.5 text-gray-400" />
-                    <span class="text-sm">
-                      <span class="text-gray-400">Member since:</span>
-                      <span class="ml-1 font-medium">
-                        {{ formatDate($supabase.user.createdAt) }}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div class="my-3 border-t border-gray-700"></div>
-              <div class="flex items-center">
-                <UIcon name="i-mdi-identifier" class="mr-2 h-4.5 w-4.5 text-gray-400" />
-                <span class="mr-2 text-sm text-gray-400">Account ID:</span>
-                <code class="rounded bg-gray-700 px-2 py-1 text-xs">{{ maskedAccountId }}</code>
-                <AppTooltip :text="showAccountId ? 'Hide' : 'Show'">
-                  <UButton
-                    size="xs"
-                    variant="ghost"
-                    :icon="showAccountId ? 'i-mdi-eye-off' : 'i-mdi-eye'"
-                    color="neutral"
-                    class="ml-1"
-                    @click="showAccountId = !showAccountId"
-                  />
-                </AppTooltip>
-                <AppTooltip :text="accountIdCopied ? 'Copied!' : 'Copy Account ID'">
-                  <UButton
-                    size="xs"
-                    variant="ghost"
-                    :icon="accountIdCopied ? 'i-mdi-check' : 'i-mdi-content-copy'"
-                    :color="accountIdCopied ? 'success' : 'primary'"
-                    class="ml-1"
-                    @click="copyAccountId"
-                  />
-                </AppTooltip>
-              </div>
-            </div>
-            <!-- Deletion Warning -->
-            <UAlert
-              icon="i-mdi-alert-circle"
-              color="error"
-              variant="soft"
-              class="mb-4"
-              title="Permanent Account Deletion"
-            >
-              <template #description>
-                <div class="mb-2 text-sm">
-                  This action cannot be undone. All your data will be permanently deleted.
-                </div>
-                <ul class="mb-3 ml-4 list-disc text-sm">
-                  <li>Your progress tracking data</li>
-                  <li>Team memberships and owned teams</li>
-                  <li>API tokens and settings</li>
-                  <li>All personal information</li>
-                </ul>
-                <div class="text-sm font-bold">
-                  This does
-                  <span class="underline">not</span>
-                  affect your Escape from Tarkov account, only Tarkov Tracker data.
-                </div>
-              </template>
-            </UAlert>
-            <UAlert
-              v-if="isLoggedIn"
-              icon="i-mdi-account-group"
-              color="warning"
-              variant="soft"
-              class="mb-4"
-              title="Team Ownership Transfer"
-            >
-              <template #description>
-                <div class="text-sm">
-                  If you own any teams, ownership will be automatically transferred to the oldest
-                  member in each team. Teams without other members will be deleted.
-                </div>
-              </template>
-            </UAlert>
-            <div class="mt-6 flex justify-center">
-              <UButton
-                color="error"
-                variant="solid"
-                size="lg"
-                icon="i-mdi-delete-forever"
-                :loading="isDeleting"
-                :disabled="isDeleting"
-                class="px-6 py-3 font-semibold shadow-lg transition-all hover:scale-105 hover:shadow-xl"
-                @click="showConfirmationDialog = true"
-              >
-                {{ $t('settings.account.begin_deletion', 'Begin Account Deletion') }}
-              </UButton>
-            </div>
-          </template>
-        </div>
-      </template>
-    </GenericCard>
-  </div>
-  <UModal v-model:open="showConfirmationDialog" prevent-close>
-    <template #title>
-      <div class="flex items-center text-xl font-medium text-red-500">
-        <UIcon name="i-mdi-alert-circle" class="mr-2 h-6 w-6 text-red-500" />
-        Confirm Account Deletion
-      </div>
-    </template>
-    <template #description>
-      <span class="sr-only">
-        This action is irreversible and requires typing the confirmation phrase to proceed.
-      </span>
-    </template>
-    <template #body>
-      <div class="space-y-4">
-        <UAlert
-          color="error"
-          variant="solid"
-          title="This action is irreversible!"
-          description="All your data will be permanently deleted and cannot be recovered."
-        />
-        <div>
-          <div class="mb-2 text-base font-medium">Security Confirmation</div>
-          <div class="mb-3 text-sm text-gray-400">
-            Account deletion requires typing the exact confirmation phrase below. This action is
-            permanent and cannot be undone.
-          </div>
-        </div>
-        <div>
-          <div class="mb-2 text-base font-medium">Type "DELETE MY ACCOUNT" to confirm:</div>
-          <UInput
-            v-model="confirmationText"
-            placeholder="DELETE MY ACCOUNT"
-            :color="confirmationError ? 'error' : 'neutral'"
-            @input="confirmationError = false"
-          />
-          <div v-if="confirmationError" class="mt-1 text-xs text-red-500">
-            Please type exactly: DELETE MY ACCOUNT
-          </div>
-        </div>
-        <UAlert v-if="deleteError" color="error" variant="soft" :title="deleteError" />
-      </div>
-    </template>
-    <template #footer="{ close }">
-      <div class="flex justify-end">
-        <UButton variant="ghost" color="neutral" :disabled="isDeleting" @click="close">
-          Cancel
-        </UButton>
-        <UButton
-          color="error"
-          variant="solid"
-          :loading="isDeleting"
-          :disabled="!canDelete || isDeleting"
-          class="ml-3"
-          @click="deleteAccount"
-        >
-          Delete Account Forever
-        </UButton>
-      </div>
-    </template>
-  </UModal>
-  <UModal v-model:open="showSuccessDialog" prevent-close>
-    <template #title>
-      <div class="flex items-center text-xl font-medium text-green-500">
-        <UIcon name="i-mdi-check-circle" class="mr-2 h-6 w-6 text-green-500" />
-        Account Deleted Successfully
-      </div>
-    </template>
-    <template #description>
-      <span class="sr-only">
-        Your account deletion is complete, and you will be redirected to the dashboard.
-      </span>
-    </template>
-    <template #body>
-      <div class="space-y-3">
-        <div class="text-base">
-          Your account and all associated data have been permanently deleted.
-        </div>
-        <div v-if="cleanupScheduled" class="text-sm text-gray-400">
-          <UIcon name="i-mdi-information" class="mr-1 inline h-4 w-4" />
-          Some data cleanup is still in progress and will complete shortly.
-        </div>
-        <div class="text-sm text-gray-400">
-          Thank you for using TarkovTracker. You will be redirected to the dashboard.
-        </div>
-      </div>
-    </template>
-    <template #footer>
-      <div class="flex justify-end">
-        <UButton color="primary" variant="solid" @click="redirectToHome">Go to Dashboard</UButton>
-      </div>
-    </template>
-  </UModal>
-</template>
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useSystemStore } from '@/stores/useSystemStore';
   import { resetTarkovSync, useTarkovStore } from '@/stores/useTarkov';
   import { useTeamStore } from '@/stores/useTeamStore';
+  import { LIMITS } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   defineOptions({
     inheritAttrs: false,
   });
+  const { showResetActions = false } = defineProps<{
+    showResetActions?: boolean;
+  }>();
+  const emit = defineEmits<{
+    resetPvp: [];
+    resetPve: [];
+    resetAll: [];
+  }>();
   const { $supabase } = useNuxtApp();
+  const { t } = useI18n();
+  const toast = useToast();
   const preferencesStore = usePreferencesStore();
   const systemStore = useSystemStore();
   const teamStore = useTeamStore();
@@ -371,16 +34,28 @@
   const isDeleting = ref(false);
   const accountIdCopied = ref(false);
   const cleanupScheduled = ref(false);
-  // Visibility toggles for sensitive data (hidden by default)
   const showUsername = ref(false);
   const showEmail = ref(false);
   const showAccountId = ref(false);
-  // Masked display computed properties
+  const displayNameMaxLength = LIMITS.DISPLAY_NAME_MAX_LENGTH;
+  const localDisplayName = ref(tarkovStore.getDisplayName() || '');
+  const isSavingDisplayName = ref(false);
+  const displayName = computed(() => tarkovStore.getDisplayName());
+  const currentModeLabel = computed(() =>
+    (tarkovStore.getCurrentGameMode() || 'pvp').toUpperCase()
+  );
+  const hasDisplayNameChanges = computed(() => {
+    const trimmed = localDisplayName.value.trim();
+    const initial = displayName.value || '';
+    return trimmed !== initial && trimmed.length > 0;
+  });
+  watch(displayName, (newName) => {
+    localDisplayName.value = newName || '';
+  });
   const maskedUsername = computed(() => {
     const username = $supabase?.user?.username;
     if (!username) return 'N/A';
     if (showUsername.value) return username;
-    // Show first 2 chars + asterisks
     if (username.length <= 3) return '***';
     return username.slice(0, 2) + '***';
   });
@@ -388,7 +63,6 @@
     const email = $supabase?.user?.email;
     if (!email) return 'N/A';
     if (showEmail.value) return email;
-    // Show first 2 chars + asterisks + domain
     const atIndex = email.indexOf('@');
     if (atIndex <= 0) return '***';
     const localPart = email.slice(0, atIndex);
@@ -400,14 +74,56 @@
     const id = $supabase?.user?.id;
     if (!id) return 'N/A';
     if (showAccountId.value) return id;
-    // Show asterisks + last 4 chars
     if (id.length <= 4) return '***';
     return '***' + id.slice(-4);
   });
   const isLoggedIn = computed(() => {
     return Boolean($supabase?.user?.loggedIn);
   });
-  // Safely extract provider information with proper typing
+  const saveDisplayName = async () => {
+    const trimmed = localDisplayName.value.trim();
+    if (!trimmed) {
+      toast.add({
+        title: t('settings.display_name.validation_error', 'Validation Error'),
+        description: t('settings.display_name.empty_error', 'Display name cannot be empty'),
+        color: 'error',
+      });
+      return;
+    }
+    if (trimmed.length > displayNameMaxLength) {
+      toast.add({
+        title: t('settings.display_name.validation_error', 'Validation Error'),
+        description: t('settings.display_name.max_error', { max: displayNameMaxLength }),
+        color: 'error',
+      });
+      return;
+    }
+    isSavingDisplayName.value = true;
+    try {
+      const sanitized = trimmed.substring(0, displayNameMaxLength);
+      tarkovStore.setDisplayName(sanitized);
+      localDisplayName.value = sanitized;
+      toast.add({
+        title: t('settings.display_name.saved_title', 'Display Name Saved'),
+        description: t('settings.display_name.saved_description', {
+          mode: currentModeLabel.value,
+        }),
+        color: 'success',
+      });
+    } catch (error) {
+      logger.error('[Settings] Error saving display name:', error);
+      toast.add({
+        title: t('settings.display_name.save_failed_title', 'Save Failed'),
+        description: t(
+          'settings.display_name.save_failed_description',
+          'Failed to save display name. Please try again.'
+        ),
+        color: 'error',
+      });
+    } finally {
+      isSavingDisplayName.value = false;
+    }
+  };
   type AuthProvider = 'discord' | 'twitch' | 'google' | 'github';
   interface UserWithProviders {
     providers?: string[] | null;
@@ -416,7 +132,6 @@
   const providers = computed<AuthProvider[]>(() => {
     if (!$supabase?.user) return [];
     const user = $supabase.user as UserWithProviders;
-    // Use the hydrated providers array
     const providersList = user.providers || [];
     if (providersList.length > 0) {
       return providersList.filter(
@@ -424,7 +139,6 @@
           p === 'discord' || p === 'twitch' || p === 'google' || p === 'github'
       );
     }
-    // Fallback to single provider
     const providerValue = user.provider;
     if (
       providerValue === 'discord' ||
@@ -486,7 +200,6 @@
       if (!sessionData.session) {
         throw new Error('You must be logged in to delete your account.');
       }
-      // Refresh the session to ensure we have a valid token
       const { data: refreshData, error: refreshError } =
         await $supabase.client.auth.refreshSession();
       if (refreshError) {
@@ -499,8 +212,6 @@
       const { data, error } = await $supabase.client.functions.invoke('account-delete');
       if (error) {
         logger.error('Edge function error:', error);
-        // Extract the actual error message from the Edge Function response
-        // Supabase wraps Edge Function errors with context: Response
         let errorMessage = 'Failed to delete account. Please try again.';
         const applyBodyError = (body: unknown) => {
           if (!body) return false;
@@ -535,12 +246,15 @@
           try {
             const body = await context.clone().json();
             applyBodyError(body);
-          } catch {
+          } catch (parseError) {
             try {
               const text = await context.clone().text();
               applyBodyError(text);
-            } catch {
-              // Ignore parsing errors and fall back to generic messaging
+            } catch (textError) {
+              logger.warn('Failed to parse account deletion error response', {
+                parseError,
+                textError,
+              });
             }
           }
         } else if ((context as { body?: { error?: string } }).body?.error) {
@@ -557,9 +271,7 @@
         ) {
           errorMessage = error;
         }
-        // Handle rate limiting errors specifically
         if (errorMessage.includes('Too many deletion requests')) {
-          // Extract wait time if present
           const match = errorMessage.match(/wait (\d+) seconds/);
           if (match) {
             errorMessage = `Rate limit exceeded. Please wait ${match[1]} seconds before trying again.`;
@@ -569,7 +281,6 @@
       }
       if (data?.success) {
         showConfirmationDialog.value = false;
-        // Check if cleanup is scheduled asynchronously (202 response)
         if (data.cleanupScheduled) {
           logger.info('Account deleted, cleanup scheduled:', data.message);
           cleanupScheduled.value = true;
@@ -588,28 +299,20 @@
     }
   };
   const resetClientState = () => {
-    // Clear localStorage FIRST to prevent persist plugin from reading stale data
     localStorage.clear();
-    // Stop Supabase sync before resetting stores
     resetTarkovSync('account deleted');
-    // Reset all stores - this triggers persist plugin writes
     preferencesStore.$reset();
     systemStore.$reset();
     teamStore.$reset();
     tarkovStore.$reset();
-    // Clear localStorage AGAIN to remove any data written by persist plugins during reset
     localStorage.clear();
   };
   const redirectToHome = async () => {
     try {
       showSuccessDialog.value = false;
       logger.info('Signing out user and redirecting to dashboard...');
-      // Reset all client state and clear localStorage
       resetClientState();
-      // Sign out from Supabase
       await $supabase.signOut();
-      // Use hard page reload to ensure completely fresh state
-      // router.push() keeps Pinia stores in memory which can show stale data
       logger.info('Successfully signed out, performing hard reload...');
       window.location.href = '/';
     } catch (error) {
@@ -618,3 +321,487 @@
     }
   };
 </script>
+<template>
+  <div class="account-deletion-card" :class="$attrs.class">
+    <GenericCard
+      icon="mdi-database-cog"
+      icon-color="warning"
+      highlight-color="warning"
+      :title="$t('settings.account_data.title', 'Account & Data Management')"
+      title-classes="text-lg font-semibold"
+    >
+      <template #content>
+        <div class="p-4">
+          <div class="border-surface-700 bg-surface-800/50 mb-6 rounded-lg border p-4">
+            <div class="mb-3 text-base font-bold">
+              {{ $t('settings.display_name.title', 'Display Name') }}
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2">
+                <p class="text-surface-200 text-sm font-semibold">
+                  {{ $t('settings.display_name.label', 'Display Name') }}
+                </p>
+                <UTooltip
+                  :text="
+                    $t(
+                      'settings.display_name.explanation',
+                      'Your display name is shown to teammates and in the navigation. Each game mode (PVP/PVE) has a separate display name.'
+                    )
+                  "
+                >
+                  <UIcon name="i-mdi-information" class="text-surface-400 h-4 w-4" />
+                </UTooltip>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <UInput
+                  v-model="localDisplayName"
+                  :maxlength="displayNameMaxLength"
+                  :placeholder="
+                    $t('settings.display_name.placeholder', 'Enter your display name...')
+                  "
+                  class="min-w-48 flex-1"
+                  @keyup.enter="saveDisplayName"
+                />
+                <UButton
+                  icon="i-mdi-check"
+                  color="primary"
+                  variant="soft"
+                  size="sm"
+                  :disabled="!hasDisplayNameChanges || isSavingDisplayName"
+                  :loading="isSavingDisplayName"
+                  :aria-label="$t('settings.display_name.save', 'Save')"
+                  @click="saveDisplayName"
+                />
+              </div>
+              <p class="text-surface-400 text-xs">
+                {{
+                  $t('settings.display_name.mode_hint', {
+                    mode: currentModeLabel,
+                  })
+                }}
+              </p>
+            </div>
+          </div>
+          <template v-if="isLoggedIn">
+            <div class="border-surface-700 bg-surface-800/50 mb-6 rounded-lg border p-4">
+              <div class="mb-3 text-base font-bold">
+                {{ $t('settings.account_data.account_info_title', 'Account Information') }}
+              </div>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <div class="mb-2 flex items-center">
+                    <UIcon name="i-mdi-account" class="text-surface-400 mr-2 h-4.5 w-4.5" />
+                    <span class="text-sm">
+                      <span class="text-surface-400">
+                        {{ $t('settings.account_data.username_label', 'Username') }}:
+                      </span>
+                      <span class="ml-1 font-mono font-medium">{{ maskedUsername }}</span>
+                    </span>
+                    <AppTooltip
+                      :text="
+                        showUsername
+                          ? $t('settings.account_data.action_hide', 'Hide')
+                          : $t('settings.account_data.action_show', 'Show')
+                      "
+                    >
+                      <UButton
+                        size="xs"
+                        variant="ghost"
+                        :icon="showUsername ? 'i-mdi-eye-off' : 'i-mdi-eye'"
+                        color="neutral"
+                        class="ml-1"
+                        :aria-label="
+                          showUsername
+                            ? $t('settings.account_data.hide_username', 'Hide username')
+                            : $t('settings.account_data.show_username', 'Show username')
+                        "
+                        @click="showUsername = !showUsername"
+                      />
+                    </AppTooltip>
+                  </div>
+                  <div class="mb-2 flex items-center">
+                    <UIcon name="i-mdi-email" class="text-surface-400 mr-2 h-4.5 w-4.5" />
+                    <span class="text-sm">
+                      <span class="text-surface-400">
+                        {{ $t('settings.account_data.email_label', 'Email') }}:
+                      </span>
+                      <span class="ml-1 font-mono font-medium">{{ maskedEmail }}</span>
+                    </span>
+                    <AppTooltip
+                      :text="
+                        showEmail
+                          ? $t('settings.account_data.action_hide', 'Hide')
+                          : $t('settings.account_data.action_show', 'Show')
+                      "
+                    >
+                      <UButton
+                        size="xs"
+                        variant="ghost"
+                        :icon="showEmail ? 'i-mdi-eye-off' : 'i-mdi-eye'"
+                        color="neutral"
+                        class="ml-1"
+                        :aria-label="
+                          showEmail
+                            ? $t('settings.account_data.hide_email', 'Hide email')
+                            : $t('settings.account_data.show_email', 'Show email')
+                        "
+                        @click="showEmail = !showEmail"
+                      />
+                    </AppTooltip>
+                  </div>
+                </div>
+                <div>
+                  <div class="mb-2 flex items-center">
+                    <UIcon name="i-mdi-login" class="text-surface-400 mr-2 h-4.5 w-4.5" />
+                    <span class="flex flex-wrap items-center gap-1 text-sm">
+                      <span class="text-surface-400 mr-1">
+                        {{ $t('settings.account_data.auth_method_label', 'Auth Method') }}:
+                      </span>
+                      <template v-if="providers.length > 0">
+                        <UBadge
+                          v-for="p in providers"
+                          :key="p"
+                          size="xs"
+                          :color="getProviderColor(p)"
+                          variant="solid"
+                          :class="[p === 'github' ? 'bg-surface-900 text-white' : 'text-white']"
+                        >
+                          <UIcon :name="getProviderIcon(p)" class="mr-1 h-4 w-4" />
+                          {{ getProviderLabel(p) }}
+                        </UBadge>
+                      </template>
+                      <span v-else class="text-surface-500">
+                        {{ $t('settings.account_data.unknown_label', 'Unknown') }}
+                      </span>
+                    </span>
+                  </div>
+                  <div class="flex items-center">
+                    <UIcon name="i-mdi-calendar" class="text-surface-400 mr-2 h-4.5 w-4.5" />
+                    <span class="text-sm">
+                      <span class="text-surface-400">
+                        {{ $t('settings.account_data.member_since_label', 'Member since') }}:
+                      </span>
+                      <span class="ml-1 font-medium">
+                        {{ formatDate($supabase.user.createdAt) }}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="border-surface-700 my-3 border-t"></div>
+              <div class="flex items-center">
+                <UIcon name="i-mdi-identifier" class="text-surface-400 mr-2 h-4.5 w-4.5" />
+                <span class="text-surface-400 mr-2 text-sm">
+                  {{ $t('settings.account_data.account_id_label', 'Account ID') }}:
+                </span>
+                <code class="bg-surface-700 rounded px-2 py-1 text-xs">{{ maskedAccountId }}</code>
+                <AppTooltip
+                  :text="
+                    showAccountId
+                      ? $t('settings.account_data.action_hide', 'Hide')
+                      : $t('settings.account_data.action_show', 'Show')
+                  "
+                >
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    :icon="showAccountId ? 'i-mdi-eye-off' : 'i-mdi-eye'"
+                    color="neutral"
+                    class="ml-1"
+                    :aria-label="
+                      showAccountId
+                        ? $t('settings.account_data.hide_account_id', 'Hide account id')
+                        : $t('settings.account_data.show_account_id', 'Show account id')
+                    "
+                    @click="showAccountId = !showAccountId"
+                  />
+                </AppTooltip>
+                <AppTooltip
+                  :text="
+                    accountIdCopied
+                      ? $t('settings.account_data.account_id_copied', 'Account id copied')
+                      : $t('settings.account_data.copy_account_id', 'Copy account id')
+                  "
+                >
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    :icon="accountIdCopied ? 'i-mdi-check' : 'i-mdi-content-copy'"
+                    :color="accountIdCopied ? 'success' : 'primary'"
+                    class="ml-1"
+                    :aria-label="
+                      accountIdCopied
+                        ? $t('settings.account_data.account_id_copied', 'Account id copied')
+                        : $t('settings.account_data.copy_account_id', 'Copy account id')
+                    "
+                    @click="copyAccountId"
+                  />
+                </AppTooltip>
+              </div>
+            </div>
+          </template>
+          <div v-if="showResetActions" :class="{ 'mb-6': isLoggedIn }">
+            <div class="text-surface-300 mb-3 text-sm font-semibold">
+              {{ $t('settings.account_data.data_reset_title', 'Data Reset') }}
+            </div>
+            <div class="grid gap-3 md:grid-cols-3">
+              <UButton
+                icon="i-mdi-shield-sword"
+                block
+                :ui="{
+                  base: 'bg-pvp-900 hover:bg-pvp-800 active:bg-pvp-700 text-pvp-200 focus-visible:ring focus-visible:ring-pvp-500',
+                }"
+                @click="emit('resetPvp')"
+              >
+                {{ $t('settings.data_management.reset_pvp_data', 'Reset PvP Data') }}
+              </UButton>
+              <UButton
+                icon="i-mdi-account-group"
+                block
+                :ui="{
+                  base: 'bg-pve-900 hover:bg-pve-800 active:bg-pve-700 text-pve-200 focus-visible:ring focus-visible:ring-pve-500',
+                }"
+                @click="emit('resetPve')"
+              >
+                {{ $t('settings.data_management.reset_pve_data', 'Reset PvE Data') }}
+              </UButton>
+              <UButton
+                color="error"
+                variant="soft"
+                icon="i-mdi-delete-sweep"
+                block
+                @click="emit('resetAll')"
+              >
+                {{ $t('settings.data_management.reset_all_data', 'Reset All Data') }}
+              </UButton>
+            </div>
+          </div>
+          <div
+            :class="{
+              'border-surface-700 border-t pt-6': isLoggedIn || showResetActions,
+              'pt-0': !isLoggedIn && !showResetActions,
+            }"
+          >
+            <div class="text-surface-300 mb-3 text-sm font-semibold">
+              {{ $t('settings.account_data.account_deletion_title', 'Account Deletion') }}
+            </div>
+            <div class="flex justify-center">
+              <AppTooltip
+                v-if="!isLoggedIn"
+                :text="
+                  $t('settings.account_data.login_required_delete', 'Log in to delete your account')
+                "
+              >
+                <UButton
+                  color="error"
+                  variant="solid"
+                  size="lg"
+                  icon="i-mdi-delete-forever"
+                  disabled
+                  class="px-6 py-3 font-semibold"
+                >
+                  {{ $t('settings.account.begin_deletion', 'Begin Account Deletion') }}
+                </UButton>
+              </AppTooltip>
+              <UButton
+                v-else
+                color="error"
+                variant="solid"
+                size="lg"
+                icon="i-mdi-delete-forever"
+                :loading="isDeleting"
+                :disabled="isDeleting"
+                class="px-6 py-3 font-semibold shadow-lg transition-all hover:scale-105 hover:shadow-xl"
+                @click="showConfirmationDialog = true"
+              >
+                {{ $t('settings.account.begin_deletion', 'Begin Account Deletion') }}
+              </UButton>
+            </div>
+          </div>
+        </div>
+      </template>
+    </GenericCard>
+  </div>
+  <UModal v-model:open="showConfirmationDialog" prevent-close>
+    <template #title>
+      <div class="text-error-500 flex items-center text-xl font-medium">
+        <UIcon name="i-mdi-alert-circle" class="text-error-500 mr-2 h-6 w-6" />
+        {{ $t('settings.account_data.confirm_delete_title', 'Confirm Account Deletion') }}
+      </div>
+    </template>
+    <template #description>
+      <span class="sr-only">
+        This action is irreversible and requires typing the confirmation phrase to proceed.
+      </span>
+    </template>
+    <template #body>
+      <div class="space-y-4">
+        <UAlert
+          color="error"
+          variant="solid"
+          :title="$t('settings.account_data.irreversible_title', 'This action is irreversible!')"
+          :description="
+            $t(
+              'settings.account_data.irreversible_description',
+              'All your data will be permanently deleted and cannot be recovered.'
+            )
+          "
+        />
+        <UAlert
+          icon="i-mdi-alert-circle"
+          color="error"
+          variant="soft"
+          :title="$t('settings.account_data.what_deleted_title', 'What will be deleted')"
+        >
+          <template #description>
+            <ul class="ml-4 list-disc text-sm">
+              <li>
+                {{
+                  $t('settings.account_data.delete_item_progress', 'Your progress tracking data')
+                }}
+              </li>
+              <li>
+                {{
+                  $t('settings.account_data.delete_item_teams', 'Team memberships and owned teams')
+                }}
+              </li>
+              <li>
+                {{ $t('settings.account_data.delete_item_tokens', 'API tokens and settings') }}
+              </li>
+              <li>
+                {{ $t('settings.account_data.delete_item_personal', 'All personal information') }}
+              </li>
+            </ul>
+            <div class="mt-2 text-sm font-bold">
+              {{
+                $t(
+                  'settings.account_data.not_affect_tarkov',
+                  'This does not affect your Escape from Tarkov account, only Tarkov Tracker data.'
+                )
+              }}
+            </div>
+          </template>
+        </UAlert>
+        <UAlert
+          icon="i-mdi-account-group"
+          color="warning"
+          variant="soft"
+          :title="$t('settings.account_data.team_transfer_title', 'Team Ownership Transfer')"
+        >
+          <template #description>
+            <div class="text-sm">
+              {{
+                $t(
+                  'settings.account_data.team_transfer_description',
+                  'If you own any teams, ownership will be automatically transferred to the oldest member in each team. Teams without other members will be deleted.'
+                )
+              }}
+            </div>
+          </template>
+        </UAlert>
+        <div>
+          <div class="mb-2 text-base font-medium">
+            {{ $t('settings.account_data.security_confirmation_title', 'Security Confirmation') }}
+          </div>
+          <div class="text-surface-400 mb-3 text-sm">
+            {{
+              $t(
+                'settings.account_data.security_confirmation_description',
+                'Account deletion requires typing the exact confirmation phrase below. This action is permanent and cannot be undone.'
+              )
+            }}
+          </div>
+        </div>
+        <div>
+          <div class="mb-2 text-base font-medium">
+            {{
+              $t('settings.account_data.confirm_phrase_label', {
+                phrase: $t('settings.account_data.confirm_phrase_value', 'DELETE MY ACCOUNT'),
+              })
+            }}
+          </div>
+          <UInput
+            v-model="confirmationText"
+            :placeholder="$t('settings.account_data.confirm_phrase_value', 'DELETE MY ACCOUNT')"
+            :color="confirmationError ? 'error' : 'neutral'"
+            @input="confirmationError = false"
+          />
+          <div v-if="confirmationError" class="text-error-500 mt-1 text-xs">
+            {{
+              $t('settings.account_data.confirm_phrase_error', {
+                phrase: $t('settings.account_data.confirm_phrase_value', 'DELETE MY ACCOUNT'),
+              })
+            }}
+          </div>
+        </div>
+        <UAlert v-if="deleteError" color="error" variant="soft" :title="deleteError" />
+      </div>
+    </template>
+    <template #footer="{ close }">
+      <div class="flex justify-end">
+        <UButton variant="ghost" color="neutral" :disabled="isDeleting" @click="close">
+          {{ $t('settings.data_management.reset_cancel', 'Cancel') }}
+        </UButton>
+        <UButton
+          color="error"
+          variant="solid"
+          :loading="isDeleting"
+          :disabled="!canDelete || isDeleting"
+          class="ml-3"
+          @click="deleteAccount"
+        >
+          {{ $t('settings.account_data.delete_forever', 'Delete Account Forever') }}
+        </UButton>
+      </div>
+    </template>
+  </UModal>
+  <UModal v-model:open="showSuccessDialog" prevent-close>
+    <template #title>
+      <div class="text-success-500 flex items-center text-xl font-medium">
+        <UIcon name="i-mdi-check-circle" class="text-success-500 mr-2 h-6 w-6" />
+        {{ $t('settings.account_data.delete_success_title', 'Account Deleted Successfully') }}
+      </div>
+    </template>
+    <template #description>
+      <span class="sr-only">
+        Your account deletion is complete, and you will be redirected to the dashboard.
+      </span>
+    </template>
+    <template #body>
+      <div class="space-y-3">
+        <div class="text-base">
+          {{
+            $t(
+              'settings.account_data.delete_success_description',
+              'Your account and all associated data have been permanently deleted.'
+            )
+          }}
+        </div>
+        <div v-if="cleanupScheduled" class="text-surface-400 text-sm">
+          <UIcon name="i-mdi-information" class="mr-1 inline h-4 w-4" />
+          {{
+            $t(
+              'settings.account_data.cleanup_pending',
+              'Some data cleanup is still in progress and will complete shortly.'
+            )
+          }}
+        </div>
+        <div class="text-surface-400 text-sm">
+          {{
+            $t(
+              'settings.account_data.redirect_message',
+              'Thank you for using TarkovTracker. You will be redirected to the dashboard.'
+            )
+          }}
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex justify-end">
+        <UButton color="primary" variant="solid" @click="redirectToHome">
+          {{ $t('settings.account_data.go_to_dashboard', 'Go to Dashboard') }}
+        </UButton>
+      </div>
+    </template>
+  </UModal>
+</template>
