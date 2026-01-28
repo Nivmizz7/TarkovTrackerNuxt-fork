@@ -1,5 +1,6 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
+import { useHideoutStationStatus } from '@/composables/useHideoutStationStatus';
 import { useMetadataStore } from '@/stores/useMetadata';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
@@ -9,6 +10,7 @@ export function useHideoutFiltering() {
   const metadataStore = useMetadataStore();
   const { hideoutStations, hideoutLoading } = storeToRefs(metadataStore);
   const progressStore = useProgressStore();
+  const { getStationStatus } = useHideoutStationStatus();
   const preferencesStore = usePreferencesStore();
   // Active primary view (available, maxed, locked, all)
   const activePrimaryView = computed({
@@ -17,25 +19,15 @@ export function useHideoutFiltering() {
   });
   // Helper to determine if a station is available for upgrade
   const isStationAvailable = (station: HideoutStation): boolean => {
-    const lvl = progressStore.hideoutLevels?.[station.id]?.self || 0;
-    const nextLevelData = station.levels.find((l) => l.level === lvl + 1);
-    if (!nextLevelData) return false;
-    return nextLevelData.stationLevelRequirements.every(
-      (req) => (progressStore.hideoutLevels?.[req.station.id]?.self || 0) >= req.level
-    );
+    return getStationStatus(station) === 'available';
   };
   // Helper to determine if a station is maxed
   const isStationMaxed = (station: HideoutStation): boolean => {
-    return (progressStore.hideoutLevels?.[station.id]?.self || 0) === station.levels.length;
+    return getStationStatus(station) === 'maxed';
   };
   // Helper to determine if a station is locked
   const isStationLocked = (station: HideoutStation): boolean => {
-    const lvl = progressStore.hideoutLevels?.[station.id]?.self || 0;
-    const nextLevelData = station.levels.find((l) => l.level === lvl + 1);
-    if (!nextLevelData) return false;
-    return !nextLevelData.stationLevelRequirements.every(
-      (req) => (progressStore.hideoutLevels?.[req.station.id]?.self || 0) >= req.level
-    );
+    return getStationStatus(station) === 'locked';
   };
   // Calculate station counts for each filter
   const stationCounts = computed(() => {

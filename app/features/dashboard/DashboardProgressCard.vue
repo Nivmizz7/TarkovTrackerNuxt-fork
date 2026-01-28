@@ -1,8 +1,9 @@
 <template>
   <div
     :class="[
-      'bg-surface-900 border-surface-700/30 cursor-pointer rounded-xl border p-6 shadow-lg',
-      'transition-colors',
+      'bg-surface-900 cursor-pointer rounded-lg border border-white/12 px-4 py-3 shadow-md',
+      'transition-all duration-150',
+      'focus-visible:ring-surface-700/50 outline-none hover:shadow-lg focus-visible:ring-2',
       hoverBorderClass,
     ]"
     role="button"
@@ -12,26 +13,26 @@
     @keydown.enter="$emit('click')"
     @keydown.space.prevent="$emit('click')"
   >
-    <div class="mb-3 flex items-center justify-between">
-      <div class="flex items-center">
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3">
         <div
-          class="mr-3 flex h-10 w-10 items-center justify-center rounded-lg"
+          class="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg"
           :class="iconBgClass"
         >
-          <UIcon :name="icon" class="h-5 w-5" :class="iconColorClass" />
+          <UIcon :name="icon" class="h-7 w-7" :class="iconColorClass" />
         </div>
         <div>
-          <div class="text-surface-400 text-sm tracking-wider uppercase">
+          <div class="text-surface-400 text-xs font-medium tracking-wider uppercase">
             {{ label }}
           </div>
-          <div class="text-2xl font-bold text-white">{{ completed }}/{{ total }}</div>
+          <div class="text-xl font-bold text-white">{{ completed }}/{{ total }}</div>
         </div>
       </div>
       <div class="text-3xl font-bold" :class="percentageColorClass">{{ percentageDisplay }}%</div>
     </div>
-    <div class="bg-surface-800 relative h-3 overflow-hidden rounded-full">
+    <div class="bg-surface-800/35 relative h-2 overflow-hidden rounded-full">
       <div
-        class="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
+        class="absolute inset-y-0 left-0 rounded-full transition-[width] duration-300 ease-out"
         :class="holidayEffectsEnabled ? 'candy-cane' : barGradientClass"
         :style="{ width: `${percentage}%` }"
         role="progressbar"
@@ -44,8 +45,15 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { computed } from 'vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
-  export type ProgressCardColor = 'primary' | 'info' | 'success' | 'warning' | 'purple';
+  export type ProgressCardColor =
+    | 'primary'
+    | 'neutral'
+    | 'info'
+    | 'success'
+    | 'kappa'
+    | 'lightkeeper';
   const props = defineProps<{
     icon: string;
     label: string;
@@ -72,39 +80,46 @@
     { hover: string; iconBg: string; icon: string; percentage: string; bar: string }
   > = {
     primary: {
-      hover: 'hover:border-primary-700/50',
+      hover: 'hover:border-surface-600',
       iconBg: 'bg-primary-600/15',
       icon: 'text-primary-400',
       percentage: 'text-primary-400',
-      bar: 'from-primary-600 to-primary-400 bg-gradient-to-r',
+      bar: 'bg-primary-500/60',
+    },
+    neutral: {
+      hover: 'hover:border-surface-600',
+      iconBg: 'bg-surface-700',
+      icon: 'text-surface-300',
+      percentage: 'text-surface-50',
+      bar: 'bg-surface-400/60',
     },
     info: {
-      hover: 'hover:border-info-700/50',
+      hover: 'hover:border-surface-600',
       iconBg: 'bg-info-600/15',
       icon: 'text-info-400',
       percentage: 'text-info-400',
-      bar: 'from-info-600 to-info-400 bg-gradient-to-r',
+      bar: 'bg-info-500/60',
     },
     success: {
-      hover: 'hover:border-success-700/50',
+      hover: 'hover:border-surface-600',
       iconBg: 'bg-success-600/15',
       icon: 'text-success-400',
       percentage: 'text-success-400',
-      bar: 'from-success-600 to-success-400 bg-gradient-to-r',
+      bar: 'bg-success-500/60',
     },
-    warning: {
-      hover: 'hover:border-warning-700/50',
-      iconBg: 'bg-warning-600/15',
-      icon: 'text-warning-400',
-      percentage: 'text-warning-400',
-      bar: 'from-warning-600 to-warning-400 bg-gradient-to-r',
+    kappa: {
+      hover: 'hover:border-surface-600',
+      iconBg: 'bg-kappa-600/15',
+      icon: 'text-kappa-400',
+      percentage: 'text-kappa-400',
+      bar: 'bg-kappa-500/60',
     },
-    purple: {
-      hover: 'hover:border-purple-700/50',
-      iconBg: 'bg-purple-600/15',
-      icon: 'text-purple-400',
-      percentage: 'text-purple-400',
-      bar: 'from-purple-600 to-purple-400 bg-gradient-to-r',
+    lightkeeper: {
+      hover: 'hover:border-surface-600',
+      iconBg: 'bg-lightkeeper-600/15',
+      icon: 'text-lightkeeper-400',
+      percentage: 'text-lightkeeper-400',
+      bar: 'bg-lightkeeper-500/60',
     },
   };
   const hoverBorderClass = computed(() => colorClasses[props.color].hover);

@@ -37,6 +37,29 @@ const createStations = (): HideoutStation[] => [
     ],
   },
   {
+    id: 'station-skill-locked',
+    name: 'Skill Locked Station',
+    levels: [
+      {
+        id: 'station-skill-locked-1',
+        level: 1,
+        description: 'Level 1',
+        constructionTime: 0,
+        itemRequirements: [],
+        stationLevelRequirements: [],
+        skillRequirements: [
+          {
+            id: 'req-skill',
+            name: 'Strength',
+            level: 5,
+          },
+        ],
+        traderRequirements: [],
+        crafts: [],
+      },
+    ],
+  },
+  {
     id: 'station-maxed',
     name: 'Maxed Station',
     levels: [
@@ -105,6 +128,13 @@ const setup = async (view: string) => {
     hasInitialized: true,
   };
   const progressStore = createProgressStore();
+  const tarkovStore = {
+    getCurrentProgressData: () => ({
+      skills: { Strength: 1 },
+    }),
+    getSkillLevel: (_name: string) => 0,
+    getTraderLevel: (_id: string) => 1,
+  };
   const preferencesStore = {
     getTaskPrimaryView: view,
     setTaskPrimaryView: vi.fn(),
@@ -132,6 +162,9 @@ const setup = async (view: string) => {
   vi.doMock('@/stores/usePreferences', () => ({
     usePreferencesStore: () => preferencesStore,
   }));
+  vi.doMock('@/stores/useTarkov', () => ({
+    useTarkovStore: () => tarkovStore,
+  }));
   const { useHideoutFiltering } = await import('@/composables/useHideoutFiltering');
   return {
     hideoutFiltering: useHideoutFiltering(),
@@ -141,16 +174,17 @@ describe('useHideoutFiltering', () => {
   it('calculates station counts', async () => {
     const { hideoutFiltering } = await setup('all');
     expect(hideoutFiltering.stationCounts.value).toEqual({
-      available: 1,
+      available: 2,
       maxed: 1,
       locked: 1,
-      all: 3,
+      all: 4,
     });
   });
   it('shows available stations when filtered', async () => {
     const { hideoutFiltering } = await setup('available');
     expect(hideoutFiltering.visibleStations.value.map((station) => station.id)).toEqual([
       'station-available',
+      'station-skill-locked',
     ]);
   });
   it('shows maxed stations when filtered', async () => {
@@ -169,6 +203,7 @@ describe('useHideoutFiltering', () => {
     const { hideoutFiltering } = await setup('all');
     expect(hideoutFiltering.visibleStations.value.map((station) => station.id)).toEqual([
       'station-available',
+      'station-skill-locked',
       'station-maxed',
       'station-locked',
     ]);

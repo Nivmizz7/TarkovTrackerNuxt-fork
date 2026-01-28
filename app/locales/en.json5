@@ -1,6 +1,14 @@
 {
   // This file supports JSON5 notation. See https://json5.org/
   site_name: 'Tarkov Tracker',
+  route: {
+    index: {
+      title: 'Dashboard',
+    },
+    neededItems: {
+      title: 'Needed Items',
+    },
+  },
   app_bar: {
     overflow_menu: {
       game_mode: 'Game Mode',
@@ -25,9 +33,6 @@
   },
   common: {
     refreshbutton: 'Try again',
-  },
-  menu: {
-    language: 'Language',
   },
   maps: {
     zoom: 'Zoom',
@@ -107,6 +112,11 @@
       traders: {
         title: 'Trader Progress',
         viewTasks: 'View tasks from {name}',
+        tasks: 'tasks',
+        loyaltyLevel: 'Loyalty Level',
+        reputation: 'Reputation',
+        scavKarma: 'Scav Karma',
+        unlockRequired: 'Unlock required:',
       },
       stats: {
         available: {
@@ -208,8 +218,8 @@
           showNonSpecialTasksTooltip: 'Show regular tasks that do not require Kappa or Lightkeeper',
           showKappaTasks: 'Show "Kappa Required" tasks',
           showKappaTasksTooltip: 'Show tasks required for Kappa container',
-          showLightkeeperTasks: 'Show Lightkeeper Tasks and Lightkeeper-required Tasks',
-          showLightkeeperTasksTooltip: 'Show tasks from Lightkeeper trader and tasks required for Lightkeeper',
+          showLightkeeperTasks: 'Show "Lightkeeper Required" tasks',
+          showLightkeeperTasksTooltip: 'Show tasks required for unlocking Lightkeeper',
           sharedByAllOnly: 'Only show tasks available to all visible teammates',
           sharedByAllOnlyTooltip: 'Filters the list to tasks that every visible teammate has available',
         },
@@ -217,12 +227,8 @@
           hint: 'Tune how task cards look.',
           showRequiredLabels: 'Show "Required" labels',
           showRequiredLabelsTooltip: 'Show labels indicating Kappa or Lightkeeper requirements',
-          showNotRequiredLabels: 'Show "Not Required" labels',
-          showNotRequiredLabelsTooltip: 'Show Non-Kappa labels on tasks not required for Kappa',
           showExperienceRewards: 'Show experience rewards',
           showExperienceRewardsTooltip: 'Display experience points rewarded for completing tasks',
-          showTaskIds: 'Show task IDs',
-          showTaskIdsTooltip: 'Display internal task ID at the bottom of each task card',
           showNextQuests: 'Show next tasks',
           showNextQuestsTooltip: 'Display tasks that will be unlocked after completing this task',
           showPreviousQuests: 'Show previous tasks',
@@ -247,6 +253,9 @@
       questcard: {
         level: 'Level: {count}',
         levelBadge: 'Lv {count}',
+        fenceRepBadge: 'Fence {rep}',
+        fenceRepTooltip: 'Requires Fence reputation of {rep}',
+        traderLevelTooltip: 'Requires {trader} Loyalty Level {level}',
         wiki: 'Wiki page',
         lockedbefore: 'Tasks Before: {count}',
         lockedbehind: 'Tasks Locked Behind: {count}',
@@ -260,7 +269,6 @@
         next: 'Next',
         more: 'More',
         andMore: ', +{count} more',
-        copyTaskId: 'Copy Task ID',
         copyTaskLink: 'Copy Task Link',
         reportDataIssue: 'Report Data Issue',
         viewOnTarkovDev: 'View on Tarkov.dev',
@@ -293,7 +301,6 @@
         markfailedconfirm: "Mark this task as failed? This is only for data issues, isn't recommended, and may block task chains.",
         failedbecause: 'Failed because',
         failedbecauseunknown: 'Failed manually or data missing',
-        nonkappa: 'Not Kappa Required',
         keysHeader: 'Suggested Keys',
         keysSubtext: '(may help but not always required)',
         keysneeded: '{keys} on {map} | One of {keys} on {map}',
@@ -326,13 +333,11 @@
       scrollToMap: 'Scroll to Map',
       scrollToTop: 'Scroll to top',
     },
-    traders: {
-      title: 'Traders',
-    },
     hideout: {
       title: 'Hideout',
       loading: 'Loading hideout data',
       nostationsfound: 'No stations found. Try changing your filters.',
+      collapsecompleted: 'Collapse completed stations',
       primaryviews: {
         all: 'All',
         locked: 'Locked',
@@ -347,9 +352,9 @@
         upgradeunavailable: 'Upgrade unavailable',
         prerequisites: 'Prerequisites',
         requirements: {
-          station: 'Requires {stationname} level {level}',
-          skill: 'Requires {skillname} level {level}',
-          trader: 'Requires {tradername} loyalty level {loyaltylevel}',
+          station: '{stationname} level {level}',
+          skill: '{skillname} level {level}',
+          trader: '{tradername} LL{loyaltylevel}',
         },
         gameeditiondescription: 'The base level of the stash is determined by the game edition you own. You can change this in the Tracker settings.',
         settingsbutton: 'Visit Settings',
@@ -358,9 +363,6 @@
         statusupgraded: 'Upgraded {name} to level {level}',
         statusdowngraded: 'Downgraded {name} from level {level}',
       },
-    },
-    items: {
-      title: 'Needed Items',
     },
     neededitems: {
       title: 'Needed Items',
@@ -400,22 +402,8 @@
         empty: 'No items match your search.',
       },
     },
-    api: {
-      title: 'API Documentation',
-      description: 'Access your Tarkov Tracker data programmatically.',
-      note: 'API tokens are required for authentication.',
-      tokens_moved_title: 'API tokens are managed in Settings',
-      tokens_moved_description: 'Create and revoke tokens in Settings → API Tokens. This page remains the place for API docs and endpoint details.',
-      tokens_moved_action: 'Open Settings',
-      endpoints: {
-        title: 'Available Endpoints',
-        data: {
-          description: 'Retrieve your game progress data.',
-        },
-      },
-      usage: {
-        title: 'Usage Examples',
-      },
+    needed_items: {
+      title: 'Needed Items',
     },
     settings: {
       title: 'Settings',
@@ -532,9 +520,6 @@
         },
       },
     },
-    admin: {
-      title: 'Admin Panel',
-    },
     credits: {
       title: 'Credits',
       sections: {
@@ -566,6 +551,9 @@
       continue_github: 'Continue with GitHub',
       privacy_policy: 'Privacy Policy',
       terms_of_service: 'Terms of Service',
+      popup_blocked_title: 'Popup Blocked',
+      popup_blocked_description: 'Your browser blocked the sign-in window. Redirecting you now...',
+      login_options: 'Login options',
     },
     not_found: {
       title: 'Page Not Found',
@@ -576,37 +564,6 @@
     },
     privacy: {
       title: 'Privacy Policy',
-    },
-    api: {
-      title: 'API Documentation',
-      description: 'Access your Tarkov Tracker data programmatically',
-      note: 'API tokens are required for authentication',
-      endpoints: {
-        title: 'Available Endpoints',
-        data: {
-          description: 'Retrieve your game progress data',
-        },
-      },
-      usage: {
-        title: 'Usage Examples',
-      },
-      stats: {
-        active_tokens: 'Active Tokens',
-        rest: 'REST',
-        api_type: 'API Type',
-        secure: 'Secure',
-        bearer_auth: 'Bearer Auth',
-        realtime: 'Real-time',
-        data_access: 'Data Access',
-      },
-      chips: {
-        secure_auth: 'Secure Authentication',
-        secure_tooltip: 'Tokens use Bearer authentication in the Authorization header',
-        realtime_data: 'Real-time Data',
-        realtime_tooltip: 'Your progress data is always up-to-date via real-time sync',
-        json_api: 'JSON API',
-        json_tooltip: 'All responses are in JSON format with consistent structure',
-      },
     },
   },
   footer: {
@@ -628,12 +585,6 @@
     contributors: 'Contributors',
     changelog: 'Changelog',
   },
-  module: {
-    team_settings: {
-      title: 'Team Settings',
-      description: 'Configure your team settings.',
-    },
-  },
   navigation_drawer: {
     home: 'Dashboard',
     api: 'API',
@@ -644,7 +595,6 @@
     tasks: 'Tasks',
     hideout: 'Hideout',
     neededitems: 'Needed Items',
-    traders: 'Traders',
     tarkovdev: 'Tarkov.dev',
     ratscanner: 'Rat Scanner',
     tarkovguru: 'Tarkov Guru',
@@ -652,6 +602,16 @@
     tarkovmonitor: 'Tarkov Monitor',
     credits: 'Credits',
     settings: 'Settings',
+    section_navigation: 'Navigation',
+    section_external: 'External',
+    account_menu: 'Account menu',
+    edition_label: 'Edition',
+    mode_auto: 'Auto',
+    mode_manual: 'Manual',
+    level_display_auto: 'Level {level} (automatic calculation enabled)',
+    level_display_editable: 'Level {level}, click or press Enter to edit',
+    increment_level: 'Increase level',
+    decrement_level: 'Decrease level',
   },
   settings: {
     title: 'Settings',
@@ -659,11 +619,16 @@
       title: 'General Settings',
       language: 'Language',
       streamer_mode: 'Streamer Mode',
+      privacy_mode: 'Privacy Mode',
+      privacy_mode_hint: "Hides sensitive information while you're streaming.",
     },
     game_profile: {
       title: 'Game Profile',
       game_edition: 'Game Edition',
       pmc_faction: 'Faction',
+    },
+    game_settings: {
+      title: 'Game Settings',
     },
     data_management: {
       title: 'Data Management',
@@ -673,6 +638,51 @@
       reset_warning: 'This action cannot be undone and will permanently delete all your progress for the current game mode.',
       reset_cancel: 'Cancel',
       reset_confirm: 'Reset Data',
+    },
+    account_data: {
+      title: 'Account & Data Management',
+      account_info_title: 'Account Information',
+      username_label: 'Username',
+      email_label: 'Email',
+      auth_method_label: 'Auth Method',
+      member_since_label: 'Member since',
+      account_id_label: 'Account ID',
+      unknown_label: 'Unknown',
+      data_reset_title: 'Data Reset',
+      account_deletion_title: 'Account Deletion',
+      login_required_delete: 'Log in to delete your account',
+      action_show: 'Show',
+      action_hide: 'Hide',
+      show_username: 'Show username',
+      hide_username: 'Hide username',
+      show_email: 'Show email',
+      hide_email: 'Hide email',
+      show_account_id: 'Show account id',
+      hide_account_id: 'Hide account id',
+      copy_account_id: 'Copy account id',
+      account_id_copied: 'Account id copied',
+      confirm_delete_title: 'Confirm Account Deletion',
+      irreversible_title: 'This action is irreversible!',
+      irreversible_description: 'All your data will be permanently deleted and cannot be recovered.',
+      what_deleted_title: 'What will be deleted',
+      delete_item_progress: 'Your progress tracking data',
+      delete_item_teams: 'Team memberships and owned teams',
+      delete_item_tokens: 'API tokens and settings',
+      delete_item_personal: 'All personal information',
+      not_affect_tarkov: 'This does not affect your Escape from Tarkov account, only Tarkov Tracker data.',
+      team_transfer_title: 'Team Ownership Transfer',
+      team_transfer_description: 'If you own any teams, ownership will be automatically transferred to the oldest member in each team. Teams without other members will be deleted.',
+      security_confirmation_title: 'Security Confirmation',
+      security_confirmation_description: 'Account deletion requires typing the exact confirmation phrase below. This action is permanent and cannot be undone.',
+      confirm_phrase_value: 'DELETE MY ACCOUNT',
+      confirm_phrase_label: 'Type \"{phrase}\" to confirm:',
+      confirm_phrase_error: 'Please type exactly: {phrase}',
+      delete_forever: 'Delete Account Forever',
+      delete_success_title: 'Account Deleted Successfully',
+      delete_success_description: 'Your account and all associated data have been permanently deleted.',
+      cleanup_pending: 'Some data cleanup is still in progress and will complete shortly.',
+      redirect_message: 'Thank you for using TarkovTracker. You will be redirected to the dashboard.',
+      go_to_dashboard: 'Go to Dashboard',
     },
     prestige: {
       title: 'Prestige Level',
@@ -691,11 +701,32 @@
       clear: 'Clear',
       preview: 'Preview',
       preview_hint: 'This is how your name appears in the navigation drawer.',
+      validation_error: 'Validation Error',
+      empty_error: 'Display name cannot be empty',
+      max_error: 'Display name cannot exceed {max} characters',
+      saved_title: 'Display Name Saved',
+      saved_description: 'Your {mode} display name has been updated',
+      save_failed_title: 'Save Failed',
+      save_failed_description: 'Failed to save display name. Please try again.',
+      cleared_title: 'Display Name Cleared',
+      cleared_description: 'Your {mode} display name has been cleared',
     },
     skills: {
       title: 'Skills Management',
-      explanation: 'All skills from game data are shown below. Task rewards are auto-calculated. Use offsets to add skills gained through gameplay.',
+      explanation: 'Quest rewards are auto-calculated. Enter your total skill level to adjust the offset.',
       no_skills: 'No skills found in game data.',
+      show_all: 'Show all',
+      show_less: 'Show less',
+      quest: 'Quest:',
+      offset: 'Offset:',
+      req_count: 'Req:',
+      reward_count: 'Reward:',
+      limit_exceeded: 'Limit Exceeded',
+      max_level: 'Maximum skill level is 51.',
+      sort: {
+        priority: 'Priority',
+        ingame: 'In-Game',
+      },
     },
     experience: {
       title: 'Experience & Level',
@@ -715,6 +746,59 @@
       confirm_word: 'DELETE',
     },
   },
+  hideout: {
+    collapse: 'Collapse',
+    expand: 'Expand',
+    view: {
+      available: 'Available',
+      all: 'All',
+      maxed: 'Maxed',
+      locked: 'Locked',
+    },
+  },
+  tasks: {
+    view: {
+      all: 'List',
+      map: 'Map',
+      traders: 'Traders',
+    },
+  },
+  neededItems: {
+    total: 'Total:',
+    tasks: 'Tasks',
+    hideout_label: 'Hideout',
+    fir: 'FIR',
+    nonFir: 'Non-FIR',
+    fir_required: 'Found in Raid required',
+    collected_items: 'Collected Items',
+    smart_fill: 'Smart Fill',
+    reset: 'Reset',
+    unknown_task: 'Unknown Task',
+    unknown_station: 'Unknown Station',
+    kappa: 'Kappa',
+    lvl: 'Lvl',
+    needed: 'needed',
+    clear_search: 'Clear search',
+    switch_to_expanded: 'Switch to Expanded view',
+    switch_to_compact: 'Switch to Compact view',
+    collected: 'Collected',
+    mark_collected: 'Mark as collected',
+  },
+  skills: {
+    req: 'Req',
+    lv: 'Lv',
+    elite_level: 'ELITE Level',
+  },
+  game_settings: {
+    pvp: 'PvP',
+    pve: 'PvE',
+    toggle_game_mode: 'Toggle game mode',
+    select_faction: 'Select faction',
+  },
+  prestige: {
+    no_prestige: 'No Prestige',
+    prestige_n: 'Prestige {n}',
+  },
   generic: {
     item: 'Item',
     items: 'Items',
@@ -724,5 +808,4 @@
     error: 'Error',
   },
   'task.kappa_req': 'Required for Kappa',
-  'task.level_req': 'Level required: {level}',
 }

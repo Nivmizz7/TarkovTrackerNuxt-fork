@@ -1,0 +1,43 @@
+<template>
+  <div
+    v-if="isComplete && !isFailed"
+    class="bg-completed-600/3 pointer-events-none absolute inset-0 z-0"
+  />
+  <div
+    v-if="showIcon"
+    class="pointer-events-none absolute inset-0 z-0 flex rotate-12 transform items-center justify-center p-8"
+    :class="[iconColor, isComplete && !isFailed ? 'opacity-[0.08]' : 'opacity-15']"
+  >
+    <UIcon :name="iconName" aria-hidden="true" class="h-24 w-24" />
+  </div>
+</template>
+<script setup lang="ts">
+  import { computed } from 'vue';
+  const props = defineProps<{
+    isComplete: boolean;
+    isFailed: boolean;
+    isLocked: boolean;
+    isInvalid: boolean;
+  }>();
+  const showIcon = computed(
+    () => props.isLocked || props.isFailed || props.isComplete || props.isInvalid
+  );
+  const icon = computed(() => {
+    if (props.isFailed) return 'mdi-close-octagon';
+    if (props.isComplete) return 'mdi-check';
+    if (props.isInvalid) return 'mdi-cancel';
+    if (props.isLocked) return 'mdi-lock';
+    return '';
+  });
+  const iconName = computed(() => {
+    const base = icon.value;
+    return base.startsWith('mdi-') ? `i-${base}` : base;
+  });
+  const iconColor = computed(() => {
+    if (props.isFailed) return 'text-error-400';
+    if (props.isComplete) return 'text-completed-400';
+    if (props.isInvalid) return 'text-surface-400';
+    if (props.isLocked) return 'text-warning-400';
+    return 'text-brand-200';
+  });
+</script>

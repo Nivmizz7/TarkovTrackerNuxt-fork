@@ -1,193 +1,104 @@
 <template>
-  <div class="container mx-auto space-y-4 px-4 py-6">
-    <!-- Section 1: Game Settings (merged Privacy Mode + Game Edition) -->
-    <GenericCard
-      icon="mdi-gamepad-variant"
-      icon-color="accent-400"
-      highlight-color="accent"
-      :fill-height="false"
-      :title="$t('settings.game_settings.title', 'Game Settings')"
-      title-classes="text-lg font-semibold"
-    >
-      <template #title-right>
-        <UAlert
-          v-if="!user.loggedIn"
-          icon="i-mdi-lock"
-          color="warning"
-          variant="soft"
-          class="inline-flex items-center p-1 text-sm"
-        >
-          <template #description>
-            <span class="text-sm">
-              {{ $t('settings.general.login_required', 'Log in to enable cloud sync.') }}
-            </span>
-          </template>
-        </UAlert>
+  <div class="container mx-auto px-4 py-6">
+    <UTabs :items="tabs" class="w-full">
+      <template #gameplay>
+        <div class="space-y-4 py-4">
+          <ExperienceCard />
+          <GenericCard
+            icon="mdi-gamepad-variant"
+            icon-color="accent"
+            highlight-color="accent"
+            :fill-height="false"
+            :title="$t('settings.game_settings.title', 'Game Settings')"
+            title-classes="text-lg font-semibold"
+          >
+            <template #content>
+              <div class="grid gap-4 px-4 py-4 md:grid-cols-2 lg:grid-cols-2">
+                <div class="space-y-2">
+                  <p class="text-surface-200 text-sm font-semibold">
+                    {{ $t('settings.game_profile.game_edition', 'Game Edition') }}
+                  </p>
+                  <SelectMenuFixed
+                    v-model="selectedGameEdition"
+                    :items="gameEditionOptions"
+                    value-key="value"
+                  >
+                    <template #leading>
+                      <UIcon name="i-mdi-gift-open" class="text-surface-300 h-4 w-4" />
+                    </template>
+                  </SelectMenuFixed>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-surface-200 text-sm font-semibold">
+                    {{ $t('settings.prestige.current_level', 'Current Prestige Level') }}
+                  </p>
+                  <SelectMenuFixed
+                    v-model="currentPrestige"
+                    :items="prestigeOptions"
+                    value-key="value"
+                    :disabled="isPveMode"
+                  >
+                    <template #leading>
+                      <UIcon
+                        name="i-mdi-trophy"
+                        class="text-warning-400 h-4 w-4"
+                        :class="{ 'opacity-50': isPveMode }"
+                      />
+                    </template>
+                  </SelectMenuFixed>
+                </div>
+              </div>
+            </template>
+          </GenericCard>
+          <SkillsCard />
+        </div>
       </template>
-      <template #content>
-        <div class="grid gap-6 px-4 py-4 md:grid-cols-2 lg:grid-cols-3">
-          <!-- Privacy Mode -->
-          <div class="space-y-2">
-            <p class="text-surface-200 text-sm font-semibold">
-              {{ $t('settings.general.privacy_mode', 'Privacy Mode') }}
-            </p>
-            <div class="flex items-center gap-3">
-              <UCheckbox
-                v-model="streamerMode"
-                :disabled="!user.loggedIn || streamerModeCooldown"
-                label=""
-              />
-              <span class="text-surface-400 text-xs">
-                {{
-                  $t(
-                    'settings.general.privacy_mode_hint',
-                    "Hides sensitive information while you're streaming."
-                  )
-                }}
-              </span>
-            </div>
-          </div>
-          <!-- Game Edition -->
-          <div class="space-y-2">
-            <p class="text-surface-200 text-sm font-semibold">
-              {{ $t('settings.game_profile.game_edition', 'Game Edition') }}
-            </p>
-            <USelectMenu
-              v-model="selectedGameEdition"
-              :items="gameEditionOptions"
-              value-key="value"
-              :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
-              :ui="selectUi"
-              :ui-menu="selectMenuUi"
-            >
-              <template #leading>
-                <UIcon name="i-mdi-gift-open" class="text-surface-300 h-4 w-4" />
-              </template>
-            </USelectMenu>
-          </div>
-          <!-- Prestige Level -->
-          <div class="space-y-2">
-            <p class="text-surface-200 text-sm font-semibold">
-              {{ $t('settings.prestige.current_level', 'Current Prestige Level') }}
-            </p>
-            <USelectMenu
-              v-model="currentPrestige"
-              :items="prestigeOptions"
-              value-key="value"
-              :disabled="isPveMode"
-              :popper="{ placement: 'bottom-start', strategy: 'fixed' }"
-              :ui="selectUi"
-              :ui-menu="selectMenuUi"
-            >
-              <template #leading>
-                <UIcon
-                  name="i-mdi-trophy"
-                  class="text-gold-400 h-4 w-4"
-                  :class="{ 'opacity-50': isPveMode }"
+      <template #interface>
+        <div class="space-y-4 py-4">
+          <InterfaceSettingsCard />
+        </div>
+      </template>
+      <template #account>
+        <div class="space-y-4 py-4">
+          <GenericCard
+            icon="mdi-key-chain"
+            icon-color="secondary"
+            highlight-color="secondary"
+            :fill-height="false"
+            :title="$t('page.settings.card.apitokens.title', 'API Tokens')"
+            title-classes="text-lg font-semibold"
+          >
+            <template #content>
+              <div class="relative px-4 py-4">
+                <ApiTokens v-if="isLoggedIn" />
+                <UAlert
+                  v-else
+                  color="warning"
+                  variant="soft"
+                  icon="i-mdi-lock"
+                  :title="$t('page.settings.card.apitokens.not_logged_in')"
                 />
-              </template>
-            </USelectMenu>
-            <p class="text-surface-400 text-xs">
-              <template v-if="isPveMode">
-                {{ $t('settings.prestige.pve_hint', 'Prestige is not available in PVE mode.') }}
-              </template>
-              <template v-else>
-                {{
-                  $t(
-                    'settings.prestige.hint',
-                    'Select your current prestige level. This is display-only and does not affect game progression.'
-                  )
-                }}
-              </template>
-            </p>
+              </div>
+            </template>
+          </GenericCard>
+          <AccountDeletionCard
+            :show-reset-actions="true"
+            @reset-pvp="showResetPvPDialog = true"
+            @reset-pve="showResetPvEDialog = true"
+            @reset-all="showResetAllDialog = true"
+          />
+          <div v-if="isAdmin" class="flex justify-center pt-4">
+            <NuxtLink
+              to="/admin"
+              class="hover:text-error-400 text-surface-500 flex items-center gap-1.5 text-xs transition-colors"
+            >
+              <UIcon name="i-mdi-shield-crown" class="size-3.5" />
+              {{ $t('settings.general.admin_panel', 'Admin Panel') }}
+            </NuxtLink>
           </div>
         </div>
       </template>
-    </GenericCard>
-    <!-- Section 1.5: Display Name & Experience (side by side) -->
-    <div class="grid gap-4 md:grid-cols-2">
-      <DisplayNameCard />
-      <ExperienceCard />
-    </div>
-    <!-- Section 3: Skills (Full Width) -->
-    <SkillsCard />
-    <!-- Section 3: Data Management -->
-    <GenericCard
-      icon="mdi-database"
-      icon-color="warning"
-      highlight-color="tan"
-      :fill-height="false"
-      :title="$t('settings.data_management.title', 'Data Management')"
-      title-classes="text-lg font-semibold"
-    >
-      <template #title-right>
-        <UAlert
-          v-if="!user.loggedIn"
-          icon="i-mdi-information"
-          color="info"
-          variant="soft"
-          class="inline-flex items-center p-1 text-sm"
-        >
-          <template #description>
-            <span class="text-sm">
-              {{
-                $t(
-                  'settings.data_management.login_hint',
-                  'Log in to enable cloud sync and manage your progress across devices.'
-                )
-              }}
-            </span>
-          </template>
-        </UAlert>
-      </template>
-      <template #content>
-        <div class="space-y-3 px-4 py-4">
-          <div class="grid gap-3 md:grid-cols-3">
-            <!-- Reset PvP Button -->
-            <UButton
-              icon="i-mdi-shield-sword"
-              block
-              :ui="{
-                base: 'bg-pvp-900 hover:bg-pvp-800 active:bg-pvp-700 text-pvp-200 focus-visible:ring focus-visible:ring-pvp-500',
-              }"
-              @click="showResetPvPDialog = true"
-            >
-              {{ $t('settings.data_management.reset_pvp_data', 'Reset PvP Data') }}
-            </UButton>
-            <!-- Reset PvE Button -->
-            <UButton
-              icon="i-mdi-account-group"
-              block
-              :ui="{
-                base: 'bg-pve-900 hover:bg-pve-800 active:bg-pve-700 text-pve-200 focus-visible:ring focus-visible:ring-pve-500',
-              }"
-              @click="showResetPvEDialog = true"
-            >
-              {{ $t('settings.data_management.reset_pve_data', 'Reset PvE Data') }}
-            </UButton>
-            <!-- Reset All Button -->
-            <UButton
-              color="error"
-              variant="soft"
-              icon="i-mdi-delete-sweep"
-              block
-              @click="showResetAllDialog = true"
-            >
-              {{ $t('settings.data_management.reset_all_data', 'Reset All Data') }}
-            </UButton>
-          </div>
-          <p class="text-surface-400 text-center text-xs">
-            {{
-              $t(
-                'settings.data_management.reset_hint',
-                'Reset your progress for specific game modes or all data.'
-              )
-            }}
-          </p>
-        </div>
-      </template>
-    </GenericCard>
-    <!-- Reset PvP Modal -->
+    </UTabs>
     <UModal v-model:open="showResetPvPDialog">
       <template #header>
         <div class="flex items-center gap-2">
@@ -242,7 +153,6 @@
         </div>
       </template>
     </UModal>
-    <!-- Reset PvE Modal -->
     <UModal v-model:open="showResetPvEDialog">
       <template #header>
         <div class="flex items-center gap-2">
@@ -297,7 +207,6 @@
         </div>
       </template>
     </UModal>
-    <!-- Reset All Modal -->
     <UModal v-model:open="showResetAllDialog" @close="resetAllConfirmText = ''">
       <template #header>
         <div class="flex items-center gap-2">
@@ -369,142 +278,47 @@
         </div>
       </template>
     </UModal>
-    <!-- Section 4: API Management -->
-    <GenericCard
-      icon="mdi-key-chain"
-      icon-color="purple-400"
-      highlight-color="purple"
-      :fill-height="false"
-      :title="$t('page.settings.card.apitokens.title', 'API Tokens')"
-      title-classes="text-lg font-semibold"
-    >
-      <template #title-right>
-        <UAlert
-          v-if="!user.loggedIn"
-          icon="i-mdi-lock"
-          color="warning"
-          variant="soft"
-          class="inline-flex items-center p-1 text-sm"
-        >
-          <template #description>
-            <span class="text-sm">
-              {{
-                $t(
-                  'page.settings.card.apitokens.not_logged_in',
-                  'You must be logged in to create and manage API tokens.'
-                )
-              }}
-            </span>
-          </template>
-        </UAlert>
-      </template>
-      <template #content>
-        <div class="relative px-4 py-4">
-          <ApiTokens v-if="user.loggedIn" />
-          <UAlert
-            v-else
-            color="warning"
-            variant="soft"
-            icon="i-mdi-lock"
-            :title="$t('page.settings.card.apitokens.not_logged_in')"
-          />
-        </div>
-      </template>
-    </GenericCard>
-    <!-- Section 5: Data Migration (temporarily disabled until migration flow is refactored) -->
-    <!-- <DataMigrationCard v-if="user.loggedIn" /> -->
-    <!-- Section 6: Account Management -->
-    <AccountDeletionCard />
-    <!-- Admin Panel Link (only visible to admins) -->
-    <div v-if="isAdmin" class="flex justify-center pt-4">
-      <NuxtLink
-        to="/admin"
-        class="hover:text-error-400 flex items-center gap-1.5 text-xs text-neutral-500 transition-colors"
-      >
-        <UIcon name="i-mdi-shield-crown" class="size-3.5" />
-        Admin Panel
-      </NuxtLink>
-    </div>
   </div>
 </template>
 <script setup lang="ts">
   import { computed, ref, type Ref } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import AccountDeletionCard from '@/features/settings/AccountDeletionCard.vue';
   import ApiTokens from '@/features/settings/ApiTokens.vue';
-  import DisplayNameCard from '@/features/settings/DisplayNameCard.vue';
   import ExperienceCard from '@/features/settings/ExperienceCard.vue';
+  import InterfaceSettingsCard from '@/features/settings/InterfaceSettingsCard.vue';
   import SkillsCard from '@/features/settings/SkillsCard.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
-  import { usePreferencesStore } from '@/stores/usePreferences';
   import { useSystemStore, useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { GAME_MODES } from '@/utils/constants';
   import { logger } from '@/utils/logger';
-  // Page metadata
   useSeoMeta({
     title: 'Settings',
     description:
       'Customize your TarkovTracker experience. Manage preferences, game mode, and account settings.',
   });
-  // Composables
+  const { t } = useI18n();
   const { $supabase } = useNuxtApp();
   const toast = useToast();
   const metadataStore = useMetadataStore();
-  const preferencesStore = usePreferencesStore();
-  // Get hasInitiallyLoaded from the Supabase-aware wrapper; use the direct Pinia system store.
   const { hasInitiallyLoaded } = useSystemStoreWithSupabase();
-  const systemStore = useSystemStore(); // Direct Pinia store
+  const systemStore = useSystemStore();
   const tarkovStore = useTarkovStore();
-  // Check if user is in PVE mode (prestige not available in PVE)
   const isPveMode = computed(() => tarkovStore.getCurrentGameMode() === GAME_MODES.PVE);
-  const selectUi = {};
-  const selectMenuUi = {
-    container: 'z-[9999]',
-    background: 'bg-surface-900',
-    shadow: 'shadow-xl',
-    rounded: 'rounded-lg',
-    ring: 'ring-1 ring-white/10',
-    padding: 'p-1',
-    option: {
-      base: 'px-3 py-2 text-sm transition-colors rounded',
-      inactive: 'text-surface-200 hover:bg-surface-800 hover:text-white',
-      active: 'bg-surface-800 text-white',
-      selected: 'bg-primary-500/10 text-primary-100 ring-1 ring-primary-500',
-    },
-  };
-  // Reactive state
   const resetting = ref(false);
   const showResetPvPDialog = ref(false);
   const showResetPvEDialog = ref(false);
   const showResetAllDialog = ref(false);
   const resetAllConfirmText = ref('');
-  const streamerModeCooldown = ref(false);
-  // Computed properties
-  const user = computed(() => ({
-    loggedIn: Boolean($supabase?.user?.loggedIn),
-  }));
-  // Admin status check using the isAdmin getter
-  const isAdmin = computed(() => {
-    // Only show admin button if data has loaded and user is admin
-    if (!hasInitiallyLoaded.value) return false;
-    return systemStore.isAdmin;
-  });
-  // Streamer mode with cooldown to prevent spam
-  const streamerMode = computed({
-    get() {
-      return preferencesStore.getStreamerMode;
-    },
-    set(newValue) {
-      if (streamerModeCooldown.value) return;
-      preferencesStore.setStreamerMode(newValue);
-      streamerModeCooldown.value = true;
-      setTimeout(() => {
-        streamerModeCooldown.value = false;
-      }, 500);
-    },
-  });
-  // Game edition
+  const tabs = computed(() => [
+    { slot: 'gameplay', label: t('settings.tabs.gameplay', 'Gameplay'), icon: 'i-mdi-controller' },
+    { slot: 'interface', label: t('settings.tabs.interface', 'Interface'), icon: 'i-mdi-palette' },
+    { slot: 'account', label: t('settings.tabs.account', 'Account'), icon: 'i-mdi-shield-account' },
+  ]);
+  const isLoggedIn = computed(() => Boolean($supabase?.user?.loggedIn));
+  const isAdmin = computed(() => hasInitiallyLoaded.value && systemStore.isAdmin);
   const gameEditionOptions = computed(() =>
     metadataStore.editions.map((edition) => ({
       label: edition.title,
@@ -519,30 +333,16 @@
       tarkovStore.setGameEdition(newValue || 1);
     },
   });
-  // Prestige level
-  const prestigeOptions = computed(() => {
-    return Array.from({ length: 7 }, (_, i) => ({
-      label: i === 0 ? 'No Prestige' : `Prestige ${i}`,
+  const prestigeOptions = computed(() =>
+    Array.from({ length: 7 }, (_, i) => ({
+      label: i === 0 ? t('prestige.no_prestige') : t('prestige.prestige_n', { n: i }),
       value: i,
-    }));
-  });
+    }))
+  );
   const currentPrestige = computed({
-    get(): number {
-      // In PVE mode, always return 0 (No Prestige) since prestige is not available
-      if (isPveMode.value) {
-        return 0;
-      }
-      return tarkovStore.getPrestigeLevel();
-    },
-    set(newValue: number) {
-      // Don't allow setting prestige in PVE mode
-      if (isPveMode.value) {
-        return;
-      }
-      tarkovStore.setPrestigeLevel(newValue);
-    },
+    get: () => (isPveMode.value ? 0 : tarkovStore.getPrestigeLevel()),
+    set: (newValue: number) => !isPveMode.value && tarkovStore.setPrestigeLevel(newValue),
   });
-  // Reset handler factory to eliminate duplication
   interface ResetConfig {
     resetFn: () => Promise<void>;
     successTitle: string;
@@ -599,6 +399,5 @@
     errorLogContext: 'all data',
     errorDescription: 'Failed to reset data. Please try again.',
     dialogRef: showResetAllDialog,
-    // Note: resetAllConfirmText is cleared in the @close handler of the modal
   });
 </script>

@@ -35,8 +35,14 @@
                   <TaskLink :task="relatedTask" />
                 </template>
                 <template v-else-if="props.need.needType == 'hideoutModule'">
-                  <StationLink v-if="relatedStation" :station="relatedStation" />
-                  <span v-else class="text-sm text-gray-300">Unknown station</span>
+                  <StationLink
+                    v-if="relatedStation"
+                    :station="relatedStation"
+                    :module-id="props.need.hideoutModule.id"
+                  />
+                  <span v-else class="text-surface-300 text-sm">
+                    {{ $t('neededItems.unknown_station', 'Unknown Station') }}
+                  </span>
                 </template>
               </span>
             </span>
@@ -53,7 +59,7 @@
                   <UIcon
                     name="i-mdi-check-circle"
                     class="h-5 w-5"
-                    :class="isCollected ? 'text-success-400' : 'text-gray-300'"
+                    :class="isCollected ? 'text-success-400' : 'text-surface-300'"
                   />
                 </template>
                 <template v-else>
@@ -110,10 +116,16 @@
                         <div class="mt-1 mb-1 flex justify-center">
                           <div class="text-center">
                             <template v-if="relatedStation">
-                              <station-link :station="relatedStation" class="justify-center" />
+                              <station-link
+                                :station="relatedStation"
+                                :module-id="props.need.hideoutModule.id"
+                                class="justify-center"
+                              />
                             </template>
                             <template v-else>
-                              <span class="text-sm text-gray-300">Unknown station</span>
+                              <span class="text-surface-300 text-sm">
+                                {{ $t('neededItems.unknown_station', 'Unknown Station') }}
+                              </span>
                             </template>
                           </div>
                           <div class="ml-1">
@@ -127,6 +139,7 @@
                           :player-level="tarkovStore.playerLevel()"
                           :related-station="relatedStation"
                           :hideout-level="props.need.hideoutModule.level"
+                          :hideout-module-id="props.need.hideoutModule.id"
                         />
                       </template>
                     </div>
@@ -146,7 +159,13 @@
                         />
                       </template>
                       <template v-else>
-                        <AppTooltip :text="isCollected ? 'Collected' : 'Mark as collected'">
+                        <AppTooltip
+                          :text="
+                            isCollected
+                              ? $t('neededItems.collected', 'Collected')
+                              : $t('neededItems.mark_collected', 'Mark as collected')
+                          "
+                        >
                           <CollectedToggleButton
                             :is-collected="isCollected"
                             class="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors"
@@ -155,7 +174,11 @@
                                 ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
                                 : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
                             "
-                            :aria-label="isCollected ? 'Collected' : 'Mark as collected'"
+                            :aria-label="
+                              isCollected
+                                ? $t('neededItems.collected', 'Collected')
+                                : $t('neededItems.mark_collected', 'Mark as collected')
+                            "
                             icon-class="h-6 w-6"
                             @toggle="$emit('toggleCount')"
                           />
@@ -200,6 +223,7 @@
                     :player-level="tarkovStore.playerLevel()"
                     :related-station="relatedStation"
                     :hideout-level="props.need.hideoutModule.level"
+                    :hideout-module-id="props.need.hideoutModule.id"
                   />
                 </template>
               </div>
@@ -215,7 +239,13 @@
                   />
                 </template>
                 <template v-else>
-                  <AppTooltip :text="isCollected ? 'Collected' : 'Mark as collected'">
+                  <AppTooltip
+                    :text="
+                      isCollected
+                        ? $t('neededItems.collected', 'Collected')
+                        : $t('neededItems.mark_collected', 'Mark as collected')
+                    "
+                  >
                     <CollectedToggleButton
                       :is-collected="isCollected"
                       class="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors"
@@ -224,7 +254,11 @@
                           ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
                           : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
                       "
-                      :aria-label="isCollected ? 'Collected' : 'Mark as collected'"
+                      :aria-label="
+                        isCollected
+                          ? $t('neededItems.collected', 'Collected')
+                          : $t('neededItems.mark_collected', 'Mark as collected')
+                      "
                       icon-class="h-6 w-6"
                       @toggle="$emit('toggleCount')"
                     />
@@ -306,7 +340,7 @@
     return {
       'bg-gradient-to-l from-complete to-surface':
         selfCompletedNeed.value || currentCount.value >= neededCount.value,
-      'bg-gray-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
+      'bg-surface-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
     };
   });
   const isSingleItem = computed(() => neededCount.value === 1);

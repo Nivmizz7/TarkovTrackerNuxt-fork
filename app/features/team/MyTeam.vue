@@ -6,7 +6,7 @@
     <template #content>
       <!-- Loading state while initial data is being fetched -->
       <div v-if="isLoadingTeamState" class="flex items-center justify-center py-8">
-        <UIcon name="i-mdi-loading" class="h-6 w-6 animate-spin text-gray-400" />
+        <UIcon name="i-mdi-loading" class="text-surface-400 h-6 w-6 animate-spin" />
       </div>
       <div v-else-if="!localUserTeam" class="py-4 text-center">
         {{ $t('page.team.card.myteam.no_team') }}
@@ -41,13 +41,13 @@
             </UButton>
           </div>
         </div>
-        <div v-if="linkVisible" class="rounded-lg bg-gray-100 p-3 dark:bg-gray-800">
+        <div v-if="linkVisible" class="bg-surface-100 dark:bg-surface-800 rounded-lg p-3">
           <div class="font-mono text-sm break-all">
             {{ teamUrl }}
           </div>
         </div>
-        <div v-else class="rounded-lg bg-gray-100 p-3 dark:bg-gray-800">
-          <div class="text-sm text-gray-500 italic dark:text-gray-400">
+        <div v-else class="bg-surface-100 dark:bg-surface-800 rounded-lg p-3">
+          <div class="text-surface-500 dark:text-surface-400 text-sm italic">
             {{ $t('page.team.card.myteam.link_hidden_message') }}
           </div>
         </div>
@@ -55,7 +55,7 @@
     </template>
     <template #footer>
       <div
-        class="flex items-center justify-start gap-2 border-t border-gray-200 p-4 dark:border-gray-700"
+        class="border-surface-200 dark:border-surface-700 flex items-center justify-start gap-2 border-t p-4"
       >
         <!-- Show nothing while loading initial state -->
         <template v-if="isLoadingTeamState" />

@@ -8,6 +8,7 @@ import type {
 } from '@/features/neededitems/neededitems-constants';
 import { pinia as pluginPinia } from '@/plugins/01.pinia.client';
 import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
+import type { SkillSortMode } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 import { useNuxtApp } from '#imports';
@@ -34,24 +35,33 @@ export interface PreferencesState {
   neededItemsGroupByItem: boolean;
   neededItemsHideNonFirSpecialEquipment: boolean;
   neededItemsKappaOnly: boolean;
+  neededItemsSortBy: 'priority' | 'name' | 'category' | 'count' | null;
+  neededItemsSortDirection: 'asc' | 'desc' | null;
+  neededItemsHideOwned: boolean;
+  neededItemsCardStyle: 'compact' | 'expanded' | null;
   itemsHideNonFIR: boolean;
   hideGlobalTasks: boolean;
   hideNonKappaTasks: boolean;
   neededitemsStyle: string | null;
   hideoutPrimaryView?: string | null;
+  hideoutCollapseCompleted: boolean;
   localeOverride: string | null;
   // Task filter settings
   showNonSpecialTasks: boolean;
   showLightkeeperTasks: boolean;
   // Task appearance settings
   showRequiredLabels: boolean;
-  showNotRequiredLabels: boolean;
   showExperienceRewards: boolean;
-  showTaskIds: boolean;
   showNextQuests: boolean;
   showPreviousQuests: boolean;
   taskCardDensity: 'comfortable' | 'compact';
   enableManualTaskFail: boolean;
+  hideCompletedTaskObjectives: boolean;
+  showAllFilter: boolean;
+  showAvailableFilter: boolean;
+  showLockedFilter: boolean;
+  showCompletedFilter: boolean;
+  showFailedFilter: boolean;
   // XP and Level settings
   useAutomaticLevelCalculation: boolean;
   // Holiday effects
@@ -59,6 +69,10 @@ export interface PreferencesState {
   // Map display settings
   showMapExtracts: boolean;
   mapZoomSpeed: number;
+  pinnedTaskIds: string[];
+  // Skills settings
+  skillSortMode: SkillSortMode | null;
+  taskFilterPresets: { id: string; name: string; settings: Record<string, unknown> }[];
   saving?: {
     streamerMode: boolean;
     hideGlobalTasks: boolean;
@@ -89,24 +103,33 @@ export const preferencesDefaultState: PreferencesState = {
   neededItemsGroupByItem: false,
   neededItemsHideNonFirSpecialEquipment: false,
   neededItemsKappaOnly: false,
+  neededItemsSortBy: 'priority',
+  neededItemsSortDirection: 'desc',
+  neededItemsHideOwned: false,
+  neededItemsCardStyle: 'expanded',
   itemsHideNonFIR: false,
   hideGlobalTasks: false,
   hideNonKappaTasks: false,
   neededitemsStyle: null,
   hideoutPrimaryView: null,
+  hideoutCollapseCompleted: false,
   localeOverride: null,
   // Task filter settings (all shown by default)
   showNonSpecialTasks: true,
   showLightkeeperTasks: true,
   // Task appearance settings
   showRequiredLabels: true,
-  showNotRequiredLabels: true,
   showExperienceRewards: true,
-  showTaskIds: true,
   showNextQuests: true,
   showPreviousQuests: true,
   taskCardDensity: 'compact',
   enableManualTaskFail: false,
+  hideCompletedTaskObjectives: true,
+  showAllFilter: true,
+  showAvailableFilter: true,
+  showLockedFilter: true,
+  showCompletedFilter: true,
+  showFailedFilter: true,
   // XP and Level settings
   useAutomaticLevelCalculation: false,
   // Holiday effects (enabled by default during holiday season)
@@ -114,6 +137,10 @@ export const preferencesDefaultState: PreferencesState = {
   // Map display settings
   showMapExtracts: true,
   mapZoomSpeed: 1,
+  pinnedTaskIds: [],
+  // Skills settings
+  skillSortMode: null,
+  taskFilterPresets: [],
   saving: {
     streamerMode: false,
     hideGlobalTasks: false,
@@ -216,6 +243,18 @@ export const usePreferencesStore = defineStore('preferences', {
     getNeededItemsKappaOnly: (state) => {
       return state.neededItemsKappaOnly ?? false;
     },
+    getNeededItemsSortBy: (state) => {
+      return state.neededItemsSortBy ?? 'priority';
+    },
+    getNeededItemsSortDirection: (state) => {
+      return state.neededItemsSortDirection ?? 'desc';
+    },
+    getNeededItemsHideOwned: (state) => {
+      return state.neededItemsHideOwned ?? false;
+    },
+    getNeededItemsCardStyle: (state) => {
+      return state.neededItemsCardStyle ?? 'expanded';
+    },
     itemsNeededHideNonFIR: (state) => {
       return state.itemsHideNonFIR ?? false;
     },
@@ -248,14 +287,8 @@ export const usePreferencesStore = defineStore('preferences', {
     getShowRequiredLabels: (state) => {
       return state.showRequiredLabels ?? true;
     },
-    getShowNotRequiredLabels: (state) => {
-      return state.showNotRequiredLabels ?? true;
-    },
     getShowExperienceRewards: (state) => {
       return state.showExperienceRewards ?? true;
-    },
-    getShowTaskIds: (state) => {
-      return state.showTaskIds ?? true;
     },
     getShowNextQuests: (state) => {
       return state.showNextQuests ?? true;
@@ -269,6 +302,24 @@ export const usePreferencesStore = defineStore('preferences', {
     getEnableManualTaskFail: (state) => {
       return state.enableManualTaskFail ?? false;
     },
+    getHideCompletedTaskObjectives: (state) => {
+      return state.hideCompletedTaskObjectives ?? true;
+    },
+    getShowAllFilter: (state) => {
+      return state.showAllFilter ?? true;
+    },
+    getShowAvailableFilter: (state) => {
+      return state.showAvailableFilter ?? true;
+    },
+    getShowLockedFilter: (state) => {
+      return state.showLockedFilter ?? true;
+    },
+    getShowCompletedFilter: (state) => {
+      return state.showCompletedFilter ?? true;
+    },
+    getShowFailedFilter: (state) => {
+      return state.showFailedFilter ?? true;
+    },
     getUseAutomaticLevelCalculation: (state) => {
       return state.useAutomaticLevelCalculation ?? false;
     },
@@ -278,6 +329,16 @@ export const usePreferencesStore = defineStore('preferences', {
     // Map display getters
     getShowMapExtracts: (state) => {
       return state.showMapExtracts ?? true;
+    },
+    getPinnedTaskIds: (state) => {
+      return state.pinnedTaskIds ?? [];
+    },
+    getTaskFilterPresets: (state) => {
+      return state.taskFilterPresets ?? [];
+    },
+    // Skills getters
+    getSkillSortMode: (state) => {
+      return state.skillSortMode ?? 'priority';
     },
   },
   actions: {
@@ -355,6 +416,18 @@ export const usePreferencesStore = defineStore('preferences', {
     setNeededItemsKappaOnly(kappaOnly: boolean) {
       this.neededItemsKappaOnly = kappaOnly;
     },
+    setNeededItemsSortBy(sortBy: 'priority' | 'name' | 'category' | 'count') {
+      this.neededItemsSortBy = sortBy;
+    },
+    setNeededItemsSortDirection(direction: 'asc' | 'desc') {
+      this.neededItemsSortDirection = direction;
+    },
+    setNeededItemsHideOwned(hide: boolean) {
+      this.neededItemsHideOwned = hide;
+    },
+    setNeededItemsCardStyle(style: 'compact' | 'expanded') {
+      this.neededItemsCardStyle = style;
+    },
     setItemsNeededHideNonFIR(hide: boolean) {
       this.itemsHideNonFIR = hide;
       // Persistence handled automatically by plugin
@@ -393,14 +466,8 @@ export const usePreferencesStore = defineStore('preferences', {
     setShowRequiredLabels(show: boolean) {
       this.showRequiredLabels = show;
     },
-    setShowNotRequiredLabels(show: boolean) {
-      this.showNotRequiredLabels = show;
-    },
     setShowExperienceRewards(show: boolean) {
       this.showExperienceRewards = show;
-    },
-    setShowTaskIds(show: boolean) {
-      this.showTaskIds = show;
     },
     setShowNextQuests(show: boolean) {
       this.showNextQuests = show;
@@ -414,6 +481,24 @@ export const usePreferencesStore = defineStore('preferences', {
     setEnableManualTaskFail(enable: boolean) {
       this.enableManualTaskFail = enable;
     },
+    setHideCompletedTaskObjectives(hide: boolean) {
+      this.hideCompletedTaskObjectives = hide;
+    },
+    setShowAllFilter(show: boolean) {
+      this.showAllFilter = show;
+    },
+    setShowAvailableFilter(show: boolean) {
+      this.showAvailableFilter = show;
+    },
+    setShowLockedFilter(show: boolean) {
+      this.showLockedFilter = show;
+    },
+    setShowCompletedFilter(show: boolean) {
+      this.showCompletedFilter = show;
+    },
+    setShowFailedFilter(show: boolean) {
+      this.showFailedFilter = show;
+    },
     setUseAutomaticLevelCalculation(use: boolean) {
       this.useAutomaticLevelCalculation = use;
     },
@@ -423,6 +508,27 @@ export const usePreferencesStore = defineStore('preferences', {
     // Map display actions
     setShowMapExtracts(show: boolean) {
       this.showMapExtracts = show;
+    },
+    togglePinnedTask(taskId: string) {
+      if (!this.pinnedTaskIds) this.pinnedTaskIds = [];
+      const index = this.pinnedTaskIds.indexOf(taskId);
+      if (index === -1) {
+        this.pinnedTaskIds.push(taskId);
+      } else {
+        this.pinnedTaskIds.splice(index, 1);
+      }
+    },
+    addTaskFilterPreset(preset: { id: string; name: string; settings: Record<string, unknown> }) {
+      if (!this.taskFilterPresets) this.taskFilterPresets = [];
+      this.taskFilterPresets.push(preset);
+    },
+    removeTaskFilterPreset(id: string) {
+      if (!this.taskFilterPresets) return;
+      this.taskFilterPresets = this.taskFilterPresets.filter((p) => p.id !== id);
+    },
+    // Skills actions
+    setSkillSortMode(mode: SkillSortMode) {
+      this.skillSortMode = mode;
     },
   },
   // Enable automatic localStorage persistence
@@ -457,6 +563,10 @@ export const usePreferencesStore = defineStore('preferences', {
       'neededItemsGroupByItem',
       'neededItemsHideNonFirSpecialEquipment',
       'neededItemsKappaOnly',
+      'neededItemsSortBy',
+      'neededItemsSortDirection',
+      'neededItemsHideOwned',
+      'neededItemsCardStyle',
       'itemsHideNonFIR',
       'hideGlobalTasks',
       'hideNonKappaTasks',
@@ -468,17 +578,25 @@ export const usePreferencesStore = defineStore('preferences', {
       'showLightkeeperTasks',
       // Task appearance settings
       'showRequiredLabels',
-      'showNotRequiredLabels',
       'showExperienceRewards',
-      'showTaskIds',
       'showNextQuests',
       'showPreviousQuests',
       'taskCardDensity',
       'enableManualTaskFail',
+      'hideCompletedTaskObjectives',
+      'showAllFilter',
+      'showAvailableFilter',
+      'showLockedFilter',
+      'showCompletedFilter',
+      'showFailedFilter',
       'useAutomaticLevelCalculation',
       'enableHolidayEffects',
+      'hideoutCollapseCompleted',
       'showMapExtracts',
       'mapZoomSpeed',
+      'pinnedTaskIds',
+      'taskFilterPresets',
+      'skillSortMode',
     ],
   },
 });
@@ -577,9 +695,7 @@ if (shouldInitPreferencesWatchers) {
                       show_non_special_tasks: preferencesState.showNonSpecialTasks,
                       show_lightkeeper_tasks: preferencesState.showLightkeeperTasks,
                       show_required_labels: preferencesState.showRequiredLabels,
-                      show_not_required_labels: preferencesState.showNotRequiredLabels,
                       show_experience_rewards: preferencesState.showExperienceRewards,
-                      show_task_ids: preferencesState.showTaskIds,
                       show_next_quests: preferencesState.showNextQuests,
                       show_previous_quests: preferencesState.showPreviousQuests,
                       task_card_density: preferencesState.taskCardDensity,
@@ -589,6 +705,12 @@ if (shouldInitPreferencesWatchers) {
                       hideout_primary_view: preferencesState.hideoutPrimaryView,
                       locale_override: preferencesState.localeOverride,
                       enable_manual_task_fail: preferencesState.enableManualTaskFail,
+                      hide_completed_task_objectives: preferencesState.hideCompletedTaskObjectives,
+                      show_all_filter: preferencesState.showAllFilter,
+                      show_available_filter: preferencesState.showAvailableFilter,
+                      show_locked_filter: preferencesState.showLockedFilter,
+                      show_completed_filter: preferencesState.showCompletedFilter,
+                      show_failed_filter: preferencesState.showFailedFilter,
                       use_automatic_level_calculation:
                         preferencesState.useAutomaticLevelCalculation,
                     };

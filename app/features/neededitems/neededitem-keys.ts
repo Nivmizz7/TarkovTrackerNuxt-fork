@@ -23,6 +23,7 @@ export type NeededItemContext = {
   relatedTask: ComputedRef<Task | null>;
   selfCompletedNeed: ComputedRef<boolean>;
   teamNeeds: ComputedRef<NeededItemTeamNeed[]>;
+  cardStyle: ComputedRef<'compact' | 'expanded'>;
 };
 export const neededItemKey: InjectionKey<NeededItemContext> = Symbol('neededitem');
 export const createDefaultNeededItemContext = (): NeededItemContext => {
@@ -44,5 +45,6 @@ export const createDefaultNeededItemContext = (): NeededItemContext => {
     relatedTask: asComputed(null),
     selfCompletedNeed: asComputed(false),
     teamNeeds: asComputed([]),
+    cardStyle: asComputed('expanded'),
   };
 };

@@ -193,22 +193,49 @@ export async function edgeCache<T>(
   }
 }
 /**
- * Helper function create a GraphQL fetcher for tarkov.dev API
+ * Helper function create a GraphQL fetcher for tarkov.dev API with retry logic
  */
 export function createTarkovFetcher<T = unknown>(
   query: string,
-  variables: Record<string, unknown> = {}
+  variables: Record<string, unknown> = {},
+  options: { maxRetries?: number; timeoutMs?: number } = {}
 ): () => Promise<T> {
+  const { maxRetries = 3, timeoutMs = 30000 } = options;
   return async () => {
-    return await $fetch<T>('https://api.tarkov.dev/graphql', {
-      method: 'POST' as const,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: {
-        query,
-        variables,
-      },
-    });
+    let lastError: Error | null = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await $fetch<T>('https://api.tarkov.dev/graphql', {
+          method: 'POST' as const,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            query,
+            variables,
+          },
+          timeout: timeoutMs,
+          retry: 0,
+        });
+        return response;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        const isLastAttempt = attempt === maxRetries;
+        if (isLastAttempt) {
+          logger.error(`[TarkovFetcher] All ${maxRetries} attempts failed`, {
+            error: lastError.message,
+            variables,
+          });
+        } else {
+          const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          logger.warn(
+            `[TarkovFetcher] Attempt ${attempt}/${maxRetries} failed, retrying in ${delayMs}ms`,
+            { error: lastError.message }
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      }
+    }
+    throw lastError || new Error('All fetch attempts failed');
   };
 }

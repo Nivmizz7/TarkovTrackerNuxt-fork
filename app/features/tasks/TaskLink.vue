@@ -3,7 +3,7 @@
     <AppTooltip :text="props.task?.name">
       <router-link
         :to="taskHref"
-        class="text-primary-400 hover:text-primary-300 flex min-w-0 items-center overflow-hidden no-underline"
+        class="text-link hover:text-link-hover flex min-w-0 items-center overflow-hidden no-underline"
       >
         <div
           class="shrink-0 overflow-hidden rounded-full"
@@ -35,7 +35,7 @@
       v-if="props.showWikiLink"
       :href="props.task.wikiLink"
       target="_blank"
-      class="text-primary-400 hover:text-primary-300 flex items-center text-xs whitespace-nowrap"
+      class="text-link hover:text-link-hover flex items-center text-xs whitespace-nowrap"
     >
       <img src="/img/logos/wikilogo.webp" alt="Wiki" class="mr-1 h-6 w-6" />
       <span>{{ t('page.tasks.questcard.wiki') }}</span>
