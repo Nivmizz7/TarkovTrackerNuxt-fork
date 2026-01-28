@@ -312,9 +312,11 @@ export type Database = {
           needed_type_view: string | null
           neededitems_style: string | null
           show_all_filter: boolean | null
+          show_available_filter: boolean | null
           show_completed_filter: boolean | null
           show_experience_rewards: boolean | null
           show_failed_filter: boolean | null
+          show_locked_filter: boolean | null
           show_lightkeeper_tasks: boolean | null
           show_map_extracts: boolean | null
           show_next_quests: boolean | null
@@ -361,10 +363,12 @@ export type Database = {
           needed_type_view?: string | null
           neededitems_style?: string | null
           show_all_filter?: boolean | null
+          show_available_filter?: boolean | null
           show_completed_filter?: boolean | null
           show_experience_rewards?: boolean | null
           show_failed_filter?: boolean | null
           show_lightkeeper_tasks?: boolean | null
+          show_locked_filter?: boolean | null
           show_map_extracts?: boolean | null
           show_next_quests?: boolean | null
           show_non_special_tasks?: boolean | null
@@ -410,9 +414,11 @@ export type Database = {
           needed_type_view?: string | null
           neededitems_style?: string | null
           show_all_filter?: boolean | null
+          show_available_filter?: boolean | null
           show_completed_filter?: boolean | null
           show_experience_rewards?: boolean | null
           show_failed_filter?: boolean | null
+          show_locked_filter?: boolean | null
           show_lightkeeper_tasks?: boolean | null
           show_map_extracts?: boolean | null
           show_next_quests?: boolean | null

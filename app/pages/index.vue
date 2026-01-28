@@ -185,18 +185,6 @@
   const xpCalculation = useXpCalculation();
   // Get current level - respect automatic calculation setting
   const useAutomaticLevel = computed(() => preferencesStore.getUseAutomaticLevelCalculation);
-  /** Type guard that narrows unknown to number if it is a finite number */
-  const isFiniteNumber = (value: unknown): value is number => Number.isFinite(value);
-  const safeLevel = (level: unknown): number => (isFiniteNumber(level) ? Math.max(0, level) : 0);
-  const _currentLevel = computed(() => {
-    const manualLevel = tarkovStore.playerLevel();
-    if (!useAutomaticLevel.value) {
-      return safeLevel(manualLevel);
-    }
-    const derivedLevel = xpCalculation?.derivedLevel?.value;
-    // Use explicit finite check to avoid treating 0 as falsy
-    return Number.isFinite(derivedLevel) ? safeLevel(derivedLevel) : safeLevel(manualLevel);
-  });
   // Watch for invalid manual level values
   watch(
     () => tarkovStore.playerLevel(),

@@ -40,7 +40,9 @@
                     :station="relatedStation"
                     :module-id="props.need.hideoutModule.id"
                   />
-                  <span v-else class="text-surface-300 text-sm">Unknown station</span>
+                  <span v-else class="text-surface-300 text-sm">
+                    {{ $t('neededItems.unknown_station', 'Unknown Station') }}
+                  </span>
                 </template>
               </span>
             </span>
@@ -121,7 +123,9 @@
                               />
                             </template>
                             <template v-else>
-                              <span class="text-surface-300 text-sm">Unknown station</span>
+                              <span class="text-surface-300 text-sm">
+                                {{ $t('neededItems.unknown_station', 'Unknown Station') }}
+                              </span>
                             </template>
                           </div>
                           <div class="ml-1">
@@ -155,7 +159,13 @@
                         />
                       </template>
                       <template v-else>
-                        <AppTooltip :text="isCollected ? 'Collected' : 'Mark as collected'">
+                        <AppTooltip
+                          :text="
+                            isCollected
+                              ? $t('neededItems.collected', 'Collected')
+                              : $t('neededItems.mark_collected', 'Mark as collected')
+                          "
+                        >
                           <CollectedToggleButton
                             :is-collected="isCollected"
                             class="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors"
@@ -164,7 +174,11 @@
                                 ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
                                 : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
                             "
-                            :aria-label="isCollected ? 'Collected' : 'Mark as collected'"
+                            :aria-label="
+                              isCollected
+                                ? $t('neededItems.collected', 'Collected')
+                                : $t('neededItems.mark_collected', 'Mark as collected')
+                            "
                             icon-class="h-6 w-6"
                             @toggle="$emit('toggleCount')"
                           />
@@ -225,7 +239,13 @@
                   />
                 </template>
                 <template v-else>
-                  <AppTooltip :text="isCollected ? 'Collected' : 'Mark as collected'">
+                  <AppTooltip
+                    :text="
+                      isCollected
+                        ? $t('neededItems.collected', 'Collected')
+                        : $t('neededItems.mark_collected', 'Mark as collected')
+                    "
+                  >
                     <CollectedToggleButton
                       :is-collected="isCollected"
                       class="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors"
@@ -234,7 +254,11 @@
                           ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white'
                           : 'bg-surface-700 text-surface-200 hover:bg-surface-600 border-white/20 hover:text-white'
                       "
-                      :aria-label="isCollected ? 'Collected' : 'Mark as collected'"
+                      :aria-label="
+                        isCollected
+                          ? $t('neededItems.collected', 'Collected')
+                          : $t('neededItems.mark_collected', 'Mark as collected')
+                      "
                       icon-class="h-6 w-6"
                       @toggle="$emit('toggleCount')"
                     />

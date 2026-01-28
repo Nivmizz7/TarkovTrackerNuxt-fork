@@ -29,11 +29,12 @@
         window.close();
       }, 200);
     } else {
-      // This is a full redirect (not popup) - redirect to dashboard
+      // This is a full redirect (not popup) - redirect to original page or dashboard
       // Wait a moment for the session to be established
       await new Promise((resolve) => setTimeout(resolve, 500));
-      // Navigate to dashboard
-      await navigateTo('/', { replace: true });
+      const route = useRoute();
+      const redirect = (route.query.redirect as string) || '/';
+      await navigateTo(redirect, { replace: true });
     }
   });
 </script>

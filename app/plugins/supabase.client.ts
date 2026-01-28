@@ -50,21 +50,25 @@ export default defineNuxtPlugin(() => {
     return {
       client: stubClient,
       user: stubUser,
+      isOfflineMode: true,
       signInWithOAuth: async (
         _provider: OAuthProvider,
         _options?: { skipBrowserRedirect?: boolean; redirectTo?: string }
       ) => {
-        throw new Error('Supabase env not configured (VITE_SUPABASE_URL/ANON_KEY)');
+        throw new Error('Supabase not configured - login unavailable in offline mode');
       },
       signOut: async () => {},
     };
   };
   if (!supabaseUrl || !supabaseKey) {
-    logger.error('[Supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY');
-    // Fail fast in production to avoid silent bad deploys
     if (process.env.NODE_ENV === 'production') {
+      logger.error('[Supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY');
       throw new Error('Supabase configuration missing');
     }
+    logger.info(
+      '[Supabase] Running in offline mode - login/sync disabled. ' +
+        'See .env.example to enable Supabase features.'
+    );
     const stub = buildStub();
     return { provide: { supabase: stub } };
   }
@@ -129,6 +133,7 @@ export default defineNuxtPlugin(() => {
       supabase: {
         client: supabase,
         user,
+        isOfflineMode: false,
         signInWithOAuth,
         signOut,
       },

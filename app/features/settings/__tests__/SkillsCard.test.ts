@@ -1,8 +1,10 @@
 import { mount } from '@vue/test-utils';
 import { describe, it, expect, vi } from 'vitest';
 import { computed } from 'vue';
+import { createI18n } from 'vue-i18n';
 import { useSkillCalculation } from '@/composables/useSkillCalculation';
 import SkillsCard from '@/features/settings/SkillsCard.vue';
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } });
 // Mock dependencies
 vi.mock('@/composables/useSkillCalculation');
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -55,6 +57,7 @@ describe('SkillsCard', () => {
     });
     const wrapper = mount(SkillsCard, {
       global: {
+        plugins: [i18n],
         stubs: {
           GenericCard: false, // We want to render GenericCard's slots
           // Use our mock components as stubs
@@ -124,6 +127,7 @@ describe('SkillsCard', () => {
     });
     const wrapper = mount(SkillsCard, {
       global: {
+        plugins: [i18n],
         stubs: {
           GenericCard: false,
           UInput: UInput,

@@ -9,7 +9,7 @@
         footer: 'p-0 sm:px-0',
       }"
       role="article"
-      aria-label="Login options"
+      :aria-label="$t('page.login.login_options', 'Login options')"
     >
       <template #header>
         <div class="flex flex-col items-center px-8 pt-8 pb-6 text-center">
@@ -22,6 +22,26 @@
         </div>
       </template>
       <div class="px-8 pb-8">
+        <div
+          v-if="isOfflineMode"
+          class="mb-6 rounded-lg bg-amber-500/10 p-4 ring-1 ring-amber-500/30"
+        >
+          <div class="flex items-start gap-3">
+            <UIcon
+              name="i-heroicons-information-circle"
+              class="mt-0.5 h-5 w-5 shrink-0 text-amber-400"
+            />
+            <div>
+              <p class="font-medium text-amber-200">Running in Offline Mode</p>
+              <p class="mt-1 text-sm text-amber-300/80">
+                Supabase is not configured. Login and sync features are disabled, but you can still
+                use all tracking features locally. See
+                <code class="rounded bg-amber-500/20 px-1 text-amber-200">.env.example</code>
+                to enable login.
+              </p>
+            </div>
+          </div>
+        </div>
         <div class="w-full space-y-6">
           <UButton
             block
@@ -30,8 +50,10 @@
             :style="{ backgroundColor: 'var(--color-twitch)' }"
             class="hover:bg-twitch-hover hover:shadow-twitch/25 flex h-12 w-full items-center justify-center text-white ring-1 ring-white/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
             :loading="loading.twitch"
-            :disabled="loading.twitch || loading.discord || loading.google || loading.github"
-            aria-label="Continue with Twitch"
+            :disabled="
+              isOfflineMode || loading.twitch || loading.discord || loading.google || loading.github
+            "
+            :aria-label="$t('page.login.continue_twitch')"
             @click="signInWithTwitch"
           >
             <UIcon name="i-mdi-twitch" class="mr-3 h-6 w-6 shrink-0 text-white" />
@@ -46,8 +68,10 @@
             :style="{ backgroundColor: 'var(--color-discord)' }"
             class="hover:bg-discord-hover hover:shadow-discord/25 flex h-12 w-full items-center justify-center text-white ring-1 ring-white/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
             :loading="loading.discord"
-            :disabled="loading.twitch || loading.discord || loading.google || loading.github"
-            aria-label="Continue with Discord"
+            :disabled="
+              isOfflineMode || loading.twitch || loading.discord || loading.google || loading.github
+            "
+            :aria-label="$t('page.login.continue_discord')"
             @click="signInWithDiscord"
           >
             <svg
@@ -72,8 +96,10 @@
             variant="solid"
             class="ring-surface-600 hover:bg-surface-100 flex h-12 w-full items-center justify-center bg-white ring-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/10"
             :loading="loading.google"
-            :disabled="loading.twitch || loading.discord || loading.google || loading.github"
-            aria-label="Continue with Google"
+            :disabled="
+              isOfflineMode || loading.twitch || loading.discord || loading.google || loading.github
+            "
+            :aria-label="$t('page.login.continue_google')"
             @click="signInWithGoogle"
           >
             <svg
@@ -109,8 +135,10 @@
             :style="{ backgroundColor: 'var(--color-github)' }"
             class="ring-surface-600 hover:bg-github-hover hover:shadow-github/25 flex h-12 w-full items-center justify-center text-white ring-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
             :loading="loading.github"
-            :disabled="loading.twitch || loading.discord || loading.google || loading.github"
-            aria-label="Continue with GitHub"
+            :disabled="
+              isOfflineMode || loading.twitch || loading.discord || loading.google || loading.github
+            "
+            :aria-label="$t('page.login.continue_github')"
             @click="signInWithGitHub"
           >
             <UIcon name="i-mdi-github" class="mr-3 h-6 w-6 shrink-0 text-white" />
@@ -158,16 +186,23 @@
       'Sign in to TarkovTracker to sync your progress across devices and collaborate with your team.',
   });
   const { $supabase } = useNuxtApp();
+  const isOfflineMode = computed(() => $supabase.isOfflineMode === true);
   const loading = ref({
     twitch: false,
     discord: false,
     google: false,
     github: false,
   });
+  const route = useRoute();
   const buildCallbackUrl = () => {
     const config = useRuntimeConfig();
     const origin = typeof window !== 'undefined' ? window.location.origin : config.public.appUrl;
-    return `${origin}/auth/callback`;
+    const redirect = route.query.redirect as string | undefined;
+    const callbackUrl = new URL('/auth/callback', origin);
+    if (redirect) {
+      callbackUrl.searchParams.set('redirect', redirect);
+    }
+    return callbackUrl.toString();
   };
   const toast = useToast();
   const { t } = useI18n({ useScope: 'global' });
@@ -250,7 +285,8 @@
       if (!isOAuthSuccessMessage(event)) return;
       loading.value[provider] = false;
       cleanup();
-      navigateTo('/', { replace: true });
+      const redirect = (route.query.redirect as string) || '/';
+      navigateTo(redirect, { replace: true });
     };
     const pollTimer = window.setInterval(() => {
       if (isPopupClosed()) {

@@ -335,7 +335,7 @@
   });
   const prestigeOptions = computed(() =>
     Array.from({ length: 7 }, (_, i) => ({
-      label: i === 0 ? 'No Prestige' : `Prestige ${i}`,
+      label: i === 0 ? t('prestige.no_prestige') : t('prestige.prestige_n', { n: i }),
       value: i,
     }))
   );

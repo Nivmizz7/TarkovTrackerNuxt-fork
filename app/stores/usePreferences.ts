@@ -590,6 +590,7 @@ export const usePreferencesStore = defineStore('preferences', {
       'showFailedFilter',
       'useAutomaticLevelCalculation',
       'enableHolidayEffects',
+      'hideoutCollapseCompleted',
       'showMapExtracts',
       'mapZoomSpeed',
       'pinnedTaskIds',

@@ -438,6 +438,8 @@
       continue_github: 'Продовжити з GitHub',
       privacy_policy: 'Політика конфіденційності',
       terms_of_service: 'Умови використання',
+      popup_blocked_title: 'Спливаюче вікно заблоковано',
+      popup_blocked_description: 'Ваш браузер заблокував вікно входу. Перенаправляємо...',
     },
     api: {
       stats: {

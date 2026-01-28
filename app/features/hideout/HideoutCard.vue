@@ -69,6 +69,9 @@
         <!-- Collapse Toggle -->
         <UButton
           :icon="isContentVisible ? 'i-mdi-chevron-up' : 'i-mdi-chevron-down'"
+          :aria-label="
+            isContentVisible ? $t('hideout.collapse', 'Collapse') : $t('hideout.expand', 'Expand')
+          "
           color="neutral"
           variant="ghost"
           size="sm"

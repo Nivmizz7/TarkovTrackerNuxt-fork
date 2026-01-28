@@ -1572,8 +1572,6 @@ export const useMetadataStore = defineStore('metadata', {
         maps: data.maps?.length ?? 0,
         traders: data.traders?.length ?? 0,
       });
-      // Filter out scav karma tasks at the source
-      // These tasks require Scav Karma validation which isn't yet implemented
       const allTasks = data.tasks || [];
       const tradersById = new Map((data.traders || []).map((trader) => [trader.id, trader]));
       const normalizedTasks = allTasks

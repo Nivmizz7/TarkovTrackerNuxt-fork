@@ -3,7 +3,7 @@
     <div v-if="firNeeded > 0" class="flex items-center justify-between gap-4">
       <div class="flex items-center gap-2">
         <UIcon name="i-mdi-checkbox-marked-circle-outline" class="text-warning-400 h-4 w-4" />
-        <span class="text-sm font-medium">FIR</span>
+        <span class="text-sm font-medium">{{ $t('neededItems.fir', 'FIR') }}</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="bg-surface-700 flex items-center rounded-lg border border-white/20">
@@ -23,6 +23,7 @@
               v-model.number="firEditValue"
               type="number"
               :min="0"
+              step="1"
               class="bg-surface-900 focus:ring-primary-500 h-full w-full px-2 text-center text-sm font-semibold text-white focus:ring-2 focus:outline-none focus:ring-inset"
               @blur="submitFirEdit"
               @keydown.enter="submitFirEdit"
@@ -44,13 +45,15 @@
             <UIcon name="i-mdi-plus" class="h-4 w-4" />
           </button>
         </div>
-        <span class="text-surface-400 text-sm">/ {{ firNeeded }} needed</span>
+        <span class="text-surface-400 text-sm">
+          / {{ firNeeded }} {{ $t('neededItems.needed', 'needed') }}
+        </span>
       </div>
     </div>
     <div v-if="nonFirNeeded > 0" class="flex items-center justify-between gap-4">
       <div class="flex items-center gap-2">
         <UIcon name="i-mdi-checkbox-blank-circle-outline" class="text-surface-400 h-4 w-4" />
-        <span class="text-sm font-medium">Non-FIR</span>
+        <span class="text-sm font-medium">{{ $t('neededItems.nonFir', 'Non-FIR') }}</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="bg-surface-700 flex items-center rounded-lg border border-white/20">
@@ -70,6 +73,7 @@
               v-model.number="nonFirEditValue"
               type="number"
               :min="0"
+              step="1"
               class="bg-surface-900 focus:ring-primary-500 h-full w-full px-2 text-center text-sm font-semibold text-white focus:ring-2 focus:outline-none focus:ring-inset"
               @blur="submitNonFirEdit"
               @keydown.enter="submitNonFirEdit"
@@ -91,7 +95,9 @@
             <UIcon name="i-mdi-plus" class="h-4 w-4" />
           </button>
         </div>
-        <span class="text-surface-400 text-sm">/ {{ nonFirNeeded }} needed</span>
+        <span class="text-surface-400 text-sm">
+          / {{ nonFirNeeded }} {{ $t('neededItems.needed', 'needed') }}
+        </span>
       </div>
     </div>
   </div>
@@ -124,7 +130,7 @@
   };
   const submitFirEdit = () => {
     if (isEditingFir.value) {
-      const value = Math.max(0, firEditValue.value || 0);
+      const value = Math.floor(Math.max(0, firEditValue.value || 0));
       emit('update:fir', value);
       isEditingFir.value = false;
     }
@@ -148,7 +154,7 @@
   };
   const submitNonFirEdit = () => {
     if (isEditingNonFir.value) {
-      const value = Math.max(0, nonFirEditValue.value || 0);
+      const value = Math.floor(Math.max(0, nonFirEditValue.value || 0));
       emit('update:nonFir', value);
       isEditingNonFir.value = false;
     }

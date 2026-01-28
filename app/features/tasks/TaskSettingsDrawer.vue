@@ -1,6 +1,7 @@
 <template>
   <aside
     class="bg-surface-800/95 fixed top-1/2 right-4 z-40 h-fit max-h-[calc(100vh-6rem)] w-72 -translate-y-1/2 overflow-y-auto rounded-lg border border-white/10 p-4 shadow-xl backdrop-blur-sm"
+    @keydown.escape="close"
   >
     <div class="mb-3 flex items-center justify-between">
       <h2 class="text-sm font-semibold text-white">

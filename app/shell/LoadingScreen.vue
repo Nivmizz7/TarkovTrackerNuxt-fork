@@ -5,7 +5,7 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="loading-screen-title"
-    class="bg-surface-950 fixed inset-x-0 top-16 bottom-0 z-50 flex items-center justify-center"
+    class="bg-surface-950 fixed inset-x-0 top-11 bottom-0 z-50 flex items-center justify-center"
   >
     <div class="flex flex-col items-center gap-6 px-4">
       <!-- Loading Spinner or Error Icon -->

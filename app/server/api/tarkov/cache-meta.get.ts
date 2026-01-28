@@ -7,11 +7,8 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
   const supabaseUrl = config.supabaseUrl;
   const supabaseServiceKey = config.supabaseServiceKey;
-  if (typeof supabaseUrl !== 'string' || typeof supabaseServiceKey !== 'string') {
-    logger.error('[CacheMeta] Missing Supabase configuration for cache meta lookup.', {
-      supabaseUrlPresent: Boolean(supabaseUrl),
-      supabaseServiceKeyPresent: Boolean(supabaseServiceKey),
-    });
+  if (!supabaseUrl || !supabaseServiceKey) {
+    logger.debug('[CacheMeta] Supabase not configured - skipping cache meta lookup');
     return { data: { lastPurgeAt: null } };
   }
   const url = new URL(`${supabaseUrl}/rest/v1/admin_audit_log`);
