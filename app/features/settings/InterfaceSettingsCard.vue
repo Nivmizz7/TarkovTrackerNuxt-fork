@@ -87,7 +87,7 @@
                 <span class="text-primary-400 text-xs">{{ mapZoomSpeed }}x</span>
               </div>
               <input
-                v-model="mapZoomSpeed"
+                v-model.number="mapZoomSpeed"
                 type="range"
                 min="0.5"
                 max="3"
@@ -186,7 +186,7 @@
   });
   const taskViewOptions = [
     { label: t('tasks.view.all', 'List'), value: 'all' },
-    { label: t('tasks.view.map', 'Map'), value: 'map' },
+    { label: t('tasks.view.map', 'Map'), value: 'maps' },
     { label: t('tasks.view.traders', 'Traders'), value: 'traders' },
   ];
   const hideoutDefaultView = computed({

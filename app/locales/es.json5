@@ -415,6 +415,8 @@
       continue_github: 'Continuar con GitHub',
       privacy_policy: 'Política de privacidad',
       terms_of_service: 'Términos de servicio',
+      popup_blocked_title: 'Popup bloqueado',
+      popup_blocked_description: 'Tu navegador bloqueó la ventana de inicio de sesión. Redirigiendo ahora...',
     },
     not_found: {
       title: 'Página no encontrada',

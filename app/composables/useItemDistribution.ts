@@ -148,9 +148,11 @@ export function useItemDistribution() {
   ): void {
     for (const obj of taskObjectives) {
       tarkovStore.setObjectiveCount(obj.id, 0);
+      tarkovStore.setTaskObjectiveUncomplete(obj.id);
     }
     for (const mod of hideoutModules) {
       tarkovStore.setHideoutPartCount(mod.id, 0);
+      tarkovStore.setHideoutPartUncomplete(mod.id);
     }
   }
   return {

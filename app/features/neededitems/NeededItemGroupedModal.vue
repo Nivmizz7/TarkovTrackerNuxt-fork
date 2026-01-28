@@ -29,7 +29,7 @@
           <div class="min-w-0 flex-1">
             <h3 class="text-lg font-semibold">{{ itemInfo.name }}</h3>
             <div class="text-surface-400 text-sm">
-              Total:
+              {{ $t('neededItems.total', 'Total:') }}
               <span :class="isComplete ? 'text-success-400' : 'text-primary-400'" class="font-bold">
                 {{ currentTotal }}/{{ totalNeeded }}
               </span>
@@ -46,7 +46,7 @@
         <div class="min-h-0 flex-1 space-y-6 overflow-y-auto p-4">
           <div class="bg-surface-800 rounded-lg p-4">
             <h4 class="text-surface-300 mb-3 text-sm font-medium tracking-wide uppercase">
-              Collected Items
+              {{ $t('neededItems.collected_items', 'Collected Items') }}
             </h4>
             <NeededItemGroupedInputControls
               :fir-needed="totalFirNeeded"
@@ -59,11 +59,11 @@
             <div class="mt-4 flex gap-2">
               <UButton color="primary" :disabled="!canSmartFill" @click="handleSmartFill">
                 <UIcon name="i-mdi-auto-fix" class="mr-1 h-4 w-4" />
-                Smart Fill
+                {{ $t('neededItems.smart_fill', 'Smart Fill') }}
               </UButton>
               <UButton variant="soft" @click="handleReset">
                 <UIcon name="i-mdi-refresh" class="mr-1 h-4 w-4" />
-                Reset
+                {{ $t('neededItems.reset', 'Reset') }}
               </UButton>
             </div>
           </div>
@@ -92,17 +92,21 @@
                       class="h-6 w-6 shrink-0 rounded-full"
                     />
                     <span class="text-link hover:text-link-hover truncate text-sm font-medium">
-                      {{ getTask(obj.taskId)?.name || 'Unknown Task' }}
+                      {{
+                        getTask(obj.taskId)?.name || $t('neededItems.unknown_task', 'Unknown Task')
+                      }}
                     </span>
                   </router-link>
-                  <UBadge v-if="isKappa(obj)" color="kappa" size="xs">Kappa</UBadge>
+                  <UBadge v-if="isKappa(obj)" color="kappa" size="xs">
+                    {{ $t('neededItems.kappa', 'Kappa') }}
+                  </UBadge>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
                   <span
                     class="text-xs"
                     :class="obj.foundInRaid ? 'text-warning-400' : 'text-surface-400'"
                   >
-                    {{ obj.foundInRaid ? 'FIR' : 'Non' }}
+                    {{ obj.foundInRaid ? $t('neededItems.fir', 'FIR') : 'Non' }}
                   </span>
                   <div class="bg-surface-700 flex items-center rounded border border-white/20">
                     <button
@@ -158,17 +162,22 @@
                       class="h-6 w-6 shrink-0"
                     />
                     <span class="text-info-400 hover:text-info-300 truncate text-sm font-medium">
-                      {{ getStation(mod)?.name || 'Unknown Station' }}
+                      {{
+                        getStation(mod)?.name ||
+                        $t('neededItems.unknown_station', 'Unknown Station')
+                      }}
                     </span>
                   </router-link>
-                  <span class="text-surface-400 text-xs">Lvl {{ mod.hideoutModule.level }}</span>
+                  <span class="text-surface-400 text-xs">
+                    {{ $t('neededItems.lvl', 'Lvl') }} {{ mod.hideoutModule.level }}
+                  </span>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
                   <span
                     class="text-xs"
                     :class="mod.foundInRaid ? 'text-warning-400' : 'text-surface-400'"
                   >
-                    {{ mod.foundInRaid ? 'FIR' : 'Non' }}
+                    {{ mod.foundInRaid ? $t('neededItems.fir', 'FIR') : 'Non' }}
                   </span>
                   <div class="bg-surface-700 flex items-center rounded border border-white/20">
                     <button
@@ -345,6 +354,9 @@
     const current = getObjectiveCount(obj);
     const newCount = Math.max(current - 1, 0);
     tarkovStore.setObjectiveCount(obj.id, newCount);
+    if (newCount < obj.count) {
+      tarkovStore.setTaskObjectiveUncomplete(obj.id);
+    }
   };
   const increaseHideout = (mod: NeededItemHideoutModule) => {
     const current = getHideoutCount(mod);
@@ -358,5 +370,8 @@
     const current = getHideoutCount(mod);
     const newCount = Math.max(current - 1, 0);
     tarkovStore.setHideoutPartCount(mod.id, newCount);
+    if (newCount < mod.count) {
+      tarkovStore.setHideoutPartUncomplete(mod.id);
+    }
   };
 </script>

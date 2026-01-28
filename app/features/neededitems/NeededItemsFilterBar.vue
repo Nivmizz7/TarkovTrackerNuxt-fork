@@ -1,5 +1,5 @@
 <template>
-  <div ref="filterBarRoot" class="mb-6 space-y-3">
+  <div class="mb-6 space-y-3">
     <!-- Primary Filter: ALL / TASKS / HIDEOUT (Centered) -->
     <div
       class="bg-surface-900 flex flex-wrap items-center justify-center gap-1 overflow-x-auto rounded-lg border border-white/12 px-3 py-2.5 shadow-sm sm:gap-2 sm:px-4 sm:py-3"
@@ -54,7 +54,7 @@
               variant="link"
               size="sm"
               icon="i-mdi-close-circle"
-              aria-label="Clear search"
+              :aria-label="$t('neededItems.clear_search', 'Clear search')"
               @click="$emit('update:search', '')"
             />
           </template>
@@ -271,7 +271,11 @@
               color="neutral"
               variant="ghost"
               size="sm"
-              :title="cardStyle === 'compact' ? 'Switch to Expanded' : 'Switch to Compact'"
+              :title="
+                cardStyle === 'compact'
+                  ? $t('neededItems.switch_to_expanded', 'Switch to Expanded view')
+                  : $t('neededItems.switch_to_compact', 'Switch to Compact view')
+              "
               @click="$emit('update:cardStyle', cardStyle === 'compact' ? 'expanded' : 'compact')"
             />
           </div>
@@ -357,7 +361,6 @@
     emit('update:viewMode', mode);
   };
   const searchInput = ref<{ inputRef?: HTMLInputElement | null } | null>(null);
-  const filterBarRoot = ref<HTMLElement | null>(null);
   const focusSearch = () => {
     if (typeof document === 'undefined') return;
     const active = document.activeElement as HTMLElement | null;
@@ -365,30 +368,10 @@
     if (active?.isContentEditable) return;
     searchInput.value?.inputRef?.focus();
   };
-  const handlePointerUp = (event: PointerEvent) => {
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
-    if (filterBarRoot.value?.contains(target)) return;
-    if (target.closest('[role="dialog"]')) return;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-    if (target.isContentEditable) return;
-    window.setTimeout(() => {
-      if (document.querySelector('[role="dialog"][data-state="open"]')) return;
-      focusSearch();
-    }, 0);
-  };
   onMounted(() => {
     nextTick(() => {
       focusSearch();
     });
-    if (typeof window === 'undefined') return;
-    window.addEventListener('focus', focusSearch);
-    window.addEventListener('pointerup', handlePointerUp);
-  });
-  onBeforeUnmount(() => {
-    if (typeof window === 'undefined') return;
-    window.removeEventListener('focus', focusSearch);
-    window.removeEventListener('pointerup', handlePointerUp);
   });
   const setGroupedView = () => {
     emit('update:groupByItem', true);

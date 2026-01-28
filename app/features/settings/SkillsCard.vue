@@ -67,20 +67,22 @@
                     v-if="skill.requiredByTasks.length > 0"
                     :text="`Required for: ${skill.requiredByTasks.join(', ')}`"
                   >
-                    <UBadge color="warning" variant="soft" size="xs">Req</UBadge>
+                    <UBadge color="warning" variant="soft" size="xs">
+                      {{ $t('skills.req', 'Req') }}
+                    </UBadge>
                   </UTooltip>
                   <UTooltip
                     v-if="skill.requiredLevels.length > 0"
                     :text="`Required levels: ${skill.requiredLevels.join(', ')}`"
                   >
                     <UBadge color="accent" variant="soft" size="xs">
-                      Lv {{ formatRequiredLevels(skill.requiredLevels) }}
+                      {{ $t('skills.lv', 'Lv') }} {{ formatRequiredLevels(skill.requiredLevels) }}
                     </UBadge>
                   </UTooltip>
                 </div>
                 <div class="text-surface-400 truncate text-xs">
                   <span v-if="skill.requiredByTasks.length > 0">
-                    Req: {{ skill.requiredByTasks.length }}
+                    {{ $t('settings.skills.req_count', 'Req:') }} {{ skill.requiredByTasks.length }}
                   </span>
                   <span
                     v-if="skill.requiredByTasks.length > 0 && skill.rewardedByTasks.length > 0"
@@ -89,7 +91,8 @@
                     •
                   </span>
                   <span v-if="skill.rewardedByTasks.length > 0">
-                    Reward: {{ skill.rewardedByTasks.length }}
+                    {{ $t('settings.skills.reward_count', 'Reward:') }}
+                    {{ skill.rewardedByTasks.length }}
                   </span>
                 </div>
               </div>
@@ -102,13 +105,13 @@
             </div>
             <div class="mb-2 flex gap-3 text-xs">
               <div class="text-surface-400 flex-1">
-                Quest:
+                {{ $t('settings.skills.quest', 'Quest:') }}
                 <span class="text-surface-200 font-medium">
                   {{ getQuestSkillLevel(skill.name) }}
                 </span>
               </div>
               <div class="text-surface-400 flex-1">
-                Offset:
+                {{ $t('settings.skills.offset', 'Offset:') }}
                 <span class="text-surface-200 font-medium">{{ getSkillOffset(skill.name) }}</span>
               </div>
             </div>
@@ -159,10 +162,12 @@
 <script setup lang="ts">
   import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
   import { computed, ref } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { useSkillCalculation } from '@/composables/useSkillCalculation';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import type { SkillSortMode } from '@/utils/constants';
+  const { t } = useI18n();
   const skillCalculation = useSkillCalculation();
   const preferencesStore = usePreferencesStore();
   const allGameSkills = computed(() => skillCalculation.allGameSkills.value);
@@ -212,7 +217,7 @@
   const getSkillOffset = (skillName: string) => skillCalculation.getSkillOffset(skillName);
   const getDisplayLevel = (skillName: string) => {
     const level = getSkillLevel(skillName);
-    return level >= 51 ? 'ELITE Level' : level;
+    return level >= 51 ? t('skills.elite_level', 'ELITE Level') : level;
   };
   const updateSkillLevel = (skillName: string, value: string | number) => {
     const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
@@ -264,8 +269,8 @@
       // Use a unique ID to prevent duplicates
       toast.add({
         id: 'skill-limit-error',
-        title: 'Limit Exceeded',
-        description: 'Maximum skill level is 51.',
+        title: t('settings.skills.limit_exceeded', 'Limit Exceeded'),
+        description: t('settings.skills.max_level', 'Maximum skill level is 51.'),
         color: 'error',
         icon: 'i-mdi-alert-circle',
       });

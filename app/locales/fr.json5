@@ -458,6 +458,8 @@
       continue_github: 'Continuer avec GitHub',
       privacy_policy: 'Politique de confidentialité',
       terms_of_service: "Conditions d'utilisation",
+      popup_blocked_title: 'Popup bloqué',
+      popup_blocked_description: 'Votre navigateur a bloqué la fenêtre de connexion. Redirection en cours...',
     },
     api: {
       stats: {

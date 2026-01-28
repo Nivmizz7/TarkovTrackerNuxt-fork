@@ -489,6 +489,8 @@
       continue_github: 'Mit GitHub fortfahren',
       privacy_policy: 'Datenschutzrichtlinie',
       terms_of_service: 'Nutzungsbedingungen',
+      popup_blocked_title: 'Popup blockiert',
+      popup_blocked_description: 'Dein Browser hat das Anmeldefenster blockiert. Du wirst jetzt weitergeleitet...',
     },
     not_found: {
       title: 'Seite nicht gefunden',

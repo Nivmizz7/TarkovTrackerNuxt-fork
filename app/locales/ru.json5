@@ -438,6 +438,8 @@
       continue_github: 'Продолжить с GitHub',
       privacy_policy: 'Политика конфиденциальности',
       terms_of_service: 'Условия использования',
+      popup_blocked_title: 'Всплывающее окно заблокировано',
+      popup_blocked_description: 'Ваш браузер заблокировал окно входа. Перенаправляем...',
     },
     api: {
       stats: {
