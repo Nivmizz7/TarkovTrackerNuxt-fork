@@ -8,6 +8,9 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   ssr: false,
   srcDir: 'app',
+  experimental: {
+    payloadExtraction: false,
+  },
   ignore: ['**/__tests__/**', '**/*.test.*', '**/*.spec.*'],
   runtimeConfig: {
     // Server-only (private) runtime config
