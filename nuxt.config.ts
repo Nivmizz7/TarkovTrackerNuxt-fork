@@ -12,13 +12,18 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Server-only (private) runtime config
     supabaseUrl:
-      process.env.SB_URL || process.env.SUPABASE_URL || process.env.NUXT_SUPABASE_URL || '',
+      process.env.SB_URL ||
+      process.env.SUPABASE_URL ||
+      process.env.NUXT_SUPABASE_URL ||
+      process.env.VITE_SUPABASE_URL ||
+      '',
     supabaseServiceKey:
       process.env.SB_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     supabaseAnonKey:
       process.env.SB_ANON_KEY ||
       process.env.SUPABASE_ANON_KEY ||
       process.env.NUXT_SUPABASE_ANON_KEY ||
+      process.env.VITE_SUPABASE_ANON_KEY ||
       '',
     // API protection configuration (server-only)
     apiProtection: {
