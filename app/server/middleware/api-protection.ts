@@ -153,8 +153,7 @@ function isHostAllowed(
     // No Host header - fail closed
     return false;
   }
-  // Extract hostname (remove port if present)
-  const host = (hostHeader.split(':')[0] ?? hostHeader).toLowerCase();
+  const host = hostHeader.split(':')[0]!.toLowerCase();
   return allowedHosts.some((allowed) => {
     const allowedLower = allowed.toLowerCase();
     // Exact match or subdomain match (e.g., "tarkovtracker.org" matches "www.tarkovtracker.org")

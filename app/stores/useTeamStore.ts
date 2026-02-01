@@ -18,7 +18,8 @@ function getCurrentGameMode(): 'pvp' | 'pve' {
   try {
     const tarkovStore = useTarkovStore();
     return (tarkovStore.getCurrentGameMode?.() as 'pvp' | 'pve') || GAME_MODES.PVP;
-  } catch {
+  } catch (error) {
+    logger.error('getCurrentGameMode failed:', error);
     return GAME_MODES.PVP;
   }
 }

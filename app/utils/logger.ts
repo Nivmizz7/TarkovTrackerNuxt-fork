@@ -10,13 +10,9 @@ interface ViteEnv {
   DEV?: boolean;
 }
 const env = (import.meta as unknown as { env: ViteEnv }).env;
-/**
- * Type guard to check if a value is a valid LogLevel
- */
 function isLogLevel(value: unknown): value is LogLevel {
   return typeof value === 'string' && value in levelPriority;
 }
-// Default to "warn" to keep consoles clean; can be raised with VITE_LOG_LEVEL=info|debug
 const rawEnvLevel = env.VITE_LOG_LEVEL;
 const normalizedLevel = typeof rawEnvLevel === 'string' ? rawEnvLevel.toLowerCase() : undefined;
 const configuredLevel: LogLevel | undefined = isLogLevel(normalizedLevel)

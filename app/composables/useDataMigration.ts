@@ -1,7 +1,8 @@
 import { computed, ref } from 'vue';
 import { markDataMigrated } from '@/plugins/store-initializer';
 import type { GameMode } from '@/utils/constants';
-import DataMigrationService, { type ProgressData } from '@/utils/dataMigrationService';
+import type { ProgressData } from '@/utils/dataMigrationService';
+import DataMigrationService from '@/utils/dataMigrationService';
 import { logger } from '@/utils/logger';
 type MigrationStatus = 'idle' | 'migrating' | 'success' | 'error';
 // Composable to handle data migration from localStorage or old API to Supabase

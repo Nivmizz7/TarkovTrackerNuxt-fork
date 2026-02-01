@@ -14,13 +14,10 @@
   >
     <template #header>
       <div class="flex items-center justify-between pb-2 text-xl">
-        <!-- Left side content (icon and title with level badge) -->
         <div class="flex items-center gap-3">
-          <!-- Station Avatar -->
           <span :class="highlightClasses" class="inline-block rounded-br-lg px-3 py-1 shadow-lg">
             <img :src="stationAvatar" :height="50" :style="{ height: '50px' }" class="block pt-0" />
           </span>
-          <!-- Title and Level Badge -->
           <div class="flex items-center gap-2">
             <span class="inline-block text-left leading-6">
               {{ station.name }}
@@ -66,7 +63,6 @@
             </div>
           </div>
         </div>
-        <!-- Collapse Toggle -->
         <UButton
           :icon="isContentVisible ? 'i-mdi-chevron-up' : 'i-mdi-chevron-down'"
           :aria-label="
@@ -82,7 +78,6 @@
     </template>
     <template #content>
       <div v-if="isContentVisible">
-        <!-- Stash station special content -->
         <div
           v-if="props.station.normalizedName === SPECIAL_STATIONS.STASH"
           class="bg-surface-700 mb-3 rounded-lg p-3 text-center"
@@ -94,9 +89,7 @@
             {{ $t('page.hideout.stationcard.settingsbutton') }}
           </UButton>
         </div>
-        <!-- Next level requirements -->
         <div v-if="nextLevel" class="space-y-3">
-          <!-- Item Requirements Section -->
           <div
             v-if="hasItemRequirements"
             class="bg-surface-800 relative rounded-lg p-3"
@@ -109,7 +102,6 @@
               />
               {{ $t('page.hideout.stationcard.nextlevel') }}
             </div>
-            <!-- Item Requirements Grid -->
             <div class="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               <HideoutRequirement
                 v-for="requirement in nextLevel.itemRequirements"
@@ -119,12 +111,10 @@
                 :level="nextLevel.level"
               />
             </div>
-            <!-- Prerequisites Section -->
             <div v-if="hasPrerequisites" class="border-surface-700 space-y-2 border-t pt-3">
               <div class="text-surface-400 mb-2 text-xs font-medium tracking-wider uppercase">
                 {{ $t('page.hideout.stationcard.prerequisites') || 'Prerequisites' }}
               </div>
-              <!-- Station Level Requirements -->
               <div
                 v-for="(requirement, rIndex) in nextLevel.stationLevelRequirements"
                 :key="`station-${rIndex}`"
@@ -147,7 +137,6 @@
                   </template>
                 </i18n-t>
               </div>
-              <!-- Skill Requirements -->
               <div
                 v-for="(requirement, rIndex) in nextLevel.skillRequirements"
                 :key="`skill-${rIndex}`"
@@ -170,7 +159,6 @@
                   </template>
                 </i18n-t>
               </div>
-              <!-- Trader Requirements -->
               <div
                 v-for="(requirement, rIndex) in nextLevel.traderRequirements"
                 :key="`trader-${rIndex}`"
@@ -196,7 +184,6 @@
             </div>
           </div>
         </div>
-        <!-- Max level indicator -->
         <div v-if="!nextLevel" class="bg-surface-800 rounded p-3">
           <div
             class="text-warning-500 flex items-center justify-center text-center text-base font-medium"
