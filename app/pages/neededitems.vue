@@ -27,10 +27,10 @@
       >
         <UIcon name="i-mdi-alert-circle" class="text-error-400 h-8 w-8" />
         <span class="text-error-400">
-          {{ $t('page.neededitems.error', 'Failed to load items.') }}
+          {{ $t('page.neededItems.error', 'Failed to load items.') }}
         </span>
         <UButton color="primary" @click="ensureNeededItemsData">
-          {{ $t('page.neededitems.retry', 'Retry') }}
+          {{ $t('page.neededItems.retry', 'Retry') }}
         </UButton>
       </div>
       <!-- Loading state while items are being fetched -->
@@ -39,11 +39,11 @@
         class="text-surface-400 flex items-center justify-center gap-2 p-8"
       >
         <UIcon name="i-mdi-loading" class="h-5 w-5 animate-spin" />
-        <span>{{ $t('page.neededitems.loading', 'Loading items...') }}</span>
+        <span>{{ $t('page.neededItems.loading', 'Loading items...') }}</span>
       </div>
       <template v-else>
         <div v-if="displayItems.length === 0" class="text-surface-400 p-8 text-center">
-          {{ $t('page.neededitems.empty', 'No items match your search.') }}
+          {{ $t('page.neededItems.empty', 'No items match your search.') }}
         </div>
         <!-- Grouped View -->
         <div v-else-if="groupByItem" class="p-2">
@@ -386,25 +386,25 @@
     }
     return [
       {
-        label: t('page.neededitems.filters.all', 'All'),
+        label: t('page.neededItems.filters.all', 'All'),
         value: 'all' as NeededItemsFilterType,
         icon: 'i-mdi-clipboard-list',
         count: counts.incomplete,
       },
       {
-        label: t('page.neededitems.filters.tasks', 'Tasks'),
+        label: t('page.neededItems.filters.tasks', 'Tasks'),
         value: 'tasks' as NeededItemsFilterType,
         icon: 'i-mdi-checkbox-marked-circle-outline',
         count: counts.tasks,
       },
       {
-        label: t('page.neededitems.filters.hideout', 'Hideout'),
+        label: t('page.neededItems.filters.hideout', 'Hideout'),
         value: 'hideout' as NeededItemsFilterType,
         icon: 'i-mdi-home',
         count: counts.hideout,
       },
       {
-        label: t('page.neededitems.filters.completed', 'Completed'),
+        label: t('page.neededItems.filters.completed', 'Completed'),
         value: 'completed' as NeededItemsFilterType,
         icon: 'i-mdi-check-all',
         count: counts.completed,
@@ -553,8 +553,6 @@
       }))
       .sort((a, b) => b.total - a.total);
   });
-  // Map item IDs to their raw objectives for the grouped modal
-  // Must use getNeededItemData(need)?.id to match how groupedItems sets item.id
   const objectivesByItemId = computed(() => {
     const map = new Map<
       string,

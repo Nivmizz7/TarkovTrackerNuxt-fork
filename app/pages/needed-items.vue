@@ -27,10 +27,10 @@
       >
         <UIcon name="i-mdi-alert-circle" class="text-error-400 h-8 w-8" />
         <span class="text-error-400">
-          {{ $t('page.neededitems.error', 'Failed to load items.') }}
+          {{ $t('page.neededItems.error', 'Failed to load items.') }}
         </span>
         <UButton color="primary" @click="ensureNeededItemsData">
-          {{ $t('page.neededitems.retry', 'Retry') }}
+          {{ $t('page.neededItems.retry', 'Retry') }}
         </UButton>
       </div>
       <!-- Loading state while items are being fetched -->
@@ -39,11 +39,11 @@
         class="text-surface-400 flex items-center justify-center gap-2 p-8"
       >
         <UIcon name="i-mdi-loading" class="h-5 w-5 animate-spin" />
-        <span>{{ $t('page.neededitems.loading', 'Loading items...') }}</span>
+        <span>{{ $t('page.neededItems.loading', 'Loading items...') }}</span>
       </div>
       <template v-else>
         <div v-if="displayItems.length === 0" class="text-surface-400 p-8 text-center">
-          {{ $t('page.neededitems.empty', 'No items match your search.') }}
+          {{ $t('page.neededItems.empty', 'No items match your search.') }}
         </div>
         <!-- Grouped View -->
         <div v-else-if="groupByItem" class="p-2">
@@ -58,8 +58,7 @@
               :hideout-modules="objectivesByItemId.get(group.item.id)?.hideoutModules ?? []"
               :active-filter="activeFilter"
               :data-index="index"
-              class="h-full"
-              style="content-visibility: auto; contain-intrinsic-size: auto 220px"
+              class="content-visibility-auto-220 h-full"
             />
           </div>
           <div
@@ -73,8 +72,7 @@
           <div
             v-for="(item, index) in visibleIndividualItems"
             :key="`${item.needType}-${item.id}`"
-            class="border-b border-white/5 pb-1"
-            style="content-visibility: auto; contain-intrinsic-size: auto 128px"
+            class="content-visibility-auto-128 border-b border-white/5 pb-1"
           >
             <NeededItem
               :need="item"
@@ -101,8 +99,7 @@
               :card-style="cardStyle"
               :initially-visible="index < adjustedRenderCount"
               :data-index="index"
-              class="h-full"
-              style="content-visibility: auto; contain-intrinsic-size: auto 240px"
+              class="content-visibility-auto-240 h-full"
             />
           </div>
           <div
@@ -116,7 +113,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, nextTick, onMounted, ref, watch } from 'vue';
   import {
     useInfiniteScroll,
     type UseInfiniteScrollOptions,
@@ -244,6 +240,7 @@
       firFilter,
       groupByItem,
       hideNonFirSpecialEquipment,
+      hideTeamItems,
       kappaOnly,
       viewMode,
       sortBy,

@@ -86,7 +86,7 @@ const createMetadataStore = (
     createItem('item-cpu', 'CPU'),
   ],
   itemsLoading: false,
-  itemsError: null,
+  itemsError: null as Error | null,
   tasksObjectivesHydrated: true,
   tasksObjectivesPending: false,
   hideoutStations: [{ id: 'station-1', name: 'Workbench' }],
@@ -107,6 +107,15 @@ const createMetadataStore = (
       },
     };
     return tasks[taskId];
+  },
+  getItemById: (itemId: string) => {
+    const items: Record<string, TarkovItem> = {
+      'item-bolts': createItem('item-bolts', 'Bolts'),
+      'item-screws': createItem('item-screws', 'Screws'),
+      'item-wires': createItem('item-wires', 'Wires'),
+      'item-cpu': createItem('item-cpu', 'CPU'),
+    };
+    return items[itemId];
   },
   getStationById: (stationId: string) => {
     const stations: Record<string, { id: string; name: string }> = {
@@ -135,7 +144,7 @@ const createProgressStore = () => ({
     'task-1': 2,
     'task-2': 2,
     'task-kappa': 1,
-  },
+  } as Record<string, number>,
 });
 const createPreferencesStore = () => ({
   getNeededItemsViewMode: 'grid',
@@ -368,11 +377,19 @@ describe('useNeededItems', () => {
   });
   describe('sorting', () => {
     it('sorts by priority in descending order', async () => {
-      const { neededItems } = await setup({
+      const { neededItems, progressStore } = await setup({
         preferencesStore: { getNeededItemsSortBy: 'priority', getNeededItemsSortDirection: 'desc' },
       });
       const filtered = neededItems.filteredItems.value;
-      expect(filtered.length).toBeGreaterThan(0);
+      const priorities = filtered.map((item) => {
+        if (item.needType === 'taskObjective') {
+          const state = progressStore.tasksState?.[item.taskId];
+          return state === 2 ? 3 : state === 1 ? 1 : 0;
+        }
+        return 2;
+      });
+      const sortedPriorities = [...priorities].sort((a, b) => b - a);
+      expect(priorities).toEqual(sortedPriorities);
     });
     it('sorts by name in ascending order', async () => {
       const { neededItems } = await setup({
@@ -401,6 +418,19 @@ describe('useNeededItems', () => {
     it('reports no error when items load successfully', async () => {
       const { neededItems } = await setup();
       expect(neededItems.itemsError.value).toBeNull();
+    });
+    it('reports items not ready while loading', async () => {
+      const { metadataStore, neededItems } = await setup();
+      metadataStore.itemsLoading = true;
+      expect(neededItems.itemsReady.value).toBe(false);
+      expect(neededItems.itemsError.value).toBeNull();
+    });
+    it('exposes loading errors', async () => {
+      const { metadataStore, neededItems } = await setup();
+      const error = new Error('Items failed to load');
+      metadataStore.itemsError = error;
+      expect(neededItems.itemsError.value).toBe(error);
+      expect(neededItems.itemsReady.value).toBe(false);
     });
   });
 });

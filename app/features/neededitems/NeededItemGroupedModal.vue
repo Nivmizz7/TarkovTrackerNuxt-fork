@@ -72,7 +72,7 @@
               class="text-surface-300 mb-3 flex items-center gap-2 text-sm font-medium tracking-wide uppercase"
             >
               <UIcon name="i-mdi-clipboard-list" class="h-4 w-4" />
-              Tasks ({{ taskObjectivesList.length }})
+              {{ $t('neededItems.tasks', 'Tasks') }} ({{ taskObjectivesList.length }})
             </h4>
             <div class="space-y-2">
               <div
@@ -86,14 +86,15 @@
                     class="flex min-w-0 items-center gap-2 no-underline"
                   >
                     <img
-                      v-if="getTask(obj.taskId)?.trader?.imageLink"
-                      :src="getTask(obj.taskId)?.trader?.imageLink"
-                      :alt="getTask(obj.taskId)?.trader?.name"
+                      v-if="taskLookup[obj.taskId]?.trader?.imageLink"
+                      :src="taskLookup[obj.taskId]?.trader?.imageLink"
+                      :alt="taskLookup[obj.taskId]?.trader?.name"
                       class="h-6 w-6 shrink-0 rounded-full"
                     />
                     <span class="text-link hover:text-link-hover truncate text-sm font-medium">
                       {{
-                        getTask(obj.taskId)?.name || $t('neededItems.unknown_task', 'Unknown Task')
+                        taskLookup[obj.taskId]?.name ||
+                        $t('neededItems.unknown_task', 'Unknown Task')
                       }}
                     </span>
                   </router-link>
@@ -106,7 +107,9 @@
                     class="text-xs"
                     :class="obj.foundInRaid ? 'text-warning-400' : 'text-surface-400'"
                   >
-                    {{ obj.foundInRaid ? $t('neededItems.fir', 'FIR') : 'Non' }}
+                    {{
+                      obj.foundInRaid ? $t('neededItems.fir', 'FIR') : $t('neededItems.non', 'Non')
+                    }}
                   </span>
                   <div class="bg-surface-700 flex items-center rounded border border-white/20">
                     <button
@@ -139,7 +142,7 @@
               class="text-surface-300 mb-3 flex items-center gap-2 text-sm font-medium tracking-wide uppercase"
             >
               <UIcon name="i-mdi-home" class="h-4 w-4" />
-              Hideout ({{ hideoutModulesList.length }})
+              {{ $t('neededItems.hideout_label', 'Hideout') }} ({{ hideoutModulesList.length }})
             </h4>
             <div class="space-y-2">
               <div
@@ -177,7 +180,9 @@
                     class="text-xs"
                     :class="mod.foundInRaid ? 'text-warning-400' : 'text-surface-400'"
                   >
-                    {{ mod.foundInRaid ? $t('neededItems.fir', 'FIR') : 'Non' }}
+                    {{
+                      mod.foundInRaid ? $t('neededItems.fir', 'FIR') : $t('neededItems.non', 'Non')
+                    }}
                   </span>
                   <div class="bg-surface-700 flex items-center rounded border border-white/20">
                     <button
@@ -209,7 +214,6 @@
   </UModal>
 </template>
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
   import GameItem from '@/components/ui/GameItem.vue';
   import { useItemDistribution } from '@/composables/useItemDistribution';
   import NeededItemGroupedInputControls from '@/features/neededitems/NeededItemGroupedInputControls.vue';
@@ -252,8 +256,17 @@
   const getTask = (taskId: string) => metadataStore.getTaskById(taskId);
   const getStation = (mod: NeededItemHideoutModule) =>
     metadataStore.getStationById(mod.hideoutModule.stationId);
+  const taskLookup = computed(() => {
+    const lookup: Record<string, ReturnType<typeof getTask>> = {};
+    for (const obj of taskObjectivesList.value) {
+      if (!(obj.taskId in lookup)) {
+        lookup[obj.taskId] = getTask(obj.taskId);
+      }
+    }
+    return lookup;
+  });
   const isKappa = (obj: NeededItemTaskObjective) => {
-    const task = getTask(obj.taskId);
+    const task = taskLookup.value[obj.taskId];
     return task?.kappaRequired === true;
   };
   const getObjectiveCount = (obj: NeededItemTaskObjective) =>
@@ -309,7 +322,8 @@
         firInput.value = currentFirTotal.value;
         nonFirInput.value = currentNonFirTotal.value;
       }
-    }
+    },
+    { immediate: true }
   );
   const totalNeeded = computed(() => {
     let total = 0;

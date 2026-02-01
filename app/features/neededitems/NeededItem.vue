@@ -30,24 +30,20 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
-  const props = defineProps({
-    need: {
-      type: Object,
-      required: true,
-    },
-    itemStyle: {
-      type: String,
-      default: 'mediumCard',
-    },
-    initiallyVisible: {
-      type: Boolean,
-      default: false,
-    },
-    cardStyle: {
-      type: String,
-      default: 'expanded',
-    },
-  });
+  import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/tarkov';
+  const props = withDefaults(
+    defineProps<{
+      need: NeededItemTaskObjective | NeededItemHideoutModule;
+      itemStyle?: string;
+      initiallyVisible?: boolean;
+      cardStyle?: 'compact' | 'expanded';
+    }>(),
+    {
+      itemStyle: 'mediumCard',
+      initiallyVisible: false,
+      cardStyle: 'expanded',
+    }
+  );
   const progressStore = useProgressStore();
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
@@ -255,11 +251,11 @@
     }
   });
   const relatedTask = computed(() => {
-    if (props.need.needType == 'taskObjective') {
-      return tasks.value.find((t) => t.id == props.need.taskId) ?? null;
-    } else {
-      return null;
+    const need = props.need;
+    if (need.needType === 'taskObjective') {
+      return tasks.value.find((t) => t.id === need.taskId) ?? null;
     }
+    return null;
   });
   const isKappaRequired = computed(() => {
     if (props.need.needType !== 'taskObjective') {
@@ -316,15 +312,14 @@
     }
   });
   const relatedStation = computed(() => {
-    if (props.need.needType == 'hideoutModule') {
+    const need = props.need;
+    if (need.needType === 'hideoutModule') {
       return (
-        Object.values(hideoutStations.value).find(
-          (s) => s.id == props.need.hideoutModule.stationId
-        ) ?? null
+        Object.values(hideoutStations.value).find((s) => s.id === need.hideoutModule.stationId) ??
+        null
       );
-    } else {
-      return null;
     }
+    return null;
   });
   const levelRequired = computed(() => {
     if (props.need.needType == 'taskObjective') {
@@ -419,6 +414,6 @@
     craftableTitle,
     isCraftable,
     goToCraftStation,
-    cardStyle: computed(() => props.cardStyle as 'compact' | 'expanded'),
+    cardStyle: computed(() => props.cardStyle),
   });
 </script>

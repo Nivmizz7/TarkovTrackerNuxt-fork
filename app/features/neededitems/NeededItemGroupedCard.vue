@@ -3,9 +3,9 @@
     role="button"
     tabindex="0"
     class="bg-surface-800 hover:bg-surface-700 flex h-full cursor-pointer flex-col rounded-lg transition-colors"
-    @click="showModal = true"
-    @keydown.enter="showModal = true"
-    @keydown.space.prevent="showModal = true"
+    @click="handleCardClick"
+    @keydown.enter="handleCardClick"
+    @keydown.space="handleCardClick"
   >
     <!-- Top section: Image + Name side by side -->
     <div class="flex items-center gap-3 p-3">
@@ -31,7 +31,7 @@
             {{ groupedItem.item.name }}
           </div>
           <AppTooltip v-if="isCraftable" :text="craftableTitle">
-            <button type="button" class="inline-flex" @click.stop="goToCraftStation">
+            <button type="button" class="inline-flex" @click="goToCraftStation">
               <UIcon name="i-mdi-hammer-wrench" class="h-4 w-4" :class="craftableIconClass" />
             </button>
           </AppTooltip>
@@ -196,7 +196,6 @@
     NeededItemHideoutModule,
     NeededItemTaskObjective,
   } from '@/types/tarkov';
-  import { formatCompactNumber } from '@/utils/formatters';
   const props = defineProps<{
     groupedItem: GroupedNeededItem;
     taskObjectives: NeededItemTaskObjective[];
@@ -204,6 +203,18 @@
     activeFilter?: 'all' | 'tasks' | 'hideout' | 'completed';
   }>();
   const showModal = ref(false);
+  const handleCardClick = (event: MouseEvent | KeyboardEvent) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const currentTarget = event.currentTarget instanceof Element ? event.currentTarget : null;
+    const interactiveTarget = target?.closest('button, a, [role="button"], [tabindex]');
+    if (interactiveTarget && interactiveTarget !== currentTarget) {
+      return;
+    }
+    if ('key' in event && event.key === ' ') {
+      event.preventDefault();
+    }
+    showModal.value = true;
+  };
   const itemId = computed(() => props.groupedItem.item.id);
   const isComplete = computed(() => {
     return props.groupedItem.currentCount >= props.groupedItem.total;

@@ -40,7 +40,7 @@
           ref="searchInput"
           :model-value="search"
           :placeholder="
-            $t('page.neededitems.searchplaceholder', 'Search items, tasks, or hideout stations...')
+            $t('page.neededItems.searchplaceholder', 'Search items, tasks, or hideout stations...')
           "
           icon="i-mdi-magnify"
           size="md"
@@ -67,7 +67,7 @@
           <template v-if="groupByItem && ungroupedCount !== totalCount">
             {{ totalCount }} unique ({{ ungroupedCount }} total)
           </template>
-          <template v-else>{{ totalCount }} {{ $t('page.neededitems.items', 'items') }}</template>
+          <template v-else>{{ totalCount }} {{ $t('page.neededItems.items', 'items') }}</template>
         </UBadge>
         <!-- Divider (hidden on mobile) -->
         <div class="hidden h-6 w-px bg-white/10 sm:block" />
@@ -75,13 +75,13 @@
         <UPopover>
           <UButton icon="i-mdi-sort" color="neutral" variant="ghost" size="sm" class="shrink-0">
             <span class="hidden sm:inline">
-              {{ $t('page.neededitems.sort.label', 'Sort') }}
+              {{ $t('page.neededItems.sort.label', 'Sort') }}
             </span>
           </UButton>
           <template #content>
             <div class="w-64 space-y-3 p-3">
               <div class="text-surface-400 text-xs font-medium">
-                {{ $t('page.neededitems.sort.by', 'SORT BY') }}
+                {{ $t('page.neededItems.sort.by', 'SORT BY') }}
               </div>
               <div class="flex flex-col gap-2">
                 <UButton
@@ -117,7 +117,7 @@
             class="shrink-0"
           >
             <span class="hidden sm:inline">
-              {{ $t('page.neededitems.filters.label', 'Filters') }}
+              {{ $t('page.neededItems.filters.label', 'Filters') }}
             </span>
             <UBadge
               v-if="activeFiltersCount > 0"
@@ -132,7 +132,7 @@
           <template #content>
             <div class="w-80 space-y-3 p-3">
               <div class="text-surface-400 text-xs font-medium">
-                {{ $t('page.neededitems.filters.sections.items', 'ITEMS') }}
+                {{ $t('page.neededItems.filters.sections.items', 'ITEMS') }}
               </div>
               <div class="flex flex-wrap gap-2">
                 <UButton
@@ -142,7 +142,7 @@
                   @click="$emit('update:firFilter', firFilter === 'fir' ? 'all' : 'fir')"
                 >
                   <UIcon name="i-mdi-checkbox-marked-circle" class="mr-1 h-4 w-4" />
-                  {{ $t('page.neededitems.filters.fir', 'FIR') }}
+                  {{ $t('page.neededItems.filters.fir', 'FIR') }}
                 </UButton>
                 <UButton
                   :variant="firFilter === 'non-fir' ? 'soft' : 'ghost'"
@@ -151,7 +151,7 @@
                   @click="$emit('update:firFilter', firFilter === 'non-fir' ? 'all' : 'non-fir')"
                 >
                   <UIcon name="i-mdi-checkbox-blank-circle-outline" class="mr-1 h-4 w-4" />
-                  {{ $t('page.neededitems.filters.non_fir', 'NON-FIR') }}
+                  {{ $t('page.neededItems.filters.non_fir', 'NON-FIR') }}
                 </UButton>
                 <!-- Hide Owned Toggle -->
                 <UButton
@@ -163,14 +163,14 @@
                   <UIcon name="i-mdi-check-circle-outline" class="mr-1 h-4 w-4" />
                   {{
                     hideOwned
-                      ? $t('page.neededitems.filters.show_owned', 'SHOW OWNED')
-                      : $t('page.neededitems.filters.hide_owned', 'HIDE OWNED')
+                      ? $t('page.neededItems.filters.show_owned', 'SHOW OWNED')
+                      : $t('page.neededItems.filters.hide_owned', 'HIDE OWNED')
                   }}
                 </UButton>
                 <AppTooltip
                   :text="
                     $t(
-                      'page.neededitems.filters.hide_non_fir_special_equipment_title',
+                      'page.neededItems.filters.hide_non_fir_special_equipment_title',
                       'Hide non-FIR special equipment (e.g., MS2000 Markers, Wi-Fi Cameras)'
                     )
                   "
@@ -184,8 +184,8 @@
                     <UIcon name="i-mdi-briefcase-outline" class="mr-1 h-4 w-4" />
                     {{
                       hideNonFirSpecialEquipment
-                        ? $t('page.neededitems.filters.no_special', 'NO-SPECIAL')
-                        : $t('page.neededitems.filters.special', 'SPECIAL')
+                        ? $t('page.neededItems.filters.no_special', 'NO-SPECIAL')
+                        : $t('page.neededItems.filters.special', 'SPECIAL')
                     }}
                   </UButton>
                 </AppTooltip>
@@ -193,11 +193,11 @@
                   :text="
                     isKappaDisabled
                       ? $t(
-                          'page.neededitems.filters.kappa_only_disabled_tooltip',
+                          'page.neededItems.filters.kappa_only_disabled_tooltip',
                           'Kappa filter applies to tasks only.'
                         )
                       : $t(
-                          'page.neededitems.filters.kappa_only_tooltip',
+                          'page.neededItems.filters.kappa_only_tooltip',
                           'Show only items required for Kappa quests'
                         )
                   "
@@ -210,13 +210,13 @@
                     @click="$emit('update:kappaOnly', !kappaOnly)"
                   >
                     <UIcon name="i-mdi-trophy" class="mr-1 h-4 w-4" />
-                    {{ $t('page.neededitems.filters.kappa_only', 'KAPPA') }}
+                    {{ $t('page.neededItems.filters.kappa_only', 'KAPPA') }}
                   </UButton>
                 </AppTooltip>
               </div>
               <div class="border-t border-white/10 pt-3">
                 <div class="text-surface-400 mb-2 text-xs font-medium">
-                  {{ $t('page.neededitems.filters.sections.team', 'TEAM') }}
+                  {{ $t('page.neededItems.filters.sections.team', 'TEAM') }}
                 </div>
                 <UButton
                   :variant="hideTeamItems ? 'soft' : 'ghost'"
@@ -228,8 +228,8 @@
                   <UIcon name="i-mdi-account-group-outline" class="mr-1 h-4 w-4" />
                   {{
                     hideTeamItems
-                      ? $t('page.neededitems.filters.hide_team_needs', 'HIDE TEAM NEEDS')
-                      : $t('page.neededitems.filters.show_team_needs', 'SHOW TEAM NEEDS')
+                      ? $t('page.neededItems.filters.hide_team_needs', 'HIDE TEAM NEEDS')
+                      : $t('page.neededItems.filters.show_team_needs', 'SHOW TEAM NEEDS')
                   }}
                 </UButton>
               </div>
