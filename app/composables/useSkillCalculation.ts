@@ -111,9 +111,7 @@ export function useSkillCalculation() {
       return;
     }
     // Clamp level between 0 and 51
-    let validatedLevel = Math.floor(totalLevel);
-    if (validatedLevel < 0) validatedLevel = 0;
-    if (validatedLevel > 51) validatedLevel = 51;
+    const validatedLevel = Math.min(51, Math.max(0, Math.floor(totalLevel)));
     const questLevel = calculatedQuestSkills.value[skillName] || 0;
     const offset = validatedLevel - questLevel;
     tarkovStore.setSkillOffset(skillName, offset);

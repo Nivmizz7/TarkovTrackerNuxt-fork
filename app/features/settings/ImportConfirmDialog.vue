@@ -6,7 +6,6 @@
       </template>
       <div class="px-4 pb-4">
         <p class="mb-3">This will import your progress data into your PvP profile:</p>
-        <!-- Game Mode Selection - Fixed to PvP Only -->
         <div class="bg-surface-800 mb-4 rounded-lg p-3">
           <div class="flex items-center">
             <UIcon name="i-mdi-sword-cross" class="mr-2 h-4 w-4" />

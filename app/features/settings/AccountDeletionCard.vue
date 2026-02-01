@@ -100,7 +100,7 @@
     }
     isSavingDisplayName.value = true;
     try {
-      const sanitized = trimmed.substring(0, displayNameMaxLength);
+      const sanitized = trimmed;
       tarkovStore.setDisplayName(sanitized);
       localDisplayName.value = sanitized;
       toast.add({
@@ -631,7 +631,7 @@
     </template>
     <template #description>
       <span class="sr-only">
-        This action is irreversible and requires typing the confirmation phrase to proceed.
+        {{ $t('settings.account_data.confirm_delete_sr_only') }}
       </span>
     </template>
     <template #body>
@@ -764,7 +764,7 @@
     </template>
     <template #description>
       <span class="sr-only">
-        Your account deletion is complete, and you will be redirected to the dashboard.
+        {{ $t('settings.account_data.delete_success_sr_only') }}
       </span>
     </template>
     <template #body>

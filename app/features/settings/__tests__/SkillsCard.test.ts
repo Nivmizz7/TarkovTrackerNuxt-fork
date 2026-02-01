@@ -1,10 +1,22 @@
 import { mount } from '@vue/test-utils';
-import { describe, it, expect, vi } from 'vitest';
-import { computed } from 'vue';
+import { describe, expect, it, vi } from 'vitest';
+import { computed, ref } from 'vue';
 import { createI18n } from 'vue-i18n';
 import { useSkillCalculation } from '@/composables/useSkillCalculation';
 import SkillsCard from '@/features/settings/SkillsCard.vue';
-const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } });
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {},
+    de: {},
+    es: {},
+    fr: {},
+    ru: {},
+    uk: {},
+    zh: {},
+  },
+});
 // Mock dependencies
 vi.mock('@/composables/useSkillCalculation');
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -59,13 +71,12 @@ describe('SkillsCard', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          GenericCard: false, // We want to render GenericCard's slots
-          // Use our mock components as stubs
+          GenericCard: _GenericCard, // We want to render GenericCard's slots
           UInput: UInput,
-          UButton: true,
-          UIcon: true,
-          UTooltip: true,
-          UBadge: true,
+          UButton: _UButton,
+          UIcon: _UIcon,
+          UTooltip: _UTooltip,
+          UBadge: _UBadge,
           // Stub any other Nuxt UI components that might cause issues
           ULink: true,
           NuxtLink: true,
@@ -129,12 +140,12 @@ describe('SkillsCard', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          GenericCard: false,
+          GenericCard: _GenericCard,
           UInput: UInput,
-          UButton: true,
-          UIcon: true,
-          UTooltip: true,
-          UBadge: true,
+          UButton: _UButton,
+          UIcon: _UIcon,
+          UTooltip: _UTooltip,
+          UBadge: _UBadge,
           ULink: true,
           NuxtLink: true,
           Icon: true,

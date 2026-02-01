@@ -37,7 +37,7 @@
             </p>
             <SelectMenuFixed
               v-model="taskCardDensity"
-              :items="densityOptions"
+              :items="DENSITY_OPTIONS"
               value-key="value"
               label-key="label"
             />
@@ -53,7 +53,7 @@
               <span class="text-sm font-medium">{{ $t('page.tasks.title', 'Tasks') }}</span>
               <SelectMenuFixed
                 v-model="taskDefaultView"
-                :items="taskViewOptions"
+                :items="TASK_VIEW_OPTIONS"
                 value-key="value"
                 label-key="label"
               />
@@ -62,7 +62,7 @@
               <span class="text-sm font-medium">{{ $t('page.hideout.title', 'Hideout') }}</span>
               <SelectMenuFixed
                 v-model="hideoutDefaultView"
-                :items="hideoutViewOptions"
+                :items="HIDEOUT_VIEW_OPTIONS"
                 value-key="value"
                 label-key="label"
               />
@@ -134,7 +134,6 @@
   </GenericCard>
 </template>
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
@@ -142,6 +141,7 @@
   const { t } = useI18n();
   const { $supabase } = useNuxtApp();
   const streamerModeCooldown = ref(false);
+  let streamerModeTimeoutId: ReturnType<typeof setTimeout> | null = null;
   const isLoggedIn = computed(() => Boolean($supabase?.user?.loggedIn));
   const streamerMode = computed({
     get() {
@@ -151,10 +151,17 @@
       if (streamerModeCooldown.value) return;
       preferencesStore.setStreamerMode(newValue);
       streamerModeCooldown.value = true;
-      setTimeout(() => {
+      streamerModeTimeoutId = setTimeout(() => {
         streamerModeCooldown.value = false;
+        streamerModeTimeoutId = null;
       }, 500);
     },
+  });
+  onUnmounted(() => {
+    if (streamerModeTimeoutId) {
+      clearTimeout(streamerModeTimeoutId);
+      streamerModeTimeoutId = null;
+    }
   });
   const showRequiredLabels = computed({
     get: () => preferencesStore.getShowRequiredLabels,
@@ -176,15 +183,15 @@
     get: () => preferencesStore.getTaskCardDensity,
     set: (val) => preferencesStore.setTaskCardDensity(val),
   });
-  const densityOptions = [
-    { label: 'Compact', value: 'compact' },
-    { label: 'Comfortable', value: 'comfortable' },
+  const DENSITY_OPTIONS = [
+    { label: t('settings.density.compact', 'Compact'), value: 'compact' },
+    { label: t('settings.density.comfortable', 'Comfortable'), value: 'comfortable' },
   ];
   const taskDefaultView = computed({
     get: () => preferencesStore.getTaskPrimaryView,
     set: (val) => preferencesStore.setTaskPrimaryView(val),
   });
-  const taskViewOptions = [
+  const TASK_VIEW_OPTIONS = [
     { label: t('tasks.view.all', 'List'), value: 'all' },
     { label: t('tasks.view.map', 'Map'), value: 'maps' },
     { label: t('tasks.view.traders', 'Traders'), value: 'traders' },
@@ -193,7 +200,7 @@
     get: () => preferencesStore.getHideoutPrimaryView,
     set: (val) => preferencesStore.setHideoutPrimaryView(val),
   });
-  const hideoutViewOptions = [
+  const HIDEOUT_VIEW_OPTIONS = [
     { label: t('hideout.view.available', 'Available'), value: 'available' },
     { label: t('hideout.view.all', 'All'), value: 'all' },
     { label: t('hideout.view.maxed', 'Maxed'), value: 'maxed' },

@@ -45,7 +45,9 @@ describe('useSkillCalculation', () => {
       expect.stringContaining('Invalid totalLevel "NaN" for skill "Strength"')
     );
     // Test Infinity
+    const previousValue = totalSkills.value[skillName];
     setTotalSkillLevel(skillName, Infinity);
+    expect(totalSkills.value[skillName]).toBe(previousValue);
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Invalid totalLevel "Infinity" for skill "Strength"')
     );

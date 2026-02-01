@@ -141,13 +141,7 @@
                     })
                   }}
                 </span>
-                <UTooltip
-                  :text="
-                    token.lastUsedAt
-                      ? `${t('page.settings.card.apitokens.list.last_used')}: ${formatDate(token.lastUsedAt)}`
-                      : `${t('page.settings.card.apitokens.list.last_used')}: ${t('page.settings.card.apitokens.list.never')}`
-                  "
-                >
+                <UTooltip :text="lastUsedTooltip(token.lastUsedAt)">
                   <UIcon name="i-mdi-clock-outline" class="text-surface-500 h-3.5 w-3.5" />
                 </UTooltip>
               </div>
@@ -354,6 +348,13 @@
   const formatDate = (date: string | null) => {
     if (!date) return '';
     return new Date(date).toLocaleString();
+  };
+  const lastUsedTooltip = (lastUsedAt: string | null) => {
+    const prefix = t('page.settings.card.apitokens.list.last_used');
+    const suffix = lastUsedAt
+      ? formatDate(lastUsedAt)
+      : t('page.settings.card.apitokens.list.never');
+    return `${prefix}: ${suffix}`;
   };
   const formatGameMode = (mode: GameMode) => {
     return mode === GAME_MODES.PVE ? 'PvE' : 'PvP';

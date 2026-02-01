@@ -48,7 +48,7 @@
                   v-if="skill.imageLink"
                   :src="skill.imageLink"
                   :alt="skill.name"
-                  class="relative z-10 h-10 w-10 rounded object-contain transition-transform duration-200 ease-out group-hover:z-50 group-hover:scale-[2.5] group-hover:rounded-md group-hover:shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
+                  class="relative z-10 h-10 w-10 rounded object-contain transition-transform duration-200 ease-out group-hover:z-50 group-hover:scale-[2.5] group-hover:rounded-md group-hover:shadow-xl"
                   loading="lazy"
                 />
                 <div
@@ -227,12 +227,10 @@
     }
   };
   const preventInvalidInput = (e: KeyboardEvent) => {
-    // Prevent '-', '+', 'e' (exponent), and '.' (decimal)
     if (['-', '+', 'e', '.'].includes(e.key)) {
       e.preventDefault();
       return;
     }
-    // Allow navigation/editing keys
     if (
       [
         'Backspace',
@@ -249,24 +247,14 @@
     ) {
       return;
     }
-    // Construct the potential new value
     const target = e.target as HTMLInputElement;
     const currentVal = target.value;
     const selectionStart = target.selectionStart || 0;
     const selectionEnd = target.selectionEnd || 0;
-    // Build the string as if the key was inserted
     const nextValStr = currentVal.slice(0, selectionStart) + e.key + currentVal.slice(selectionEnd);
     const nextVal = parseInt(nextValStr, 10);
-    // Block if:
-    // 1. Result is not a number (shouldn't happen with digits but safety check)
-    // 2. Result > 51
-    // 3. Result length > 2 (extra safety against 3+ digits)
     if (isNaN(nextVal) || nextVal > 51 || nextValStr.length > 2) {
       e.preventDefault();
-      // Debounce the toast or just show it?
-      // Since it's blocking user action, immediate feedback is good, but spamming is bad.
-      // We can check if a toast is already active? No, simple is better.
-      // Use a unique ID to prevent duplicates
       toast.add({
         id: 'skill-limit-error',
         title: t('settings.skills.limit_exceeded', 'Limit Exceeded'),
@@ -282,7 +270,6 @@
     if (!pastedText) return;
     const numVal = parseInt(pastedText, 10);
     if (!isNaN(numVal)) {
-      // Clamp pasted value to 0-51 range
       const clamped = Math.min(Math.max(numVal, 0), 51);
       skillCalculation.setTotalSkillLevel(skillName, clamped);
     }
