@@ -34,7 +34,21 @@ const createHideoutModule = (
 ): NeededItemHideoutModule => ({
   id,
   needType: 'hideoutModule',
-  hideoutModule: { id: `${stationId}-${level}`, stationId, level },
+  hideoutModule: {
+    id: `${stationId}-${level}`,
+    stationId,
+    level,
+    predecessors: [],
+    successors: [],
+    parents: [],
+    children: [],
+    constructionTime: 0,
+    itemRequirements: [],
+    stationLevelRequirements: [],
+    skillRequirements: [],
+    traderRequirements: [],
+    crafts: [],
+  },
   item,
   count,
   foundInRaid,
@@ -287,7 +301,7 @@ describe('useNeededItems', () => {
       const { neededItems, search } = await setup();
       search.value = 'bolts';
       const filtered = neededItems.filteredItems.value;
-      expect(filtered.every((item) => item.item.name.toLowerCase().includes('bolt'))).toBe(true);
+      expect(filtered.every((item) => item.item.name?.toLowerCase().includes('bolt'))).toBe(true);
     });
     it('hides owned items when enabled', async () => {
       const { neededItems } = await setup({
@@ -365,7 +379,7 @@ describe('useNeededItems', () => {
         preferencesStore: { getNeededItemsSortBy: 'name', getNeededItemsSortDirection: 'asc' },
       });
       const filtered = neededItems.filteredItems.value;
-      const names = filtered.map((item) => item.item.name);
+      const names = filtered.map((item) => item.item.name ?? '');
       const sortedNames = [...names].sort((a, b) => a.localeCompare(b));
       expect(names).toEqual(sortedNames);
     });

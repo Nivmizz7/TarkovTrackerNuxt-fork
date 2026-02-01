@@ -197,7 +197,7 @@
     }
     return appStore.drawerRail;
   });
-  const navBarIcon = computed(() => 'i-mdi-menu-open');
+  const navBarIcon = 'i-mdi-menu-open';
   const { loading: dataLoading, hideoutLoading } = storeToRefs(metadataStore);
   const dataError = ref(false);
   const pageTitle = computed(() =>

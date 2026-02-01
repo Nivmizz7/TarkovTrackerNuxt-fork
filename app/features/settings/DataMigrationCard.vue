@@ -5,7 +5,7 @@
       <p class="mb-4">Migrate your progress data from the old TarkovTracker site.</p>
       <div class="bg-surface-800 mb-3 rounded-lg p-4">
         <MigrationSteps />
-        <form @submit.prevent="migration.fetchWithApiToken">
+        <form @submit.prevent="void migration.fetchWithApiToken()">
           <UInput
             v-model="migration.apiToken.value"
             label="API Token from Old Site"
@@ -14,7 +14,6 @@
             :error="!!migration.apiError?.value"
             class="mb-4"
             :type="migration.showToken?.value ? 'text' : 'password'"
-            :ui="{ icon: { trailing: { pointer: '' } } }"
           >
             <template #trailing>
               <UButton
@@ -46,7 +45,7 @@
               :loading="migration.fetchingApi?.value"
               :disabled="!migration.apiToken?.value || migration.fetchingApi?.value"
               class="px-4"
-              @click="migration.fetchWithApiToken"
+              @click="void migration.fetchWithApiToken()"
             >
               Fetch Data
             </UButton>
@@ -55,7 +54,7 @@
       </div>
       <ImportConfirmDialog
         v-model:show="migration.confirmDialog.value"
-        :data="migration.importedData.value"
+        :data="migration.importedData.value ?? undefined"
         :completed-tasks="migration.countCompletedTasks.value"
         :failed-tasks="migration.countFailedTasks.value"
         :task-objectives="migration.countTaskObjectives.value"
@@ -132,7 +131,7 @@
     </template>
   </GenericCard>
 </template>
-<script setup>
+<script setup lang="ts">
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { useDataMigration } from '@/composables/useDataMigration';
   import ImportConfirmDialog from '@/features/settings/ImportConfirmDialog.vue';
