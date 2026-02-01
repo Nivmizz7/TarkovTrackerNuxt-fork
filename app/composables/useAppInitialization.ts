@@ -12,7 +12,9 @@ import { logger } from '@/utils/logger';
 export function useAppInitialization() {
   const { $supabase } = useNuxtApp();
   const preferencesStore = usePreferencesStore();
-  const { locale } = useI18n({ useScope: 'global' });
+  const { locale, availableLocales } = useI18n({ useScope: 'global' });
+  const isAvailableLocale = (value: string): value is typeof locale.value =>
+    availableLocales.includes(value as typeof locale.value);
   let syncStarted = false;
   let migrationAttempted = false;
   const startSyncIfNeeded = async () => {
@@ -63,7 +65,7 @@ export function useAppInitialization() {
   onMounted(async () => {
     // Apply user's locale preference
     const localeOverride = preferencesStore.localeOverride;
-    if (localeOverride) {
+    if (localeOverride && isAvailableLocale(localeOverride)) {
       locale.value = localeOverride;
     }
     // For users already logged in on first mount, ensure sync/migration run once
