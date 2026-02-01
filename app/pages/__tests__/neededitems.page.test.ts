@@ -1,14 +1,76 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime';
 import { describe, expect, it, vi } from 'vitest';
-import { isRef, ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { NeededItemTaskObjective } from '@/types/tarkov';
-import {
-  createDefaultNeededItem,
-  createMockMetadataStore,
-  createMockPreferencesStore,
-  createMockProgressStore,
-  createMockTarkovStore,
-} from '../../../tests/test-helpers/mockStores';
+import { createDefaultNeededItem } from '../../../tests/test-helpers/mockStores';
+const createMockUseNeededItems = (options: {
+  neededItem?: NeededItemTaskObjective | null;
+  viewMode?: 'list' | 'grid';
+  groupByItem?: boolean;
+  itemsLoading?: boolean;
+  emptyState?: boolean;
+}) => {
+  const {
+    neededItem = createDefaultNeededItem(),
+    viewMode = 'list',
+    groupByItem = false,
+    itemsLoading = false,
+    emptyState = false,
+  } = options;
+  const items = emptyState || !neededItem ? [] : [neededItem];
+  return () => ({
+    activeFilter: ref('all'),
+    firFilter: ref('all'),
+    groupByItem: ref(groupByItem),
+    hideNonFirSpecialEquipment: ref(false),
+    hideTeamItems: ref(false),
+    kappaOnly: ref(false),
+    hideOwned: ref(false),
+    sortBy: ref('priority'),
+    sortDirection: ref('desc'),
+    viewMode: ref(viewMode),
+    cardStyle: ref('compact'),
+    allItems: computed(() => items),
+    filteredItems: computed(() => items),
+    groupedItems: computed(() =>
+      emptyState
+        ? []
+        : [
+            {
+              item: { id: 'item-1', name: 'Test Item' },
+              taskFir: 0,
+              taskFirCurrent: 0,
+              taskNonFir: 1,
+              taskNonFirCurrent: 0,
+              hideoutFir: 0,
+              hideoutFirCurrent: 0,
+              hideoutNonFir: 0,
+              hideoutNonFirCurrent: 0,
+              total: 1,
+              currentCount: 0,
+            },
+          ]
+    ),
+    displayItems: computed(() => (groupByItem ? [] : items)),
+    objectivesByItemId: computed(() => new Map()),
+    filterTabsWithCounts: computed(() => [
+      { label: 'All', value: 'all', icon: 'i-mdi-clipboard-list', count: items.length },
+      {
+        label: 'Tasks',
+        value: 'tasks',
+        icon: 'i-mdi-checkbox-marked-circle-outline',
+        count: items.length,
+      },
+      { label: 'Hideout', value: 'hideout', icon: 'i-mdi-home', count: 0 },
+      { label: 'Completed', value: 'completed', icon: 'i-mdi-check-all', count: 0 },
+    ]),
+    itemsReady: computed(() => !itemsLoading && !emptyState),
+    itemsError: computed(() => null),
+    itemsFullLoaded: computed(() => true),
+    ensureNeededItemsData: vi.fn(),
+    queueFullItemsLoad: vi.fn(),
+  });
+};
 const setup = async (
   options: {
     neededItem?: NeededItemTaskObjective | null;
@@ -18,27 +80,10 @@ const setup = async (
     emptyState?: boolean;
   } = {}
 ) => {
-  const {
-    neededItem = createDefaultNeededItem(),
-    viewMode = 'list',
-    groupByItem = false,
-    itemsLoading = false,
-    emptyState = false,
-  } = options;
   vi.resetModules();
-  vi.doMock('pinia', async () => {
-    const actual = await vi.importActual<typeof import('pinia')>('pinia');
-    return {
-      ...actual,
-      storeToRefs: (store: Record<string, unknown>) => {
-        const refs: Record<string, unknown> = {};
-        Object.entries(store).forEach(([key, value]) => {
-          refs[key] = isRef(value) ? value : ref(value);
-        });
-        return refs;
-      },
-    };
-  });
+  vi.doMock('@/composables/useNeededItems', () => ({
+    useNeededItems: createMockUseNeededItems(options),
+  }));
   vi.doMock('@/composables/useInfiniteScroll', () => ({
     useInfiniteScroll: () => ({ checkAndLoadMore: vi.fn() }),
   }));
@@ -46,32 +91,6 @@ const setup = async (
     useSharedBreakpoints: () => ({
       belowMd: ref(false),
       xs: ref(false),
-    }),
-  }));
-  vi.doMock('@/stores/useMetadata', () => ({
-    useMetadataStore: createMockMetadataStore({
-      neededItem: emptyState ? null : neededItem,
-      tasks: emptyState ? [] : [{ id: 'task-1' }],
-      hideoutStations: emptyState ? [] : [{ id: 'station-1' }],
-      itemsLoading,
-      itemsFullLoaded: !itemsLoading,
-    }),
-  }));
-  vi.doMock('@/stores/useProgress', () => ({
-    useProgressStore: createMockProgressStore(),
-  }));
-  vi.doMock('@/stores/usePreferences', () => ({
-    usePreferencesStore: createMockPreferencesStore({
-      neededItemsViewMode: viewMode,
-      neededItemsGroupByItem: groupByItem,
-    }),
-  }));
-  vi.doMock('@/stores/useTarkov', () => ({
-    useTarkovStore: createMockTarkovStore(),
-  }));
-  vi.doMock('vue-i18n', () => ({
-    useI18n: () => ({
-      t: (_key: string, fallback?: string) => fallback ?? _key,
     }),
   }));
   const { default: NeededItemsPage } = await import('@/pages/needed-items.vue');
@@ -97,8 +116,6 @@ describe('needed items page', () => {
       global: { stubs: defaultGlobalStubs },
     });
     expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
-    // Component renders in list view mode
-    // Note: Items may or may not render depending on mock data availability
   });
   it('renders needed items grid view', async () => {
     const NeededItemsPage = await setup({ viewMode: 'grid' });
@@ -106,7 +123,6 @@ describe('needed items page', () => {
       global: { stubs: defaultGlobalStubs },
     });
     expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
-    // Component renders in grid view mode
   });
   it('renders grouped view when groupByItem is enabled', async () => {
     const NeededItemsPage = await setup({ groupByItem: true });
@@ -114,7 +130,6 @@ describe('needed items page', () => {
       global: { stubs: defaultGlobalStubs },
     });
     expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
-    // Component renders in grouped view mode
   });
   describe('empty and loading states', () => {
     it('renders empty state when no items', async () => {
@@ -122,9 +137,7 @@ describe('needed items page', () => {
       const wrapper = await mountSuspended(NeededItemsPage, {
         global: { stubs: defaultGlobalStubs },
       });
-      // Filter bar should still be present
       expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
-      // No needed items should be rendered
       const neededItems = wrapper.findAll('[data-testid="needed-item"]');
       expect(neededItems.length).toBe(0);
     });
@@ -134,7 +147,6 @@ describe('needed items page', () => {
         global: { stubs: defaultGlobalStubs },
       });
       expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
-      // When loading, verify the component renders without errors
     });
   });
   describe('view mode rendering', () => {
@@ -144,7 +156,6 @@ describe('needed items page', () => {
         global: { stubs: defaultGlobalStubs },
       });
       expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
-      // Verifies component can render in list view mode
     });
     it('renders card style items in grid view mode', async () => {
       const NeededItemsPage = await setup({ viewMode: 'grid' });
@@ -152,7 +163,6 @@ describe('needed items page', () => {
         global: { stubs: defaultGlobalStubs },
       });
       expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
-      // Verifies component can render in grid view mode
     });
   });
 });
