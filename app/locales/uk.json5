@@ -9,7 +9,12 @@
       title: 'Необхідні предмети',
     },
   },
+  navigation_drawer: {
+    toggle: 'Перемкнути меню',
+  },
   app_bar: {
+    error_loading: 'Помилка завантаження даних Tarkov',
+    loading: 'Завантаження даних Tarkov',
     overflow_menu: {
       language: 'Мова',
     },

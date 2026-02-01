@@ -15,6 +15,10 @@ import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
 import { TRADER_ORDER } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { perfEnabled, perfEnd, perfNow, perfStart } from '@/utils/perf';
+import {
+  filterTasksByTypeSettings as filterTasksByTypeSettingsUtil,
+  buildTaskTypeFilterOptions,
+} from '@/utils/taskTypeFilters';
 const RAID_RELEVANT_OBJECTIVE_TYPES = [
   'shoot',
   'extract',
@@ -306,39 +310,8 @@ export function useTaskFiltering() {
    * Also filters out tasks not available for the user's game edition
    */
   const filterTasksByTypeSettings = (taskList: Task[]): Task[] => {
-    const showKappa = !preferencesStore.getHideNonKappaTasks; // Show Kappa Required tasks
-    const showLightkeeper = preferencesStore.getShowLightkeeperTasks;
-    const showNonSpecial = preferencesStore.getShowNonSpecialTasks;
-    // Get prestige filtering data
-    const userPrestigeLevel = tarkovStore.getPrestigeLevel();
-    const prestigeTaskMap = metadataStore.prestigeTaskMap;
-    const prestigeTaskIds = metadataStore.prestigeTaskIds;
-    // Get edition-based excluded tasks
-    const userEdition = tarkovStore.getGameEdition();
-    const excludedTaskIds = metadataStore.getExcludedTaskIdsForEdition(userEdition);
-    return taskList.filter((task) => {
-      // Filter out tasks not available for user's game edition
-      if (excludedTaskIds.has(task.id)) return false;
-      // Filter prestige-gated tasks ("New Beginning")
-      // Only show the task that matches the user's current prestige level
-      if (prestigeTaskIds.includes(task.id)) {
-        const taskPrestigeLevel = prestigeTaskMap.get(task.id);
-        if (taskPrestigeLevel !== userPrestigeLevel) {
-          return false;
-        }
-      }
-      const isKappaRequired = task.kappaRequired === true;
-      const isLightkeeperRequired = task.lightkeeperRequired === true;
-      const isNonSpecial = !isKappaRequired && !isLightkeeperRequired;
-      // OR logic: show if task matches ANY enabled category
-      // A task can be both Kappa and Lightkeeper required - show if either filter is on
-      // Note: Lightkeeper's own tasks are treated as normal tasks (gated by unlock requirement)
-      if (isKappaRequired && showKappa) return true;
-      if (isLightkeeperRequired && showLightkeeper) return true;
-      if (isNonSpecial && showNonSpecial) return true;
-      // Task doesn't match any enabled filter
-      return false;
-    });
+    const options = buildTaskTypeFilterOptions(preferencesStore, tarkovStore, metadataStore);
+    return filterTasksByTypeSettingsUtil(taskList, options);
   };
   /**
    * Helper to extract all map locations from a task

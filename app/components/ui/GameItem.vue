@@ -182,10 +182,10 @@
 </template>
 <script setup lang="ts">
   import { computed, defineAsyncComponent, ref } from 'vue';
+  import ContextMenu from '@/components/ui/ContextMenu.vue';
+  import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
   import { logger } from '@/utils/logger';
-  import ContextMenu from './ContextMenu.vue';
-  import ContextMenuItem from './ContextMenuItem.vue';
   const ItemCountControls = defineAsyncComponent(
     () => import('@/features/neededitems/ItemCountControls.vue')
   );

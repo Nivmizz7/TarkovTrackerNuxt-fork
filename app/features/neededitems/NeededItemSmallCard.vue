@@ -170,13 +170,13 @@
 </template>
 <script setup lang="ts">
   import { computed, defineAsyncComponent, inject } from 'vue';
+  import ItemCountControls from '@/features/neededitems/ItemCountControls.vue';
   import {
     createDefaultNeededItemContext,
     neededItemKey,
   } from '@/features/neededitems/neededitem-keys';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
-  import ItemCountControls from './ItemCountControls.vue';
   const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink.vue'));
   const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink.vue'));
   const emit = defineEmits(['decreaseCount', 'increaseCount', 'toggleCount', 'setCount']);

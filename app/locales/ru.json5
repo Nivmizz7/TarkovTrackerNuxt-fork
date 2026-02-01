@@ -9,7 +9,12 @@
       title: 'Необходимые предметы',
     },
   },
+  navigation_drawer: {
+    toggle: 'Переключить меню',
+  },
   app_bar: {
+    error_loading: 'Ошибка загрузки данных Tarkov',
+    loading: 'Загрузка данных Tarkov',
     overflow_menu: {
       language: 'Язык',
     },

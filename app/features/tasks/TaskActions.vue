@@ -71,8 +71,8 @@
   import { useI18n } from 'vue-i18n';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
-  const ActionButton = defineAsyncComponent(() => import('./ActionButton'));
-  const AlternativesList = defineAsyncComponent(() => import('./AlternativesList'));
+  const ActionButton = defineAsyncComponent(() => import('@/features/tasks/ActionButton'));
+  const AlternativesList = defineAsyncComponent(() => import('@/features/tasks/AlternativesList'));
   const { t } = useI18n({ useScope: 'global' });
   const preferencesStore = usePreferencesStore();
   const formatNumber = useLocaleNumberFormatter();

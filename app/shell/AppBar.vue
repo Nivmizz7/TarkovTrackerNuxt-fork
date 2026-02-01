@@ -4,13 +4,13 @@
   >
     <div class="flex h-full items-center gap-1 px-2 sm:gap-2 sm:px-3">
       <!-- Left: Toggle Button -->
-      <AppTooltip text="Toggle Menu Drawer">
+      <AppTooltip :text="t('navigation_drawer.toggle', 'Toggle Menu Drawer')">
         <UButton
           :icon="navBarIcon"
           variant="ghost"
           color="neutral"
           size="md"
-          aria-label="Toggle Menu Drawer"
+          :aria-label="t('navigation_drawer.toggle', 'Toggle Menu Drawer')"
           :class="{ 'rotate-180': isDrawerCollapsed }"
           class="transition-transform duration-200"
           @click.stop="changeNavigationDrawer"
@@ -22,12 +22,18 @@
       </span>
       <!-- Right: Status Icons & Settings -->
       <div class="ml-auto flex items-center gap-1 sm:gap-2">
-        <AppTooltip v-if="dataError" text="Error Loading Tarkov Data">
+        <AppTooltip
+          v-if="dataError"
+          :text="t('app_bar.error_loading', 'Error Loading Tarkov Data')"
+        >
           <span class="inline-flex rounded">
             <UIcon name="i-mdi-database-alert" class="text-error-500 h-5 w-5" />
           </span>
         </AppTooltip>
-        <AppTooltip v-if="dataLoading || hideoutLoading" text="Loading Tarkov Data">
+        <AppTooltip
+          v-if="dataLoading || hideoutLoading"
+          :text="t('app_bar.loading', 'Loading Tarkov Data')"
+        >
           <span class="inline-flex rounded">
             <UIcon name="i-heroicons-arrow-path" class="text-primary-500 h-5 w-5 animate-spin" />
           </span>

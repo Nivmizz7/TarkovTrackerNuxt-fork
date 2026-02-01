@@ -9,7 +9,12 @@
       title: 'Benötigte Gegenstände',
     },
   },
+  navigation_drawer: {
+    toggle: 'Menü umschalten',
+  },
   app_bar: {
+    error_loading: 'Fehler beim Laden der Tarkov-Daten',
+    loading: 'Tarkov-Daten werden geladen',
     overflow_menu: {
       game_mode: 'Spielmodus',
       display_name: 'Anzeigename',

@@ -107,15 +107,15 @@
 </template>
 <script setup lang="ts">
   import { computed, defineAsyncComponent, inject } from 'vue';
+  import ItemCountControls from '@/features/neededitems/ItemCountControls.vue';
   import {
     createDefaultNeededItemContext,
     neededItemKey,
   } from '@/features/neededitems/neededitem-keys';
+  import RequirementInfo from '@/features/neededitems/RequirementInfo.vue';
+  import TeamNeedsDisplay from '@/features/neededitems/TeamNeedsDisplay.vue';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
-  import ItemCountControls from './ItemCountControls.vue';
-  import RequirementInfo from './RequirementInfo.vue';
-  import TeamNeedsDisplay from './TeamNeedsDisplay.vue';
   const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink.vue'));
   const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink.vue'));
   const props = defineProps({
