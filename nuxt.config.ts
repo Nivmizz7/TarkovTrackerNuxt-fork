@@ -2,7 +2,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const appDir = resolve(__dirname, 'app');
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
@@ -141,7 +140,33 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxt/ui',
     '@nuxt/image',
+    '@nuxtjs/i18n',
   ].filter(Boolean) as string[],
+  i18n: {
+    autoImport: true,
+    bundle: {
+      compositionOnly: false,
+      runtimeOnly: false,
+    },
+    compilation: {
+      strictMessage: false,
+      escapeHtml: true,
+    },
+    strategy: 'no_prefix',
+    defaultLocale: 'en',
+    restructureDir: 'app',
+    langDir: 'locales',
+    locales: [
+      { code: 'en', file: 'en.json5' },
+      { code: 'de', file: 'de.json5' },
+      { code: 'es', file: 'es.json5' },
+      { code: 'fr', file: 'fr.json5' },
+      { code: 'ru', file: 'ru.json5' },
+      { code: 'uk', file: 'uk.json5' },
+      { code: 'zh', file: 'zh.json5' },
+    ],
+    vueI18n: 'i18n.config.ts',
+  },
   image: {
     domains: ['avatars.githubusercontent.com', 'github.com'],
   },
@@ -245,14 +270,5 @@ export default defineNuxtConfig({
         },
       },
     },
-    plugins: [
-      VueI18nPlugin({
-        include: [resolve(appDir, 'locales/**/*.json5')],
-        runtimeOnly: false,
-        compositionOnly: false,
-        strictMessage: false,
-        escapeHtml: true,
-      }),
-    ],
   },
 });
