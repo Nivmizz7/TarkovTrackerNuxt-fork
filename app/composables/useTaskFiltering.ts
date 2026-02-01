@@ -741,22 +741,8 @@ export function useTaskFiltering() {
       userView,
     });
     const counts = { all: 0, available: 0, locked: 0, completed: 0, failed: 0 };
-    const taskList = metadataStore.tasks;
-    // Get prestige filtering data
-    const userPrestigeLevel = tarkovStore.getPrestigeLevel();
-    const prestigeTaskMap = metadataStore.prestigeTaskMap;
-    const prestigeTaskIds = metadataStore.prestigeTaskIds;
-    // Get edition-based excluded tasks
-    const userEdition = tarkovStore.getGameEdition();
-    const excludedTaskIds = metadataStore.getExcludedTaskIdsForEdition(userEdition);
+    const taskList = filterTasksByTypeSettings(metadataStore.tasks);
     for (const task of taskList) {
-      // Skip tasks not available for user's game edition
-      if (excludedTaskIds.has(task.id)) continue;
-      // Skip prestige tasks that don't match user's prestige level
-      if (prestigeTaskIds.includes(task.id)) {
-        const taskPrestigeLevel = prestigeTaskMap.get(task.id);
-        if (taskPrestigeLevel !== userPrestigeLevel) continue;
-      }
       if (isAllUsersView(userView)) {
         const teamIds = Object.keys(progressStore.visibleTeamStores || {});
         const relevantTeamIds = teamIds.filter((teamId) => {
@@ -828,23 +814,13 @@ export function useTaskFiltering() {
       secondaryView,
     });
     const counts: Record<string, number> = {};
-    const taskList = metadataStore.tasks;
-    const userPrestigeLevel = tarkovStore.getPrestigeLevel();
-    const prestigeTaskMap = metadataStore.prestigeTaskMap;
-    const prestigeTaskIds = metadataStore.prestigeTaskIds;
-    const userEdition = tarkovStore.getGameEdition();
-    const excludedTaskIds = metadataStore.getExcludedTaskIdsForEdition(userEdition);
+    const taskList = filterTasksByTypeSettings(metadataStore.tasks);
     const isAvailableStatus = (status: {
       isUnlocked: boolean;
       isCompleted: boolean;
       isFailed: boolean;
     }) => status.isUnlocked && !status.isCompleted && !status.isFailed;
     for (const task of taskList) {
-      if (excludedTaskIds.has(task.id)) continue;
-      if (prestigeTaskIds.includes(task.id)) {
-        const taskPrestigeLevel = prestigeTaskMap.get(task.id);
-        if (taskPrestigeLevel !== userPrestigeLevel) continue;
-      }
       const traderId = task.trader?.id;
       if (!traderId) continue;
       if (!counts[traderId]) counts[traderId] = 0;
