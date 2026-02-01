@@ -165,7 +165,7 @@
                   <img
                     v-if="reward.item?.iconLink"
                     :src="reward.item?.iconLink"
-                    :alt="reward.item?.name"
+                    :alt="reward.item?.name ?? 'Reward image'"
                     class="h-14 w-14 object-contain"
                   />
                   <div class="flex flex-col items-center gap-0.5">
@@ -203,7 +203,7 @@
                   <img
                     v-if="offer.item?.iconLink"
                     :src="offer.item?.iconLink"
-                    :alt="offer.item?.name"
+                    :alt="offer.item?.name ?? 'Reward image'"
                     class="h-14 w-14 object-contain"
                   />
                   <div class="flex flex-col items-center gap-0.5 text-center">
@@ -323,10 +323,8 @@
   };
   const onAreaClick = (event: MouseEvent) => {
     if (!hasExpandableDetails.value) return;
-    // Don't toggle if user is selecting text
     const selection = window.getSelection();
     if (selection && selection.toString().length > 0) return;
-    // Don't toggle if clicking a specific link or button
     const target = event.target as HTMLElement;
     if (target.closest('a, button, input, select, textarea')) return;
     toggleDetails();

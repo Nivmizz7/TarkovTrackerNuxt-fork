@@ -1,16 +1,16 @@
 <template>
   <div class="scrollbar-none flex items-center justify-end gap-1.5 overflow-x-auto">
-    <!-- Pin Button -->
     <UButton
       size="xs"
       variant="ghost"
       :color="isPinned ? 'primary' : 'neutral'"
       :icon="isPinned ? 'i-mdi-pin' : 'i-mdi-pin-outline'"
       class="shrink-0"
-      :aria-label="isPinned ? 'Unpin task' : 'Pin task'"
+      :aria-label="
+        isPinned ? t('page.tasks.questcard.unpinTask') : t('page.tasks.questcard.pinTask')
+      "
       @click.stop="emit('togglePin')"
     />
-    <!-- Level Badge -->
     <AppTooltip
       v-if="(task.minPlayerLevel ?? 0) > 0"
       :text="
@@ -30,7 +30,6 @@
         {{ t('page.tasks.questcard.levelBadge', { count: task.minPlayerLevel }) }}
       </UBadge>
     </AppTooltip>
-    <!-- Fence Rep Badge -->
     <AppTooltip
       v-if="fenceRepRequirement"
       :text="
@@ -62,7 +61,6 @@
         }}
       </UBadge>
     </AppTooltip>
-    <!-- Trader Level Badges -->
     <AppTooltip
       v-for="req in traderLevelReqs"
       :key="req.id"
@@ -80,10 +78,11 @@
         variant="soft"
         class="shrink-0 cursor-help text-[11px]"
       >
-        {{ req.trader.name }} LL{{ req.level }}
+        {{
+          t('page.tasks.questcard.traderLevelBadge', { trader: req.trader.name, level: req.level })
+        }}
       </UBadge>
     </AppTooltip>
-    <!-- Location Badge -->
     <AppTooltip :text="locationTooltip">
       <UBadge
         size="xs"
@@ -102,11 +101,9 @@
         </span>
       </UBadge>
     </AppTooltip>
-    <!-- Failed Badge -->
     <UBadge v-if="isFailed" size="xs" color="error" variant="soft" class="shrink-0 text-[11px]">
       {{ t('page.dashboard.stats.failed.stat', 'Failed') }}
     </UBadge>
-    <!-- Blocked Badge -->
     <AppTooltip
       v-if="isInvalid && !isFailed"
       :text="
@@ -120,7 +117,6 @@
         {{ t('page.tasks.questcard.blocked', 'Blocked') }}
       </UBadge>
     </AppTooltip>
-    <!-- Kappa Badge -->
     <AppTooltip
       v-if="showRequiredLabels && task.kappaRequired"
       :text="
@@ -134,7 +130,6 @@
         {{ t('page.tasks.questcard.kappa', 'Kappa') }}
       </UBadge>
     </AppTooltip>
-    <!-- Lightkeeper Badge -->
     <AppTooltip
       v-if="showRequiredLabels && task.lightkeeperRequired"
       :text="
@@ -148,7 +143,6 @@
         {{ t('page.tasks.questcard.lightkeeper', 'Lightkeeper') }}
       </UBadge>
     </AppTooltip>
-    <!-- Edition Badge -->
     <AppTooltip
       v-if="showRequiredLabels && exclusiveEditionBadge"
       :text="
@@ -163,9 +157,7 @@
         {{ exclusiveEditionBadge }}
       </UBadge>
     </AppTooltip>
-    <!-- Action Buttons Slot -->
     <slot name="actions" />
-    <!-- Menu Button -->
     <AppTooltip v-if="isOurFaction" :text="t('page.tasks.questcard.more', 'More')">
       <UButton
         size="xs"
@@ -182,13 +174,7 @@
 </template>
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
-  import type { Task, TraderRequirement } from '@/types/tarkov';
-  export interface TraderLevelRequirementWithMet {
-    id: string;
-    trader: { id: string; name: string };
-    level: number;
-    met: boolean;
-  }
+  import type { Task, TraderRequirement, TraderLevelRequirementWithMet } from '@/types/tarkov';
   defineProps<{
     task: Task;
     isPinned: boolean;
@@ -202,7 +188,7 @@
     isFailed: boolean;
     isInvalid: boolean;
     showRequiredLabels: boolean;
-    exclusiveEditionBadge: string;
+    exclusiveEditionBadge?: string;
   }>();
   const emit = defineEmits<{
     togglePin: [];

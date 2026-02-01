@@ -115,7 +115,9 @@
           @click="toggleDrawer"
         >
           <UIcon name="i-mdi-tune" class="h-4 w-4 sm:mr-1.5" />
-          <span class="hidden text-xs sm:inline">SETTINGS</span>
+          <span class="hidden text-xs sm:inline">
+            {{ t('page.tasks.settings.title', 'Task Settings').toUpperCase() }}
+          </span>
         </UButton>
       </div>
     </div>
@@ -145,7 +147,9 @@
               @click="setSecondaryView('all')"
             >
               <UIcon name="i-mdi-format-list-bulleted" class="hidden h-4 w-4 sm:mr-1 sm:block" />
-              <span class="text-xs sm:text-sm">ALL</span>
+              <span class="text-xs sm:text-sm">
+                {{ t('page.tasks.primaryviews.all').toUpperCase() }}
+              </span>
               <span
                 class="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
                 :class="statusCounts.all > 0 ? 'bg-surface-500' : 'bg-surface-600'"
@@ -253,7 +257,9 @@
               <span class="hidden text-xs sm:inline sm:text-sm">
                 {{ currentUserDisplayName.toUpperCase() }}
               </span>
-              <UBadge size="xs" color="primary" variant="solid" class="ml-1">YOU</UBadge>
+              <UBadge size="xs" color="primary" variant="solid" class="ml-1">
+                {{ t('page.tasks.userviews.yourself').toUpperCase() }}
+              </UBadge>
             </UButton>
             <UButton
               v-for="teamId in visibleTeammates"
@@ -299,22 +305,24 @@
           <div
             class="bg-surface-900 flex w-max min-w-full justify-center gap-1 rounded-lg border border-white/12 px-4 py-3 shadow-sm"
           >
-            <button
+            <UButton
               v-for="mapOption in mapOptions"
               :key="mapOption.value"
               type="button"
+              variant="ghost"
+              color="neutral"
+              size="sm"
               :aria-pressed="preferencesStore.getTaskMapView === mapOption.value"
               :class="[
-                'flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-colors',
+                'gap-1.5 transition-colors',
                 'hover:bg-white/5',
-                'focus:ring-primary-500 focus:ring-1 focus:outline-none',
                 preferencesStore.getTaskMapView === mapOption.value
                   ? 'bg-white/10 text-white'
                   : 'text-surface-400 hover:text-white',
               ]"
               @click="onMapSelect(mapOption)"
             >
-              <span class="whitespace-nowrap">{{ mapOption.label }}</span>
+              <span class="text-xs font-medium whitespace-nowrap">{{ mapOption.label }}</span>
               <span
                 :class="[
                   'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white',
@@ -323,7 +331,7 @@
               >
                 {{ mapOption.count ?? 0 }}
               </span>
-            </button>
+            </UButton>
           </div>
         </div>
         <!-- Trader selector (shown when TRADERS is selected) -->
@@ -331,15 +339,17 @@
           <div
             class="bg-surface-900 flex w-max min-w-full justify-center gap-1 rounded-lg border border-white/12 px-4 py-3 shadow-sm"
           >
-            <button
+            <UButton
               v-for="trader in traders"
               :key="trader.id"
               type="button"
+              variant="ghost"
+              color="neutral"
+              size="sm"
               :aria-pressed="preferencesStore.getTaskTraderView === trader.id"
               :class="[
-                'flex items-center gap-2 rounded-md px-3 py-2 transition-colors',
+                'gap-2 transition-colors',
                 'hover:bg-white/5',
-                'focus:ring-primary-500 focus:ring-1 focus:outline-none',
                 preferencesStore.getTaskTraderView === trader.id
                   ? 'bg-white/10 text-white'
                   : 'text-surface-400 hover:text-white',
@@ -371,7 +381,7 @@
                 </span>
               </div>
               <span class="text-xs font-medium whitespace-nowrap">{{ trader.name }}</span>
-            </button>
+            </UButton>
           </div>
         </div>
       </div>
@@ -388,8 +398,9 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTeamStore } from '@/stores/useTeamStore';
-  import type { TaskSecondaryView } from '@/types/taskFilter';
-  import { TASK_SORT_MODES, type TaskSortDirection, type TaskSortMode } from '@/types/taskSort';
+  import { TASK_SECONDARY_VIEWS, type TaskSecondaryView } from '@/types/taskFilter';
+  import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
+  import { TASK_SORT_MODES } from '@/types/taskSort';
   defineProps<{
     searchQuery: string;
   }>();
@@ -463,6 +474,7 @@
     }))
   );
   const validSortModes = new Set<TaskSortMode>(TASK_SORT_MODES);
+  const VALID_SECONDARY_VIEWS = new Set<TaskSecondaryView>(TASK_SECONDARY_VIEWS);
   /**
    * Normalize sort mode value from various input formats.
    * Handles: string values, objects with 'value' property, or null/undefined.
@@ -480,6 +492,21 @@
       return candidate as TaskSortMode;
     }
     return 'none';
+  };
+  const normalizeSecondaryView = (value: unknown): TaskSecondaryView => {
+    let candidate: unknown = null;
+    if (typeof value === 'string') {
+      candidate = value;
+    } else if (value && typeof value === 'object' && 'value' in value) {
+      candidate = (value as { value?: unknown }).value;
+    }
+    if (
+      typeof candidate === 'string' &&
+      VALID_SECONDARY_VIEWS.has(candidate as TaskSecondaryView)
+    ) {
+      return candidate as TaskSecondaryView;
+    }
+    return 'all';
   };
   const taskSortMode = computed({
     get: (): TaskSortMode => normalizeSortMode(preferencesStore.getTaskSortMode),
@@ -505,7 +532,7 @@
   });
   const traderCounts = computed(() => {
     const userView = preferencesStore.getTaskUserView;
-    const secondaryView = preferencesStore.getTaskSecondaryView as TaskSecondaryView;
+    const secondaryView = normalizeSecondaryView(preferencesStore.getTaskSecondaryView);
     return calculateTraderCounts(userView, secondaryView);
   });
   const mergedMaps = computed(() => {
@@ -525,7 +552,7 @@
       metadataStore.tasks,
       preferencesStore.getHideGlobalTasks,
       preferencesStore.getTaskUserView,
-      preferencesStore.getTaskSecondaryView as TaskSecondaryView
+      normalizeSecondaryView(preferencesStore.getTaskSecondaryView)
     );
   });
   // Primary view (all / maps / traders)
@@ -552,7 +579,9 @@
     }
   };
   // Secondary view (available / locked / completed)
-  const secondaryView = computed(() => preferencesStore.getTaskSecondaryView);
+  const secondaryView = computed(() =>
+    normalizeSecondaryView(preferencesStore.getTaskSecondaryView)
+  );
   const setSecondaryView = (view: string) => {
     preferencesStore.setTaskSecondaryView(view);
   };

@@ -11,6 +11,11 @@ import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
 import type { SkillSortMode } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
+type TaskFilterPreset = {
+  id: string;
+  name: string;
+  settings: Record<string, unknown>;
+};
 // Define the state structure
 export interface PreferencesState {
   streamerMode: boolean;
@@ -71,7 +76,7 @@ export interface PreferencesState {
   pinnedTaskIds: string[];
   // Skills settings
   skillSortMode: SkillSortMode | null;
-  taskFilterPresets: { id: string; name: string; settings: Record<string, unknown> }[];
+  taskFilterPresets: TaskFilterPreset[];
   saving?: {
     streamerMode: boolean;
     hideGlobalTasks: boolean;
@@ -517,8 +522,15 @@ export const usePreferencesStore = defineStore('preferences', {
         this.pinnedTaskIds.splice(index, 1);
       }
     },
-    addTaskFilterPreset(preset: { id: string; name: string; settings: Record<string, unknown> }) {
+    addTaskFilterPreset(preset: TaskFilterPreset) {
       if (!this.taskFilterPresets) this.taskFilterPresets = [];
+      const existingIndex = this.taskFilterPresets.findIndex(
+        (existing) => existing.id === preset.id
+      );
+      if (existingIndex !== -1) {
+        this.taskFilterPresets[existingIndex] = preset;
+        return;
+      }
       this.taskFilterPresets.push(preset);
     },
     removeTaskFilterPreset(id: string) {

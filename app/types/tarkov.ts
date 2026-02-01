@@ -100,6 +100,12 @@ export interface TaskTraderLevelRequirement {
   trader: { id: string; name: string };
   level: number;
 }
+export interface TraderLevelRequirementWithMet {
+  id: string;
+  trader: { id: string; name: string };
+  level: number;
+  met: boolean;
+}
 export interface Craft {
   id: string;
   duration: number;

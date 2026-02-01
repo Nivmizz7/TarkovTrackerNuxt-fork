@@ -50,6 +50,13 @@ export const GAME_MODE_OPTIONS = [
     description: 'Player vs Environment (Co-op)',
   },
 ];
+export const TASK_STATE = {
+  LOCKED: 0,
+  AVAILABLE: 1,
+  ACTIVE: 2,
+  COMPLETE: 3,
+  FAILED: 4,
+} as const;
 // Currency item IDs to exclude from quest item tracking
 // These represent in-game currencies that are always obtainable and don't need to be tracked
 export const CURRENCY_ITEM_IDS = [

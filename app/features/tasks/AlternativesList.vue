@@ -3,21 +3,27 @@
     <div class="flex justify-center">
       {{ label || defaultLabel }}
     </div>
-    <div v-for="(alternative, altIndex) in alternatives" :key="altIndex" class="my-2">
-      <task-link :task="tasks.find((t) => t.id == alternative)" class="flex justify-center" />
+    <div v-for="task in alternativeTasks" :key="task.id" class="my-2">
+      <TaskLink :task="task" class="flex justify-center" />
     </div>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
   import { defineAsyncComponent } from 'vue';
   import { useI18n } from 'vue-i18n';
-  const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink'));
-  defineProps({
-    alternatives: { type: Array, required: true },
-    tasks: { type: Object, required: true },
-    xs: { type: Boolean, default: false },
-    label: { type: String, default: '' },
-  });
+  import type { Task } from '@/types/tarkov';
+  const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink.vue'));
+  const props = defineProps<{
+    alternatives: string[];
+    tasks: Task[];
+    xs?: boolean;
+    label?: string;
+  }>();
+  const alternativeTasks = computed(() =>
+    props.alternatives
+      .map((alternative) => props.tasks.find((task) => task.id === alternative))
+      .filter((task): task is Task => Boolean(task))
+  );
   const { t } = useI18n({ useScope: 'global' });
   // Use default label if not provided
   const defaultLabel = t('page.tasks.questcard.alternatives');

@@ -8,15 +8,6 @@ export interface TaskTypeFilterOptions {
   prestigeTaskIds: string[];
   excludedTaskIds: Set<string>;
 }
-/**
- * Filter tasks by type settings (Kappa, Lightkeeper, non-special)
- * Uses OR logic: show task if it matches ANY enabled category
- * Also filters out tasks not available for the user's game edition and prestige level
- *
- * @param taskList - Array of tasks to filter
- * @param options - Filter options including category toggles, prestige data, and edition exclusions
- * @returns Filtered array of tasks
- */
 export function filterTasksByTypeSettings(
   taskList: Task[],
   options: TaskTypeFilterOptions
@@ -30,12 +21,10 @@ export function filterTasksByTypeSettings(
     prestigeTaskIds,
     excludedTaskIds,
   } = options;
+  const prestigeTaskIdSet = new Set(prestigeTaskIds);
   return taskList.filter((task) => {
-    // Filter out tasks not available for user's game edition
     if (excludedTaskIds.has(task.id)) return false;
-    // Filter prestige-gated tasks ("New Beginning")
-    // Only show the task that matches the user's current prestige level
-    if (prestigeTaskIds.includes(task.id)) {
+    if (prestigeTaskIdSet.has(task.id)) {
       const taskPrestigeLevel = prestigeTaskMap.get(task.id);
       if (taskPrestigeLevel !== userPrestigeLevel) {
         return false;
@@ -44,20 +33,12 @@ export function filterTasksByTypeSettings(
     const isKappaRequired = task.kappaRequired === true;
     const isLightkeeperRequired = task.lightkeeperRequired === true;
     const isNonSpecial = !isKappaRequired && !isLightkeeperRequired;
-    // OR logic: show if task matches ANY enabled category
-    // A task can be both Kappa and Lightkeeper required - show if either filter is on
-    // Note: Lightkeeper's own tasks are treated as normal tasks (gated by unlock requirement)
     if (isKappaRequired && showKappa) return true;
     if (isLightkeeperRequired && showLightkeeper) return true;
     if (isNonSpecial && showNonSpecial) return true;
-    // Task doesn't match any enabled filter
     return false;
   });
 }
-/**
- * Build filter options from store values
- * Helper to create TaskTypeFilterOptions from common store getters
- */
 export function buildTaskTypeFilterOptions(
   preferencesStore: {
     getHideNonKappaTasks: boolean;

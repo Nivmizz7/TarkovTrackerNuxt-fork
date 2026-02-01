@@ -4,20 +4,20 @@ import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import { useTarkovStore } from '@/stores/useTarkov';
 import type { Task, TaskObjective } from '@/types/tarkov';
+import { isAllUsersView } from '@/types/taskFilter';
 import type {
   MergedMap,
   TaskFilterAndSortOptions,
   TaskPrimaryView,
   TaskSecondaryView,
 } from '@/types/taskFilter';
-import { isAllUsersView } from '@/types/taskFilter';
 import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
 import { TRADER_ORDER } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { perfEnabled, perfEnd, perfNow, perfStart } from '@/utils/perf';
 import {
-  filterTasksByTypeSettings as filterTasksByTypeSettingsUtil,
   buildTaskTypeFilterOptions,
+  filterTasksByTypeSettings as filterTasksByTypeSettingsUtil,
 } from '@/utils/taskTypeFilters';
 const RAID_RELEVANT_OBJECTIVE_TYPES = [
   'shoot',

@@ -284,10 +284,11 @@
   import { useTaskFiltering } from '@/composables/useTaskFiltering';
   import { isTaskSuccessful, useTaskState } from '@/composables/useTaskState';
   import QuestObjectivesSkeleton from '@/features/tasks/QuestObjectivesSkeleton.vue';
-  import TaskCardActions, { type ActionButtonState } from '@/features/tasks/TaskCardActions.vue';
+  import TaskCardActions from '@/features/tasks/TaskCardActions.vue';
   import TaskCardBackground from '@/features/tasks/TaskCardBackground.vue';
   import TaskCardBadges from '@/features/tasks/TaskCardBadges.vue';
   import TaskCardHeader from '@/features/tasks/TaskCardHeader.vue';
+  import type { ActionButtonState } from '@/features/tasks/types';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';

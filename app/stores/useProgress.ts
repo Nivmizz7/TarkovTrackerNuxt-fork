@@ -6,7 +6,7 @@ import { usePreferencesStore } from '@/stores/usePreferences';
 import { useTarkovStore } from '@/stores/useTarkov';
 import { useTeammateStores, useTeamStore } from '@/stores/useTeamStore';
 import type { GameEdition, Task, TaskRequirement } from '@/types/tarkov';
-import { GAME_MODES, SPECIAL_STATIONS, TRADER_UNLOCK_TASKS } from '@/utils/constants';
+import { GAME_MODES, SPECIAL_STATIONS, TASK_STATE, TRADER_UNLOCK_TASKS } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { perfEnd, perfStart } from '@/utils/perf';
 import { computeInvalidProgress } from '@/utils/progressInvalidation';
@@ -220,6 +220,7 @@ export const useProgressStore = defineStore('progress', () => {
       if (!completion) return false;
       return !isTaskComplete(completion) && !isTaskFailed(completion);
     };
+    const fenceTrader = metadataStore.traders.find((t) => t.normalizedName === 'fence');
     // Initialize availability map
     for (const task of tasks) {
       available[task.id] = {};
@@ -288,28 +289,23 @@ export const useProgressStore = defineStore('progress', () => {
         }
         // Fence reputation check - only Fence trader requirements gate availability
         // Other trader level/rep requirements are display-only, not gating
-        if (task.traderRequirements?.length) {
-          const fenceTrader = metadataStore.traders.find((t) => t.normalizedName === 'fence');
-          if (fenceTrader) {
-            const fenceReq = task.traderRequirements.find(
-              (req) => req.trader.id === fenceTrader.id
-            );
-            if (fenceReq) {
-              const userFenceRep = teamData.traders?.[fenceTrader.id]?.reputation ?? 0;
-              // Positive requirement: user needs at least this much karma
-              // Negative requirement: user needs at most this much (or worse) karma
-              if (fenceReq.value >= 0) {
-                if (userFenceRep < fenceReq.value) {
-                  memo.set(taskId, false);
-                  visiting.delete(taskId);
-                  return false;
-                }
-              } else {
-                if (userFenceRep > fenceReq.value) {
-                  memo.set(taskId, false);
-                  visiting.delete(taskId);
-                  return false;
-                }
+        if (task.traderRequirements?.length && fenceTrader) {
+          const fenceReq = task.traderRequirements.find((req) => req.trader.id === fenceTrader.id);
+          if (fenceReq) {
+            const userFenceRep = teamData.traders?.[fenceTrader.id]?.reputation ?? 0;
+            // Positive requirement: user needs at least this much karma
+            // Negative requirement: user needs at most this much (or worse) karma
+            if (fenceReq.value >= 0) {
+              if (userFenceRep < fenceReq.value) {
+                memo.set(taskId, false);
+                visiting.delete(taskId);
+                return false;
+              }
+            } else {
+              if (userFenceRep > fenceReq.value) {
+                memo.set(taskId, false);
+                visiting.delete(taskId);
+                return false;
               }
             }
           }
@@ -778,15 +774,15 @@ export const useProgressStore = defineStore('progress', () => {
       const taskId = task.id;
       const completion = completions[taskId];
       if (completion?.complete && !completion?.failed) {
-        state[taskId] = 3; // Complete
+        state[taskId] = TASK_STATE.COMPLETE;
       } else if (completion?.failed) {
-        state[taskId] = 4; // Failed
+        state[taskId] = TASK_STATE.FAILED;
       } else if (completion) {
-        state[taskId] = 2; // Active (Started)
+        state[taskId] = TASK_STATE.ACTIVE;
       } else if (unlockedTasks.value[taskId]?.['self']) {
-        state[taskId] = 1; // Available
+        state[taskId] = TASK_STATE.AVAILABLE;
       } else {
-        state[taskId] = 0; // Locked
+        state[taskId] = TASK_STATE.LOCKED;
       }
     }
     return state;
