@@ -599,6 +599,9 @@ export const useMetadataStore = defineStore('metadata', {
       // Update game mode
       this.currentGameMode = store.getCurrentGameMode();
     },
+    setLoading(isLoading: boolean) {
+      this.loading = isLoading;
+    },
     /**
      * Load static map data from local source
      */

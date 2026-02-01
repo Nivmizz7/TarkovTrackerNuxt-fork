@@ -12,7 +12,7 @@
     />
   </Transition>
   <aside
-    class="bg-sidebar border-surface-700/50 fixed inset-y-0 left-0 z-50 flex flex-col border-r shadow-[inset_0_1px_0_rgba(255,255,255,0.03),inset_0_-1px_0_rgba(0,0,0,0.6),1px_0_0_rgba(0,0,0,0.55)] transition-all duration-300"
+    class="bg-sidebar border-surface-700/50 shadow-nav-drawer fixed inset-y-0 left-0 z-50 flex flex-col border-r transition-all duration-300"
     :class="[sidebarWidth]"
   >
     <div

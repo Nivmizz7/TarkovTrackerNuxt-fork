@@ -81,9 +81,6 @@
   </li>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useRoute } from 'vue-router';
   const { t } = useI18n({ useScope: 'global' });
   const route = useRoute();
   const props = defineProps<{
@@ -101,11 +98,9 @@
     }
     return false;
   });
-  const iconClasses = computed(() => {
-    if (isActive.value) return 'text-white';
-    if (props.href) return 'text-surface-300 group-hover:text-white';
-    return 'text-surface-300 group-hover:text-white';
-  });
+  const iconClasses = computed(() =>
+    isActive.value ? 'text-white' : 'text-surface-300 group-hover:text-white'
+  );
   const labelText = computed(() => {
     if (props.localeKey) return t(`navigation_drawer.${props.localeKey}`);
     return props.text ?? '';

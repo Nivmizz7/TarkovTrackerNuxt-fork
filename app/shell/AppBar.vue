@@ -6,7 +6,7 @@
       <!-- Left: Toggle Button -->
       <AppTooltip :text="t('navigation_drawer.toggle', 'Toggle Menu Drawer')">
         <UButton
-          :icon="navBarIcon"
+          :icon="NAV_BAR_ICON"
           variant="ghost"
           color="neutral"
           size="md"
@@ -52,8 +52,7 @@
               height="18"
               viewBox="0 0 24 24"
               fill="currentColor"
-              class="text-surface-300 hover:text-white"
-              :style="{ color: 'var(--color-discord)' }"
+              class="text-discord hover:text-white"
             >
               <path
                 d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09c-.01-.02-.04-.03-.07-.03c-1.5.26-2.93.71-4.27 1.33c-.01 0-.02.01-.03.02c-2.72 4.07-3.47 8.03-3.1 11.95c0 .02.01.04.03.05c1.8 1.32 3.53 2.12 5.24 2.65c.03.01.06 0 .07-.02c.4-.55.76-1.13 1.07-1.74c.02-.04 0-.08-.04-.09c-.57-.22-1.11-.48-1.64-.78c-.04-.02-.04-.08-.01-.11c.11-.08.22-.17.33-.25c.02-.02.05-.02.07-.01c3.44 1.57 7.15 1.57 10.55 0c.02-.01.05-.01.07.01c.11.09.22.17.33.26c.04.03.04.09-.01.11c-.52.31-1.07.56-1.64.78c-.04.01-.05.06-.04.09c.32.61.68 1.19 1.07 1.74c.03.01.06.02.09.01c1.72-.53 3.45-1.33 5.25-2.65c.02-.01.03-.03.03-.05c.44-4.53-.73-8.46-3.1-11.95c-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.83 2.12-1.89 2.12z"
@@ -165,6 +164,7 @@
   const tarkovStore = useTarkovStore();
   const route = useRoute();
   const { $supabase } = useNuxtApp();
+  const toast = useToast();
   const isLoggedIn = computed(() => $supabase.user?.loggedIn ?? false);
   const avatarSrc = computed(() => {
     return preferencesStore.getStreamerMode || !$supabase.user.photoURL
@@ -179,8 +179,16 @@
     }
     return $supabase.user.displayName || $supabase.user.username || 'User';
   });
-  function logout() {
-    $supabase.signOut();
+  async function logout() {
+    try {
+      await $supabase.signOut();
+    } catch (error) {
+      logger.error('[AppBar] Sign out failed:', error);
+      toast.add({
+        title: t('app_bar.logout_failed'),
+        color: 'error',
+      });
+    }
   }
   const accountItems = computed(() => [
     {
@@ -190,19 +198,24 @@
     },
   ]);
   const { width } = useWindowSize();
-  const mdAndDown = computed(() => width.value < 960); // md breakpoint at 960px
+  const mdAndDown = computed(() => width.value < 960);
   const isDrawerCollapsed = computed(() => {
     if (mdAndDown.value) {
       return !appStore.mobileDrawerExpanded;
     }
     return appStore.drawerRail;
   });
-  const navBarIcon = 'i-mdi-menu-open';
+  const NAV_BAR_ICON = 'i-mdi-menu-open';
   const { loading: dataLoading, hideoutLoading } = storeToRefs(metadataStore);
   const dataError = ref(false);
-  const pageTitle = computed(() =>
-    t(`page.${String(route.name || 'index').replace('-', '_')}.title`)
-  );
+  const pageTitleKey = computed(() => {
+    const name = String(route.name || 'index');
+    if (name === 'needed-items' || name === 'neededitems') {
+      return 'page.neededItems.title';
+    }
+    return `page.${name.replace('-', '_')}.title`;
+  });
+  const pageTitle = computed(() => t(pageTitleKey.value));
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape' && appStore.mobileDrawerExpanded && mdAndDown.value) {
       event.preventDefault();
@@ -223,6 +236,8 @@
     }
   }
   const { locale, availableLocales } = useI18n({ useScope: 'global' });
+  const isAvailableLocale = (value: string): value is typeof locale.value =>
+    availableLocales.includes(value as typeof locale.value);
   const localeItems = computed(() => {
     return availableLocales.map((localeCode) => ({
       label: localeCode.toUpperCase(),
@@ -239,7 +254,7 @@
       if (!newValue) return;
       // Handle both string and object values
       const newLocale = typeof newValue === 'string' ? newValue : newValue.value;
-      if (newLocale === locale.value) return;
+      if (!isAvailableLocale(newLocale) || newLocale === locale.value) return;
       // Set the i18n locale (this updates the UI translations)
       locale.value = newLocale;
       // Persist in preferences

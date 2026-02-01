@@ -35,12 +35,16 @@
         v-for="faction in factions"
         :key="faction"
         class="flex-1 px-2 py-1.5 text-xs font-semibold uppercase transition-colors focus:z-10 focus:ring-2 focus:ring-white/40 focus:outline-none"
-        :class="
+        :class="[
           faction === currentFaction
             ? 'bg-white/15 text-white'
-            : 'bg-transparent text-white/50 hover:bg-white/5 hover:text-white/80'
-        "
-        @click="setFaction(faction)"
+            : dataLoading
+              ? 'bg-transparent text-white/50'
+              : 'bg-transparent text-white/50 hover:bg-white/5 hover:text-white/80',
+          dataLoading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+        ]"
+        :disabled="dataLoading"
+        @click="!dataLoading && setFaction(faction)"
       >
         {{ faction }}
       </button>
@@ -77,7 +81,7 @@
   const { loading: dataLoading } = storeToRefs(metadataStore);
   async function switchMode(mode: GameMode) {
     if (mode !== currentGameMode.value && !dataLoading.value) {
-      dataLoading.value = true;
+      metadataStore.setLoading(true);
       try {
         await tarkovStore.switchGameMode(mode);
         metadataStore.updateLanguageAndGameMode();
@@ -85,7 +89,7 @@
       } catch (err) {
         logger.error('[DrawerGameSettings] Error switching mode:', err);
       } finally {
-        dataLoading.value = false;
+        metadataStore.setLoading(false);
       }
     }
   }
