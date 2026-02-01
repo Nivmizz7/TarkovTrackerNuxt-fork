@@ -301,11 +301,11 @@
     }, 300000);
     const fallbackTimer = window.setTimeout(() => {
       if (didCleanup) return;
-      if (isPopupClosed()) {
+      if (!popup || isPopupClosed()) {
         cleanup();
         fallbackToRedirect(url, provider);
       }
-    }, 100);
+    }, 500);
     const cleanup = () => {
       if (didCleanup) return;
       didCleanup = true;

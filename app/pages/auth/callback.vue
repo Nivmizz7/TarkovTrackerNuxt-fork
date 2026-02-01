@@ -14,6 +14,7 @@
 </template>
 <script setup lang="ts">
   import { onMounted } from 'vue';
+  const route = useRoute();
   onMounted(async () => {
     // Check if this is a popup window (has opener)
     const isPopup = window.opener && !window.opener.closed;
@@ -32,7 +33,6 @@
       // This is a full redirect (not popup) - redirect to original page or dashboard
       // Wait a moment for the session to be established
       await new Promise((resolve) => setTimeout(resolve, 500));
-      const route = useRoute();
       const redirect = (route.query.redirect as string) || '/';
       await navigateTo(redirect, { replace: true });
     }
