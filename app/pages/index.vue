@@ -162,8 +162,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { ref } from 'vue';
-  import { useXpCalculation } from '@/composables/useXpCalculation';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { calculatePercentageNum } from '@/utils/formatters';

@@ -71,14 +71,10 @@
             {{ lvl }}
           </button>
         </div>
-        <input
-          v-if="hasReputation"
-          type="text"
-          inputmode="decimal"
-          :value="reputationInput"
-          placeholder="0.00"
+        <ReputationInput
+          :has-reputation="hasReputation"
+          :reputation-input="reputationInput"
           :title="$t('page.dashboard.traders.reputation')"
-          class="no-spinner bg-surface-800 border-surface-700 text-surface-100 placeholder-surface-500 focus:border-surface-600 focus:ring-primary-500/30 h-7 w-16 rounded border px-1.5 text-center text-sm tabular-nums transition-colors focus:ring-1 focus:outline-none"
           @blur="onReputationBlur"
           @focus="isEditingReputation = true"
           @input="onReputationInput"
@@ -91,12 +87,10 @@
       class="text-surface-400 flex items-center justify-between text-xs font-medium"
     >
       <span>{{ $t('page.dashboard.traders.scavKarma', 'Scav Karma') }}</span>
-      <input
-        type="text"
-        inputmode="decimal"
-        :value="reputationInput"
-        placeholder="0.00"
-        class="no-spinner bg-surface-800 border-surface-700 text-surface-100 placeholder-surface-500 focus:border-surface-600 focus:ring-primary-500/30 h-7 w-16 rounded border px-1.5 text-center text-sm tabular-nums transition-colors focus:ring-1 focus:outline-none"
+      <ReputationInput
+        :has-reputation="true"
+        :reputation-input="reputationInput"
+        :title="$t('page.dashboard.traders.reputation')"
         @blur="onReputationBlur"
         @focus="isEditingReputation = true"
         @input="onReputationInput"

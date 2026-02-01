@@ -45,7 +45,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
   export type ProgressCardColor =
     | 'primary'

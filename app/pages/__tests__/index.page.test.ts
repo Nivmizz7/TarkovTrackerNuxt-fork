@@ -193,9 +193,9 @@ describe('dashboard page', () => {
         const label = card.attributes('data-label') || '';
         return label.toLowerCase().includes('tasks');
       });
-      if (!tasksCard) throw new Error('Expected tasksCard to be defined');
-      expect(tasksCard.attributes('data-completed')).toBe('10');
-      expect(tasksCard.attributes('data-total')).toBe('10');
+      expect(tasksCard).toBeDefined();
+      expect(tasksCard!.attributes('data-completed')).toBe('10');
+      expect(tasksCard!.attributes('data-total')).toBe('10');
     });
     it('renders mixed status state', async () => {
       const { DashboardPage } = await setup({
