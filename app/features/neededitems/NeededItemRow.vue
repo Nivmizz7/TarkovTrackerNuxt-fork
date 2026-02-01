@@ -285,7 +285,6 @@
   </KeepAlive>
 </template>
 <script setup>
-  import { computed, defineAsyncComponent, inject, ref } from 'vue';
   import { useItemRowIntersection } from '@/composables/useItemRowIntersection';
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import ItemCountControls from '@/features/neededitems/ItemCountControls.vue';

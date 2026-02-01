@@ -103,7 +103,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { ref, nextTick, watch } from 'vue';
   const props = defineProps<{
     firNeeded: number;
     firCurrent: number;

@@ -1,4 +1,4 @@
-import { computed, ref, watch, type Ref } from 'vue';
+import { computed, ref, watch, type ComputedRef, type Ref, type WritableComputedRef } from 'vue';
 import {
   getNeededItemData,
   getNeededItemId,
@@ -20,6 +20,25 @@ import type {
 import { isTaskAvailableForEdition } from '@/utils/editionHelpers';
 import { fuzzyMatch } from '@/utils/fuzzySearch';
 import { logger } from '@/utils/logger';
+const DEFAULT_FULL_LOAD_TIMEOUT_MS = 5000;
+const DEFAULT_FULL_LOAD_MIN_TIME_MS = 16;
+const DEFAULT_FULL_LOAD_DELAY_MS = 1500;
+type FullItemsLoadOptions = {
+  priority?: 'normal' | 'high';
+  timeout?: number;
+  minTime?: number;
+  delayMs?: number;
+};
+type NeededItemsSortBy = 'priority' | 'name' | 'category' | 'count';
+type NeededItemsSortDirection = 'asc' | 'desc';
+type NeededItemsViewMode = 'list' | 'grid';
+type NeededItemsCardStyle = 'compact' | 'expanded';
+type SortValues = {
+  priority: number;
+  count: number;
+  name: string;
+  category: string;
+};
 export interface UseNeededItemsOptions {
   search?: Ref<string>;
 }
@@ -29,7 +48,38 @@ export interface FilterTab {
   icon: string;
   count: number;
 }
-export function useNeededItems(options: UseNeededItemsOptions = {}) {
+export interface UseNeededItemsReturn {
+  activeFilter: WritableComputedRef<NeededItemsFilterType>;
+  firFilter: WritableComputedRef<NeededItemsFirFilter>;
+  groupByItem: WritableComputedRef<boolean>;
+  hideNonFirSpecialEquipment: WritableComputedRef<boolean>;
+  hideTeamItems: WritableComputedRef<boolean>;
+  kappaOnly: WritableComputedRef<boolean>;
+  hideOwned: WritableComputedRef<boolean>;
+  sortBy: WritableComputedRef<NeededItemsSortBy>;
+  sortDirection: WritableComputedRef<NeededItemsSortDirection>;
+  viewMode: WritableComputedRef<NeededItemsViewMode>;
+  cardStyle: WritableComputedRef<NeededItemsCardStyle>;
+  allItems: ComputedRef<(NeededItemTaskObjective | NeededItemHideoutModule)[]>;
+  filteredItems: ComputedRef<(NeededItemTaskObjective | NeededItemHideoutModule)[]>;
+  groupedItems: ComputedRef<GroupedNeededItem[]>;
+  displayItems: ComputedRef<
+    GroupedNeededItem[] | (NeededItemTaskObjective | NeededItemHideoutModule)[]
+  >;
+  objectivesByItemId: ComputedRef<
+    Map<
+      string,
+      { taskObjectives: NeededItemTaskObjective[]; hideoutModules: NeededItemHideoutModule[] }
+    >
+  >;
+  filterTabsWithCounts: ComputedRef<FilterTab[]>;
+  itemsReady: ComputedRef<boolean>;
+  itemsError: ComputedRef<Error | null>;
+  itemsFullLoaded: ComputedRef<boolean>;
+  ensureNeededItemsData: () => void;
+  queueFullItemsLoad: (loadOptions?: FullItemsLoadOptions) => void;
+}
+export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededItemsReturn {
   const { search = ref('') } = options;
   const metadataStore = useMetadataStore();
   const progressStore = useProgressStore();
@@ -40,7 +90,7 @@ export function useNeededItems(options: UseNeededItemsOptions = {}) {
   const itemsFullLoaded = computed(() => metadataStore.itemsFullLoaded);
   const items = computed(() => metadataStore.items);
   const viewMode = computed({
-    get: () => preferencesStore.getNeededItemsViewMode as 'list' | 'grid',
+    get: () => preferencesStore.getNeededItemsViewMode as NeededItemsViewMode,
     set: (value) => preferencesStore.setNeededItemsViewMode(value),
   });
   const activeFilter = computed({
@@ -64,11 +114,11 @@ export function useNeededItems(options: UseNeededItemsOptions = {}) {
     set: (value) => preferencesStore.setNeededItemsKappaOnly(value),
   });
   const sortBy = computed({
-    get: () => preferencesStore.getNeededItemsSortBy,
+    get: () => preferencesStore.getNeededItemsSortBy as NeededItemsSortBy,
     set: (value) => preferencesStore.setNeededItemsSortBy(value),
   });
   const sortDirection = computed({
-    get: () => preferencesStore.getNeededItemsSortDirection,
+    get: () => preferencesStore.getNeededItemsSortDirection as NeededItemsSortDirection,
     set: (value) => preferencesStore.setNeededItemsSortDirection(value),
   });
   const hideOwned = computed({
@@ -76,7 +126,7 @@ export function useNeededItems(options: UseNeededItemsOptions = {}) {
     set: (value) => preferencesStore.setNeededItemsHideOwned(value),
   });
   const cardStyle = computed({
-    get: () => preferencesStore.getNeededItemsCardStyle,
+    get: () => preferencesStore.getNeededItemsCardStyle as NeededItemsCardStyle,
     set: (value) => preferencesStore.setNeededItemsCardStyle(value),
   });
   const hideTeamItems = computed({
@@ -87,18 +137,61 @@ export function useNeededItems(options: UseNeededItemsOptions = {}) {
   const userEdition = computed(() => tarkovStore.getGameEdition());
   const itemsLoaded = computed(() => (items.value?.length ?? 0) > 0);
   const itemsError = computed(() => metadataStore.itemsError);
-  const itemsReady = computed(() => itemsLoaded.value && !metadataStore.itemsLoading);
+  const itemsReady = computed(
+    () => itemsLoaded.value && !metadataStore.itemsLoading && !itemsError.value
+  );
   const fullItemsQueued = ref(false);
-  const queueFullItemsLoad = (
-    loadOptions: {
-      priority?: 'normal' | 'high';
-      timeout?: number;
-      minTime?: number;
-      delayMs?: number;
-    } = {}
-  ) => {
+  const getSortComparison = (sort: NeededItemsSortBy, a: SortValues, b: SortValues): number => {
+    switch (sort) {
+      case 'priority':
+        return a.priority - b.priority;
+      case 'count':
+        return a.count - b.count;
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'category':
+        return a.category.localeCompare(b.category);
+      default:
+        return 0;
+    }
+  };
+  const getNeededItemPriority = (
+    item: NeededItemTaskObjective | NeededItemHideoutModule
+  ): number => {
+    if (item.needType === 'taskObjective') {
+      const state = progressStore.tasksState?.[item.taskId];
+      return state === 2 ? 3 : state === 1 ? 1 : 0;
+    }
+    return 2;
+  };
+  const getNeededItemSortValues = (
+    item: NeededItemTaskObjective | NeededItemHideoutModule
+  ): SortValues => {
+    const itemData = getNeededItemData(item);
+    return {
+      priority: getNeededItemPriority(item),
+      count: item.count || 0,
+      name: itemData?.name ?? '',
+      category: itemData?.category?.name ?? '',
+    };
+  };
+  const getGroupedItemSortValues = (item: GroupedNeededItem): SortValues => {
+    const itemData = metadataStore.getItemById(item.item.id);
+    return {
+      priority: item.total,
+      count: item.total,
+      name: item.item.name ?? '',
+      category: itemData?.category?.name ?? '',
+    };
+  };
+  const queueFullItemsLoad = (loadOptions: FullItemsLoadOptions = {}) => {
     if (itemsFullLoaded.value) return;
-    const { priority = 'normal', timeout = 5000, minTime = 16, delayMs = 1500 } = loadOptions;
+    const {
+      priority = 'normal',
+      timeout = DEFAULT_FULL_LOAD_TIMEOUT_MS,
+      minTime = DEFAULT_FULL_LOAD_MIN_TIME_MS,
+      delayMs = DEFAULT_FULL_LOAD_DELAY_MS,
+    } = loadOptions;
     if (priority !== 'high' && fullItemsQueued.value) return;
     if (priority !== 'high') {
       fullItemsQueued.value = true;
@@ -305,36 +398,11 @@ export function useNeededItems(options: UseNeededItemsOptions = {}) {
       });
     }
     return result.sort((a, b) => {
-      let cmp = 0;
-      switch (sortBy.value) {
-        case 'priority': {
-          const getPriority = (item: NeededItemTaskObjective | NeededItemHideoutModule) => {
-            if (item.needType === 'taskObjective') {
-              const state = progressStore.tasksState?.[item.taskId];
-              return state === 2 ? 3 : state === 1 ? 1 : 0;
-            }
-            return 2;
-          };
-          cmp = getPriority(a) - getPriority(b);
-          break;
-        }
-        case 'name': {
-          const nameA = getNeededItemData(a)?.name ?? '';
-          const nameB = getNeededItemData(b)?.name ?? '';
-          cmp = nameA.localeCompare(nameB);
-          break;
-        }
-        case 'category': {
-          const nameA = getNeededItemData(a)?.name ?? '';
-          const nameB = getNeededItemData(b)?.name ?? '';
-          cmp = nameA.localeCompare(nameB);
-          break;
-        }
-        case 'count': {
-          cmp = (a.count || 0) - (b.count || 0);
-          break;
-        }
-      }
+      const cmp = getSortComparison(
+        sortBy.value,
+        getNeededItemSortValues(a),
+        getNeededItemSortValues(b)
+      );
       return sortDirection.value === 'asc' ? cmp : -cmp;
     });
   });
@@ -403,17 +471,11 @@ export function useNeededItems(options: UseNeededItemsOptions = {}) {
           group.hideoutNonFirCurrent,
       }))
       .sort((a, b) => {
-        let cmp = 0;
-        switch (sortBy.value) {
-          case 'priority':
-          case 'count':
-            cmp = a.total - b.total;
-            break;
-          case 'name':
-          case 'category':
-            cmp = a.item.name.localeCompare(b.item.name);
-            break;
-        }
+        const cmp = getSortComparison(
+          sortBy.value,
+          getGroupedItemSortValues(a),
+          getGroupedItemSortValues(b)
+        );
         return sortDirection.value === 'asc' ? cmp : -cmp;
       });
   });
