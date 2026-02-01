@@ -1,13 +1,37 @@
-import { computed } from 'vue';
+import { computed, type ComputedRef } from 'vue';
 import { useMetadataStore } from '@/stores/useMetadata';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import { useTarkovStore } from '@/stores/useTarkov';
-import type { TaskObjective } from '@/types/tarkov';
+import type { TaskObjective, Trader } from '@/types/tarkov';
 import { CURRENCY_ITEM_IDS } from '@/utils/constants';
 import { isTaskAvailableForEdition as checkTaskEdition } from '@/utils/editionHelpers';
 import { filterTasksByTypeSettings, buildTaskTypeFilterOptions } from '@/utils/taskTypeFilters';
-export function useDashboardStats() {
+type TraderStats = {
+  id: Trader['id'];
+  name: Trader['name'];
+  normalizedName: Trader['normalizedName'];
+  imageLink: Trader['imageLink'];
+  levels: Trader['levels'];
+  totalTasks: number;
+  completedTasks: number;
+  percentage: number;
+};
+export function useDashboardStats(): {
+  availableTasksCount: ComputedRef<number>;
+  failedTasksCount: ComputedRef<number>;
+  totalTasks: ComputedRef<number>;
+  totalObjectives: ComputedRef<number>;
+  completedObjectives: ComputedRef<number>;
+  completedTasks: ComputedRef<number>;
+  completedTaskItems: ComputedRef<number>;
+  totalTaskItems: ComputedRef<number>;
+  totalKappaTasks: ComputedRef<number>;
+  completedKappaTasks: ComputedRef<number>;
+  totalLightkeeperTasks: ComputedRef<number>;
+  completedLightkeeperTasks: ComputedRef<number>;
+  traderStats: ComputedRef<TraderStats[]>;
+} {
   const progressStore = useProgressStore();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
