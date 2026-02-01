@@ -76,7 +76,7 @@ vi.stubGlobal('$fetch', mockFetch);
 try {
   enableAutoUnmount(afterEach);
 } catch (error) {
-  if (!(error instanceof Error && error.message.includes('already enabled'))) {
+  if (!(error instanceof Error && error.message.includes('cannot be called more than once'))) {
     throw error;
   }
 }

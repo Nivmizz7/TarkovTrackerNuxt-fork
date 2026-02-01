@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { computed, nextTick, ref, watch, type Ref } from 'vue';
+import { useToast } from '#imports';
 import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
 import { useSupabaseListener } from '@/composables/supabase/useSupabaseListener';
 import { actions, defaultState, getters, type UserState } from '@/stores/progressState';
@@ -10,7 +11,6 @@ import { GAME_MODES } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Store } from 'pinia';
-import { useToast } from '#imports';
 /**
  * Helper to get current game mode
  */
