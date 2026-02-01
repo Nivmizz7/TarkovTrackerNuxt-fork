@@ -137,11 +137,11 @@
   import { useRouter } from 'vue-router';
   import ContextMenu from '@/components/ui/ContextMenu.vue';
   import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
+  import InfoRow from '@/features/tasks/InfoRow.vue';
+  import TaskLink from '@/features/tasks/TaskLink.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import type { Task } from '@/types/tarkov';
-  import InfoRow from './InfoRow.vue';
-  import TaskLink from './TaskLink.vue';
   const props = defineProps<{
     task: Task;
     xs: boolean;

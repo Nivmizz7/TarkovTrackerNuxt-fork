@@ -9,7 +9,12 @@
       title: 'Objets Nécessaires',
     },
   },
+  navigation_drawer: {
+    toggle: 'Basculer le menu',
+  },
   app_bar: {
+    error_loading: 'Erreur de chargement des données Tarkov',
+    loading: 'Chargement des données Tarkov',
     overflow_menu: {
       language: 'Langue',
     },

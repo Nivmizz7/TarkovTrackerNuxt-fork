@@ -278,7 +278,6 @@
 <script setup lang="ts">
   import { computed, defineAsyncComponent, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useToast } from '#imports';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
   import type {
@@ -291,7 +290,9 @@
   } from '@/types/tarkov';
   import { SPECIAL_STATIONS } from '@/utils/constants';
   const GenericCard = defineAsyncComponent(() => import('@/components/ui/GenericCard.vue'));
-  const HideoutRequirement = defineAsyncComponent(() => import('./HideoutRequirement.vue'));
+  const HideoutRequirement = defineAsyncComponent(
+    () => import('@/features/hideout/HideoutRequirement.vue')
+  );
   const props = withDefaults(
     defineProps<{
       station: HideoutStation;

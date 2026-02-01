@@ -92,9 +92,15 @@ const createTarkovStore = (
       ((objectiveId: string) => completedObjectives.has(objectiveId)),
     getPMCFaction: () => 'USEC',
     getGameEdition: () => 1,
+    getPrestigeLevel: () => 0,
     getObjectiveCount: () => 0,
   };
 };
+const createPreferencesStore = () => ({
+  getHideNonKappaTasks: false,
+  getShowLightkeeperTasks: true,
+  getShowNonSpecialTasks: true,
+});
 interface SetupOverrides {
   tasks?: Task[];
   objectives?: TaskObjective[];
@@ -115,9 +121,13 @@ const setup = async (overrides: SetupOverrides = {}) => {
     traders,
     sortedTraders: traders,
     editions: [],
+    prestigeTaskMap: new Map<string, number>(),
+    prestigeTaskIds: [] as string[],
+    getExcludedTaskIdsForEdition: () => new Set<string>(),
   };
   const progressStore = overrides.progressStore ?? createProgressStore();
   const tarkovStore = overrides.tarkovStore ?? createTarkovStore();
+  const preferencesStore = createPreferencesStore();
   vi.resetModules();
   vi.doMock('@/stores/useMetadata', () => ({
     useMetadataStore: () => metadataStore,
@@ -127,6 +137,9 @@ const setup = async (overrides: SetupOverrides = {}) => {
   }));
   vi.doMock('@/stores/useTarkov', () => ({
     useTarkovStore: () => tarkovStore,
+  }));
+  vi.doMock('@/stores/usePreferences', () => ({
+    usePreferencesStore: () => preferencesStore,
   }));
   const { useDashboardStats } = await import('@/composables/useDashboardStats');
   return {

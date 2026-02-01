@@ -1,13 +1,16 @@
 import { computed } from 'vue';
 import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import { useTarkovStore } from '@/stores/useTarkov';
 import type { TaskObjective } from '@/types/tarkov';
 import { CURRENCY_ITEM_IDS } from '@/utils/constants';
 import { isTaskAvailableForEdition as checkTaskEdition } from '@/utils/editionHelpers';
+import { filterTasksByTypeSettings, buildTaskTypeFilterOptions } from '@/utils/taskTypeFilters';
 export function useDashboardStats() {
   const progressStore = useProgressStore();
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   const tarkovStore = useTarkovStore();
   const isTaskSuccessful = (taskId: string) =>
     tarkovStore.isTaskComplete(taskId) && !tarkovStore.isTaskFailed(taskId);
@@ -16,16 +19,17 @@ export function useDashboardStats() {
   // Check if a task is available for the user's edition (uses shared helper)
   const isTaskAvailableForEdition = (taskId: string): boolean =>
     checkTaskEdition(taskId, tarkovStore.getGameEdition(), metadataStore.editions);
-  // Memoize tasks filtered by faction and edition to avoid repeated filtering
+  // Memoize tasks filtered by faction, edition, and type settings to match tasks page
   const relevantTasks = computed(() => {
     if (!metadataStore.tasks) return [];
     const currentFaction = tarkovStore.getPMCFaction();
-    return metadataStore.tasks.filter(
-      (task) =>
-        task &&
-        (task.factionName === 'Any' || task.factionName === currentFaction) &&
-        isTaskAvailableForEdition(task.id)
+    // First filter by faction
+    const factionFiltered = metadataStore.tasks.filter(
+      (task) => task && (task.factionName === 'Any' || task.factionName === currentFaction)
     );
+    // Then apply type settings (Kappa, Lightkeeper, non-special, edition, prestige)
+    const options = buildTaskTypeFilterOptions(preferencesStore, tarkovStore, metadataStore);
+    return filterTasksByTypeSettings(factionFiltered, options);
   });
   // Available tasks count
   const availableTasksCount = computed(() => {

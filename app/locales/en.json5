@@ -9,7 +9,12 @@
       title: 'Needed Items',
     },
   },
+  navigation_drawer: {
+    toggle: 'Toggle Menu Drawer',
+  },
   app_bar: {
+    error_loading: 'Error Loading Tarkov Data',
+    loading: 'Loading Tarkov Data',
     overflow_menu: {
       game_mode: 'Game Mode',
       display_name: 'Display Name',

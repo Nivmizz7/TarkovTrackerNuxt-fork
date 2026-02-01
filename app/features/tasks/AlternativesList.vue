@@ -11,7 +11,7 @@
 <script setup>
   import { defineAsyncComponent } from 'vue';
   import { useI18n } from 'vue-i18n';
-  const TaskLink = defineAsyncComponent(() => import('./TaskLink'));
+  const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink'));
   defineProps({
     alternatives: { type: Array, required: true },
     tasks: { type: Object, required: true },

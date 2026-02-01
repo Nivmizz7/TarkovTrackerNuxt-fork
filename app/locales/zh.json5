@@ -9,7 +9,12 @@
       title: '所需物品',
     },
   },
+  navigation_drawer: {
+    toggle: '切换菜单',
+  },
   app_bar: {
+    error_loading: '加载塔科夫数据时出错',
+    loading: '正在加载塔科夫数据',
     overflow_menu: {
       game_mode: '游戏模式',
       display_name: '显示名称',
