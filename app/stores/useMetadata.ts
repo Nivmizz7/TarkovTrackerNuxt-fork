@@ -411,10 +411,11 @@ export const useMetadataStore = defineStore('metadata', {
           const mergedIds = maps.map((map) => map.id);
           // Check for unavailable before svg check (unavailable maps may not have svg)
           const unavailable = staticData?.unavailable;
-          if (staticData?.svg) {
+          if (staticData?.svg || staticData?.tile) {
             return {
               ...primaryMap,
-              svg: staticData.svg,
+              svg: staticData?.svg,
+              tile: staticData?.tile,
               unavailable,
               mergedIds,
             };
@@ -426,6 +427,7 @@ export const useMetadataStore = defineStore('metadata', {
           }
           return {
             ...primaryMap,
+            unavailable,
             mergedIds,
           };
         })

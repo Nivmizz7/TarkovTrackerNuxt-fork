@@ -80,15 +80,33 @@ try {
     throw error;
   }
 }
-let warnSpy: ReturnType<typeof vi.spyOn>;
+const cleanupNuxtApp = (): void => {
+  if (typeof document !== 'undefined') {
+    const containers = document.querySelectorAll('[data-v-app]');
+    containers.forEach((container) => {
+      const element = container as HTMLElement & { __vue_app__?: { unmount: () => void } };
+      element.__vue_app__?.unmount();
+      element.removeAttribute('data-v-app');
+      delete element.__vue_app__;
+      element.innerHTML = '';
+    });
+  }
+  const context = (
+    globalThis as typeof globalThis & {
+      __unctx__?: { get?: (key: string) => { unset?: () => void } };
+    }
+  ).__unctx__;
+  context?.get?.('nuxt-app')?.unset?.();
+};
 beforeAll(() => {
   const originalWarn = console.warn.bind(console);
-  warnSpy = vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+  vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
     const first = args[0];
     if (typeof first === 'string' && first.startsWith('[Icon]')) return;
     originalWarn(...args);
   });
 });
 afterAll(() => {
+  cleanupNuxtApp();
   vi.restoreAllMocks();
 });

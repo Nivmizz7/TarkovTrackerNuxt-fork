@@ -142,7 +142,11 @@
                   }}
                 </span>
                 <UTooltip :text="lastUsedTooltip(token.lastUsedAt)">
-                  <UIcon name="i-mdi-clock-outline" class="text-surface-500 h-3.5 w-3.5" />
+                  <UIcon
+                    name="i-mdi-clock-outline"
+                    class="text-surface-500 h-3.5 w-3.5"
+                    :aria-label="lastUsedTooltip(token.lastUsedAt)"
+                  />
                 </UTooltip>
               </div>
             </div>

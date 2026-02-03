@@ -9,7 +9,9 @@
     <div class="flex flex-wrap gap-2 pl-6">
       <div
         v-for="row in consolidatedRows"
+        :id="getRowObjectiveIds(row)[0] ? `objective-${getRowObjectiveIds(row)[0]}` : undefined"
         :key="row.itemKey"
+        :data-objective-ids="getRowObjectiveIds(row).join(',')"
         class="flex max-w-full items-center gap-2 rounded-md border px-2 py-1 transition-colors"
         :class="[
           row.allComplete
@@ -35,6 +37,20 @@
         >
           FiR
         </span>
+        <AppTooltip v-if="rowHasMapLocation(row)" :text="t('page.tasks.questcard.jumpToMap')">
+          <button
+            type="button"
+            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 text-surface-300 flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            :class="
+              isJumpToMapDisabledForRow(row) ? 'cursor-not-allowed opacity-50' : 'hover:bg-white/10'
+            "
+            :aria-label="t('page.tasks.questcard.jumpToMap', 'Jump To Map')"
+            :disabled="isJumpToMapDisabledForRow(row)"
+            @click.stop="onJumpToMapClick($event, row)"
+          >
+            <UIcon name="i-mdi-map-marker" aria-hidden="true" class="h-4 w-4" />
+          </button>
+        </AppTooltip>
         <!-- Single set of controls per item - updates all related objectives together -->
         <ObjectiveCountControls
           v-if="row.meta.neededCount > 1"
@@ -77,9 +93,13 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
+  import { objectiveHasMapLocation } from '@/features/tasks/task-objective-helpers';
   import { useMetadataStore } from '@/stores/useMetadata';
+  import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import type { TaskObjective } from '@/types/tarkov';
+  const jumpToMapObjective = inject<((id: string) => void) | null>('jumpToMapObjective', null);
+  const isMapView = inject('isMapView', ref(false));
   const props = defineProps<{
     title: string;
     iconName: string;
@@ -88,6 +108,7 @@
   const { t } = useI18n({ useScope: 'global' });
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   type ObjectiveMeta = {
     neededCount: number;
     currentCount: number;
@@ -228,6 +249,49 @@
       };
     });
   });
+  const getRowObjectiveIds = (row: ConsolidatedRow): string[] => {
+    return row.objectives.map((objRow) => objRow.objective.id);
+  };
+  const rowHasMapLocation = (row: ConsolidatedRow): boolean => {
+    if (!isMapView.value) return false;
+    return row.objectives.some((objRow) => {
+      const fullObj = fullObjectives.value.find((o) => o.id === objRow.objective.id);
+      return objectiveHasMapLocation(objRow.objective, fullObj);
+    });
+  };
+  const getMapObjectiveId = (row: ConsolidatedRow): string | null => {
+    if (!isMapView.value) return null;
+    const showCompleted = ['completed', 'all'].includes(preferencesStore.getTaskSecondaryView);
+    let fallbackCompleteId: string | null = null;
+    for (const objRow of row.objectives) {
+      const obj = objRow.objective;
+      const fullObj = fullObjectives.value.find((o) => o.id === obj.id);
+      if (!objectiveHasMapLocation(obj, fullObj)) continue;
+      const isComplete = tarkovStore.isTaskObjectiveComplete(obj.id);
+      if (!isComplete) {
+        return obj.id;
+      }
+      if (showCompleted && !fallbackCompleteId) {
+        fallbackCompleteId = obj.id;
+      }
+    }
+    return fallbackCompleteId;
+  };
+  const shouldShowCompletedOnMap = computed(() =>
+    ['completed', 'all'].includes(preferencesStore.getTaskSecondaryView)
+  );
+  const isJumpToMapDisabledForRow = (row: ConsolidatedRow): boolean => {
+    const hasLocation = rowHasMapLocation(row);
+    const hasIncompleteWithLocation = getMapObjectiveId(row) !== null;
+    if (hasIncompleteWithLocation) return false;
+    return hasLocation && !shouldShowCompletedOnMap.value;
+  };
+  const onJumpToMapClick = (event: MouseEvent, row: ConsolidatedRow) => {
+    const objectiveId = getMapObjectiveId(row);
+    if (!objectiveId) return;
+    (event.currentTarget as HTMLElement | null)?.blur();
+    jumpToMapObjective?.(objectiveId);
+  };
   const isObjectiveComplete = (objectiveId: string) => {
     return tarkovStore.isTaskObjectiveComplete(objectiveId);
   };

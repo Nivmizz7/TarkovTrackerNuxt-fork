@@ -26,6 +26,9 @@
         PvE
       </button>
     </div>
+    <div v-if="switchModeError" class="text-error-400 text-xs" role="alert">
+      {{ switchModeError }}
+    </div>
     <div
       class="flex w-full overflow-hidden rounded-md border border-white/10"
       role="group"
@@ -53,13 +56,15 @@
 </template>
 <script setup lang="ts">
   import { storeToRefs } from 'pinia';
-  import { computed } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { GAME_MODES, PMC_FACTIONS, type GameMode, type PMCFaction } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   const metadataStore = useMetadataStore();
   const tarkovStore = useTarkovStore();
+  const { t } = useI18n({ useScope: 'global' });
+  const switchModeError = ref('');
   const factions = PMC_FACTIONS;
   const currentFaction = computed<PMCFaction>(() => tarkovStore.getPMCFaction());
   function setFaction(faction: PMCFaction) {
@@ -83,10 +88,15 @@
     if (mode !== currentGameMode.value && !dataLoading.value) {
       metadataStore.setLoading(true);
       try {
+        switchModeError.value = '';
         await tarkovStore.switchGameMode(mode);
         metadataStore.updateLanguageAndGameMode();
         await metadataStore.fetchAllData();
       } catch (err) {
+        switchModeError.value = t(
+          'settings.game_settings.switch_mode_failed',
+          'Failed to switch game mode, please retry'
+        );
         logger.error('[DrawerGameSettings] Error switching mode:', err);
       } finally {
         metadataStore.setLoading(false);

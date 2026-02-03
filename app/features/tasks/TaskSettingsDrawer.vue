@@ -74,6 +74,16 @@
               </span>
             </div>
           </label>
+          <label
+            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
+          >
+            <UCheckbox v-model="showGlobalTasks" />
+            <div class="min-w-0 flex-1">
+              <span class="text-surface-200 text-sm">
+                {{ t('page.tasks.settings.filters.showGlobalTasks', 'Show Global Tasks on Map') }}
+              </span>
+            </div>
+          </label>
         </div>
       </section>
       <section class="bg-surface-800/50 rounded-lg border border-white/5 p-3">
@@ -126,8 +136,8 @@
             <span class="text-surface-200 text-sm">
               {{
                 t(
-                  'page.tasks.settings.appearance.hideCompletedObjectives',
-                  'Hide Completed Task Objectives'
+                  'page.tasks.settings.appearance.collapseCompletedObjectives',
+                  'Collapse Objectives on Completed Tasks'
                 )
               }}
             </span>
@@ -220,37 +230,37 @@
         </div>
       </section>
     </div>
-  </aside>
-  <UModal v-model:open="showRepairConfirm" @close="resolveRepairConfirm(false)">
-    <template #content>
-      <div class="p-5">
-        <div class="mb-4 flex items-center gap-3">
-          <div class="bg-warning-500/15 rounded-full p-2">
-            <UIcon name="i-mdi-alert" class="text-warning-400 h-5 w-5" />
+    <UModal v-model:open="showRepairConfirm" @close="resolveRepairConfirm(false)">
+      <template #content>
+        <div class="p-5">
+          <div class="mb-4 flex items-center gap-3">
+            <div class="bg-warning-500/15 rounded-full p-2">
+              <UIcon name="i-mdi-alert" class="text-warning-400 h-5 w-5" />
+            </div>
+            <h3 class="text-surface-100 text-base font-semibold">
+              {{ t('page.tasks.settings.advanced.repairFailed', 'Repair failed tasks') }}
+            </h3>
           </div>
-          <h3 class="text-surface-100 text-base font-semibold">
-            {{ t('page.tasks.settings.advanced.repairFailed', 'Repair failed tasks') }}
-          </h3>
+          <p class="text-surface-300 mb-5 text-sm">
+            {{
+              t(
+                'page.tasks.settings.advanced.repairFailedConfirm',
+                'Repair failed tasks by clearing failed flags that are not supported by current fail conditions?'
+              )
+            }}
+          </p>
+          <div class="flex justify-end gap-2">
+            <UButton color="neutral" variant="ghost" @click="resolveRepairConfirm(false)">
+              {{ t('page.tasks.settings.advanced.repairFailedCancel', 'Cancel') }}
+            </UButton>
+            <UButton color="warning" variant="soft" @click="resolveRepairConfirm(true)">
+              {{ t('page.tasks.settings.advanced.repairFailedAction', 'Repair') }}
+            </UButton>
+          </div>
         </div>
-        <p class="text-surface-300 mb-5 text-sm">
-          {{
-            t(
-              'page.tasks.settings.advanced.repairFailedConfirm',
-              'Repair failed tasks by clearing failed flags that are not supported by current fail conditions?'
-            )
-          }}
-        </p>
-        <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="ghost" @click="resolveRepairConfirm(false)">
-            {{ t('page.tasks.settings.advanced.repairFailedCancel', 'Cancel') }}
-          </UButton>
-          <UButton color="warning" variant="soft" @click="resolveRepairConfirm(true)">
-            {{ t('page.tasks.settings.advanced.repairFailedAction', 'Repair') }}
-          </UButton>
-        </div>
-      </div>
-    </template>
-  </UModal>
+      </template>
+    </UModal>
+  </aside>
 </template>
 <script setup lang="ts">
   import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
@@ -362,6 +372,10 @@
   const sharedByAllOnly = computed({
     get: () => preferencesStore.getTaskSharedByAllOnly,
     set: (value) => preferencesStore.setTaskSharedByAllOnly(value),
+  });
+  const showGlobalTasks = computed({
+    get: () => !preferencesStore.getHideGlobalTasks,
+    set: (value) => preferencesStore.setHideGlobalTasks(!value),
   });
   const showRequiredLabels = computed({
     get: () => preferencesStore.getShowRequiredLabels,

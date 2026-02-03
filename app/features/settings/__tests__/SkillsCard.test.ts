@@ -19,6 +19,12 @@ const i18n = createI18n({
 });
 // Mock dependencies
 vi.mock('@/composables/useSkillCalculation');
+vi.mock('@/stores/usePreferences', () => ({
+  usePreferencesStore: () => ({
+    getSkillSortMode: 'priority',
+    setSkillSortMode: vi.fn(),
+  }),
+}));
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@vueuse/core')>();
   return {

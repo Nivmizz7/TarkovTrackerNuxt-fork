@@ -1,6 +1,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
 import { useTarkovStore } from '@/stores/useTarkov';
 import type { Task, TaskObjective } from '@/types/tarkov';
 export type TaskActionPayload = {
@@ -23,7 +24,13 @@ export function useTaskActions(
   const { t } = useI18n({ useScope: 'global' });
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   const tasks = computed(() => metadataStore.tasks);
+  const unpinTaskIfPinned = (taskId: string) => {
+    if (preferencesStore.getPinnedTaskIds.includes(taskId)) {
+      preferencesStore.togglePinnedTask(taskId);
+    }
+  };
   // Create O(1) lookup map for tasks (more efficient than O(n) find operations)
   const tasksMap = computed(() => {
     const map = new Map<string, Task>();
@@ -127,6 +134,7 @@ export function useTaskActions(
       });
     }
     tarkovStore.setTaskComplete(currentTask.id);
+    unpinTaskIfPinned(currentTask.id);
     if (currentTask.objectives) {
       handleTaskObjectives(currentTask.objectives, 'setTaskObjectiveComplete');
     }
@@ -217,6 +225,7 @@ export function useTaskActions(
       });
     }
     tarkovStore.setTaskFailed(currentTask.id);
+    unpinTaskIfPinned(currentTask.id);
     if (currentTask.objectives) {
       clearTaskObjectives(currentTask.objectives);
     }

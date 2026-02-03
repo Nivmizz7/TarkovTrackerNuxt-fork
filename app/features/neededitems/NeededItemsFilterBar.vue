@@ -4,8 +4,40 @@
     <div
       class="bg-surface-900 flex flex-wrap items-center justify-center gap-1 overflow-x-auto rounded-lg border border-white/12 px-3 py-2.5 shadow-sm sm:gap-2 sm:px-4 sm:py-3"
     >
+      <!-- ALL tab (rendered separately for divider) -->
       <UButton
-        v-for="tab in filterTabs"
+        v-if="allTab"
+        :variant="'ghost'"
+        :color="'neutral'"
+        size="sm"
+        class="shrink-0 px-2 sm:px-3"
+        :class="{
+          'border-surface-200 rounded-none border-b-2': modelValue === allTab.value,
+        }"
+        @click="$emit('update:modelValue', allTab.value)"
+      >
+        <UIcon :name="allTab.icon" class="h-4 w-4 sm:mr-1 sm:h-5 sm:w-5" />
+        <span class="hidden text-[clamp(0.625rem,2vw,0.875rem)] sm:inline">
+          {{ allTab.label.toUpperCase() }}
+        </span>
+        <span
+          :class="[
+            'ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm',
+            getTabBadgeColor(allTab),
+          ]"
+        >
+          {{ allTab.count }}
+        </span>
+      </UButton>
+      <!-- Divider between ALL and other tabs -->
+      <span
+        v-if="showAllDivider"
+        aria-hidden="true"
+        class="bg-surface-700/60 h-6 w-px self-center"
+      ></span>
+      <!-- Remaining tabs -->
+      <UButton
+        v-for="tab in otherTabs"
         :key="tab.value"
         :variant="'ghost'"
         :color="'neutral'"
@@ -23,7 +55,7 @@
         <span
           :class="[
             'ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white sm:ml-2 sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm',
-            modelValue === tab.value ? 'bg-info-600' : 'bg-surface-600',
+            getTabBadgeColor(tab),
           ]"
         >
           {{ tab.count }}
@@ -328,6 +360,27 @@
     'update:hideOwned': [value: boolean];
     'update:cardStyle': [value: CardStyle];
   }>();
+  const allTab = computed(() => props.filterTabs.find((tab) => tab.value === 'all'));
+  const otherTabs = computed(() =>
+    props.filterTabs.filter((tab) => {
+      if (tab.value === 'all') return false;
+      if (tab.value === 'completed' && tab.count <= 0) return false;
+      return true;
+    })
+  );
+  const getTabBadgeColor = (tab: FilterTab): string => {
+    switch (tab.value) {
+      case 'completed':
+        return 'bg-success-500';
+      case 'tasks':
+      case 'hideout':
+        return tab.count > 0 ? 'bg-info-500' : 'bg-surface-600';
+      case 'all':
+      default:
+        return tab.count > 0 ? 'bg-surface-500' : 'bg-surface-600';
+    }
+  };
+  const showAllDivider = computed(() => allTab.value && otherTabs.value.length > 0);
   const activeFiltersCount = computed(() => {
     let count = 0;
     if (props.firFilter !== 'all') {

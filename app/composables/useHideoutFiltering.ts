@@ -10,13 +10,15 @@ export function useHideoutFiltering() {
   const metadataStore = useMetadataStore();
   const { hideoutStations, hideoutLoading } = storeToRefs(metadataStore);
   const progressStore = useProgressStore();
-  const { getStationStatus } = useHideoutStationStatus();
+  const { getStationStatus, isSkillReqMet, isStationReqMet, isTraderReqMet } =
+    useHideoutStationStatus();
   const preferencesStore = usePreferencesStore();
   // Active primary view (available, maxed, locked, all)
   const activePrimaryView = computed({
-    get: () => preferencesStore.getTaskPrimaryView,
-    set: (value) => preferencesStore.setTaskPrimaryView(value),
+    get: () => preferencesStore.getHideoutPrimaryView,
+    set: (value) => preferencesStore.setHideoutPrimaryView(value),
   });
+  const sortReadyFirst = computed(() => preferencesStore.getHideoutSortReadyFirst);
   // Helper to determine if a station is available for upgrade
   const isStationAvailable = (station: HideoutStation): boolean => {
     return getStationStatus(station) === 'available';
@@ -28,6 +30,29 @@ export function useHideoutFiltering() {
   // Helper to determine if a station is locked
   const isStationLocked = (station: HideoutStation): boolean => {
     return getStationStatus(station) === 'locked';
+  };
+  const isStationReadyToBuild = (station: HideoutStation): boolean => {
+    const currentLevel = progressStore.hideoutLevels?.[station.id]?.self ?? 0;
+    const nextLevel = station.levels.find((level) => level.level === currentLevel + 1) ?? null;
+    if (!nextLevel) return false;
+    const stationReqsMet = nextLevel.stationLevelRequirements?.every(isStationReqMet) ?? true;
+    const skillReqsMet = nextLevel.skillRequirements?.every(isSkillReqMet) ?? true;
+    const traderReqsMet = nextLevel.traderRequirements?.every(isTraderReqMet) ?? true;
+    return stationReqsMet && skillReqsMet && traderReqsMet;
+  };
+  const sortStationsByReadiness = (stations: HideoutStation[]): HideoutStation[] => {
+    if (!sortReadyFirst.value) return stations;
+    return stations
+      .map((station, index) => ({
+        station,
+        index,
+        ready: isStationReadyToBuild(station),
+      }))
+      .sort((a, b) => {
+        if (a.ready === b.ready) return a.index - b.index;
+        return a.ready ? -1 : 1;
+      })
+      .map((entry) => entry.station);
   };
   // Calculate station counts for each filter
   const stationCounts = computed(() => {
@@ -90,19 +115,19 @@ export function useHideoutFiltering() {
       const hideoutStationList = hideoutStations.value as HideoutStation[];
       // Display all upgradeable stations
       if (activePrimaryView.value === 'available') {
-        return hideoutStationList.filter(isStationAvailable);
+        return sortStationsByReadiness(hideoutStationList.filter(isStationAvailable));
       }
       // Display all maxed stations
       if (activePrimaryView.value === 'maxed') {
-        return hideoutStationList.filter(isStationMaxed);
+        return sortStationsByReadiness(hideoutStationList.filter(isStationMaxed));
       }
       // Display all locked stations
       if (activePrimaryView.value === 'locked') {
-        return hideoutStationList.filter(isStationLocked);
+        return sortStationsByReadiness(hideoutStationList.filter(isStationLocked));
       }
       // Display all stations
-      if (activePrimaryView.value === 'all') return hideoutStationList;
-      return hideoutStationList;
+      if (activePrimaryView.value === 'all') return sortStationsByReadiness(hideoutStationList);
+      return sortStationsByReadiness(hideoutStationList);
     } catch (error) {
       logger.error('[useHideoutFiltering] Error computing visible stations:', error);
       // Return empty array on error to prevent stuck states

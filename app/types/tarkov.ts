@@ -272,6 +272,28 @@ export interface MapExtract {
   /** Bottom boundary for multi-floor extracts */
   bottom?: number;
 }
+export interface MapSvgConfig {
+  file: string;
+  floors: string[];
+  defaultFloor: string;
+  coordinateRotation: number;
+  transform?: [number, number, number, number];
+  bounds: number[][];
+  /** Separate bounds for SVG overlay (if different from marker bounds) */
+  svgBounds?: number[][];
+  /** Whether lower floors should remain visible when a higher floor is selected */
+  stackFloors?: boolean;
+  minZoom?: number;
+  maxZoom?: number;
+}
+export interface MapTileConfig {
+  tilePath: string;
+  coordinateRotation: number;
+  transform?: [number, number, number, number];
+  bounds: number[][];
+  minZoom?: number;
+  maxZoom?: number;
+}
 export interface TarkovMap {
   id: string;
   name: string;
@@ -280,20 +302,8 @@ export interface TarkovMap {
   extracts?: MapExtract[];
   /** Whether the map is unavailable for display */
   unavailable?: boolean;
-  svg?:
-    | string
-    | {
-        file: string;
-        floors: string[];
-        defaultFloor: string;
-        coordinateRotation: number;
-        transform?: [number, number, number, number];
-        bounds: number[][];
-        /** Separate bounds for SVG overlay (if different from marker bounds) */
-        svgBounds?: number[][];
-        /** Whether lower floors should remain visible when a higher floor is selected */
-        stackFloors?: boolean;
-      };
+  svg?: string | MapSvgConfig;
+  tile?: MapTileConfig;
 }
 export interface TraderLoyaltyLevel {
   id: string;
@@ -455,13 +465,8 @@ export interface StaticMapData {
     };
     /** Whether the map is unavailable for display (e.g., unreleased maps) */
     unavailable?: boolean;
-    svg?: {
-      file: string;
-      floors: string[];
-      defaultFloor: string;
-      coordinateRotation: number;
-      bounds: number[][];
-    };
+    svg?: MapSvgConfig;
+    tile?: MapTileConfig;
   };
 }
 // Store Types

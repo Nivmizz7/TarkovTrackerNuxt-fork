@@ -28,7 +28,6 @@
             :fence-rep-requirement="fenceRepRequirement"
             :meets-fence-rep-requirement="meetsFenceRepRequirement"
             :trader-level-reqs="traderLevelReqs"
-            :is-global-task="isGlobalTask"
             :location-tooltip="locationTooltip"
             :is-failed="isFailed"
             :is-invalid="isInvalid"
@@ -110,37 +109,6 @@
             }}
           </span>
         </div>
-        <div v-if="afterHasContent" class="text-surface-400 text-xs">
-          <AppTooltip
-            v-if="unlocksNextCount > 0"
-            :text="
-              t(
-                'page.tasks.questcard.unlocksNextTooltip',
-                'Number of quests that become available after completing this task'
-              )
-            "
-          >
-            <span class="border-surface-500 cursor-help border-b border-dotted">
-              {{ t('page.tasks.questcard.unlocksNext', 'Unlocks next') }}: {{ unlocksNextCount }}
-            </span>
-          </AppTooltip>
-          <span v-if="unlocksNextCount > 0 && impactCount > 0" class="text-surface-600 mx-2">
-            •
-          </span>
-          <AppTooltip
-            v-if="impactCount > 0"
-            :text="
-              t(
-                'page.tasks.questcard.impactTooltip',
-                'Number of incomplete quests that depend on this task being completed'
-              )
-            "
-          >
-            <span class="border-surface-500 cursor-help border-b border-dotted">
-              {{ t('page.tasks.questcard.impact', 'Impact') }}: {{ impactCount }}
-            </span>
-          </AppTooltip>
-        </div>
       </div>
       <!-- 2) Body: objectives (Full Width) -->
       <div class="border-surface-700/50 border-t">
@@ -169,7 +137,10 @@
           leave-from-class="opacity-100 translate-y-0"
           leave-to-class="opacity-0 -translate-y-1"
         >
-          <div v-if="objectivesVisible" class="space-y-3" :class="compactClasses.objectivesBody">
+          <div
+            v-if="objectivesVisible"
+            :class="[isCompact ? 'space-y-1.5' : 'space-y-3', compactClasses.objectivesBody]"
+          >
             <QuestKeys v-if="task?.neededKeys?.length" :needed-keys="task.neededKeys" />
             <QuestObjectivesSkeleton
               v-if="showObjectivesSkeleton"
@@ -200,6 +171,8 @@
         :parent-tasks="parentTasks"
         :child-tasks="childTasks"
         :experience="task.experience"
+        :unlocks-next-count="unlocksNextCount"
+        :impact-count="impactCount"
         @item-context-menu="openItemContextMenu"
       />
     </template>
@@ -442,8 +415,8 @@
   const isCompact = computed(() => preferencesStore.getTaskCardDensity === 'compact');
   const compactClasses = computed(() => ({
     header: isCompact.value ? 'gap-2 px-3 py-2' : 'gap-3 px-4 py-3',
-    objectivesToggle: isCompact.value ? 'px-3 py-2' : 'px-4 py-3',
-    objectivesBody: isCompact.value ? 'px-3 py-3' : 'px-4 py-4',
+    objectivesToggle: isCompact.value ? 'px-3 py-1.5' : 'px-4 py-3',
+    objectivesBody: isCompact.value ? 'px-3 pt-1 pb-2' : 'px-4 py-4',
   }));
   const neededBy = computed(() => props.task.neededBy ?? []);
   const showNeededBy = computed(
@@ -505,7 +478,6 @@
   });
   const unlocksNextCount = computed(() => childTasks.value.length);
   const impactCount = computed(() => lockedBehind.value);
-  const afterHasContent = computed(() => unlocksNextCount.value > 0 || impactCount.value > 0);
   const traderStandingRewards = computed(() => props.task.finishRewards?.traderStanding ?? []);
   const skillRewards = computed(() => props.task.finishRewards?.skillLevelReward ?? []);
   const traderUnlockReward = computed(() => props.task.finishRewards?.traderUnlock);

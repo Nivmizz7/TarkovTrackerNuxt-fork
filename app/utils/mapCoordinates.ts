@@ -20,7 +20,18 @@ export interface MapSvgConfig {
   svgBounds?: number[][];
   /** Whether lower floors should remain visible when a higher floor is selected */
   stackFloors?: boolean;
+  minZoom?: number;
+  maxZoom?: number;
 }
+export interface MapTileConfig {
+  tilePath: string;
+  coordinateRotation: number;
+  transform?: [number, number, number, number];
+  bounds: number[][];
+  minZoom?: number;
+  maxZoom?: number;
+}
+export type MapRenderConfig = MapSvgConfig | MapTileConfig;
 /**
  * Applies coordinate rotation using trigonometric functions.
  * This matches tarkov.dev's rotation implementation.
@@ -50,7 +61,7 @@ export function applyRotation(
  * @param svgConfig Map SVG configuration with transform and rotation
  * @returns Custom CRS for the map
  */
-export function createMapCRS(L: typeof import('leaflet'), svgConfig: MapSvgConfig): L.CRS {
+export function createMapCRS(L: typeof import('leaflet'), svgConfig: MapRenderConfig): L.CRS {
   let scaleX = 1;
   let scaleY = 1;
   let marginX = 0;
@@ -115,7 +126,9 @@ export function outlineToLatLngArray(
  * @param svgConfig Map SVG configuration
  * @returns Leaflet bounds as [[lat1, lng1], [lat2, lng2]]
  */
-export function getLeafletBounds(svgConfig?: MapSvgConfig): [[number, number], [number, number]] {
+export function getLeafletBounds(
+  svgConfig?: MapRenderConfig
+): [[number, number], [number, number]] {
   if (!svgConfig?.bounds || svgConfig.bounds.length < 2) {
     // Fallback to default bounds
     return [
@@ -185,14 +198,14 @@ export function getSvgOverlayBounds(
  */
 export function getLeafletMapOptions(
   L: typeof import('leaflet'),
-  svgConfig?: MapSvgConfig
+  svgConfig?: MapRenderConfig
 ): L.MapOptions {
   // Create custom CRS if we have config, otherwise use Simple
   const crs = svgConfig ? createMapCRS(L, svgConfig) : L.CRS.Simple;
   return {
     crs,
-    minZoom: 1,
-    maxZoom: 6,
+    minZoom: svgConfig?.minZoom ?? 1,
+    maxZoom: svgConfig?.maxZoom ?? 6,
     zoomSnap: 0.25,
     zoomDelta: 0.35,
     // Smoother than default, but faster than ultra-fine
@@ -225,6 +238,48 @@ export function isValidMapSvgConfig(svg: unknown): svg is MapSvgConfig {
     Array.isArray(config.bounds) &&
     config.bounds.length >= 2
   );
+}
+export function isValidMapTileConfig(tile: unknown): tile is MapTileConfig {
+  if (!tile || typeof tile !== 'object') return false;
+  const config = tile as Record<string, unknown>;
+  return (
+    typeof config.tilePath === 'string' &&
+    typeof config.coordinateRotation === 'number' &&
+    Array.isArray(config.bounds) &&
+    config.bounds.length >= 2
+  );
+}
+export function normalizeTileConfig(tileConfig: MapTileConfig): MapTileConfig {
+  if (!tileConfig.transform) return tileConfig;
+  const [scaleX, marginX, scaleYRaw, marginY] = tileConfig.transform;
+  const scaleY = scaleYRaw * -1;
+  const bounds = tileConfig.bounds;
+  if (!bounds || bounds.length < 2) return tileConfig;
+  const cornerPairs: Array<[number, number]> = [
+    [bounds[0]?.[0] ?? 0, bounds[0]?.[1] ?? 0],
+    [bounds[0]?.[0] ?? 0, bounds[1]?.[1] ?? 0],
+    [bounds[1]?.[0] ?? 0, bounds[0]?.[1] ?? 0],
+    [bounds[1]?.[0] ?? 0, bounds[1]?.[1] ?? 0],
+  ];
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  cornerPairs.forEach(([x, z]) => {
+    const rotated = applyRotation({ lat: z, lng: x }, tileConfig.coordinateRotation);
+    const pixelX = rotated.lng * scaleX + marginX;
+    const pixelY = rotated.lat * scaleY + marginY;
+    minX = Math.min(minX, pixelX);
+    minY = Math.min(minY, pixelY);
+  });
+  if (minX >= 0 && minY >= 0) return tileConfig;
+  return {
+    ...tileConfig,
+    transform: [
+      scaleX,
+      marginX + (minX < 0 ? -minX : 0),
+      scaleYRaw,
+      marginY + (minY < 0 ? -minY : 0),
+    ],
+  };
 }
 /**
  * Gets the CDN URL for a map SVG file.

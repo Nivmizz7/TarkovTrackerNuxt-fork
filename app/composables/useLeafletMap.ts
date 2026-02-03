@@ -19,11 +19,15 @@ import { logger } from '@/utils/logger';
 import {
   getLeafletBounds,
   getLeafletMapOptions,
-  getSvgOverlayBounds,
-  isValidMapSvgConfig,
   getMapSvgCdnUrl,
   getMapSvgFallbackUrl,
+  getSvgOverlayBounds,
+  isValidMapSvgConfig,
+  isValidMapTileConfig,
+  normalizeTileConfig,
+  type MapRenderConfig,
   type MapSvgConfig,
+  type MapTileConfig,
 } from '@/utils/mapCoordinates';
 import type L from 'leaflet';
 export interface UseLeafletMapOptions {
@@ -140,9 +144,11 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   const isLoading = ref(false);
   const isIdle = ref(false);
   const svgLayer = shallowRef<L.SVGOverlay | null>(null);
+  const tileLayer = shallowRef<L.TileLayer | null>(null);
   const objectiveLayer = shallowRef<L.LayerGroup | null>(null);
   const extractLayer = shallowRef<L.LayerGroup | null>(null);
   const crsKey = ref('');
+  const renderKey = ref('');
   // Map event handlers
   const onWheel = (e: WheelEvent) => {
     if (!mapInstance.value) return;
@@ -183,21 +189,50 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   // Resize observer
   let resizeObserver: ResizeObserver | null = null;
   // Computed
-  const floors = computed<string[]>(() => {
+  const getSvgConfig = (): MapSvgConfig | undefined => {
     const svgConfig = map.value?.svg;
-    if (isValidMapSvgConfig(svgConfig)) {
-      return svgConfig.floors;
+    return isValidMapSvgConfig(svgConfig) ? svgConfig : undefined;
+  };
+  const getTileConfig = (): MapTileConfig | undefined => {
+    const tileConfig = map.value?.tile;
+    if (!isValidMapTileConfig(tileConfig)) return undefined;
+    return normalizeTileConfig(tileConfig);
+  };
+  const getRenderConfig = (): MapRenderConfig | undefined => getSvgConfig() ?? getTileConfig();
+  const getRenderKey = (
+    svgConfig?: MapSvgConfig,
+    tileConfig?: MapTileConfig
+  ): string | undefined => {
+    if (svgConfig) {
+      return JSON.stringify({
+        type: 'svg',
+        file: svgConfig.file,
+        floors: svgConfig.floors,
+        defaultFloor: svgConfig.defaultFloor,
+        svgBounds: svgConfig.svgBounds ?? null,
+      });
     }
-    return [];
+    if (tileConfig) {
+      return JSON.stringify({
+        type: 'tile',
+        tilePath: tileConfig.tilePath,
+        minZoom: tileConfig.minZoom ?? null,
+        maxZoom: tileConfig.maxZoom ?? null,
+      });
+    }
+    return undefined;
+  };
+  const floors = computed<string[]>(() => {
+    return getSvgConfig()?.floors ?? [];
   });
   const hasMultipleFloors = computed(() => floors.value.length > 1);
-  const getCrsKey = (svgConfig?: MapSvgConfig): string => {
-    if (!svgConfig) return 'none';
+  const getCrsKey = (config?: MapRenderConfig): string => {
+    if (!config) return 'none';
     return JSON.stringify({
-      transform: svgConfig.transform ?? null,
-      coordinateRotation: svgConfig.coordinateRotation ?? 0,
-      bounds: svgConfig.bounds,
-      svgBounds: svgConfig.svgBounds ?? null,
+      transform: config.transform ?? null,
+      coordinateRotation: config.coordinateRotation ?? 0,
+      bounds: config.bounds,
+      svgBounds: 'svgBounds' in config ? (config.svgBounds ?? null) : null,
     });
   };
   /**
@@ -237,8 +272,8 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     const perFloorUrl = getMapSvgCdnUrl(mapName, floor);
     const fallbackUrl = getMapSvgFallbackUrl(svgConfig.file);
     const hasMultipleFloors = svgConfig.floors.length > 1;
-    const primaryUrl = hasMultipleFloors ? baseUrl : perFloorUrl;
-    const fallbackUrls = hasMultipleFloors ? [fallbackUrl] : [baseUrl, fallbackUrl];
+    const primaryUrl = baseUrl;
+    const fallbackUrls = hasMultipleFloors ? [fallbackUrl] : [perFloorUrl, fallbackUrl];
     const svgContent = await fetchSvgContent(primaryUrl, fallbackUrls);
     if (!svgContent) {
       logger.error(`Failed to load SVG for map: ${mapName}`);
@@ -246,6 +281,10 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     }
     const svgElement = parseSvgContent(svgContent);
     if (!svgElement) return;
+    if (tileLayer.value && mapInstance.value) {
+      mapInstance.value.removeLayer(tileLayer.value);
+      tileLayer.value = null;
+    }
     // Remove existing SVG layer
     if (svgLayer.value && mapInstance.value) {
       mapInstance.value.removeLayer(svgLayer.value);
@@ -260,6 +299,27 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
         updateFloorVisibility(svgElement);
       }
     }
+  }
+  async function loadTileMap(
+    L: typeof import('leaflet'),
+    tileConfig: MapTileConfig
+  ): Promise<void> {
+    if (!mapInstance.value) return;
+    if (svgLayer.value && mapInstance.value) {
+      mapInstance.value.removeLayer(svgLayer.value);
+      svgLayer.value = null;
+    }
+    if (tileLayer.value && mapInstance.value) {
+      mapInstance.value.removeLayer(tileLayer.value);
+    }
+    tileLayer.value = L.tileLayer(tileConfig.tilePath, {
+      minZoom: tileConfig.minZoom ?? 1,
+      maxZoom: tileConfig.maxZoom ?? 6,
+      noWrap: true,
+      bounds: getLeafletBounds(tileConfig),
+      pane: 'mapBackground',
+    });
+    tileLayer.value.addTo(mapInstance.value);
   }
   /**
    * Checks if a floor name represents an underground/basement level.
@@ -368,29 +428,31 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       // Dynamic import Leaflet
       const L = await import('leaflet');
       leaflet.value = L.default || L;
-      // Get SVG config for CRS setup
-      const svgConfig = map.value?.svg;
-      const validSvgConfig = isValidMapSvgConfig(svgConfig) ? svgConfig : undefined;
-      crsKey.value = getCrsKey(validSvgConfig);
+      const svgConfig = getSvgConfig();
+      const tileConfig = getTileConfig();
+      const renderConfig = svgConfig ?? tileConfig;
+      crsKey.value = getCrsKey(renderConfig);
       // Create map instance with custom CRS
-      const mapOptions = getLeafletMapOptions(leaflet.value, validSvgConfig);
+      const mapOptions = getLeafletMapOptions(leaflet.value, renderConfig);
       mapInstance.value = leaflet.value.map(containerRef.value, mapOptions);
       // Create a custom pane for the map background to ensure it stays behind markers
       const backgroundPane = mapInstance.value.createPane('mapBackground');
       backgroundPane.style.zIndex = '200'; // Below overlayPane (400) and markerPane (600)
       // Set initial view using map bounds
-      const bounds = getLeafletBounds(validSvgConfig);
+      const bounds = getLeafletBounds(renderConfig);
       mapInstance.value.fitBounds(bounds);
       // Set initial floor
-      if (validSvgConfig) {
+      if (svgConfig) {
         selectedFloor.value =
           initialFloor ||
-          validSvgConfig.defaultFloor ||
-          validSvgConfig.floors[validSvgConfig.floors.length - 1] ||
+          svgConfig.defaultFloor ||
+          svgConfig.floors[svgConfig.floors.length - 1] ||
           '';
+      } else {
+        selectedFloor.value = '';
       }
-      // Load SVG overlay FIRST so it's below markers
-      await loadMapSvg();
+      renderKey.value = getRenderKey(svgConfig, tileConfig) ?? '';
+      await loadMapLayer();
       // Create layer groups for markers
       objectiveLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
       extractLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
@@ -428,14 +490,20 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     }
   }
   /**
-   * Loads the appropriate SVG for the current map.
-   * All maps use the standard approach - single SVG file with floor layers inside.
+   * Loads the appropriate map layer for the current map.
    */
-  async function loadMapSvg(): Promise<void> {
+  async function loadMapLayer(): Promise<void> {
     if (!leaflet.value || !mapInstance.value) return;
-    // Use standard SVG loading for all maps (including Factory)
-    // tarkov.dev uses single SVG files with floor layers inside
-    await loadStandardMapSvg(leaflet.value);
+    const svgConfig = getSvgConfig();
+    const tileConfig = getTileConfig();
+    renderKey.value = getRenderKey(svgConfig, tileConfig) ?? '';
+    if (tileConfig) {
+      await loadTileMap(leaflet.value, tileConfig);
+      return;
+    }
+    if (svgConfig) {
+      await loadStandardMapSvg(leaflet.value);
+    }
   }
   /**
    * Refreshes the map view.
@@ -443,9 +511,8 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   function refreshView(): void {
     if (mapInstance.value) {
       mapInstance.value.invalidateSize();
-      const svgConfig = map.value?.svg;
-      const validSvgConfig = isValidMapSvgConfig(svgConfig) ? svgConfig : undefined;
-      const bounds = getLeafletBounds(validSvgConfig);
+      const renderConfig = getRenderConfig();
+      const bounds = getLeafletBounds(renderConfig);
       mapInstance.value.fitBounds(bounds);
     }
     resetIdleTimer();
@@ -481,6 +548,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       containerRef.value.removeEventListener('wheel', onWheel);
     }
     svgLayer.value = null;
+    tileLayer.value = null;
     objectiveLayer.value = null;
     extractLayer.value = null;
     leaflet.value = null;
@@ -502,7 +570,10 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
         return;
       }
       const newSvgConfig = isValidMapSvgConfig(newMap.svg) ? newMap.svg : undefined;
-      const nextCrsKey = getCrsKey(newSvgConfig);
+      const newTileConfig = isValidMapTileConfig(newMap.tile)
+        ? normalizeTileConfig(newMap.tile)
+        : undefined;
+      const nextCrsKey = getCrsKey(newSvgConfig ?? newTileConfig);
       if (nextCrsKey !== crsKey.value) {
         destroy();
         await nextTick();
@@ -514,11 +585,16 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       if (isValidMapSvgConfig(svgConfig)) {
         selectedFloor.value =
           svgConfig.defaultFloor || svgConfig.floors[svgConfig.floors.length - 1] || '';
+      } else {
+        selectedFloor.value = '';
       }
-      // Reload SVG
+      const nextRenderKey = getRenderKey(newSvgConfig, newTileConfig) ?? '';
       isLoading.value = true;
       try {
-        await loadMapSvg();
+        if (nextRenderKey !== renderKey.value) {
+          renderKey.value = nextRenderKey;
+        }
+        await loadMapLayer();
         refreshView();
       } finally {
         isLoading.value = false;

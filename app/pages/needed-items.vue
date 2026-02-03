@@ -1,6 +1,5 @@
 <template>
   <div class="px-4 py-6">
-    <!-- Filter Bar -->
     <NeededItemsFilterBar
       v-model="activeFilter"
       v-model:search="search"
@@ -18,9 +17,7 @@
       :total-count="displayItems.length"
       :ungrouped-count="filteredItems.length"
     />
-    <!-- Items Container -->
     <UCard class="bg-contentbackground border border-white/5">
-      <!-- Error state with retry button -->
       <div
         v-if="itemsError"
         class="text-surface-400 flex flex-col items-center justify-center gap-4 p-8"
@@ -33,7 +30,6 @@
           {{ $t('page.neededItems.retry', 'Retry') }}
         </UButton>
       </div>
-      <!-- Loading state while items are being fetched -->
       <div
         v-else-if="!itemsReady"
         class="text-surface-400 flex items-center justify-center gap-2 p-8"
@@ -45,7 +41,6 @@
         <div v-if="displayItems.length === 0" class="text-surface-400 p-8 text-center">
           {{ $t('page.neededItems.empty', 'No items match your search.') }}
         </div>
-        <!-- Grouped View -->
         <div v-else-if="groupByItem" class="p-2">
           <div
             class="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
@@ -67,7 +62,6 @@
             class="h-1 w-full"
           ></div>
         </div>
-        <!-- List View -->
         <div v-else-if="viewMode === 'list'">
           <div
             v-for="(item, index) in visibleIndividualItems"
@@ -86,7 +80,6 @@
             class="h-1 w-full"
           ></div>
         </div>
-        <!-- Grid View -->
         <div v-else class="p-2">
           <div
             class="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
@@ -113,6 +106,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useI18n } from 'vue-i18n';
   import {
     useInfiniteScroll,
     type UseInfiniteScrollOptions,
@@ -146,6 +140,7 @@
     },
   });
   const search = ref('');
+  const { t } = useI18n({ useScope: 'global' });
   const { belowMd, xs } = useSharedBreakpoints();
   const {
     activeFilter,
@@ -167,7 +162,7 @@
     itemsReady,
     itemsError,
     ensureNeededItemsData,
-  } = useNeededItems({ search });
+  } = useNeededItems({ search, t });
   onMounted(() => {
     ensureNeededItemsData();
   });

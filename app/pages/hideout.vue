@@ -45,11 +45,16 @@
                   </span>
                 </UButton>
                 <template #content>
-                  <div class="w-64 p-3">
+                  <div class="w-64 space-y-3 p-3">
                     <UCheckbox
                       v-model="preferencesStore.hideoutCollapseCompleted"
                       :label="$t('page.hideout.collapsecompleted') || 'Collapse completed stations'"
                       color="success"
+                    />
+                    <UCheckbox
+                      v-model="preferencesStore.hideoutSortReadyFirst"
+                      :label="$t('page.hideout.sort.readyfirst') || 'Sort ready to build first'"
+                      color="info"
                     />
                   </div>
                 </template>

@@ -4,6 +4,7 @@
     <div
       v-if="isMapUnavailable"
       class="bg-surface-900 flex h-100 w-full flex-col items-center justify-center rounded sm:h-125 lg:h-150"
+      :style="mapHeightStyle"
     >
       <UIcon name="i-mdi-map-marker-off" class="text-surface-500 mb-4 h-16 w-16" />
       <h3 class="text-surface-300 mb-2 text-lg font-semibold">{{ t('maps.notAvailableTitle') }}</h3>
@@ -100,7 +101,11 @@
         </div>
       </div>
       <!-- Map container -->
-      <div ref="mapContainer" class="bg-surface-900 h-100 w-full rounded sm:h-125 lg:h-150" />
+      <div
+        ref="mapContainer"
+        class="bg-surface-900 h-100 w-full rounded sm:h-125 lg:h-150"
+        :style="mapHeightStyle"
+      />
       <!-- Legends Footer -->
       <div class="mt-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-4">
         <!-- Main Objective Legend -->
@@ -157,14 +162,21 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, onUnmounted, ref, toRef, watch } from 'vue';
+  import { computed, createApp, inject, onUnmounted, ref, toRef, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { useRouter } from 'vue-router';
   import { useLeafletMap } from '@/composables/useLeafletMap';
-  import { useMetadataStore } from '@/stores/useMetadata';
+  import LeafletObjectiveTooltip from '@/features/maps/LeafletObjectiveTooltip.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
-  import type { TarkovMap, MapExtract } from '@/types/tarkov';
+  import type { MapExtract, TarkovMap } from '@/types/tarkov';
   import { logger } from '@/utils/logger';
-  import { gameToLatLng, outlineToLatLngArray, isValidMapSvgConfig } from '@/utils/mapCoordinates';
+  import {
+    gameToLatLng,
+    outlineToLatLngArray,
+    isValidMapSvgConfig,
+    isValidMapTileConfig,
+  } from '@/utils/mapCoordinates';
+  import { MAP_MARKER_COLORS as MAP_COLORS } from '@/utils/theme-colors';
   import type L from 'leaflet';
   // Types for marks (matching TarkovMap.vue structure)
   interface MapZone {
@@ -190,16 +202,23 @@
     showScavExtracts?: boolean;
     showExtractToggle?: boolean;
     showLegend?: boolean;
+    height?: number;
   }
   const props = withDefaults(defineProps<Props>(), {
     marks: () => [],
     showExtracts: true,
     showExtractToggle: true,
     showLegend: true,
+    height: undefined,
   });
   const { t } = useI18n({ useScope: 'global' });
-  const metadataStore = useMetadataStore();
+  const router = useRouter();
   const preferencesStore = usePreferencesStore();
+  const clearPinnedTask = inject<(() => void) | null>('clearPinnedTask', null);
+  const mapHeightStyle = computed(() => {
+    if (typeof props.height !== 'number' || Number.isNaN(props.height)) return undefined;
+    return { height: `${props.height}px` };
+  });
   // Check if map is unavailable
   const isMapUnavailable = computed(() => {
     return props.map?.unavailable === true;
@@ -259,30 +278,184 @@
   const popupOptions = {
     autoClose: false,
     closeOnClick: false,
-    closeButton: true,
+    closeButton: false,
   };
-  const attachTogglePopup = (
+  let activePinnedPopupCleanup: (() => void) | null = null;
+  const objectiveMarkers = new Map<
+    string,
+    { layer: L.Layer; getLatLng: () => L.LatLngExpression; showPopup: (pinned: boolean) => void }
+  >();
+  const mountObjectiveTooltip = (
+    objectiveId: string,
+    onClose: () => void
+  ): { element: HTMLElement; unmount: () => void } => {
+    const container = document.createElement('div');
+    const app = createApp(LeafletObjectiveTooltip, { objectiveId, onClose, t });
+    app.provide('router', router);
+    app.provide('clearPinnedTask', clearPinnedTask);
+    app.mount(container);
+    return { element: container, unmount: () => app.unmount() };
+  };
+  const POPUP_HIDE_DELAY = 100;
+  const attachHoverPinPopup = (
     layer: L.Layer,
-    html: string,
+    objectiveId: string,
     getLatLng: () => L.LatLngExpression
   ): void => {
     if (!leaflet.value || !mapInstance.value) return;
-    const popup = leaflet.value.popup(popupOptions).setContent(html);
-    const togglePopup = () => {
-      if (!mapInstance.value) return;
-      if (mapInstance.value.hasLayer(popup)) {
-        popup.remove();
+    const popup = leaflet.value.popup({
+      ...popupOptions,
+      className: 'map-objective-popup',
+    });
+    let isPinned = false;
+    let isHovering = false;
+    let popupHideTimer: ReturnType<typeof setTimeout> | null = null;
+    let currentMountedComponent: { element: HTMLElement; unmount: () => void } | null = null;
+    let popupListenersAttached = false;
+    const styledLayer = layer as L.CircleMarker | L.Polygon;
+    const originalFillColor = styledLayer.options?.fillColor || MAP_COLORS.SELF_OBJECTIVE;
+    const originalStrokeColor = styledLayer.options?.color || MAP_COLORS.SELF_OBJECTIVE;
+    const isCircleMarker = 'getRadius' in styledLayer;
+    const setLayerSelected = (selected: boolean) => {
+      if (!('setStyle' in styledLayer)) return;
+      if (selected) {
+        if (isCircleMarker) {
+          styledLayer.setStyle({ fillColor: MAP_COLORS.SELECTED });
+        } else {
+          styledLayer.setStyle({ color: MAP_COLORS.SELECTED, fillColor: MAP_COLORS.SELECTED });
+        }
         return;
       }
-      popup.setLatLng(getLatLng());
-      popup.addTo(mapInstance.value);
+      if (isCircleMarker) {
+        styledLayer.setStyle({ fillColor: originalFillColor });
+        return;
+      }
+      styledLayer.setStyle({ color: originalStrokeColor, fillColor: originalFillColor });
     };
+    const cleanupMountedComponent = () => {
+      if (currentMountedComponent) {
+        currentMountedComponent.unmount();
+        currentMountedComponent = null;
+      }
+    };
+    const unpinAndHide = () => {
+      isPinned = false;
+      setLayerSelected(false);
+      if (activePinnedPopupCleanup === unpinAndHide) {
+        activePinnedPopupCleanup = null;
+      }
+      if (mapInstance.value) {
+        popup.remove();
+        cleanupMountedComponent();
+      }
+    };
+    const showPopup = (pinned: boolean) => {
+      if (!mapInstance.value) return;
+      if (pinned && activePinnedPopupCleanup) {
+        activePinnedPopupCleanup();
+      }
+      isPinned = pinned;
+      if (pinned) {
+        setLayerSelected(true);
+      }
+      cleanupMountedComponent();
+      currentMountedComponent = mountObjectiveTooltip(objectiveId, unpinAndHide);
+      popup.setContent(currentMountedComponent.element);
+      popup.setLatLng(getLatLng());
+      if (!mapInstance.value.hasLayer(popup)) {
+        popup.addTo(mapInstance.value);
+      }
+      if (pinned) {
+        activePinnedPopupCleanup = unpinAndHide;
+      }
+    };
+    const hidePopup = () => {
+      if (!isPinned && mapInstance.value) {
+        popup.remove();
+        cleanupMountedComponent();
+      }
+    };
+    objectiveMarkers.set(objectiveId, { layer, getLatLng, showPopup });
+    layer.on('mouseover', () => {
+      isHovering = true;
+      if (popupHideTimer) {
+        clearTimeout(popupHideTimer);
+        popupHideTimer = null;
+      }
+      if (!isPinned) {
+        showPopup(false);
+      }
+    });
+    layer.on('mouseout', () => {
+      isHovering = false;
+      if (popupHideTimer) {
+        clearTimeout(popupHideTimer);
+      }
+      popupHideTimer = setTimeout(() => {
+        popupHideTimer = null;
+        if (!isHovering && !isPinned) {
+          hidePopup();
+        }
+      }, POPUP_HIDE_DELAY);
+    });
     layer.on('click', (event) => {
       leaflet.value?.DomEvent.stop(event);
-      togglePopup();
+      if (isPinned) {
+        unpinAndHide();
+        return;
+      }
+      if (activePinnedPopupCleanup) {
+        activePinnedPopupCleanup();
+      }
+      showPopup(true);
+    });
+    const handlePopupMouseEnter = () => {
+      isHovering = true;
+      if (popupHideTimer) {
+        clearTimeout(popupHideTimer);
+        popupHideTimer = null;
+      }
+    };
+    const handlePopupMouseLeave = () => {
+      isHovering = false;
+      if (!isPinned) {
+        if (popupHideTimer) {
+          clearTimeout(popupHideTimer);
+        }
+        popupHideTimer = setTimeout(() => {
+          popupHideTimer = null;
+          if (!isHovering) {
+            hidePopup();
+          }
+        }, POPUP_HIDE_DELAY);
+      }
+    };
+    popup.on('add', () => {
+      if (popupListenersAttached) return;
+      const popupElement = popup.getElement();
+      if (popupElement) {
+        popupElement.addEventListener('mouseenter', handlePopupMouseEnter);
+        popupElement.addEventListener('mouseleave', handlePopupMouseLeave);
+        popupListenersAttached = true;
+      }
+    });
+    popup.on('remove', () => {
+      if (!popupListenersAttached) return;
+      const popupElement = popup.getElement();
+      if (popupElement) {
+        popupElement.removeEventListener('mouseenter', handlePopupMouseEnter);
+        popupElement.removeEventListener('mouseleave', handlePopupMouseLeave);
+        popupListenersAttached = false;
+      }
     });
     layer.on('remove', () => {
+      if (popupHideTimer) {
+        clearTimeout(popupHideTimer);
+        popupHideTimer = null;
+      }
       popup.remove();
+      objectiveMarkers.delete(objectiveId);
+      cleanupMountedComponent();
     });
   };
   /**
@@ -291,17 +464,21 @@
   function createObjectiveMarkers(): void {
     if (!leaflet.value || !objectiveLayer.value || !props.map) return;
     const L = leaflet.value;
-    const svgConfig = props.map.svg;
-    if (!isValidMapSvgConfig(svgConfig)) return;
+    if (!isValidMapSvgConfig(props.map.svg) && !isValidMapTileConfig(props.map.tile)) return;
+    if (activePinnedPopupCleanup) {
+      activePinnedPopupCleanup();
+      activePinnedPopupCleanup = null;
+    }
     objectiveLayer.value.clearLayers();
+    objectiveMarkers.clear();
     const zoneEntries: Array<{
       polygon: L.Polygon;
       area: number;
-      popupContent?: string;
+      objectiveId: string;
     }> = [];
     const pointEntries: Array<{
       marker: L.CircleMarker;
-      popupContent?: string;
+      objectiveId: string;
     }> = [];
     const calculateZoneArea = (outline: Array<{ x: number; z: number }>): number => {
       if (outline.length < 3) return 0;
@@ -316,17 +493,8 @@
     };
     // Create markers and zones, but add zones later sorted by size.
     props.marks.forEach((mark) => {
-      const objective = metadataStore.objectives.find((obj) => obj.id === mark.id);
-      const task = objective ? metadataStore.tasks.find((t) => t.id === objective.taskId) : null;
-      const popupContent =
-        task || objective
-          ? `
-          <div class="text-sm">
-            ${task ? `<div class="font-semibold">${task.name}</div>` : ''}
-            ${objective ? `<div class="text-surface-400">${objective.description}</div>` : ''}
-          </div>
-        `
-          : undefined;
+      const objectiveId = mark.id;
+      if (!objectiveId) return;
       // Handle point markers (possibleLocations)
       mark.possibleLocations?.forEach((location) => {
         if (location.map.id !== props.map.id) return;
@@ -336,15 +504,15 @@
         if (!pos) return;
         const latLng = gameToLatLng(pos.x, pos.z);
         const isSelf = mark.users?.includes('self') ?? false;
-        const markerColor = isSelf ? '#ef4444' : '#f97316'; // red-500 : orange-500
+        const markerColor = isSelf ? MAP_COLORS.SELF_OBJECTIVE : MAP_COLORS.TEAM_OBJECTIVE;
         const marker = L.circleMarker([latLng.lat, latLng.lng], {
           radius: 8,
           fillColor: markerColor,
           fillOpacity: 0.8,
-          color: '#ffffff',
+          color: MAP_COLORS.MARKER_BORDER,
           weight: 2,
         });
-        pointEntries.push({ marker, popupContent });
+        pointEntries.push({ marker, objectiveId });
       });
       // Handle zone polygons
       mark.zones.forEach((zone) => {
@@ -353,7 +521,7 @@
         const latLngs = outlineToLatLngArray(zone.outline);
         if (latLngs.length < 3) return;
         const isSelf = mark.users?.includes('self') ?? false;
-        const zoneColor = isSelf ? '#ef4444' : '#f97316';
+        const zoneColor = isSelf ? MAP_COLORS.SELF_OBJECTIVE : MAP_COLORS.TEAM_OBJECTIVE;
         const polygon = L.polygon(
           latLngs.map((ll) => [ll.lat, ll.lng]),
           {
@@ -367,35 +535,25 @@
         zoneEntries.push({
           polygon,
           area: calculateZoneArea(zone.outline),
-          popupContent,
+          objectiveId,
         });
       });
     });
     // Add larger zones first so smaller zones stay on top (clickable)
     zoneEntries
       .sort((a, b) => b.area - a.area)
-      .forEach(({ polygon, popupContent }) => {
-        if (popupContent) {
-          attachTogglePopup(polygon, popupContent, () => polygon.getBounds().getCenter());
-          polygon.bindTooltip(popupContent, {
-            className: 'map-zone-tooltip',
-            opacity: 0.95,
-            sticky: true,
-          });
+      .forEach(({ polygon, objectiveId }) => {
+        if (objectiveId) {
+          attachHoverPinPopup(polygon, objectiveId, () => polygon.getBounds().getCenter());
         }
         polygon.on('mouseover', () => polygon.setStyle({ fillOpacity: 0.35, weight: 3 }));
         polygon.on('mouseout', () => polygon.setStyle({ fillOpacity: 0.2, weight: 2 }));
         objectiveLayer.value!.addLayer(polygon);
       });
     // Add point markers last so they render above zones
-    pointEntries.forEach(({ marker, popupContent }) => {
-      if (popupContent) {
-        attachTogglePopup(marker, popupContent, () => marker.getLatLng());
-        marker.bindTooltip(popupContent, {
-          className: 'map-zone-tooltip',
-          opacity: 0.95,
-          direction: 'top',
-        });
+    pointEntries.forEach(({ marker, objectiveId }) => {
+      if (objectiveId) {
+        attachHoverPinPopup(marker, objectiveId, () => marker.getLatLng());
       }
       objectiveLayer.value!.addLayer(marker);
     });
@@ -406,8 +564,7 @@
   function createExtractMarkers(): void {
     if (!leaflet.value || !extractLayer.value || !props.map) return;
     const L = leaflet.value;
-    const svgConfig = props.map.svg;
-    if (!isValidMapSvgConfig(svgConfig)) return;
+    if (!isValidMapSvgConfig(props.map.svg) && !isValidMapTileConfig(props.map.tile)) return;
     extractLayer.value.clearLayers();
     const showAnyExtracts = showPmcExtracts.value || showScavExtracts.value;
     if (!showAnyExtracts) return;
@@ -426,23 +583,23 @@
       let markerColor: string;
       switch (extract.faction) {
         case 'pmc':
-          markerColor = '#22c55e'; // green-500
+          markerColor = MAP_COLORS.PMC_EXTRACT;
           break;
         case 'scav':
-          markerColor = '#f59e0b'; // amber-500
+          markerColor = MAP_COLORS.SCAV_EXTRACT;
           break;
         case 'shared':
-          markerColor = isCoop ? '#0284c7' : '#38bdf8'; // sky-600 : sky-400
+          markerColor = isCoop ? MAP_COLORS.COOP_EXTRACT : MAP_COLORS.SHARED_EXTRACT;
           break;
         default:
-          markerColor = '#3b82f6'; // blue-500
+          markerColor = MAP_COLORS.DEFAULT_EXTRACT;
           break;
       }
       const extractDot = L.circleMarker([latLng.lat, latLng.lng], {
         radius: 3,
         fillColor: markerColor,
         fillOpacity: 1,
-        color: '#0b0b0f',
+        color: MAP_COLORS.EXTRACT_DOT_BORDER,
         weight: 1,
         opacity: 1,
         interactive: false,
@@ -538,8 +695,28 @@
     },
     { immediate: true }
   );
+  const activateObjectivePopup = (objectiveId: string): boolean => {
+    const markerData = objectiveMarkers.get(objectiveId);
+    if (!markerData) return false;
+    markerData.showPopup(true);
+    return true;
+  };
+  const closeActivePopup = (): void => {
+    if (activePinnedPopupCleanup) {
+      activePinnedPopupCleanup();
+    }
+  };
+  defineExpose({
+    activateObjectivePopup,
+    closeActivePopup,
+    refreshView,
+  });
   // Cleanup
   onUnmounted(() => {
+    if (activePinnedPopupCleanup) {
+      activePinnedPopupCleanup();
+    }
+    objectiveMarkers.clear();
     clearMarkers();
   });
 </script>

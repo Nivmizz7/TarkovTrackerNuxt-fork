@@ -18,10 +18,11 @@
     },
   },
   common: {
+    close: 'Закрыть',
     refreshbutton: 'Попробовать снова',
   },
   maps: {
-    zoom: 'Масштаб',
+    zoom: 'Скорость зума',
     notAvailableTitle: 'Карта недоступна',
     notAvailableDescription: 'Интерактивная карта для {mapName} пока недоступна. Мы ждём появления совместимой карты.',
     placeholder: 'этой локации',
@@ -181,6 +182,10 @@
       showing_all_sources: 'Показать все источники',
       loading: 'Загружаем задания',
       selectedTask: 'Выбранное задание',
+      map: {
+        resizeHandle: 'Изменить высоту карты',
+      },
+      pinnedTasksSection: 'Закреплённые задания',
       questcard: {
         pinTask: 'Закрепить задание',
         unpinTask: 'Открепить задание',
@@ -218,6 +223,30 @@
         globalTask: 'Любая карта',
         globalTaskTooltip: 'Это задание можно выполнить на любой карте',
         jumpToMap: 'Перейти к карте',
+        anyLocationTooltip: 'Это задание можно выполнить на любой карте',
+        clickToEdit: 'Нажмите, чтобы изменить',
+        failbutton: 'Провалить',
+        find: 'Найти',
+        findAndHandOver: 'Найти и сдать',
+        findAndHandOverFir: 'Найти в рейде и сдать',
+        findFir: 'Найти в рейде',
+        itemsCount: '{count} предметов',
+        kappaTooltip: 'Это задание необходимо для получения контейнера Kappa',
+        kapparequired: 'KAPPA ТРЕБУЕТСЯ',
+        levelBadgeTooltip: 'Минимальный уровень игрока {level} для открытия этого задания',
+        lightkeeperTooltip: 'Это задание необходимо для открытия торговца Lightkeeper',
+        lightkeeperrequired: 'LIGHTKEEPER ТРЕБУЕТСЯ',
+        locationTooltip: 'Цели задания находятся на карте {map}',
+        nextTasks: 'Следующие задания:',
+        nexttasks: 'Следующее(ие) задание(я):',
+        objective: 'Цель',
+        objectives: 'Цели',
+        openItemOnTarkovDev: 'Открыть {name} на tarkov.dev',
+        previousTasks: 'Предыдущие задания:',
+        previoustasks: 'Предыдущее(ие) задание(я):',
+        rewards: 'Награды',
+        task: 'Задание',
+        unlocksCount: '{count} разблокировок',
       },
       scrollToMap: 'Прокрутить к карте',
       scrollToTop: 'Наверх',
@@ -227,6 +256,9 @@
       loading: 'Загружаем данные об убежище',
       nostationsfound: 'Станции не найдены. Попробуйте изменить фильтры.',
       collapsecompleted: 'Свернуть завершённые станции',
+      sort: {
+        readyfirst: 'Сначала готовые к постройке',
+      },
       primaryviews: {
         all: 'Все',
         locked: 'Заблокировано',
@@ -258,6 +290,7 @@
       loading: 'Загружаем данные заданий и убежища',
       searchplaceholder: 'Поиск предметов...',
       items: 'предметы',
+      empty: 'Нет предметов, соответствующих вашему поиску.',
       filters: {
         label: 'Фильтры',
         sections: {
@@ -268,6 +301,8 @@
         fir_long: 'Найдено В Рейде',
         non_fir: 'НЕ-НВР',
         non_fir_long: 'Не Найдено В Рейде',
+        show_owned: 'ПОКАЗАТЬ В НАЛИЧИИ',
+        hide_owned: 'СКРЫТЬ В НАЛИЧИИ',
         hide_non_fir_special_equipment_title: 'Скрыть специальное снаряжение без НВР (например, маркеры MS2000, Wi‑Fi камеры)',
         no_special: 'БЕЗ-СПЕЦ',
         special: 'СПЕЦ',
@@ -276,6 +311,10 @@
         kappa_only_disabled_tooltip: 'Фильтр Kappa применяется только к заданиям.',
         hide_team_needs: 'СКРЫТЬ НУЖДЫ КОМАНДЫ',
         show_team_needs: 'ПОКАЗАТЬ НУЖДЫ КОМАНДЫ',
+      },
+      sort: {
+        label: 'Сортировать',
+        by: 'СОРТИРОВАТЬ ПО',
       },
       neededviews: {
         all: 'Все',
@@ -524,6 +563,13 @@
   },
   settings: {
     title: 'Настройки',
+    density: {
+      compact: 'Компактная',
+      comfortable: 'Комфортная',
+    },
+    account: {
+      begin_deletion: 'Начать удаление аккаунта',
+    },
     general: {
       title: 'Общие настройки',
       language: 'Язык',
@@ -532,6 +578,30 @@
       privacy_mode_hint: 'Скрывает конфиденциальную информацию во время трансляции.',
       streamer_mode_hint: 'Скрывает конфиденциальную информацию во время трансляции.',
       login_required: 'Войдите, чтобы включить эти настройки.',
+      admin_panel: 'Панель администратора',
+    },
+    interface: {
+      title: 'Настройка интерфейса',
+      tasks: {
+        title: 'Карточки заданий',
+        show_required: 'Показывать обязательные метки',
+        show_xp: 'Показывать награды XP',
+        show_next: 'Показывать следующие задания',
+        show_prev: 'Показывать предыдущие задания',
+        density: 'Плотность карточек',
+      },
+      defaults: {
+        title: 'Виды по умолчанию',
+      },
+      maps: {
+        title: 'Карты',
+        show_extracts: 'Показывать выходы по умолчанию',
+        zoom_speed: 'Скорость масштабирования',
+      },
+      misc: {
+        title: 'Разное',
+        holiday_effects: 'Включить праздничные эффекты',
+      },
     },
     game_profile: {
       title: 'Игровой профиль',
@@ -540,6 +610,7 @@
     },
     game_settings: {
       title: 'Настройки игры',
+      switch_mode_failed: 'Не удалось сменить режим игры, попробуйте еще раз',
     },
     data_management: {
       title: 'Управление данными',
@@ -581,6 +652,7 @@
       show_account_id: 'Показать ID аккаунта',
       hide_account_id: 'Скрыть ID аккаунта',
       copy_account_id: 'Скопировать ID аккаунта',
+      copy_failed: 'Не удалось скопировать ID аккаунта',
       account_id_copied: 'ID аккаунта скопирован',
       confirm_delete_title: 'Подтвердите удаление аккаунта',
       confirm_delete_sr_only: 'Это действие необратимо и требует ввода фразы подтверждения для продолжения.',

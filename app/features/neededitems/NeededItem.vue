@@ -34,12 +34,12 @@
   const props = withDefaults(
     defineProps<{
       need: NeededItemTaskObjective | NeededItemHideoutModule;
-      itemStyle?: string;
+      itemStyle?: 'card' | 'row';
       initiallyVisible?: boolean;
       cardStyle?: 'compact' | 'expanded';
     }>(),
     {
-      itemStyle: 'mediumCard',
+      itemStyle: 'card',
       initiallyVisible: false,
       cardStyle: 'expanded',
     }

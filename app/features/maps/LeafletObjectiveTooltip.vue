@@ -54,20 +54,22 @@
 </template>
 <script setup lang="ts">
   import { computed, inject } from 'vue';
-  import { useI18n } from 'vue-i18n';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { logger } from '@/utils/logger';
+  import type { Composer } from 'vue-i18n';
   import type { Router } from 'vue-router';
   const props = withDefaults(
     defineProps<{
       objectiveId: string;
       readOnly?: boolean;
       onClose?: () => void;
+      t?: Composer['t'];
     }>(),
     {
       readOnly: false,
       onClose: undefined,
+      t: undefined,
     }
   );
   const emit = defineEmits<{
@@ -81,7 +83,13 @@
     // Clear the pinned task when user closes the tooltip
     clearPinnedTask?.();
   };
-  const { t } = useI18n();
+  const t: Composer['t'] = ((...args: Parameters<Composer['t']>) => {
+    if (props.t) {
+      return props.t(...args);
+    }
+    const [key] = args;
+    return typeof key === 'string' ? key : '';
+  }) as Composer['t'];
   const router = inject<Router>('router');
   const metadataStore = useMetadataStore();
   const tarkovStore = useTarkovStore();

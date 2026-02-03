@@ -49,6 +49,7 @@ export interface PreferencesState {
   neededitemsStyle: string | null;
   hideoutPrimaryView?: string | null;
   hideoutCollapseCompleted: boolean;
+  hideoutSortReadyFirst: boolean;
   localeOverride: string | null;
   // Task filter settings
   showNonSpecialTasks: boolean;
@@ -117,6 +118,7 @@ export const preferencesDefaultState: PreferencesState = {
   neededitemsStyle: null,
   hideoutPrimaryView: null,
   hideoutCollapseCompleted: false,
+  hideoutSortReadyFirst: false,
   localeOverride: null,
   // Task filter settings (all shown by default)
   showNonSpecialTasks: true,
@@ -273,6 +275,9 @@ export const usePreferencesStore = defineStore('preferences', {
     },
     getHideoutPrimaryView: (state) => {
       return state.hideoutPrimaryView ?? 'available';
+    },
+    getHideoutSortReadyFirst: (state) => {
+      return state.hideoutSortReadyFirst ?? false;
     },
     getMapZoomSpeed: (state) => {
       return state.mapZoomSpeed ?? 1;
@@ -456,6 +461,9 @@ export const usePreferencesStore = defineStore('preferences', {
     setHideoutPrimaryView(view: string) {
       this.hideoutPrimaryView = view;
     },
+    setHideoutSortReadyFirst(enabled: boolean) {
+      this.hideoutSortReadyFirst = enabled;
+    },
     setLocaleOverride(locale: string | null) {
       this.localeOverride = locale;
     },
@@ -514,12 +522,12 @@ export const usePreferencesStore = defineStore('preferences', {
       this.showMapExtracts = show;
     },
     togglePinnedTask(taskId: string) {
-      if (!this.pinnedTaskIds) this.pinnedTaskIds = [];
-      const index = this.pinnedTaskIds.indexOf(taskId);
+      const current = this.pinnedTaskIds ?? [];
+      const index = current.indexOf(taskId);
       if (index === -1) {
-        this.pinnedTaskIds.push(taskId);
+        this.pinnedTaskIds = [...current, taskId];
       } else {
-        this.pinnedTaskIds.splice(index, 1);
+        this.pinnedTaskIds = current.filter((id) => id !== taskId);
       }
     },
     addTaskFilterPreset(preset: TaskFilterPreset) {
@@ -603,6 +611,7 @@ export const usePreferencesStore = defineStore('preferences', {
       'useAutomaticLevelCalculation',
       'enableHolidayEffects',
       'hideoutCollapseCompleted',
+      'hideoutSortReadyFirst',
       'showMapExtracts',
       'mapZoomSpeed',
       'pinnedTaskIds',

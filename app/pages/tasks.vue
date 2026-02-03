@@ -10,7 +10,7 @@
         <!-- Task Filter Bar -->
         <TaskFilterBar v-model:search-query="searchQuery" />
         <!-- Map Display (shown when MAPS view is selected) -->
-        <div v-if="showMapDisplay" class="mb-6">
+        <div v-if="showMapDisplay" ref="mapContainerRef" class="mb-6">
           <div class="bg-surface-800/50 rounded-lg p-4">
             <div class="mb-3 flex items-center justify-between">
               <h3 class="text-surface-200 text-lg font-medium">
@@ -20,14 +20,33 @@
                 </span>
               </h3>
             </div>
-            <LeafletMapComponent
-              v-if="selectedMapData"
-              :map="selectedMapData"
-              :marks="mapObjectiveMarks"
-              :show-extracts="true"
-              :show-extract-toggle="true"
-              :show-legend="true"
-            />
+            <template v-if="selectedMapData">
+              <LeafletMapComponent
+                ref="leafletMapRef"
+                :map="selectedMapData"
+                :marks="mapObjectiveMarks"
+                :show-extracts="true"
+                :show-extract-toggle="true"
+                :show-legend="true"
+                :height="mapHeight"
+              />
+              <div
+                ref="mapResizeHandleRef"
+                role="separator"
+                aria-orientation="horizontal"
+                :aria-label="t('page.tasks.map.resizeHandle')"
+                :aria-valuemin="MAP_HEIGHT_MIN"
+                :aria-valuemax="mapHeightMax"
+                :aria-valuenow="mapHeight"
+                tabindex="0"
+                class="bg-surface-900/60 border-surface-700 text-surface-400 hover:text-surface-200 focus-visible:ring-primary-500 mt-3 flex h-8 w-full cursor-row-resize touch-none items-center justify-center rounded-md border transition"
+                :class="{ 'ring-primary-500 text-surface-200 ring-1': isMapResizing }"
+                @pointerdown="startMapResize"
+                @keydown="onMapResizeKeydown"
+              >
+                <UIcon name="i-mdi-drag-horizontal-variant" class="h-4 w-4" />
+              </div>
+            </template>
             <UAlert
               v-else
               icon="i-mdi-alert-circle"
@@ -41,8 +60,27 @@
           <TaskEmptyState />
         </div>
         <div v-else ref="taskListRef" data-testid="task-list">
+          <!-- Pinned Tasks Section -->
+          <div v-if="pinnedTasksInSlice.length > 0" class="mb-6">
+            <div class="mb-3 flex items-center gap-2">
+              <UIcon name="i-mdi-pin" class="text-primary-400 h-4 w-4" />
+              <h3 class="text-surface-200 text-sm font-medium">
+                {{ t('page.tasks.pinnedTasksSection') }}
+              </h3>
+              <div class="bg-surface-700 h-px flex-1" />
+            </div>
+            <div
+              v-for="task in pinnedTasksInSlice"
+              :key="task.id"
+              class="pb-4"
+              style="content-visibility: auto; contain-intrinsic-size: auto 280px"
+            >
+              <TaskCard :task="task" @on-task-action="onTaskAction" />
+            </div>
+          </div>
+          <!-- Unpinned Tasks -->
           <div
-            v-for="task in visibleTasksSlice"
+            v-for="task in unpinnedTasksInSlice"
             :key="task.id"
             class="pb-4"
             style="content-visibility: auto; contain-intrinsic-size: auto 280px"
@@ -115,8 +153,17 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useStorage, useWindowSize } from '@vueuse/core';
   import { storeToRefs } from 'pinia';
-  import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+  import {
+    computed,
+    defineAsyncComponent,
+    nextTick,
+    onBeforeUnmount,
+    provide,
+    ref,
+    watch,
+  } from 'vue';
   import { useI18n } from 'vue-i18n';
   import {
     useRoute,
@@ -175,6 +222,7 @@
     getHideNonKappaTasks,
     getShowNonSpecialTasks,
     getShowLightkeeperTasks,
+    getPinnedTaskIds,
   } = storeToRefs(preferencesStore);
   const metadataStore = useMetadataStore();
   const { tasks, loading: tasksLoading } = storeToRefs(metadataStore);
@@ -228,6 +276,88 @@
     const staticTime = STATIC_TIME_MAPS[mapId];
     return staticTime ?? tarkovTime.value;
   });
+  const MAP_HEIGHT_MIN = 320;
+  const MAP_HEIGHT_DEFAULT = 520;
+  const MAP_HEIGHT_MAX_FALLBACK = 1200;
+  const MAP_HEIGHT_STEP = 24;
+  const { height: windowHeight } = useWindowSize();
+  const mapHeightStorage = useStorage<number>('tasks_map_height', MAP_HEIGHT_DEFAULT);
+  const mapHeightMax = computed(() => {
+    if (!windowHeight.value) return MAP_HEIGHT_MAX_FALLBACK;
+    return Math.max(MAP_HEIGHT_MIN, Math.round(windowHeight.value * 0.85));
+  });
+  const mapHeight = computed({
+    get: () => {
+      const nextValue =
+        typeof mapHeightStorage.value === 'number' ? mapHeightStorage.value : MAP_HEIGHT_DEFAULT;
+      return Math.min(Math.max(nextValue, MAP_HEIGHT_MIN), mapHeightMax.value);
+    },
+    set: (value: number) => {
+      mapHeightStorage.value = Math.min(Math.max(value, MAP_HEIGHT_MIN), mapHeightMax.value);
+    },
+  });
+  watch(mapHeightMax, (nextMax) => {
+    if (mapHeightStorage.value > nextMax) {
+      mapHeightStorage.value = nextMax;
+    }
+  });
+  const mapResizeHandleRef = ref<HTMLElement | null>(null);
+  const mapResizeState = ref<{
+    startY: number;
+    startHeight: number;
+    pointerId: number;
+  } | null>(null);
+  const mapResizeUserSelect = ref('');
+  const isMapResizing = computed(() => mapResizeState.value !== null);
+  const onMapResizeMove = (event: PointerEvent) => {
+    if (!mapResizeState.value) return;
+    const delta = event.clientY - mapResizeState.value.startY;
+    mapHeight.value = Math.round(mapResizeState.value.startHeight + delta);
+  };
+  const stopMapResize = () => {
+    if (!mapResizeState.value) return;
+    const pointerId = mapResizeState.value.pointerId;
+    mapResizeState.value = null;
+    if (mapResizeHandleRef.value?.hasPointerCapture?.(pointerId)) {
+      mapResizeHandleRef.value?.releasePointerCapture(pointerId);
+    }
+    document.body.style.userSelect = mapResizeUserSelect.value;
+    mapResizeUserSelect.value = '';
+    window.removeEventListener('pointermove', onMapResizeMove);
+    window.removeEventListener('pointerup', stopMapResize);
+  };
+  const startMapResize = (event: PointerEvent) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    mapResizeHandleRef.value?.setPointerCapture(event.pointerId);
+    mapResizeState.value = {
+      startY: event.clientY,
+      startHeight: mapHeight.value,
+      pointerId: event.pointerId,
+    };
+    mapResizeUserSelect.value = document.body.style.userSelect;
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', onMapResizeMove);
+    window.addEventListener('pointerup', stopMapResize);
+  };
+  const onMapResizeKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'ArrowUp') {
+      mapHeight.value = mapHeight.value + MAP_HEIGHT_STEP;
+      event.preventDefault();
+    }
+    if (event.key === 'ArrowDown') {
+      mapHeight.value = mapHeight.value - MAP_HEIGHT_STEP;
+      event.preventDefault();
+    }
+    if (event.key === 'Home') {
+      mapHeight.value = MAP_HEIGHT_MIN;
+      event.preventDefault();
+    }
+    if (event.key === 'End') {
+      mapHeight.value = mapHeightMax.value;
+      event.preventDefault();
+    }
+  };
   // Compute objective markers from visible tasks for the selected map
   const mapObjectiveMarks = computed(() => {
     if (!selectedMapData.value) return [];
@@ -310,6 +440,84 @@
     });
     return marks;
   });
+  const SCROLL_TO_MAP_POPUP_DELAY = 150;
+  const POPUP_ACTIVATE_RETRY_DELAY = 150;
+  const POPUP_ACTIVATE_MAX_ATTEMPTS = 6;
+  let jumpToMapTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  const popupActivateTimers = ref<ReturnType<typeof setTimeout>[]>([]);
+  const clearPopupActivateTimers = () => {
+    popupActivateTimers.value.forEach((timerId) => clearTimeout(timerId));
+    popupActivateTimers.value = [];
+  };
+  const findObjectiveMapId = (objectiveId: string): string | null => {
+    const objective = metadataStore.objectives.find((o) => o.id === objectiveId);
+    if (!objective) return null;
+    const taskId = objective.taskId;
+    if (!taskId) return null;
+    const objWithZones = objective as typeof objective & {
+      zones?: Array<{ map?: { id: string } }>;
+    };
+    if (objWithZones.zones?.length) {
+      const zoneMapId = objWithZones.zones[0]?.map?.id;
+      if (zoneMapId) return zoneMapId;
+    }
+    const objWithLocs = objective as typeof objective & {
+      possibleLocations?: Array<{ map?: { id: string } }>;
+    };
+    if (objWithLocs.possibleLocations?.length) {
+      const locMapId = objWithLocs.possibleLocations[0]?.map?.id;
+      if (locMapId) return locMapId;
+    }
+    const objectiveMapsForTask = metadataStore.objectiveMaps?.[taskId] ?? [];
+    const mapInfo = objectiveMapsForTask.find((m) => m.objectiveID === objectiveId);
+    if (mapInfo?.mapID) return mapInfo.mapID;
+    return null;
+  };
+  const activateObjectivePopupWithRetry = (objectiveId: string) => {
+    clearPopupActivateTimers();
+    let attempts = 0;
+    const tryActivate = () => {
+      const success = leafletMapRef.value?.activateObjectivePopup(objectiveId);
+      if (success) return;
+      attempts += 1;
+      if (attempts > POPUP_ACTIVATE_MAX_ATTEMPTS) return;
+      const timerId = setTimeout(tryActivate, POPUP_ACTIVATE_RETRY_DELAY);
+      popupActivateTimers.value.push(timerId);
+    };
+    tryActivate();
+  };
+  const scrollToMap = () => {
+    if (mapContainerRef.value) {
+      mapContainerRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const jumpToMapObjective = async (objectiveId: string) => {
+    if (jumpToMapTimeoutId) {
+      clearTimeout(jumpToMapTimeoutId);
+      jumpToMapTimeoutId = null;
+    }
+    const targetMapId = findObjectiveMapId(objectiveId);
+    const currentMapId = getTaskMapView.value;
+    if (targetMapId && targetMapId !== currentMapId) {
+      preferencesStore.setTaskMapView(targetMapId);
+      await nextTick();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const isNearTop = window.scrollY < 100;
+    if (!isNearTop) {
+      scrollToMap();
+    }
+    if (isNearTop) {
+      activateObjectivePopupWithRetry(objectiveId);
+      return;
+    }
+    jumpToMapTimeoutId = setTimeout(() => {
+      jumpToMapTimeoutId = null;
+      activateObjectivePopupWithRetry(objectiveId);
+    }, SCROLL_TO_MAP_POPUP_DELAY);
+  };
   // Toast / Undo State
   const taskStatusUpdated = ref(false);
   const taskStatus = ref('');
@@ -490,6 +698,7 @@
       getHideNonKappaTasks,
       getShowNonSpecialTasks,
       getShowLightkeeperTasks,
+      getPinnedTaskIds,
       tasksLoading,
       tasks,
       maps,
@@ -546,6 +755,16 @@
     if (!pinnedTaskId.value) return null;
     return filteredTasks.value.find((task) => task.id === pinnedTaskId.value) ?? null;
   });
+  const clearPinnedTask = () => {
+    pinnedTaskId.value = null;
+    if (pinnedTaskTimeout.value) {
+      clearTimeout(pinnedTaskTimeout.value);
+      pinnedTaskTimeout.value = null;
+    }
+  };
+  provide('jumpToMapObjective', jumpToMapObjective);
+  provide('isMapView', showMapDisplay);
+  provide('clearPinnedTask', clearPinnedTask);
   // Progressive rendering - load tasks incrementally for smooth scrolling
   const INITIAL_BATCH = 15;
   const BATCH_SIZE = 10;
@@ -558,6 +777,16 @@
     const remaining = filteredTasks.value.filter((task) => task.id !== pinnedTask.value?.id);
     const sliceCount = Math.max(visibleTaskCount.value - 1, 0);
     return [pinnedTask.value, ...remaining.slice(0, sliceCount)];
+  });
+  const pinnedTasksInSlice = computed(() => {
+    const pinnedIds = getPinnedTaskIds.value;
+    if (!pinnedIds.length) return [];
+    return visibleTasksSlice.value.filter((task) => pinnedIds.includes(task.id));
+  });
+  const unpinnedTasksInSlice = computed(() => {
+    const pinnedIds = getPinnedTaskIds.value;
+    if (!pinnedIds.length) return visibleTasksSlice.value;
+    return visibleTasksSlice.value.filter((task) => !pinnedIds.includes(task.id));
   });
   const hasMoreTasks = computed(() => visibleTaskCount.value < filteredTasks.value.length);
   const loadMoreTasks = () => {
@@ -583,6 +812,11 @@
     });
   });
   const taskListRef = ref<HTMLElement | null>(null);
+  const mapContainerRef = ref<HTMLElement | null>(null);
+  const leafletMapRef = ref<{
+    activateObjectivePopup: (id: string) => boolean;
+    closeActivePopup: () => void;
+  } | null>(null);
   // Handle deep linking to a specific task via ?task=taskId query param
   const getTaskStatus = (taskId: string): 'available' | 'locked' | 'completed' | 'failed' => {
     const isFailed = tasksFailed.value?.[taskId]?.['self'] ?? false;
@@ -614,16 +848,58 @@
       highlightTimeout.value = null;
     }, 2000);
   };
+  const objectiveHighlightTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+  const waitForObjectiveElement = async (
+    objectiveId: string,
+    maxAttempts = 30
+  ): Promise<HTMLElement | null> => {
+    for (let i = 0; i < maxAttempts; i++) {
+      await nextTick();
+      const element =
+        document.getElementById(`objective-${objectiveId}`) ??
+        document.querySelector<HTMLElement>(`[data-objective-ids*="${objectiveId}"]`);
+      if (element) return element;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return null;
+  };
+  const highlightObjective = async (objectiveId: string) => {
+    if (objectiveHighlightTimeout.value) {
+      clearTimeout(objectiveHighlightTimeout.value);
+      objectiveHighlightTimeout.value = null;
+    }
+    document.querySelectorAll('.objective-highlight').forEach((element) => {
+      element.classList.remove('objective-highlight');
+    });
+    const element = await waitForObjectiveElement(objectiveId, 30);
+    if (!element) return;
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    element.classList.add('objective-highlight');
+    objectiveHighlightTimeout.value = setTimeout(() => {
+      element.classList.remove('objective-highlight');
+      objectiveHighlightTimeout.value = null;
+    }, 3500);
+  };
   onBeforeUnmount(() => {
     updateDebouncedSearch.cancel();
+    stopMapResize();
     if (highlightTimeout.value) {
       clearTimeout(highlightTimeout.value);
       highlightTimeout.value = null;
+    }
+    if (objectiveHighlightTimeout.value) {
+      clearTimeout(objectiveHighlightTimeout.value);
+      objectiveHighlightTimeout.value = null;
     }
     if (pinnedTaskTimeout.value) {
       clearTimeout(pinnedTaskTimeout.value);
       pinnedTaskTimeout.value = null;
     }
+    if (jumpToMapTimeoutId) {
+      clearTimeout(jumpToMapTimeoutId);
+      jumpToMapTimeoutId = null;
+    }
+    clearPopupActivateTimers();
   });
   const scrollToTask = async (taskId: string) => {
     await nextTick();
@@ -671,60 +947,63 @@
   };
   const handleTaskQueryParam = async () => {
     const taskId = getQueryString(route.query.task);
+    const objectiveIdToHighlight = getQueryString(route.query.highlightObjective);
     if (!taskId || tasksLoading.value) return;
     const taskInMetadata = tasks.value.find((t) => t.id === taskId);
     if (!taskInMetadata) return;
-    // Enable the appropriate type filter based on task properties
-    const isKappaRequired = taskInMetadata.kappaRequired === true;
-    const isLightkeeperRequired = taskInMetadata.lightkeeperRequired === true;
-    const isLightkeeperTraderTask =
-      lightkeeperTraderId.value !== undefined
-        ? taskInMetadata.trader?.id === lightkeeperTraderId.value
-        : taskInMetadata.trader?.name?.toLowerCase() === 'lightkeeper';
-    const isNonSpecial = !isKappaRequired && !isLightkeeperRequired && !isLightkeeperTraderTask;
-    // Ensure the task's type filter is enabled so task will appear
-    if (
-      (isLightkeeperRequired || isLightkeeperTraderTask) &&
-      !preferencesStore.getShowLightkeeperTasks
-    ) {
-      preferencesStore.setShowLightkeeperTasks(true);
-    }
-    if (isKappaRequired && preferencesStore.getHideNonKappaTasks) {
-      preferencesStore.setHideNonKappaTasks(false);
-    }
-    if (isNonSpecial && !preferencesStore.getShowNonSpecialTasks) {
-      preferencesStore.setShowNonSpecialTasks(true);
-    }
-    // Determine task status and set appropriate filter
-    // Skip if already in 'all' view since all tasks are visible there
-    const currentSecondaryView = preferencesStore.getTaskSecondaryView;
-    if (currentSecondaryView !== 'all') {
-      const status = getTaskStatus(taskId);
-      if (currentSecondaryView !== status) {
-        preferencesStore.setTaskSecondaryView(status);
-      }
-    }
-    // Set primary view to 'all' to ensure the task is visible regardless of map/trader
-    if (preferencesStore.getTaskPrimaryView !== 'all') {
-      preferencesStore.setTaskPrimaryView('all');
-    }
     // Clear search query so the target task is visible
     if (searchQuery.value) {
       searchQuery.value = '';
+    }
+    if (!objectiveIdToHighlight) {
+      const isKappaRequired = taskInMetadata.kappaRequired === true;
+      const isLightkeeperRequired = taskInMetadata.lightkeeperRequired === true;
+      const isLightkeeperTraderTask =
+        lightkeeperTraderId.value !== undefined
+          ? taskInMetadata.trader?.id === lightkeeperTraderId.value
+          : taskInMetadata.trader?.name?.toLowerCase() === 'lightkeeper';
+      const isNonSpecial = !isKappaRequired && !isLightkeeperRequired && !isLightkeeperTraderTask;
+      if (
+        (isLightkeeperRequired || isLightkeeperTraderTask) &&
+        !preferencesStore.getShowLightkeeperTasks
+      ) {
+        preferencesStore.setShowLightkeeperTasks(true);
+      }
+      if (isKappaRequired && preferencesStore.getHideNonKappaTasks) {
+        preferencesStore.setHideNonKappaTasks(false);
+      }
+      if (isNonSpecial && !preferencesStore.getShowNonSpecialTasks) {
+        preferencesStore.setShowNonSpecialTasks(true);
+      }
+      const currentSecondaryView = preferencesStore.getTaskSecondaryView;
+      if (currentSecondaryView !== 'all') {
+        const status = getTaskStatus(taskId);
+        if (currentSecondaryView !== status) {
+          preferencesStore.setTaskSecondaryView(status);
+        }
+      }
+      if (preferencesStore.getTaskPrimaryView !== 'all') {
+        preferencesStore.setTaskPrimaryView('all');
+      }
     }
     // Wait for filter/watch updates to settle
     await nextTick();
     // scrollToTask handles scrolling directly via scrollIntoView
     await scrollToTask(taskId);
+    if (objectiveIdToHighlight) {
+      await highlightObjective(objectiveIdToHighlight);
+      leafletMapRef.value?.activateObjectivePopup(objectiveIdToHighlight);
+    }
     // Clear the query param to avoid re-triggering on filter changes
     const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>;
     delete nextQuery.task;
+    delete nextQuery.highlightObjective;
     router.replace({ query: nextQuery });
   };
   // Watch for task query param and handle it when tasks are loaded
   watch(
-    [() => route.query.task, tasksLoading, tasksCompletions],
-    ([taskQueryParam, loading]) => {
+    [() => route.query.task, () => route.query.highlightObjective, tasksLoading, tasksCompletions],
+    ([taskQueryParam, , loading]) => {
       if (taskQueryParam && !loading) {
         handleTaskQueryParam();
       }

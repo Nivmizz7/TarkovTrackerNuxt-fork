@@ -114,6 +114,7 @@
                   <div class="bg-surface-700 flex items-center rounded border border-white/20">
                     <button
                       class="text-surface-200 hover:bg-surface-600 flex h-6 w-6 items-center justify-center rounded-l transition-colors hover:text-white"
+                      :aria-label="`Decrease objective count for ${taskLookup[obj.taskId]?.name || $t('neededItems.unknown_task', 'Unknown Task')}`"
                       @click="decreaseObjective(obj)"
                     >
                       <UIcon name="i-mdi-minus" class="h-3 w-3" />
@@ -128,6 +129,7 @@
                     </span>
                     <button
                       class="text-surface-200 hover:bg-surface-600 flex h-6 w-6 items-center justify-center rounded-r transition-colors hover:text-white"
+                      :aria-label="`Increase objective count for ${taskLookup[obj.taskId]?.name || $t('neededItems.unknown_task', 'Unknown Task')}`"
                       @click="increaseObjective(obj)"
                     >
                       <UIcon name="i-mdi-plus" class="h-3 w-3" />
@@ -187,6 +189,7 @@
                   <div class="bg-surface-700 flex items-center rounded border border-white/20">
                     <button
                       class="text-surface-200 hover:bg-surface-600 flex h-6 w-6 items-center justify-center rounded-l transition-colors hover:text-white"
+                      :aria-label="`Decrease hideout count for ${getStation(mod)?.name || $t('neededItems.unknown_station', 'Unknown Station')}`"
                       @click="decreaseHideout(mod)"
                     >
                       <UIcon name="i-mdi-minus" class="h-3 w-3" />
@@ -199,6 +202,7 @@
                     </span>
                     <button
                       class="text-surface-200 hover:bg-surface-600 flex h-6 w-6 items-center justify-center rounded-r transition-colors hover:text-white"
+                      :aria-label="`Increase hideout count for ${getStation(mod)?.name || $t('neededItems.unknown_station', 'Unknown Station')}`"
                       @click="increaseHideout(mod)"
                     >
                       <UIcon name="i-mdi-plus" class="h-3 w-3" />

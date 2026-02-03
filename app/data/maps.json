@@ -269,10 +269,20 @@
   },
   "labyrinth": {
     "id": 11,
-    "tdevId": "labyrinth",
+    "tdevId": "6733700029c367a3d40b02af",
     "locale": {
       "en": "The Labyrinth"
     },
-    "unavailable": true
+    "tile": {
+      "tilePath": "https://assets.tarkov.dev/maps/labyrinth/main/{z}/{x}/{y}.png",
+      "minZoom": 1,
+      "maxZoom": 6,
+      "transform": [2.115, 85.5, 2.115, 128],
+      "coordinateRotation": 270,
+      "bounds": [
+        [-52, -37],
+        [53, 76]
+      ]
+    }
   }
 }

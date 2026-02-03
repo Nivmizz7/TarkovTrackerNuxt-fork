@@ -21,10 +21,11 @@
     },
   },
   common: {
+    close: 'Закрити',
     refreshbutton: 'Спробувати знову',
   },
   maps: {
-    zoom: 'Масштаб',
+    zoom: 'Швидкість масштабування',
     notAvailableTitle: 'Карта недоступна',
     notAvailableDescription: 'Інтерактивна карта для {mapName} поки недоступна. Ми чекаємо на створення сумісної карти.',
     placeholder: 'цієї локації',
@@ -184,6 +185,10 @@
       showing_all_sources: 'Показати всі джерела',
       loading: 'Завантажуємо завдання',
       selectedTask: 'Обране завдання',
+      map: {
+        resizeHandle: 'Змінити висоту карти',
+      },
+      pinnedTasksSection: 'Закріплені завдання',
       questcard: {
         pinTask: 'Закріпити завдання',
         unpinTask: 'Відкріпити завдання',
@@ -221,6 +226,30 @@
         globalTask: 'Будь-яка карта',
         globalTaskTooltip: 'Це завдання можна виконати на будь-якій карті',
         jumpToMap: 'Перейти до карти',
+        anyLocationTooltip: 'Це завдання можна виконати на будь-якій карті',
+        clickToEdit: 'Натисніть, щоб редагувати',
+        failbutton: 'Провалити',
+        find: 'Знайти',
+        findAndHandOver: 'Знайти та здати',
+        findAndHandOverFir: 'Знайти в рейді та здати',
+        findFir: 'Знайти в рейді',
+        itemsCount: '{count} предметів',
+        kappaTooltip: 'Це завдання необхідне для отримання контейнера Kappa',
+        kapparequired: 'KAPPA ПОТРІБНА',
+        levelBadgeTooltip: 'Мінімальний рівень гравця {level} потрібен для відкриття цього завдання',
+        lightkeeperTooltip: 'Це завдання необхідне для відкриття торговця Lightkeeper',
+        lightkeeperrequired: 'LIGHTKEEPER ПОТРІБЕН',
+        locationTooltip: 'Цілі завдання знаходяться на карті {map}',
+        nextTasks: 'Наступні завдання:',
+        nexttasks: 'Наступне(і) завдання(я):',
+        objective: 'Ціль',
+        objectives: 'Цілі',
+        openItemOnTarkovDev: 'Відкрити {name} на tarkov.dev',
+        previousTasks: 'Попередні завдання:',
+        previoustasks: 'Попереднє(і) завдання(я):',
+        rewards: 'Нагороди',
+        task: 'Завдання',
+        unlocksCount: '{count} розблокувань',
       },
       scrollToMap: 'Прокрутити до карти',
       scrollToTop: 'Вгору',
@@ -230,6 +259,9 @@
       loading: 'Завантажуємо дані притулка',
       nostationsfound: 'Станцій не знайдено. Спробуйте змінити фільтри.',
       collapsecompleted: 'Згорнути завершені станції',
+      sort: {
+        readyfirst: 'Спочатку готові до побудови',
+      },
       primaryviews: {
         all: 'Усі',
         locked: 'Заблоковано',
@@ -261,6 +293,7 @@
       loading: 'Завантажуємо дані завдань та притулку',
       searchplaceholder: 'Пошук предметів...',
       items: 'предмети',
+      empty: 'Немає предметів, що відповідають вашому пошуку.',
       filters: {
         label: 'Фільтри',
         sections: {
@@ -271,6 +304,8 @@
         fir_long: 'Знайдено В Рейді',
         non_fir: 'НЕ-ЗВР',
         non_fir_long: 'Не Знайдено В Рейді',
+        show_owned: 'ПОКАЗАТИ В НАЯВНОСТІ',
+        hide_owned: 'ПРИХОВАТИ В НАЯВНОСТІ',
         hide_non_fir_special_equipment_title: 'Приховати не-ЗВР спеціальне обладнання (наприклад, маркери MS2000, Wi‑Fi камери)',
         no_special: 'БЕЗ-СПЕЦ',
         special: 'СПЕЦІАЛЬНЕ',
@@ -279,6 +314,10 @@
         kappa_only_disabled_tooltip: 'Фільтр Kappa застосовується лише до завдань.',
         hide_team_needs: 'ПРИХОВАТИ ПОТРЕБИ КОМАНДИ',
         show_team_needs: 'ПОКАЗАТИ ПОТРЕБИ КОМАНДИ',
+      },
+      sort: {
+        label: 'Сортувати',
+        by: 'СОРТУВАТИ ЗА',
       },
       neededviews: {
         all: 'Усі',
@@ -526,6 +565,13 @@
   },
   settings: {
     title: 'Налаштування',
+    density: {
+      compact: 'Компактна',
+      comfortable: 'Комфортна',
+    },
+    account: {
+      begin_deletion: 'Почати видалення акаунта',
+    },
     general: {
       title: 'Загальні налаштування',
       language: 'Мова',
@@ -534,6 +580,30 @@
       privacy_mode_hint: 'Приховує конфіденційну інформацію під час трансляції.',
       streamer_mode_hint: 'Приховує конфіденційну інформацію під час трансляції.',
       login_required: 'Увійдіть, щоб увімкнути ці налаштування.',
+      admin_panel: 'Панель адміністратора',
+    },
+    interface: {
+      title: 'Налаштування інтерфейсу',
+      tasks: {
+        title: 'Картки завдань',
+        show_required: "Показувати обов'язкові мітки",
+        show_xp: 'Показувати нагороди XP',
+        show_next: 'Показувати наступні квести',
+        show_prev: 'Показувати попередні квести',
+        density: 'Щільність карток',
+      },
+      defaults: {
+        title: 'Подання за замовчуванням',
+      },
+      maps: {
+        title: 'Карти',
+        show_extracts: 'Показувати виходи за замовчуванням',
+        zoom_speed: 'Швидкість масштабування',
+      },
+      misc: {
+        title: 'Різне',
+        holiday_effects: 'Увімкнути святкові ефекти',
+      },
     },
     game_profile: {
       title: 'Ігровий профіль',
@@ -542,6 +612,7 @@
     },
     game_settings: {
       title: 'Налаштування гри',
+      switch_mode_failed: 'Не вдалося змінити режим гри, спробуйте ще раз',
     },
     data_management: {
       title: 'Керування даними',
@@ -583,6 +654,7 @@
       show_account_id: 'Показати ID акаунта',
       hide_account_id: 'Приховати ID акаунта',
       copy_account_id: 'Копіювати ID акаунта',
+      copy_failed: 'Не вдалося скопіювати ID акаунта',
       account_id_copied: 'ID акаунта скопійовано',
       confirm_delete_title: 'Підтвердити видалення акаунта',
       confirm_delete_sr_only: 'Ця дія незворотна і вимагає введення фрази підтвердження для продовження.',

@@ -4,7 +4,6 @@
     class="border-surface-700/20 relative flex flex-col overflow-hidden rounded-b-md border-t transition-colors"
     :class="[showDetails && hasExpandableDetails ? 'bg-surface-900/40' : 'bg-surface-900/20']"
   >
-    <!-- Summary Line (Toggle Trigger) -->
     <div
       class="text-surface-400 focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 group flex w-full items-center gap-2 text-xs transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       :class="[
@@ -22,7 +21,6 @@
         <UIcon name="i-mdi-gift" aria-hidden="true" class="mr-1 inline h-3.5 w-3.5" />
         {{ t('page.tasks.questcard.rewards', 'Rewards') }}:
       </span>
-      <!-- Standing -->
       <template v-for="standing in traderStandingRewards" :key="`standing-${standing.trader.id}`">
         <div class="bg-surface-800 inline-flex items-center gap-1 rounded px-1.5 py-0.5">
           <UIcon name="i-mdi-handshake" aria-hidden="true" class="text-surface-400 h-3.5 w-3.5" />
@@ -35,7 +33,6 @@
           <span class="text-surface-100">{{ standing.trader.name }}</span>
         </div>
       </template>
-      <!-- Skill -->
       <template v-for="skill in skillRewards" :key="`skill-${skill.name}`">
         <div class="inline-flex items-center gap-1">
           <UIcon name="i-mdi-arm-flex" aria-hidden="true" class="text-secondary-400 h-3.5 w-3.5" />
@@ -43,7 +40,6 @@
           <span>{{ skill.name }}</span>
         </div>
       </template>
-      <!-- Trader Unlock -->
       <div
         v-if="displayedTraderUnlock?.name"
         class="bg-warning-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
@@ -55,7 +51,6 @@
         />
         <span class="text-warning-300 font-medium">{{ displayedTraderUnlock.name }}</span>
       </div>
-      <!-- Item Rewards Summary -->
       <div
         v-if="itemRewards.length > 0"
         class="bg-success-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
@@ -75,7 +70,6 @@
           }}
         </span>
       </div>
-      <!-- Offer Unlock Summary -->
       <div
         v-if="offerUnlockRewards.length > 0"
         class="bg-info-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
@@ -91,7 +85,6 @@
           }}
         </span>
       </div>
-      <!-- Experience Reward -->
       <div
         v-if="showExperienceRewards && experience"
         class="bg-warning-900 inline-flex items-center gap-1 rounded px-1.5 py-0.5"
@@ -99,9 +92,41 @@
         <UIcon name="i-mdi-star" aria-hidden="true" class="text-warning-400 h-3.5 w-3.5" />
         <span class="text-warning-300 font-medium">{{ formatNumber(experience) }} XP</span>
       </div>
-      <!-- Arrow spacer -->
       <div class="flex-1"></div>
-      <!-- Toggle Icon -->
+      <AppTooltip
+        v-if="unlocksNextCount && unlocksNextCount > 0"
+        :text="
+          t(
+            'page.tasks.questcard.unlocksNextTooltip',
+            'Number of quests that become available after completing this task'
+          )
+        "
+      >
+        <div
+          class="text-surface-400 border-surface-600 inline-flex cursor-help items-center gap-1 border-b border-dotted text-xs"
+        >
+          <UIcon name="i-mdi-arrow-right-circle-outline" class="h-3.5 w-3.5" />
+          <span>
+            {{ t('page.tasks.questcard.unlocksNext', 'Unlocks next') }}: {{ unlocksNextCount }}
+          </span>
+        </div>
+      </AppTooltip>
+      <AppTooltip
+        v-if="impactCount && impactCount > 0"
+        :text="
+          t(
+            'page.tasks.questcard.impactTooltip',
+            'Number of incomplete quests that depend on this task being completed'
+          )
+        "
+      >
+        <div
+          class="text-surface-400 border-surface-600 inline-flex cursor-help items-center gap-1 border-b border-dotted text-xs"
+        >
+          <UIcon name="i-mdi-sitemap" class="h-3.5 w-3.5" />
+          <span>{{ t('page.tasks.questcard.impact', 'Impact') }}: {{ impactCount }}</span>
+        </div>
+      </AppTooltip>
       <UIcon
         v-if="hasExpandableDetails"
         name="i-mdi-chevron-down"
@@ -110,7 +135,6 @@
         :class="{ 'rotate-180': showDetails }"
       />
     </div>
-    <!-- Details Section -->
     <Transition
       enter-active-class="transition duration-200 ease-out"
       enter-from-class="opacity-0 -translate-y-2"
@@ -125,10 +149,9 @@
         :class="{ 'p-3': isCompact }"
       >
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <!-- 1: Previous Tasks -->
-          <div v-if="showPreviousTasks && parentTasks.length > 0" class="space-y-2">
+          <div v-if="showPreviousTasks" class="space-y-2">
             <div class="text-surface-500 text-[10px] font-bold tracking-wider uppercase">
-              {{ t('page.tasks.questcard.previousTasks', 'Previous Tasks') }}
+              {{ t('page.tasks.questcard.previousTasks', 'Previous Tasks:') }}
             </div>
             <div class="flex flex-col gap-1.5">
               <router-link
@@ -142,10 +165,9 @@
               </router-link>
             </div>
           </div>
-          <!-- 2: Item Rewards (always visible) -->
           <div class="space-y-3">
             <div class="text-surface-500 text-[10px] font-bold tracking-wider uppercase">
-              {{ t('page.tasks.questcard.rewardItems', 'Items') }}
+              {{ t('page.tasks.questcard.rewardItems', 'Items:') }}
             </div>
             <div v-if="itemRewards.length > 0" class="flex flex-wrap gap-2">
               <AppTooltip
@@ -180,10 +202,9 @@
               </AppTooltip>
             </div>
           </div>
-          <!-- 3: Offer Unlocks (always visible) -->
           <div class="space-y-3">
             <div class="text-surface-500 text-[10px] font-bold tracking-wider uppercase">
-              {{ t('page.tasks.questcard.unlocksPurchase', 'Unlocks Purchase') }}
+              {{ t('page.tasks.questcard.unlocksPurchase', 'Unlocks Purchase:') }}
             </div>
             <div v-if="offerUnlockRewards.length > 0" class="flex flex-wrap gap-2">
               <AppTooltip
@@ -218,10 +239,9 @@
               </AppTooltip>
             </div>
           </div>
-          <!-- 4: Next Tasks -->
           <div v-if="showNextTasks && childTasks.length > 0" class="space-y-2">
             <div class="text-surface-500 text-[10px] font-bold tracking-wider uppercase">
-              {{ t('page.tasks.questcard.nextTasks', 'Next Tasks') }}
+              {{ t('page.tasks.questcard.nextTasks', 'Next Tasks:') }}
             </div>
             <div class="flex flex-col gap-1.5">
               <router-link
@@ -282,6 +302,8 @@
     childTasks: Task[];
     experience?: number;
     isCompact?: boolean;
+    unlocksNextCount?: number;
+    impactCount?: number;
   }>();
   defineEmits<{
     'item-context-menu': [event: MouseEvent, item: ItemReward['item']];
@@ -310,7 +332,7 @@
   });
   const hasExpandableDetails = computed(() => {
     const hasVisibleNextTasks = showNextTasks.value && props.childTasks.length > 0;
-    const hasVisiblePreviousTasks = showPreviousTasks.value && props.parentTasks.length > 0;
+    const hasVisiblePreviousTasks = showPreviousTasks.value;
     return hasDetailedRewards.value || hasVisibleNextTasks || hasVisiblePreviousTasks;
   });
   const getItemTooltip = (item?: { shortName?: string; name?: string }) => {

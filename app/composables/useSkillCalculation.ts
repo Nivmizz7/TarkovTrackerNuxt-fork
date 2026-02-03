@@ -110,7 +110,6 @@ export function useSkillCalculation() {
       );
       return;
     }
-    // Clamp level between 0 and 51
     const validatedLevel = Math.min(51, Math.max(0, Math.floor(totalLevel)));
     const questLevel = calculatedQuestSkills.value[skillName] || 0;
     const offset = validatedLevel - questLevel;

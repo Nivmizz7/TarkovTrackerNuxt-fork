@@ -166,8 +166,13 @@
   const getProviderLabel = (provider: AuthProvider) => {
     return provider.charAt(0).toUpperCase() + provider.slice(1);
   };
+  const confirmationPhrase = computed(() =>
+    t('settings.account_data.confirm_phrase_value', 'DELETE MY ACCOUNT')
+  );
   const canDelete = computed(() => {
-    return confirmationText.value.trim().toUpperCase() === 'DELETE MY ACCOUNT';
+    return (
+      confirmationText.value.trim().toUpperCase() === confirmationPhrase.value.trim().toUpperCase()
+    );
   });
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'Unknown';
@@ -181,6 +186,10 @@
         accountIdCopied.value = false;
       }, 2000);
     } catch (error) {
+      toast.add({
+        title: t('settings.account_data.copy_failed', 'Failed to copy account id'),
+        color: 'error',
+      });
       logger.error('Failed to copy account ID:', error);
     }
   };

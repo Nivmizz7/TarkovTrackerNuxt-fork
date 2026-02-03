@@ -171,6 +171,7 @@ html.no-smooth-scroll {
   --color-error-800: hsl(0 55% 24%);
   --color-error-900: hsl(0 55% 18%);
   --color-error-950: hsl(0 55% 12%);
+  --color-selection-500: hsl(262 83% 58%);
   /* Kappa (vibrant red) */
   --color-kappa-50: hsl(0 80% 96%);
   --color-kappa-100: hsl(0 80% 90%);
@@ -713,4 +714,42 @@ summary {
   .fade-leave-to {
     opacity: 0;
   }
+}
+.objective-highlight {
+  --highlight-color: var(--color-selection-500);
+  animation: objective-highlight-solid 3s ease-in-out;
+  border-radius: 0.375rem;
+}
+@keyframes objective-highlight-solid {
+  0% {
+    outline: 2px solid transparent;
+    outline-offset: 0;
+  }
+  5% {
+    outline: 2px solid var(--highlight-color);
+    outline-offset: 0;
+  }
+  85% {
+    outline: 2px solid var(--highlight-color);
+    outline-offset: 0;
+  }
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 0;
+  }
+}
+.map-objective-popup .leaflet-popup-content-wrapper {
+  background-color: var(--color-surface-800) !important;
+  color: var(--color-gray-200) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.map-objective-popup .leaflet-popup-content {
+  margin: 10px 12px;
+}
+.map-objective-popup .leaflet-popup-tip {
+  background-color: var(--color-surface-800) !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }

@@ -9,9 +9,6 @@
       title: 'Objetos Necesarios',
     },
   },
-  navigation_drawer: {
-    toggle: 'Alternar menú',
-  },
   app_bar: {
     error_loading: 'Error al cargar datos de Tarkov',
     loading: 'Cargando datos de Tarkov',
@@ -21,10 +18,11 @@
     },
   },
   common: {
+    close: 'Cerrar',
     refreshbutton: 'Intentar de nuevo',
   },
   maps: {
-    zoom: 'Zoom',
+    zoom: 'Velocidad de zoom',
     notAvailableTitle: 'Mapa no disponible',
     notAvailableDescription: 'El mapa interactivo de {mapName} aún no está disponible. Estamos esperando a que se cree un mapa compatible.',
     placeholder: 'esta ubicación',
@@ -161,6 +159,10 @@
       showing_all_sources: 'Mostrar todas las fuentes',
       loading: 'Cargando misiones',
       selectedTask: 'Tarea seleccionada',
+      map: {
+        resizeHandle: 'Ajustar altura del mapa',
+      },
+      pinnedTasksSection: 'Misiones fijadas',
       questcard: {
         pinTask: 'Fijar misión',
         unpinTask: 'Desfijar misión',
@@ -198,6 +200,30 @@
         globalTask: 'Cualquier mapa',
         globalTaskTooltip: 'Esta misión se puede completar en cualquier mapa',
         jumpToMap: 'Ir al mapa',
+        anyLocationTooltip: 'La misión se puede completar en cualquier mapa',
+        clickToEdit: 'Haz clic para editar',
+        failbutton: 'Fallar',
+        find: 'Encontrar',
+        findAndHandOver: 'Encontrar y entregar',
+        findAndHandOverFir: 'Encontrar y entregar encontrado en incursión',
+        findFir: 'Encontrar en incursión',
+        itemsCount: '{count} objetos',
+        kappaTooltip: 'Esta misión es necesaria para obtener el Contenedor Seguro Kappa',
+        kapparequired: 'KAPPA REQUERIDA',
+        levelBadgeTooltip: 'Nivel mínimo de jugador {level} requerido para desbloquear esta misión',
+        lightkeeperTooltip: 'Esta misión es necesaria para desbloquear al comerciante Lightkeeper',
+        lightkeeperrequired: 'LIGHTKEEPER REQUERIDO',
+        locationTooltip: 'Los objetivos de la misión están en {map}',
+        nextTasks: 'Siguientes misiones:',
+        nexttasks: 'Siguiente(s) misión(es):',
+        objective: 'Objetivo',
+        objectives: 'Objetivos',
+        openItemOnTarkovDev: 'Abrir {name} en tarkov.dev',
+        previousTasks: 'Misiones anteriores:',
+        previoustasks: 'Misión(es) anterior(es):',
+        rewards: 'Recompensas',
+        task: 'Misión',
+        unlocksCount: '{count} desbloqueos',
       },
       scrollToMap: 'Desplazar al mapa',
       scrollToTop: 'Volver arriba',
@@ -207,6 +233,9 @@
       loading: 'Cargando datos del escondite',
       nostationsfound: 'No se encontraron estaciones. Intenta cambiar los filtros.',
       collapsecompleted: 'Colapsar estaciones completadas',
+      sort: {
+        readyfirst: 'Ordenar las estaciones listas para construir primero',
+      },
       primaryviews: {
         all: 'Todas',
         locked: 'Bloqueadas',
@@ -238,6 +267,7 @@
       loading: 'Cargando datos de misiones y escondite',
       searchplaceholder: 'Buscar objetos...',
       items: 'artículos',
+      empty: 'No hay objetos que coincidan con tu búsqueda.',
       filters: {
         label: 'Filtros',
         sections: {
@@ -248,6 +278,8 @@
         fir_long: 'Encontrado en Incursión',
         non_fir: 'NO-FIR',
         non_fir_long: 'No Encontrado en Incursión',
+        show_owned: 'MOSTRAR POSEÍDOS',
+        hide_owned: 'OCULTAR POSEÍDOS',
         hide_non_fir_special_equipment_title: 'Ocultar equipo especial no-FIR (p. ej., marcadores MS2000, cámaras Wi-Fi)',
         no_special: 'SIN-ESPECIAL',
         special: 'ESPECIAL',
@@ -256,6 +288,10 @@
         kappa_only_disabled_tooltip: 'El filtro de Kappa solo aplica a las misiones.',
         hide_team_needs: 'OCULTAR NECESIDADES DEL EQUIPO',
         show_team_needs: 'MOSTRAR NECESIDADES DEL EQUIPO',
+      },
+      sort: {
+        label: 'Ordenar',
+        by: 'ORDENAR POR',
       },
       neededviews: {
         all: 'Todos',
@@ -455,6 +491,7 @@
     changelog: 'Registro de cambios',
   },
   navigation_drawer: {
+    toggle: 'Alternar menú',
     home: 'Panel',
     api: 'API',
     login: 'Iniciar sesión',
@@ -484,6 +521,13 @@
   },
   settings: {
     title: 'Configuración',
+    density: {
+      compact: 'Compacta',
+      comfortable: 'Cómoda',
+    },
+    account: {
+      begin_deletion: 'Iniciar eliminación de cuenta',
+    },
     general: {
       title: 'Configuración general',
       language: 'Idioma',
@@ -492,6 +536,30 @@
       privacy_mode_hint: 'Oculta información sensible mientras transmites.',
       streamer_mode_hint: 'Oculta información sensible mientras transmites.',
       login_required: 'Inicia sesión para habilitar estas configuraciones.',
+      admin_panel: 'Panel de administración',
+    },
+    interface: {
+      title: 'Personalización de interfaz',
+      tasks: {
+        title: 'Tarjetas de tareas',
+        show_required: 'Mostrar etiquetas requeridas',
+        show_xp: 'Mostrar recompensas de XP',
+        show_next: 'Mostrar misiones siguientes',
+        show_prev: 'Mostrar misiones anteriores',
+        density: 'Densidad de tarjetas',
+      },
+      defaults: {
+        title: 'Vistas predeterminadas',
+      },
+      maps: {
+        title: 'Mapas',
+        show_extracts: 'Mostrar extracciones por defecto',
+        zoom_speed: 'Velocidad de zoom',
+      },
+      misc: {
+        title: 'Misceláneo',
+        holiday_effects: 'Habilitar efectos festivos',
+      },
     },
     game_profile: {
       title: 'Perfil del juego',
@@ -500,6 +568,7 @@
     },
     game_settings: {
       title: 'Configuración del juego',
+      switch_mode_failed: 'Error al cambiar el modo de juego, vuelve a intentarlo',
     },
     data_management: {
       title: 'Gestión de datos',
@@ -541,6 +610,7 @@
       show_account_id: 'Mostrar ID de cuenta',
       hide_account_id: 'Ocultar ID de cuenta',
       copy_account_id: 'Copiar ID de cuenta',
+      copy_failed: 'No se pudo copiar el ID de la cuenta',
       account_id_copied: 'ID de cuenta copiado',
       confirm_delete_title: 'Confirmar eliminación de cuenta',
       confirm_delete_sr_only: 'Esta acción es irreversible y requiere escribir la frase de confirmación para continuar.',

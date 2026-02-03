@@ -21,10 +21,11 @@
     },
   },
   common: {
+    close: 'Fermer',
     refreshbutton: 'Actualiser',
   },
   maps: {
-    zoom: 'Zoom',
+    zoom: 'Vitesse du zoom',
     notAvailableTitle: 'Carte indisponible',
     notAvailableDescription: "La carte interactive de {mapName} n'est pas encore disponible. Nous attendons la création d'une carte compatible.",
     placeholder: 'cet endroit',
@@ -184,6 +185,10 @@
       showing_all_sources: 'Afficher toutes les sources',
       loading: 'Chargement des quêtes',
       selectedTask: 'Tâche sélectionnée',
+      map: {
+        resizeHandle: 'Ajuster la hauteur de la carte',
+      },
+      pinnedTasksSection: 'Quêtes épinglées',
       questcard: {
         pinTask: 'Épingler la quête',
         unpinTask: 'Désépingler la quête',
@@ -222,6 +227,30 @@
         globalTask: "N'importe quelle carte",
         globalTaskTooltip: "Cette quête peut être complétée sur n'importe quelle carte",
         jumpToMap: 'Aller à la carte',
+        anyLocationTooltip: "Cette quête peut être complétée sur n'importe quelle carte",
+        clickToEdit: 'Cliquer pour modifier',
+        failbutton: 'Échouer',
+        find: 'Trouver',
+        findAndHandOver: 'Trouver et remettre',
+        findAndHandOverFir: 'Trouver en raid et remettre',
+        findFir: 'Trouver en raid',
+        itemsCount: '{count} objets',
+        kappaTooltip: 'Cette quête est requise pour obtenir le Conteneur Sécurisé Kappa',
+        kapparequired: 'KAPPA REQUIS',
+        levelBadgeTooltip: 'Niveau minimum du joueur {level} requis pour débloquer cette quête',
+        lightkeeperTooltip: 'Cette quête est requise pour débloquer le marchand Lightkeeper',
+        lightkeeperrequired: 'LIGHTKEEPER REQUIS',
+        locationTooltip: 'Les objectifs de la quête sont sur {map}',
+        nextTasks: 'Quêtes suivantes:',
+        nexttasks: 'Quête(s) suivante(s) :',
+        objective: 'Objectif',
+        objectives: 'Objectifs',
+        openItemOnTarkovDev: 'Ouvrir {name} sur tarkov.dev',
+        previousTasks: 'Quêtes précédentes:',
+        previoustasks: 'Quête(s) précédente(s) :',
+        rewards: 'Récompenses',
+        task: 'Quête',
+        unlocksCount: '{count} déblocages',
       },
       scrollToMap: 'Défiler vers la carte',
       scrollToTop: 'Retour en haut',
@@ -231,6 +260,9 @@
       loading: 'Chargement des données de la planque',
       nostationsfound: 'Aucun module trouvé. Essayez de modifier vos filtres ou de mettre à jour votre niveau',
       collapsecompleted: 'Réduire les modules terminés',
+      sort: {
+        readyfirst: 'Trier les stations prêtes à construire en premier',
+      },
       primaryviews: {
         all: 'Toutes',
         locked: 'Vérrouillées',
@@ -262,6 +294,7 @@
       loading: 'Chargement des données des items requis',
       searchplaceholder: 'Rechercher des items...',
       items: 'articles',
+      empty: 'Aucun objet ne correspond à votre recherche.',
       filters: {
         label: 'Filtres',
         sections: {
@@ -272,6 +305,8 @@
         fir_long: 'Trouvé En Raid',
         non_fir: 'NON-TER',
         non_fir_long: 'Non Trouvé En Raid',
+        show_owned: 'AFFICHER POSSÉDÉS',
+        hide_owned: 'MASQUER POSSÉDÉS',
         hide_non_fir_special_equipment_title: 'Masquer le matériel spécial non‑TER (par ex. marqueurs MS2000, caméras Wi‑Fi)',
         no_special: 'NON SPÉCIAL',
         special: 'SPÉCIAL',
@@ -280,6 +315,10 @@
         kappa_only_disabled_tooltip: 'Le filtre Kappa s’applique uniquement aux quêtes.',
         hide_team_needs: "MASQUER LES BESOINS DE L'ÉQUIPE",
         show_team_needs: "AFFICHER LES BESOINS DE L'ÉQUIPE",
+      },
+      sort: {
+        label: 'Trier',
+        by: 'TRIER PAR',
       },
       neededviews: {
         all: 'Tous',
@@ -546,6 +585,13 @@
   },
   settings: {
     title: 'Paramètres',
+    density: {
+      compact: 'Compact',
+      comfortable: 'Confortable',
+    },
+    account: {
+      begin_deletion: 'Commencer la suppression du compte',
+    },
     general: {
       title: 'Paramètres généraux',
       language: 'Langue',
@@ -554,6 +600,30 @@
       privacy_mode_hint: 'Masque les informations sensibles pendant que vous diffusez.',
       streamer_mode_hint: 'Masque les informations sensibles pendant que vous diffusez.',
       login_required: 'Connectez-vous pour activer ces paramètres.',
+      admin_panel: "Panneau d'administration",
+    },
+    interface: {
+      title: "Personnalisation de l'interface",
+      tasks: {
+        title: 'Cartes de tâches',
+        show_required: 'Afficher les étiquettes requises',
+        show_xp: "Afficher les récompenses d'XP",
+        show_next: 'Afficher les quêtes suivantes',
+        show_prev: 'Afficher les quêtes précédentes',
+        density: 'Densité des cartes',
+      },
+      defaults: {
+        title: 'Vues par défaut',
+      },
+      maps: {
+        title: 'Cartes',
+        show_extracts: 'Afficher les extractions par défaut',
+        zoom_speed: 'Vitesse de zoom',
+      },
+      misc: {
+        title: 'Divers',
+        holiday_effects: 'Activer les effets de fête',
+      },
     },
     game_profile: {
       title: 'Profil de jeu',
@@ -562,6 +632,7 @@
     },
     game_settings: {
       title: 'Paramètres du jeu',
+      switch_mode_failed: 'Échec du changement de mode de jeu, veuillez réessayer',
     },
     data_management: {
       title: 'Gestion des données',
@@ -603,6 +674,7 @@
       show_account_id: "Afficher l'ID de compte",
       hide_account_id: "Masquer l'ID de compte",
       copy_account_id: "Copier l'ID de compte",
+      copy_failed: "Impossible de copier l'ID de compte",
       account_id_copied: 'ID de compte copié',
       confirm_delete_title: 'Confirmer la suppression du compte',
       confirm_delete_sr_only: 'Cette action est irréversible et nécessite de saisir la phrase de confirmation pour continuer.',

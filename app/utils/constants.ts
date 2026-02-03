@@ -94,8 +94,8 @@ export const MAP_NAME_MAPPING: Record<string, string> = {
   'the lab': 'lab',
   'ground zero 21+': 'groundzero',
   'ground zero tutorial': 'groundzero', // Tutorial uses same map as Ground Zero
-  'the labyrinth': 'labyrinth', // New map, no SVG available yet
-  terminal: 'terminal', // New map, no SVG available yet
+  'the labyrinth': 'labyrinth',
+  terminal: 'terminal',
 };
 // API Permissions
 export const API_PERMISSIONS: Record<string, { title: string; description: string }> = {

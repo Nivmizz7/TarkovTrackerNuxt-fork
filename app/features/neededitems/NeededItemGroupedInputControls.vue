@@ -129,7 +129,7 @@
   };
   const submitFirEdit = () => {
     if (isEditingFir.value) {
-      const value = Math.floor(Math.max(0, firEditValue.value || 0));
+      const value = Math.floor(Math.min(props.firNeeded, Math.max(0, firEditValue.value || 0)));
       emit('update:fir', value);
       isEditingFir.value = false;
     }
@@ -138,7 +138,7 @@
     isEditingFir.value = false;
   };
   const increaseFir = () => {
-    emit('update:fir', props.firCurrent + 1);
+    emit('update:fir', Math.min(props.firNeeded, props.firCurrent + 1));
   };
   const decreaseFir = () => {
     emit('update:fir', Math.max(0, props.firCurrent - 1));
@@ -153,7 +153,9 @@
   };
   const submitNonFirEdit = () => {
     if (isEditingNonFir.value) {
-      const value = Math.floor(Math.max(0, nonFirEditValue.value || 0));
+      const value = Math.floor(
+        Math.min(props.nonFirNeeded, Math.max(0, nonFirEditValue.value || 0))
+      );
       emit('update:nonFir', value);
       isEditingNonFir.value = false;
     }
@@ -162,7 +164,7 @@
     isEditingNonFir.value = false;
   };
   const increaseNonFir = () => {
-    emit('update:nonFir', props.nonFirCurrent + 1);
+    emit('update:nonFir', Math.min(props.nonFirNeeded, props.nonFirCurrent + 1));
   };
   const decreaseNonFir = () => {
     emit('update:nonFir', Math.max(0, props.nonFirCurrent - 1));

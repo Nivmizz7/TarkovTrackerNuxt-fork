@@ -188,9 +188,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
   import { useCraftableItem } from '@/composables/useCraftableItem';
-  import NeededItemGroupedModal from '@/features/neededitems/NeededItemGroupedModal.vue';
   import type {
     GroupedNeededItem,
     NeededItemHideoutModule,

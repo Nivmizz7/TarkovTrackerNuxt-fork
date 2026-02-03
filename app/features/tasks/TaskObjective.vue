@@ -1,5 +1,6 @@
 <template>
   <div
+    :id="`objective-${props.objective.id}`"
     class="group focus-within:ring-primary-500 focus-within:ring-offset-surface-900 flex w-full items-start gap-4 rounded-md px-2 py-2 transition-colors focus-within:ring-2 focus-within:ring-offset-2"
     :class="[
       isComplete ? 'bg-success-500/10' : 'hover:bg-white/5',
@@ -31,6 +32,21 @@
         </AppTooltip>
       </div>
       <div class="flex items-center gap-2" @click.stop>
+        <AppTooltip
+          v-if="hasMapLocation"
+          :text="t('page.tasks.questcard.jumpToMap', 'Jump To Map')"
+        >
+          <button
+            type="button"
+            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 text-surface-300 flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            :class="isJumpToMapDisabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-white/10'"
+            :aria-label="t('page.tasks.questcard.jumpToMap', 'Jump To Map')"
+            :disabled="isJumpToMapDisabled"
+            @click.stop="onJumpToMapClick"
+          >
+            <UIcon name="i-mdi-map-marker" aria-hidden="true" class="h-4 w-4" />
+          </button>
+        </AppTooltip>
         <ObjectiveCountControls
           v-if="neededCount > 1"
           :current-count="currentObjectiveCount"
@@ -77,6 +93,7 @@
   import { useI18n } from 'vue-i18n';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
   import { OBJECTIVE_ICON_MAP } from '@/features/tasks/task-objective-constants';
+  import { objectiveHasMapLocation } from '@/features/tasks/task-objective-helpers';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
@@ -84,6 +101,8 @@
   import { useTarkovStore } from '@/stores/useTarkov';
   import type { TaskObjective } from '@/types/tarkov';
   const { t } = useI18n({ useScope: 'global' });
+  const jumpToMapObjective = inject<((id: string) => void) | null>('jumpToMapObjective', null);
+  const isMapView = inject('isMapView', ref(false));
   const { systemStore } = useSystemStoreWithSupabase();
   // Define the props for the component
   const props = defineProps<{
@@ -174,6 +193,19 @@
     return 'mdi-help-circle';
   });
   const neededCount = computed(() => fullObjective.value?.count ?? props.objective.count ?? 1);
+  const hasMapLocation = computed(() => {
+    if (!isMapView.value) return false;
+    return objectiveHasMapLocation(props.objective, fullObjective.value);
+  });
+  const shouldShowCompletedOnMap = computed(() =>
+    ['completed', 'all'].includes(preferencesStore.getTaskSecondaryView)
+  );
+  const isJumpToMapDisabled = computed(() => isComplete.value && !shouldShowCompletedOnMap.value);
+  const onJumpToMapClick = (event: MouseEvent) => {
+    if (isJumpToMapDisabled.value) return;
+    (event.currentTarget as HTMLElement | null)?.blur();
+    jumpToMapObjective?.(props.objective.id);
+  };
   const handleRowClick = () => {
     if (isParentTaskLocked.value) return;
     if (neededCount.value > 1) {

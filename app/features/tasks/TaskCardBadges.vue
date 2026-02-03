@@ -86,13 +86,12 @@
     <AppTooltip :text="locationTooltip">
       <UBadge
         size="xs"
-        :color="isGlobalTask ? 'info' : 'neutral'"
+        color="neutral"
         variant="soft"
         class="inline-flex max-w-40 shrink-0 cursor-help items-center gap-1 text-[11px]"
-        :class="isGlobalTask ? 'border-info-500/30 border' : ''"
       >
         <UIcon
-          :name="isGlobalTask || !task?.map?.name ? 'i-mdi-earth' : 'i-mdi-map-marker'"
+          :name="task?.map?.name ? 'i-mdi-map-marker' : 'i-mdi-earth'"
           aria-hidden="true"
           class="h-3 w-3"
         />
@@ -183,7 +182,6 @@
     fenceRepRequirement: TraderRequirement | null;
     meetsFenceRepRequirement: boolean;
     traderLevelReqs: TraderLevelRequirementWithMet[];
-    isGlobalTask: boolean;
     locationTooltip: string;
     isFailed: boolean;
     isInvalid: boolean;

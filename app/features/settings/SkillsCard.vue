@@ -8,20 +8,22 @@
     title-classes="text-lg font-semibold"
   >
     <template #title-right>
-      <UButtonGroup size="xs">
+      <div class="flex items-center gap-1">
         <UButton
+          size="xs"
           :label="$t('settings.skills.sort.priority', 'Priority')"
           :variant="skillSortMode === 'priority' ? 'solid' : 'outline'"
           :color="skillSortMode === 'priority' ? 'primary' : 'neutral'"
           @click="setSkillSortMode('priority')"
         />
         <UButton
+          size="xs"
           :label="$t('settings.skills.sort.ingame', 'In-Game')"
           :variant="skillSortMode === 'ingame' ? 'solid' : 'outline'"
           :color="skillSortMode === 'ingame' ? 'primary' : 'neutral'"
           @click="setSkillSortMode('ingame')"
         />
-      </UButtonGroup>
+      </div>
     </template>
     <template #content>
       <div class="space-y-4 px-4 py-4">
@@ -239,6 +241,10 @@
         'ArrowRight',
         'ArrowUp',
         'ArrowDown',
+        'Home',
+        'End',
+        'PageUp',
+        'PageDown',
         'Tab',
         'Enter',
       ].includes(e.key) ||

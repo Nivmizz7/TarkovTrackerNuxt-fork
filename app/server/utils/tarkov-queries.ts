@@ -187,7 +187,6 @@ export const TARKOV_TASKS_OBJECTIVES_QUERY = `
     gridImageLink
     baseImageLink
     iconLink
-    backgroundColor
   }
   fragment CategoryData on ItemCategory {
     id

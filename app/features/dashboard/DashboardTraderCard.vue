@@ -75,6 +75,7 @@
           :has-reputation="hasReputation"
           :reputation-input="reputationInput"
           :title="$t('page.dashboard.traders.reputation')"
+          :aria-label="$t('page.dashboard.traders.reputation')"
           @blur="onReputationBlur"
           @focus="isEditingReputation = true"
           @input="onReputationInput"
@@ -91,6 +92,7 @@
         :has-reputation="true"
         :reputation-input="reputationInput"
         :title="$t('page.dashboard.traders.reputation')"
+        :aria-label="$t('page.dashboard.traders.reputation')"
         @blur="onReputationBlur"
         @focus="isEditingReputation = true"
         @input="onReputationInput"
@@ -100,7 +102,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { useRouter } from 'vue-router';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';

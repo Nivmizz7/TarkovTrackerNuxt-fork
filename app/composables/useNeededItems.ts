@@ -41,6 +41,7 @@ type SortValues = {
 };
 export interface UseNeededItemsOptions {
   search?: Ref<string>;
+  t?: (key: string) => string;
 }
 export interface FilterTab {
   label: string;
@@ -80,11 +81,18 @@ export interface UseNeededItemsReturn {
   queueFullItemsLoad: (loadOptions?: FullItemsLoadOptions) => void;
 }
 export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededItemsReturn {
-  const { search = ref('') } = options;
+  const { search = ref(''), t } = options;
   const metadataStore = useMetadataStore();
   const progressStore = useProgressStore();
   const preferencesStore = usePreferencesStore();
   const tarkovStore = useTarkovStore();
+  const defaultTranslations: Record<string, string> = {
+    'neededItems.filters.all': 'All',
+    'neededItems.filters.tasks': 'Tasks',
+    'neededItems.filters.hideout': 'Hideout',
+    'neededItems.filters.completed': 'Completed',
+  };
+  const translate = (key: string) => (t ? t(key) : defaultTranslations[key] || key);
   const neededItemTaskObjectives = computed(() => metadataStore.neededItemTaskObjectives);
   const neededItemHideoutModules = computed(() => metadataStore.neededItemHideoutModules);
   const itemsFullLoaded = computed(() => metadataStore.itemsFullLoaded);
@@ -154,6 +162,12 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
       default:
         return 0;
     }
+  };
+  const createSorter = <T>(getValues: (item: T) => SortValues) => {
+    return (a: T, b: T) => {
+      const cmp = getSortComparison(sortBy.value, getValues(a), getValues(b));
+      return sortDirection.value === 'asc' ? cmp : -cmp;
+    };
   };
   const getNeededItemPriority = (
     item: NeededItemTaskObjective | NeededItemHideoutModule
@@ -292,25 +306,25 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
     }
     return [
       {
-        label: 'All',
+        label: translate('neededItems.filters.all'),
         value: 'all' as NeededItemsFilterType,
         icon: 'i-mdi-clipboard-list',
         count: counts.incomplete,
       },
       {
-        label: 'Tasks',
+        label: translate('neededItems.filters.tasks'),
         value: 'tasks' as NeededItemsFilterType,
         icon: 'i-mdi-checkbox-marked-circle-outline',
         count: counts.tasks,
       },
       {
-        label: 'Hideout',
+        label: translate('neededItems.filters.hideout'),
         value: 'hideout' as NeededItemsFilterType,
         icon: 'i-mdi-home',
         count: counts.hideout,
       },
       {
-        label: 'Completed',
+        label: translate('neededItems.filters.completed'),
         value: 'completed' as NeededItemsFilterType,
         icon: 'i-mdi-check-all',
         count: counts.completed,
@@ -397,14 +411,7 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
         return false;
       });
     }
-    return result.sort((a, b) => {
-      const cmp = getSortComparison(
-        sortBy.value,
-        getNeededItemSortValues(a),
-        getNeededItemSortValues(b)
-      );
-      return sortDirection.value === 'asc' ? cmp : -cmp;
-    });
+    return result.sort(createSorter(getNeededItemSortValues));
   });
   type GroupedNeededItemAccumulator = Omit<GroupedNeededItem, 'total' | 'currentCount'>;
   const groupedItems = computed((): GroupedNeededItem[] => {
@@ -470,14 +477,7 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
           group.hideoutFirCurrent +
           group.hideoutNonFirCurrent,
       }))
-      .sort((a, b) => {
-        const cmp = getSortComparison(
-          sortBy.value,
-          getGroupedItemSortValues(a),
-          getGroupedItemSortValues(b)
-        );
-        return sortDirection.value === 'asc' ? cmp : -cmp;
-      });
+      .sort(createSorter(getGroupedItemSortValues));
   });
   const objectivesByItemId = computed(() => {
     const map = new Map<

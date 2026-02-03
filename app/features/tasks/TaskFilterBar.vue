@@ -157,6 +157,11 @@
                 {{ statusCounts.all }}
               </span>
             </UButton>
+            <span
+              v-if="showStatusAllDivider"
+              aria-hidden="true"
+              class="bg-surface-700/60 h-6 w-px self-center"
+            ></span>
             <UButton
               v-if="preferencesStore.getShowAvailableFilter"
               variant="ghost"
@@ -198,7 +203,7 @@
               </span>
             </UButton>
             <UButton
-              v-if="preferencesStore.getShowCompletedFilter"
+              v-if="preferencesStore.getShowCompletedFilter && statusCounts.completed > 0"
               variant="ghost"
               color="neutral"
               size="sm"
@@ -211,14 +216,13 @@
                 {{ t('page.tasks.secondaryviews.completed').toUpperCase() }}
               </span>
               <span
-                class="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
-                :class="statusCounts.completed > 0 ? 'bg-success-500' : 'bg-surface-600'"
+                class="bg-success-500 ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
               >
                 {{ statusCounts.completed }}
               </span>
             </UButton>
             <UButton
-              v-if="preferencesStore.getShowFailedFilter"
+              v-if="preferencesStore.getShowFailedFilter && statusCounts.failed > 0"
               variant="ghost"
               color="neutral"
               size="sm"
@@ -414,9 +418,7 @@
   const teamStore = useTeamStore();
   const { width } = useWindowSize();
   const belowMd = computed(() => width.value < 768);
-  // Filter visibility - hidden by default on mobile
   const filtersVisible = ref(!belowMd.value);
-  // Settings drawer state
   const { isOpen: isDrawerOpen, toggle: toggleDrawer } = useTaskSettingsDrawer();
   const { calculateMapTaskTotals, calculateStatusCounts, calculateTraderCounts } =
     useTaskFiltering();
@@ -433,6 +435,15 @@
   // Get visible teammates (excluding self)
   const visibleTeammates = computed(() => {
     return teamStore.teammates || [];
+  });
+  const showStatusAllDivider = computed(() => {
+    return (
+      preferencesStore.getShowAllFilter &&
+      (preferencesStore.getShowAvailableFilter ||
+        preferencesStore.getShowLockedFilter ||
+        preferencesStore.getShowCompletedFilter ||
+        preferencesStore.getShowFailedFilter)
+    );
   });
   // Helper to get teammate display name
   const getTeammateDisplayName = (teamId: string): string => {
