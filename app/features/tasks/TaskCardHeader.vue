@@ -1,9 +1,14 @@
 <template>
   <div class="flex min-w-0 items-center gap-2">
     <AppTooltip :text="task?.name">
-      <router-link
-        :to="`/tasks?task=${task.id}`"
-        class="text-link hover:text-link-hover flex min-w-0 items-center gap-2 no-underline"
+      <component
+        :is="task?.id ? 'router-link' : 'div'"
+        v-bind="task?.id ? { to: `/tasks?task=${task.id}` } : {}"
+        :class="
+          task?.id
+            ? 'text-link hover:text-link-hover flex min-w-0 items-center gap-2 no-underline'
+            : 'flex min-w-0 items-center gap-2'
+        "
       >
         <div class="bg-surface-800 h-9 w-9 shrink-0 overflow-hidden rounded-full">
           <img
@@ -15,18 +20,21 @@
           <UIcon v-else name="i-mdi-account-circle" class="text-surface-400 h-full w-full" />
         </div>
         <img
-          v-if="isFactionTask"
+          v-if="task?.factionName && isFactionTask"
           :src="factionImage"
-          :alt="task?.factionName"
+          :alt="task?.factionName || 'Faction'"
           class="h-6 w-6 shrink-0 object-contain invert"
         />
         <span class="text-surface-100 min-w-0 truncate text-sm font-semibold sm:text-base">
           {{ task?.name }}
         </span>
-      </router-link>
+      </component>
     </AppTooltip>
     <div class="ml-2 flex shrink-0 items-center gap-1.5">
-      <AppTooltip v-if="task.wikiLink" :text="t('page.tasks.questcard.viewOnWiki', 'View on Wiki')">
+      <AppTooltip
+        v-if="task?.wikiLink"
+        :text="t('page.tasks.questcard.viewOnWiki', 'View on Wiki')"
+      >
         <a
           :href="task.wikiLink"
           target="_blank"
@@ -38,7 +46,10 @@
           <img src="/img/logos/wikilogo.webp" alt="Wiki" aria-hidden="true" class="h-5 w-5" />
         </a>
       </AppTooltip>
-      <AppTooltip :text="t('page.tasks.questcard.viewOnTarkovDev', 'View on Tarkov.dev')">
+      <AppTooltip
+        v-if="task?.id"
+        :text="t('page.tasks.questcard.viewOnTarkovDev', 'View on Tarkov.dev')"
+      >
         <a
           :href="tarkovDevTaskUrl"
           target="_blank"
@@ -59,8 +70,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
-  import { useI18n } from 'vue-i18n';
   import type { Task } from '@/types/tarkov';
   const props = defineProps<{
     task: Task;

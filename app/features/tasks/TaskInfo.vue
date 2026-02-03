@@ -30,7 +30,7 @@
             <UIcon name="i-mdi-arrow-left" class="mt-0.5 mr-1 h-4 w-4 shrink-0" />
             <div>
               <span class="text-surface-500">
-                {{ t('page.tasks.questcard.previoustasks', 'Previous Task(s):') }}
+                {{ t('page.tasks.questcard.previousTasks', 'Previous Task(s):') }}
               </span>
               <div class="flex flex-col">
                 <router-link
@@ -62,7 +62,7 @@
             <UIcon name="i-mdi-arrow-right" class="mt-0.5 mr-1 h-4 w-4 shrink-0" />
             <div>
               <span class="text-surface-500">
-                {{ t('page.tasks.questcard.nexttasks', 'Next Task(s):') }}
+                {{ t('page.tasks.questcard.nextTasks', 'Next Task(s):') }}
               </span>
               <div class="flex flex-col">
                 <router-link

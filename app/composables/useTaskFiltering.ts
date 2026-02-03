@@ -610,10 +610,7 @@ export function useTaskFiltering() {
    * Main function to update visible tasks based on all filters.
    * Uses TaskFilterAndSortOptions parameter object for cleaner API.
    */
-  const updateVisibleTasks = async (
-    options: TaskFilterAndSortOptions,
-    tasksLoading: boolean
-  ): Promise<void> => {
+  const updateVisibleTasks = (options: TaskFilterAndSortOptions, tasksLoading: boolean): void => {
     const {
       primaryView,
       secondaryView,

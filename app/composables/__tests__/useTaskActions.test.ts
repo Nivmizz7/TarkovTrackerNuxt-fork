@@ -39,6 +39,12 @@ const setup = async (
   vi.doMock('@/stores/useMetadata', () => ({
     useMetadataStore: () => metadataStore,
   }));
+  vi.doMock('@/stores/usePreferences', () => ({
+    usePreferencesStore: () => ({
+      getPinnedTaskIds: [],
+      togglePinnedTask: vi.fn(),
+    }),
+  }));
   vi.doMock('vue-i18n', () => ({
     useI18n: () => ({
       t: (_key: string, fallback?: string) => fallback ?? _key,
