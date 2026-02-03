@@ -65,6 +65,11 @@ vi.mock('@/stores/useProgress', () => ({
     hideoutLevels: { 'station-1': { self: 1 } },
   }),
 }));
+vi.mock('@/stores/useTarkov', () => ({
+  useTarkovStore: () => ({
+    enforceHideoutPrereqsNow: vi.fn(),
+  }),
+}));
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: {} }),
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
@@ -84,6 +89,7 @@ describe('hideout page', () => {
           UAlert: true,
           UButton: true,
           UIcon: true,
+          UModal: true,
         },
       },
     });

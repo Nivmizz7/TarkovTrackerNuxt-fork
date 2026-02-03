@@ -178,9 +178,9 @@ describe('useHideoutFiltering', () => {
   it('calculates station counts', async () => {
     const { hideoutFiltering } = await setup('all');
     expect(hideoutFiltering.stationCounts.value).toEqual({
-      available: 2,
+      available: 1,
       maxed: 1,
-      locked: 1,
+      locked: 2,
       all: 4,
     });
   });
@@ -188,7 +188,6 @@ describe('useHideoutFiltering', () => {
     const { hideoutFiltering } = await setup('available');
     expect(hideoutFiltering.visibleStations.value.map((station) => station.id)).toEqual([
       'station-available',
-      'station-skill-locked',
     ]);
   });
   it('shows maxed stations when filtered', async () => {
@@ -200,6 +199,7 @@ describe('useHideoutFiltering', () => {
   it('shows locked stations when filtered', async () => {
     const { hideoutFiltering } = await setup('locked');
     expect(hideoutFiltering.visibleStations.value.map((station) => station.id)).toEqual([
+      'station-skill-locked',
       'station-locked',
     ]);
   });

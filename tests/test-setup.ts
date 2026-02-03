@@ -1,6 +1,15 @@
+import { resolve } from 'node:path';
 import { enableAutoUnmount } from '@vue/test-utils';
 import 'fake-indexeddb/auto';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
+const manifestModuleId = resolve(
+  process.cwd(),
+  'node_modules/nuxt/dist/app/composables/manifest.js'
+);
+vi.doMock(manifestModuleId, () => ({
+  getAppManifest: () => Promise.resolve({}),
+  getRouteRules: () => ({}),
+}));
 type FetchInput = string | Request | URL;
 type MockFetchResponse =
   | { data: { playerLevels: unknown[] } }
