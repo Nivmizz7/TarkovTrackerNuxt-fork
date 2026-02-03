@@ -61,23 +61,30 @@
                         {{ $t('page.hideout.prereqfilters.title') || 'Availability requirements' }}
                       </div>
                       <UCheckbox
-                        v-model="preferencesStore.hideoutRequireStationLevels"
+                        :model-value="preferencesStore.hideoutRequireStationLevels"
                         :label="
                           $t('page.hideout.prereqfilters.station_levels') ||
                           'Require station levels'
                         "
-                      />
-                      <UCheckbox
-                        v-model="preferencesStore.hideoutRequireSkillLevels"
-                        :label="
-                          $t('page.hideout.prereqfilters.skill_levels') || 'Require skill levels'
+                        @update:model-value="
+                          (value) => handlePrereqToggle('station', Boolean(value))
                         "
                       />
                       <UCheckbox
-                        v-model="preferencesStore.hideoutRequireTraderLoyalty"
+                        :model-value="preferencesStore.hideoutRequireSkillLevels"
+                        :label="
+                          $t('page.hideout.prereqfilters.skill_levels') || 'Require skill levels'
+                        "
+                        @update:model-value="(value) => handlePrereqToggle('skill', Boolean(value))"
+                      />
+                      <UCheckbox
+                        :model-value="preferencesStore.hideoutRequireTraderLoyalty"
                         :label="
                           $t('page.hideout.prereqfilters.trader_loyalty') ||
                           'Require trader loyalty'
+                        "
+                        @update:model-value="
+                          (value) => handlePrereqToggle('trader', Boolean(value))
                         "
                       />
                     </div>
@@ -89,6 +96,29 @@
         </div>
       </div>
     </div>
+    <UModal v-model:open="showPrereqConfirm" prevent-close>
+      <div class="space-y-4 p-4">
+        <div class="text-lg font-semibold text-white">
+          {{ $t('page.hideout.prereqfilters.confirm_title') || 'Enable availability requirement?' }}
+        </div>
+        <p class="text-surface-300 text-sm">
+          {{
+            $t('page.hideout.prereqfilters.confirm_description', {
+              requirement: pendingPrereqLabel,
+            }) ||
+            'Enabling this requirement may remove hideout upgrades that no longer meet prerequisites.'
+          }}
+        </p>
+        <div class="flex justify-end gap-2">
+          <UButton color="neutral" variant="ghost" @click="cancelPrereqToggle">
+            {{ $t('page.hideout.prereqfilters.confirm_cancel') || 'Cancel' }}
+          </UButton>
+          <UButton color="warning" variant="solid" @click="confirmPrereqToggle">
+            {{ $t('page.hideout.prereqfilters.confirm_confirm') || 'Enable' }}
+          </UButton>
+        </div>
+      </div>
+    </UModal>
     <div>
       <div v-if="isStoreLoading" class="text-surface-200 flex flex-col items-center gap-3 py-10">
         <UIcon name="i-heroicons-arrow-path" class="text-info-400 h-8 w-8 animate-spin" />
@@ -132,6 +162,7 @@
   import { useHideoutStationStatus } from '@/composables/useHideoutStationStatus';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
+  import { useTarkovStore } from '@/stores/useTarkov';
   // Page metadata
   useSeoMeta({
     title: 'Hideout',
@@ -146,9 +177,12 @@
   const metadataStore = useMetadataStore();
   const { hideoutStations } = storeToRefs(metadataStore);
   const preferencesStore = usePreferencesStore();
+  const tarkovStore = useTarkovStore();
   const { getStationStatus: getStationStatusForStation } = useHideoutStationStatus();
   const highlightedStationId = ref<string | null>(null);
   const highlightedModuleId = ref<string | null>(null);
+  const showPrereqConfirm = ref(false);
+  const pendingPrereqToggle = ref<'station' | 'skill' | 'trader' | null>(null);
   // Hideout filtering composable
   const { activePrimaryView, isStoreLoading, visibleStations, stationCounts } =
     useHideoutFiltering();
@@ -182,6 +216,48 @@
       badgeColor: 'bg-success-600',
     },
   ]);
+  const prereqLabels = computed(() => ({
+    station: t('page.hideout.prereqfilters.station_levels') || 'Require station levels',
+    skill: t('page.hideout.prereqfilters.skill_levels') || 'Require skill levels',
+    trader: t('page.hideout.prereqfilters.trader_loyalty') || 'Require trader loyalty',
+  }));
+  const pendingPrereqLabel = computed(() => {
+    if (!pendingPrereqToggle.value) return '';
+    return prereqLabels.value[pendingPrereqToggle.value];
+  });
+  const setPrereqPreference = (key: 'station' | 'skill' | 'trader', enabled: boolean) => {
+    if (key === 'station') {
+      preferencesStore.setHideoutRequireStationLevels(enabled);
+      return;
+    }
+    if (key === 'skill') {
+      preferencesStore.setHideoutRequireSkillLevels(enabled);
+      return;
+    }
+    preferencesStore.setHideoutRequireTraderLoyalty(enabled);
+  };
+  const handlePrereqToggle = (key: 'station' | 'skill' | 'trader', value: boolean) => {
+    if (!value) {
+      setPrereqPreference(key, false);
+      return;
+    }
+    pendingPrereqToggle.value = key;
+    showPrereqConfirm.value = true;
+  };
+  const confirmPrereqToggle = () => {
+    if (!pendingPrereqToggle.value) {
+      showPrereqConfirm.value = false;
+      return;
+    }
+    setPrereqPreference(pendingPrereqToggle.value, true);
+    showPrereqConfirm.value = false;
+    tarkovStore.enforceHideoutPrereqsNow();
+    pendingPrereqToggle.value = null;
+  };
+  const cancelPrereqToggle = () => {
+    showPrereqConfirm.value = false;
+    pendingPrereqToggle.value = null;
+  };
   // Handle deep linking to a specific station via ?station=stationId query param
   const getStationStatus = (stationId: string): 'available' | 'maxed' | 'locked' => {
     const station = hideoutStations.value?.find((s) => s.id === stationId);
