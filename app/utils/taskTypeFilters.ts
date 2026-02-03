@@ -5,7 +5,6 @@ export interface TaskTypeFilterOptions {
   showNonSpecial: boolean;
   userPrestigeLevel: number;
   prestigeTaskMap: Map<string, number>;
-  prestigeTaskIds: string[];
   excludedTaskIds: Set<string>;
 }
 export function filterTasksByTypeSettings(
@@ -18,17 +17,13 @@ export function filterTasksByTypeSettings(
     showNonSpecial,
     userPrestigeLevel,
     prestigeTaskMap,
-    prestigeTaskIds,
     excludedTaskIds,
   } = options;
-  const prestigeTaskIdSet = new Set(prestigeTaskIds);
   return taskList.filter((task) => {
     if (excludedTaskIds.has(task.id)) return false;
-    if (prestigeTaskIdSet.has(task.id)) {
+    if (prestigeTaskMap.has(task.id)) {
       const taskPrestigeLevel = prestigeTaskMap.get(task.id);
-      if (taskPrestigeLevel !== userPrestigeLevel) {
-        return false;
-      }
+      if (taskPrestigeLevel !== userPrestigeLevel) return false;
     }
     const isKappaRequired = task.kappaRequired === true;
     const isLightkeeperRequired = task.lightkeeperRequired === true;
@@ -51,7 +46,6 @@ export function buildTaskTypeFilterOptions(
   },
   metadataStore: {
     prestigeTaskMap: Map<string, number>;
-    prestigeTaskIds: string[];
     getExcludedTaskIdsForEdition: (edition: number | undefined) => Set<string>;
   }
 ): TaskTypeFilterOptions {
@@ -61,7 +55,6 @@ export function buildTaskTypeFilterOptions(
     showNonSpecial: preferencesStore.getShowNonSpecialTasks,
     userPrestigeLevel: tarkovStore.getPrestigeLevel(),
     prestigeTaskMap: metadataStore.prestigeTaskMap,
-    prestigeTaskIds: metadataStore.prestigeTaskIds,
     excludedTaskIds: metadataStore.getExcludedTaskIdsForEdition(tarkovStore.getGameEdition()),
   };
 }

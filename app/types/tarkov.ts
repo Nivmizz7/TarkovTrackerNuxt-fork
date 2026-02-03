@@ -1,7 +1,7 @@
-import type { UserState } from '@/stores/progressState';
 import type Graph from 'graphology';
 import type { _GettersTree, StateTree, Store } from 'pinia';
 import type { ComputedRef, Ref } from 'vue';
+import type { UserState } from '@/stores/progressState';
 /**
  * Type definitions for Tarkov data structures
  * This file defines the structure for:
