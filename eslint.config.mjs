@@ -17,6 +17,7 @@ export default withNuxt({
     'vue/html-self-closing': 'off',
     'prefer-const': 'warn',
     'no-var': 'warn',
+    'no-empty': ['error', { allowEmptyCatch: true }],
     // Keep visual noise down; no blank lines anywhere
     'no-multiple-empty-lines': ['warn', { max: 0, maxBOF: 0, maxEOF: 0 }],
     // Block parent relative imports (use @/ aliases instead)
@@ -25,7 +26,7 @@ export default withNuxt({
     'import-x/order': ['warn', {
       'newlines-between': 'never',
       alphabetize: { order: 'asc', caseInsensitive: true },
-      groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'object', 'type'],
+      groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'object'],
       pathGroups: [
         { pattern: '#imports', group: 'internal', position: 'before' },
         { pattern: '@/**', group: 'internal', position: 'before' },

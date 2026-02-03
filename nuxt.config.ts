@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const appDir = resolve(__dirname, 'app');
+const testsDir = resolve(__dirname, 'tests');
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
 const appVersion = packageJson.version ?? 'dev';
 export default defineNuxtConfig({
@@ -28,7 +29,7 @@ export default defineNuxtConfig({
       requireAuth: process.env.API_REQUIRE_AUTH !== 'false', // defaults to true
       // Routes that are exempt from auth requirement (comma-separated, supports wildcards)
       // e.g., "/api/tarkov/*" for public data endpoints
-      publicRoutes: process.env.API_PUBLIC_ROUTES || '/api/tarkov/*',
+      publicRoutes: process.env.API_PUBLIC_ROUTES || '/api/tarkov/*,/api/changelog',
       // Whether to trust proxy headers (X-Forwarded-For, etc.)
       // ONLY enable this if the server is behind a trusted proxy like Cloudflare
       trustProxy: process.env.API_TRUST_PROXY === 'true',
@@ -131,12 +132,15 @@ export default defineNuxtConfig({
   css: ['~/assets/css/tailwind.css', 'leaflet/dist/leaflet.css'],
   alias: {
     '@': appDir,
+    '#tests': testsDir,
     '~': appDir,
   },
   modules: [
     '@nuxt/eslint',
     // Only load test utils during local dev/test so production builds don't try to resolve devDependency
-    process.env.NODE_ENV === 'development' ? '@nuxt/test-utils/module' : undefined,
+    process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
+      ? '@nuxt/test-utils/module'
+      : undefined,
     '@pinia/nuxt',
     '@nuxt/ui',
     '@nuxt/image',
@@ -208,6 +212,8 @@ export default defineNuxtConfig({
         baseUrl: '.',
         paths: {
           '@/*': ['./app/*'],
+          '#tests/*': ['./tests/*'],
+          '#tests': ['./tests'],
           '~/*': ['./app/*'],
         },
       },
