@@ -284,6 +284,10 @@
         station_levels: 'Вимагати рівні станцій',
         skill_levels: 'Вимагати рівні навичок',
         trader_loyalty: 'Вимагати лояльність торговців',
+        confirm_title: 'Увімкнути вимогу доступності?',
+        confirm_description: 'Увімкнення {requirement} може видалити поліпшення притулку, які більше не відповідають вимогам.',
+        confirm_cancel: 'Скасувати',
+        confirm_confirm: 'Увімкнути',
       },
       primaryviews: {
         all: 'Усі',

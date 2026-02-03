@@ -285,6 +285,10 @@
         station_levels: 'Exiger les niveaux de station',
         skill_levels: 'Exiger les niveaux de compétence',
         trader_loyalty: 'Exiger la fidélité du marchand',
+        confirm_title: "Activer l'exigence de disponibilité ?",
+        confirm_description: 'L’activation de {requirement} peut supprimer des améliorations de planque qui ne respectent plus les prérequis.',
+        confirm_cancel: 'Annuler',
+        confirm_confirm: 'Activer',
       },
       primaryviews: {
         all: 'Toutes',

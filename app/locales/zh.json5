@@ -419,6 +419,10 @@
         station_levels: '要求设施等级',
         skill_levels: '要求技能等级',
         trader_loyalty: '要求商人忠诚度',
+        confirm_title: '启用可用性要求？',
+        confirm_description: '启用{requirement}可能会移除不再满足前置条件的藏身处升级。',
+        confirm_cancel: '取消',
+        confirm_confirm: '启用',
       },
       primaryviews: {
         all: '全部',

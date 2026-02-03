@@ -444,6 +444,10 @@
         station_levels: 'Require station levels',
         skill_levels: 'Require skill levels',
         trader_loyalty: 'Require trader loyalty',
+        confirm_title: 'Enable availability requirement?',
+        confirm_description: 'Enabling {requirement} may remove hideout upgrades that no longer meet prerequisites.',
+        confirm_cancel: 'Cancel',
+        confirm_confirm: 'Enable',
       },
       primaryviews: {
         all: 'All',

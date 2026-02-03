@@ -258,6 +258,10 @@
         station_levels: 'Requerir niveles de estación',
         skill_levels: 'Requerir niveles de habilidad',
         trader_loyalty: 'Requerir lealtad del comerciante',
+        confirm_title: '¿Activar requisito de disponibilidad?',
+        confirm_description: 'Al activar {requirement}, se pueden eliminar mejoras del escondite que ya no cumplan los requisitos.',
+        confirm_cancel: 'Cancelar',
+        confirm_confirm: 'Activar',
       },
       primaryviews: {
         all: 'Todas',

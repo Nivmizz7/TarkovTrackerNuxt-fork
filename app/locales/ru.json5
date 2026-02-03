@@ -281,6 +281,10 @@
         station_levels: 'Требовать уровни станций',
         skill_levels: 'Требовать уровни навыков',
         trader_loyalty: 'Требовать лояльность торговцев',
+        confirm_title: 'Включить требование доступности?',
+        confirm_description: 'Включение {requirement} может убрать улучшения убежища, которые больше не соответствуют требованиям.',
+        confirm_cancel: 'Отмена',
+        confirm_confirm: 'Включить',
       },
       primaryviews: {
         all: 'Все',

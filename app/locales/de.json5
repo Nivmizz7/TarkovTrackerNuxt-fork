@@ -336,6 +336,10 @@
         station_levels: 'Stationsstufen erforderlich',
         skill_levels: 'Fertigkeitsstufen erforderlich',
         trader_loyalty: 'Händlerloyalität erforderlich',
+        confirm_title: 'Verfügbarkeitsanforderung aktivieren?',
+        confirm_description: 'Wenn {requirement} aktiviert wird, können Versteck-Upgrades entfernt werden, die die Voraussetzungen nicht mehr erfüllen.',
+        confirm_cancel: 'Abbrechen',
+        confirm_confirm: 'Aktivieren',
       },
       primaryviews: {
         all: 'Alle',
