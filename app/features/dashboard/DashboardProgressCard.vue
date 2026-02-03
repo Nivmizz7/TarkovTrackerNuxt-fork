@@ -33,7 +33,7 @@
     <div class="bg-surface-800/35 relative h-2 overflow-hidden rounded-full">
       <div
         class="absolute inset-y-0 left-0 rounded-full transition-[width] duration-300 ease-out"
-        :class="holidayEffectsEnabled ? 'candy-cane' : barGradientClass"
+        :class="barGradientClass"
         :style="{ width: `${percentage}%` }"
         role="progressbar"
         :aria-label="progressAriaLabel"
@@ -45,7 +45,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { usePreferencesStore } from '@/stores/usePreferences';
   export type ProgressCardColor =
     | 'primary'
     | 'neutral'
@@ -64,8 +63,6 @@
   defineEmits<{
     click: [];
   }>();
-  const preferencesStore = usePreferencesStore();
-  const holidayEffectsEnabled = computed(() => preferencesStore.getEnableHolidayEffects);
   // Normalize the label to avoid awkward fallback phrases
   const normalizedLabel = computed(() => {
     const trimmed = props.label.trim();

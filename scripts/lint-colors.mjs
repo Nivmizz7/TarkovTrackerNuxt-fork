@@ -2,7 +2,6 @@
 import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from 'fs';
 import { join, relative } from 'path';
 const EXCEPTION_FILES = [
-  'app/components/HolidayLights.vue',
   'app/components/HolidayToggle.vue',
   'app/components/HolidaySnow.vue',
 ];

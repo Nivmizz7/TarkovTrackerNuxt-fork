@@ -260,26 +260,25 @@
   }>();
   const formatNumber = useLocaleNumberFormatter();
   const backgroundClassMap = {
-    violet: 'bg-[hsl(271,12%,16%)]',
-    grey: 'bg-[hsl(0,0%,17%)]',
-    yellow: 'bg-[hsl(44,17%,26%)]',
-    orange: 'bg-[hsl(28,36%,22%)]',
-    green: 'bg-[hsl(120,10%,14%)]',
-    red: 'bg-[hsl(0,25%,18%)]',
-    black: 'bg-[hsl(0,0%,7%)]',
-    blue: 'bg-[hsl(195,20%,13%)]',
-    default: 'bg-[hsl(0,0%,13%)]',
+    violet: 'bg-rarity-violet',
+    grey: 'bg-rarity-grey',
+    yellow: 'bg-rarity-yellow',
+    orange: 'bg-rarity-orange',
+    green: 'bg-rarity-green',
+    red: 'bg-rarity-red',
+    black: 'bg-rarity-black',
+    blue: 'bg-rarity-blue',
+    default: 'bg-rarity-default',
   } as const;
   type BackgroundKey = keyof typeof backgroundClassMap;
   const contextMenu = ref<InstanceType<typeof ContextMenu>>();
   // Compute image source based on available props
   const computedImageSrc = computed(() => {
-    // Priority order: explicit src > iconLink > imageItem.iconLink > generated from itemId
     if (props.src) return props.src;
     if (props.iconLink) return props.iconLink;
     if (props.imageItem?.iconLink) return props.imageItem.iconLink;
-    if (props.imageItem?.image512pxLink && props.size === 'large')
-      return props.imageItem.image512pxLink;
+    if (props.image512pxLink) return props.image512pxLink;
+    if (props.imageItem?.image512pxLink) return props.imageItem.image512pxLink;
     if (props.itemId) return `https://assets.tarkov.dev/${props.itemId}-icon.webp`;
     return '';
   });

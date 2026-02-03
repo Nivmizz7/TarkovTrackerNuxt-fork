@@ -111,6 +111,10 @@
     TRADERS_WITHOUT_LOYALTY_LEVELS,
     TRADERS_WITHOUT_REPUTATION,
   } from '@/utils/constants';
+  const MIN_REPUTATION = -10;
+  const MAX_REPUTATION = 10;
+  const clampReputation = (value: number) =>
+    Math.max(MIN_REPUTATION, Math.min(MAX_REPUTATION, value));
   const props = defineProps<{
     trader: Trader & { levels?: TraderLoyaltyLevel[] };
     completedTasks: number;
@@ -154,7 +158,7 @@
   const isEditingReputation = ref(false);
   const formatReputation = (value: number | null | undefined) => {
     const numeric = Number.isFinite(value) ? (value as number) : 0;
-    return numeric.toFixed(2);
+    return clampReputation(numeric).toFixed(2);
   };
   watch(
     currentReputation,
@@ -171,7 +175,7 @@
       reputationInput.value = formatReputation(currentReputation.value ?? 0);
       return;
     }
-    const clamped = Math.max(-10, Math.min(10, value));
+    const clamped = clampReputation(value);
     const rounded = Math.round(clamped * 100) / 100;
     tarkovStore.setTraderReputation(props.trader.id, rounded);
     reputationInput.value = formatReputation(rounded);

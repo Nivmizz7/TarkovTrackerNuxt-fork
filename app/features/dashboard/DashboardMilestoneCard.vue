@@ -33,7 +33,7 @@
   const colorClasses: Record<MilestoneColor, { achieved: string; icon: string }> = {
     primary: {
       achieved: [
-        'from-primary-900/40 to-surface-900 border-white/15',
+        'from-primary-900/40 to-surface-900 border-primary-600/50',
         'shadow-primary-900/20 bg-gradient-to-br shadow-lg',
       ].join(' '),
       icon: 'text-primary-400',

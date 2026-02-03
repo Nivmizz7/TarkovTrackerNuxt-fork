@@ -11,7 +11,7 @@ const setup = async () => {
     await import('@/features/dashboard/DashboardProgressCard.vue');
   return DashboardProgressCard;
 };
-type ProgressCardColor = 'primary' | 'info' | 'success' | 'kappa' | 'lightkeeper';
+type ProgressCardColor = 'primary' | 'neutral' | 'info' | 'success' | 'kappa' | 'lightkeeper';
 interface MountProps {
   icon?: string;
   label?: string;

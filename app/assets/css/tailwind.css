@@ -208,6 +208,15 @@ html.no-smooth-scroll {
   --color-rarity-epic-400: hsl(270 65% 60%);
   --color-rarity-legendary-100: hsl(45 70% 88%);
   --color-rarity-legendary-400: hsl(45 70% 56%);
+  --color-rarity-violet: hsl(271 12% 16%);
+  --color-rarity-grey: hsl(0 0% 17%);
+  --color-rarity-yellow: hsl(44 17% 26%);
+  --color-rarity-orange: hsl(28 36% 22%);
+  --color-rarity-green: hsl(120 10% 14%);
+  --color-rarity-red: hsl(0 25% 18%);
+  --color-rarity-black: hsl(0 0% 7%);
+  --color-rarity-blue: hsl(195 20% 13%);
+  --color-rarity-default: hsl(0 0% 13%);
   /* Extract marker colors */
   --color-extract-pmc: hsl(0 75% 55%);
   --color-extract-scav: hsl(25 75% 55%);
@@ -324,10 +333,10 @@ html.no-smooth-scroll {
   --color-hover: var(--color-surface-700);
   --color-divider: var(--color-surface-600);
   /* Text hierarchy: primary (90%) → secondary (74%) → tertiary (56%) → disabled (38%) */
-  --color-text: #e6e6e6;
-  --color-text-secondary: #b8bcc2;
-  --color-text-muted: #8b919a;
-  --color-text-disabled: #5a5f66;
+  --color-text: hsl(0 0% 90%);
+  --color-text-secondary: hsl(216 8% 74%);
+  --color-text-muted: hsl(216 7% 57%);
+  --color-text-disabled: hsl(215 6% 38%);
 }
 /* Modern override: use OKLCH where supported for better perceptual consistency */
 @supports (color: oklch(0 0 0)) {
@@ -480,13 +489,13 @@ html.no-smooth-scroll {
   --ui-bg-muted: var(--color-surface-900);
   --ui-bg-elevated: var(--color-surface-800);
   --ui-bg-accented: var(--color-surface-700);
-  --ui-bg-inverted: #ffffff;
+  --ui-bg-inverted: var(--color-surface-50);
   /* Text hierarchy: avoid pure white, use warm off-whites */
-  --ui-text: #e6e6e6;
-  --ui-text-muted: #b8bcc2;
+  --ui-text: var(--color-text);
+  --ui-text-muted: var(--color-text-secondary);
   --ui-text-highlighted: var(--color-primary-400);
-  --ui-text-dimmed: #8b919a;
-  --ui-text-inverted: #ffffff;
+  --ui-text-dimmed: var(--color-text-muted);
+  --ui-text-inverted: var(--color-surface-50);
   /* Borders: clear separation */
   --ui-border: var(--color-surface-600);
   --ui-border-accented: var(--color-surface-500);
@@ -682,30 +691,7 @@ summary {
   cursor: pointer;
 }
 
-/* Legacy effect utilities moved from scoped SFC styles */
 @layer utilities {
-  /* Holiday candy cane progress bar effect */
-  .candy-cane {
-    background: repeating-linear-gradient(
-      45deg,
-      #dc2626,
-      #dc2626 10px,
-      #fafafa 10px,
-      #fafafa 20px
-    ) !important;
-    background-size: 200% 100%;
-    animation: candy-cane-move 2s linear infinite;
-  }
-
-  @keyframes candy-cane-move {
-    0% {
-      background-position: 0 0;
-    }
-    100% {
-      background-position: 56px 0;
-    }
-  }
-
   .fade-enter-active,
   .fade-leave-active {
     @apply transition-opacity duration-200 ease-in-out;

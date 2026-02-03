@@ -1,10 +1,7 @@
 <template>
   <div class="bg-military-background text-surface-200 flex min-h-screen flex-col">
     <!-- Holiday Effects -->
-    <template v-if="holidayEffectsEnabled">
-      <HolidayLights />
-      <HolidaySnow />
-    </template>
+    <HolidaySnow v-if="holidayEffectsEnabled" />
     <!-- Holiday Toggle (always visible) -->
     <HolidayToggle />
     <!-- Skip navigation link for accessibility -->
