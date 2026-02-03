@@ -5,10 +5,10 @@
  * with fallback for development environments where caches might not be available.
  */
 import { getQuery } from 'h3';
+import type { H3Event } from 'h3';
 import { $fetch } from 'ofetch';
 import { useRuntimeConfig } from '#imports';
 import { createLogger } from '@/server/utils/logger';
-import type { H3Event } from 'h3';
 const logger = createLogger('EdgeCache');
 interface CacheOptions {
   ttl?: number;
@@ -192,9 +192,31 @@ export async function edgeCache<T>(
     });
   }
 }
-/**
- * Helper function create a GraphQL fetcher for tarkov.dev API with retry logic
- */
+const REDACTED_PLACEHOLDER = '[redacted]';
+const SENSITIVE_VARIABLE_KEYS = [
+  'api_key',
+  'apikey',
+  'auth',
+  'authorization',
+  'email',
+  'password',
+  'secret',
+  'session',
+  'ssn',
+  'token',
+  'user_id',
+  'userid',
+];
+function sanitizeVariables(variables: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = { ...variables };
+  for (const key of Object.keys(sanitized)) {
+    const normalizedKey = key.toLowerCase();
+    if (SENSITIVE_VARIABLE_KEYS.some((sensitiveKey) => normalizedKey.includes(sensitiveKey))) {
+      sanitized[key] = REDACTED_PLACEHOLDER;
+    }
+  }
+  return sanitized;
+}
 export function createTarkovFetcher<T = unknown>(
   query: string,
   variables: Record<string, unknown> = {},
@@ -224,7 +246,7 @@ export function createTarkovFetcher<T = unknown>(
         if (isLastAttempt) {
           logger.error(`[TarkovFetcher] All ${maxRetries} attempts failed`, {
             error: lastError.message,
-            variables,
+            variables: sanitizeVariables(variables),
           });
         } else {
           const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 5000);

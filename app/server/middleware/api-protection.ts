@@ -312,7 +312,11 @@ export default defineEventHandler(async (event) => {
         setResponseHeader(event, 'Access-Control-Max-Age', 86400); // 24 hours
       }
     } catch {
-      // Invalid origin URL - ignore CORS headers
+      logSecurityEvent('warn', 'Invalid CORS origin header', {
+        pathname,
+        origin,
+        clientIp: clientIp || 'unknown',
+      });
     }
   }
   // Handle preflight OPTIONS requests
