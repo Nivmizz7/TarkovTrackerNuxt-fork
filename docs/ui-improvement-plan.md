@@ -213,7 +213,7 @@ This plan outlines a comprehensive set of UI improvements for TarkovTracker focu
 
 - Detailed design system documentation
 - Advanced animation and transition effects
-- Custom themeing options
+- Custom theming options
 - Advanced accessibility testing
 
 ## Success Metrics
