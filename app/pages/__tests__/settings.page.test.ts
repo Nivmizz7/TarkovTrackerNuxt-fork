@@ -98,6 +98,10 @@ const defaultGlobalStubs = {
   GenericCard: {
     template: '<div data-testid="generic-card"><slot /><slot name="content" /></div>',
   },
+  InterfaceSettingsCard: {
+    template:
+      '<div data-testid="interface-settings-card"><input type="checkbox" data-testid="u-switch" /></div>',
+  },
   ImportConfirmDialog: true,
   MigrationSteps: true,
   SkillsCard: true,
