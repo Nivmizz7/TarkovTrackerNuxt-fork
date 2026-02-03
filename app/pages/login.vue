@@ -32,12 +32,15 @@
               class="mt-0.5 h-5 w-5 shrink-0 text-amber-400"
             />
             <div>
-              <p class="font-medium text-amber-200">Running in Offline Mode</p>
+              <p class="font-medium text-amber-200">{{ $t('offlineMode.title') }}</p>
               <p class="mt-1 text-sm text-amber-300/80">
-                Supabase is not configured. Login and sync features are disabled, but you can still
-                use all tracking features locally. See
-                <code class="rounded bg-amber-500/20 px-1 text-amber-200">.env.example</code>
-                to enable login.
+                <i18n-t keypath="offlineMode.description" tag="span" scope="global">
+                  <template #envFile>
+                    <code class="rounded bg-amber-500/20 px-1 text-amber-200">
+                      {{ $t('offlineMode.envFile') }}
+                    </code>
+                  </template>
+                </i18n-t>
               </p>
             </div>
           </div>
