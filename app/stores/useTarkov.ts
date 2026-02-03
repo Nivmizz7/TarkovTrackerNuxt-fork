@@ -57,6 +57,7 @@ type TarkovStoreInstance = UserState & {
     gameModeData: UserProgressData,
     tasksMap: Map<string, Task>
   ): number;
+  enforceHideoutPrereqsNow(): number;
   markTaskAsFailed(
     taskId: string,
     gameModeData: UserProgressData,
@@ -110,6 +111,19 @@ const mergeCountableObjects = <T extends Record<string, CountableEntry>>(
     }
   }
   return merged;
+};
+const notifyHideoutPrereqEnforcement = (removedCount: number) => {
+  if (!removedCount || !import.meta.client) return;
+  try {
+    const toast = useToast();
+    toast.add({
+      title: 'Hideout updated',
+      description: `Removed ${removedCount} station upgrade${removedCount === 1 ? '' : 's'} that no longer meet prerequisites.`,
+      color: 'warning',
+    });
+  } catch (error) {
+    logger.warn('[TarkovStore] Could not show hideout enforcement toast:', error);
+  }
 };
 type HideoutModuleMeta = {
   id: string;
@@ -210,15 +224,15 @@ const resolveInvalidHideoutModules = (
   }
   return removed;
 };
-const enforceHideoutPrereqs = (store: TarkovStoreInstance) => {
+const enforceHideoutPrereqs = (store: TarkovStoreInstance): string[] => {
   const metadataStore = useMetadataStore();
   const stations = metadataStore.hideoutStations;
-  if (!stations.length) return;
+  if (!stations.length) return [];
   const preferencesStore = usePreferencesStore();
   const requireStationLevels = preferencesStore.getHideoutRequireStationLevels;
   const requireSkillLevels = preferencesStore.getHideoutRequireSkillLevels;
   const requireTraderLoyalty = preferencesStore.getHideoutRequireTraderLoyalty;
-  if (!requireStationLevels && !requireSkillLevels && !requireTraderLoyalty) return;
+  if (!requireStationLevels && !requireSkillLevels && !requireTraderLoyalty) return [];
   const currentData = store.currentGameMode === GAME_MODES.PVE ? store.pve : store.pvp;
   const modulesState = currentData.hideoutModules ?? {};
   const completedModuleIds = new Set<string>();
@@ -227,9 +241,9 @@ const enforceHideoutPrereqs = (store: TarkovStoreInstance) => {
       completedModuleIds.add(moduleId);
     }
   }
-  if (!completedModuleIds.size) return;
+  if (!completedModuleIds.size) return [];
   const modules = buildHideoutModuleMeta(stations);
-  if (!modules.length) return;
+  if (!modules.length) return [];
   const edition = metadataStore.editions.find((entry) => entry.value === store.gameEdition);
   const removedModules = resolveInvalidHideoutModules(
     modules,
@@ -244,7 +258,7 @@ const enforceHideoutPrereqs = (store: TarkovStoreInstance) => {
       traders: currentData.traders ?? {},
     }
   );
-  if (!removedModules.size) return;
+  if (!removedModules.size) return [];
   const modulesById = new Map(modules.map((module) => [module.id, module]));
   for (const moduleId of removedModules) {
     actions.setHideoutModuleUncomplete.call(store, moduleId);
@@ -254,6 +268,7 @@ const enforceHideoutPrereqs = (store: TarkovStoreInstance) => {
       actions.setHideoutPartUncomplete.call(store, itemId);
     }
   }
+  return Array.from(removedModules);
 };
 type ResetMode = 'pvp' | 'pve' | 'all';
 const executeWithSyncPause = async <T>(operation: () => Promise<T>): Promise<T> => {
@@ -311,15 +326,23 @@ const tarkovActions = {
   ...(actions as UserActions),
   setHideoutModuleUncomplete(this: TarkovStoreInstance, hideoutId: string) {
     actions.setHideoutModuleUncomplete.call(this, hideoutId);
-    enforceHideoutPrereqs(this);
+    const removedModules = enforceHideoutPrereqs(this);
+    notifyHideoutPrereqEnforcement(removedModules.length);
   },
   setSkillLevel(this: TarkovStoreInstance, skillName: string, level: number) {
     actions.setSkillLevel.call(this, skillName, level);
-    enforceHideoutPrereqs(this);
+    const removedModules = enforceHideoutPrereqs(this);
+    notifyHideoutPrereqEnforcement(removedModules.length);
   },
   setTraderLevel(this: TarkovStoreInstance, traderId: string, level: number) {
     actions.setTraderLevel.call(this, traderId, level);
-    enforceHideoutPrereqs(this);
+    const removedModules = enforceHideoutPrereqs(this);
+    notifyHideoutPrereqEnforcement(removedModules.length);
+  },
+  enforceHideoutPrereqsNow(this: TarkovStoreInstance) {
+    const removedModules = enforceHideoutPrereqs(this);
+    notifyHideoutPrereqEnforcement(removedModules.length);
+    return removedModules.length;
   },
   async switchGameMode(this: TarkovStoreInstance, mode: GameMode) {
     actions.switchGameMode.call(this, mode);
@@ -709,6 +732,7 @@ const tarkovActions = {
     gameModeData: UserProgressData,
     tasksMap: Map<string, Task>
   ): number;
+  enforceHideoutPrereqsNow(): number;
   markTaskAsFailed(
     taskId: string,
     gameModeData: UserProgressData,
