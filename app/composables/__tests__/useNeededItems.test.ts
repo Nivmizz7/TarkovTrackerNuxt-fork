@@ -145,6 +145,7 @@ const createProgressStore = () => ({
     'task-2': 2,
     'task-kappa': 1,
   } as Record<string, number>,
+  getTeamIndex: (teamId: string) => (teamId === 'self' ? 'self' : teamId),
 });
 const createPreferencesStore = () => ({
   getNeededItemsViewMode: 'grid',
@@ -319,6 +320,22 @@ describe('useNeededItems', () => {
       const filtered = neededItems.filteredItems.value;
       const fullyOwnedIds = ['obj-4'];
       expect(filtered.every((item) => !fullyOwnedIds.includes(item.id))).toBe(true);
+    });
+    it('filters out team-owned items when hideTeamItems is enabled', async () => {
+      const { neededItems, metadataStore } = await setup({
+        preferencesStore: { itemsTeamAllHidden: true },
+      });
+      metadataStore.neededItemTaskObjectives = [
+        ...metadataStore.neededItemTaskObjectives,
+        {
+          ...createTaskObjective('obj-team', 'task-team', createItem('item-team', 'Team Item'), 1),
+          teamId: 'team-1',
+        } as NeededItemTaskObjective & { teamId: string },
+      ];
+      const filtered = neededItems.filteredItems.value;
+      expect(filtered.some((item) => (item as { teamId?: string }).teamId === 'team-1')).toBe(
+        false
+      );
     });
   });
   describe('groupedItems', () => {

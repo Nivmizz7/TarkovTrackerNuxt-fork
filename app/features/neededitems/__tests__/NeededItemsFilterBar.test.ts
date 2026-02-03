@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
+import { createI18n } from 'vue-i18n';
 const UButtonStub = {
   props: ['icon'],
   emits: ['click'],
@@ -11,6 +12,19 @@ const UInputStub = {
   template:
     '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 };
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {},
+    de: {},
+    es: {},
+    fr: {},
+    ru: {},
+    uk: {},
+    zh: {},
+  },
+});
 const setup = async () => {
   vi.resetModules();
   const { default: NeededItemsFilterBar } =
@@ -37,6 +51,7 @@ const createDefaultProps = () => ({
   cardStyle: 'expanded' as const,
 });
 const createDefaultGlobal = () => ({
+  plugins: [i18n],
   mocks: {
     $t: (key: string, fallback?: string) => fallback ?? key,
   },

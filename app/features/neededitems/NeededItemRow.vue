@@ -6,12 +6,12 @@
           <div class="flex min-w-0 flex-1 items-center p-0">
             <span class="block h-12 w-12 shrink-0 md:h-16 md:w-16">
               <GameItem
-                :image-item="imageItem"
-                :src="imageItem?.iconLink"
+                :image-item="resolvedImageItem"
+                :src="resolvedImageItem?.iconLink"
                 :is-visible="isVisible"
-                :item-name="item.name"
-                :wiki-link="item.wikiLink"
-                :dev-link="item.link"
+                :item-name="item?.name ?? null"
+                :wiki-link="item?.wikiLink ?? null"
+                :dev-link="item?.link ?? null"
                 :task-wiki-link="relatedTask?.wikiLink"
                 size="small"
                 simple-mode
@@ -19,9 +19,9 @@
             </span>
             <span class="ml-3 flex min-w-0 flex-1 flex-col overflow-hidden">
               <span class="flex items-center truncate text-base font-semibold">
-                <span class="truncate">{{ item.name }}</span>
+                <span class="truncate">{{ item?.name ?? '' }}</span>
                 <ItemIndicators
-                  :found-in-raid="props.need.foundInRaid"
+                  :found-in-raid="isFoundInRaid"
                   :is-craftable="isCraftable"
                   :craftable-title="craftableTitle"
                   :craftable-icon-class="craftableIconClass"
@@ -32,7 +32,10 @@
               </span>
               <span class="mt-1">
                 <template v-if="props.need.needType == 'taskObjective'">
-                  <TaskLink :task="relatedTask" />
+                  <TaskLink v-if="relatedTask" :task="relatedTask" />
+                  <span v-else class="text-surface-300 text-sm">
+                    {{ $t('neededItems.unknown_task', 'Unknown Task') }}
+                  </span>
                 </template>
                 <template v-else-if="props.need.needType == 'hideoutModule'">
                   <StationLink
@@ -66,19 +69,19 @@
                   {{ formatNumber(currentCount) }}/{{ formatNumber(neededCount) }}
                 </template>
               </UButton>
-              <UModal v-model="smallDialog" :ui="{ width: 'w-11/12' }">
+              <UModal v-model="smallDialog" :ui="{ content: 'w-11/12' }">
                 <UCard>
                   <div class="flex h-full flex-col items-end">
                     <!-- Item image -->
                     <div class="flex aspect-video min-h-25 self-stretch">
                       <GameItem
-                        v-if="imageItem"
-                        :image-item="imageItem"
-                        :src="imageItem.image512pxLink"
+                        v-if="resolvedImageItem"
+                        :image-item="resolvedImageItem"
+                        :src="resolvedImageItem?.image512pxLink"
                         :is-visible="true"
-                        :item-name="item.name"
-                        :wiki-link="item.wikiLink"
-                        :dev-link="item.link"
+                        :item-name="item?.name ?? null"
+                        :wiki-link="item?.wikiLink ?? null"
+                        :dev-link="item?.link ?? null"
                         :task-wiki-link="relatedTask?.wikiLink"
                         size="large"
                         simple-mode
@@ -86,10 +89,10 @@
                     </div>
                     <div class="mx-2 mt-2 flex items-center self-center">
                       <div class="px-2 text-center">
-                        {{ item.name }}
+                        {{ item?.name ?? '' }}
                       </div>
                       <ItemIndicators
-                        :found-in-raid="props.need.foundInRaid"
+                        :found-in-raid="isFoundInRaid"
                         fir-icon-class="ml-1 h-4 w-4"
                         :is-craftable="isCraftable"
                         :craftable-title="craftableTitle"
@@ -104,7 +107,10 @@
                     <!-- Item need details -->
                     <div class="mx-2 mt-2 flex w-full flex-col self-center">
                       <template v-if="props.need.needType == 'taskObjective'">
-                        <task-link :task="relatedTask" />
+                        <task-link v-if="relatedTask" :task="relatedTask" />
+                        <span v-else class="text-surface-300 text-sm">
+                          {{ $t('neededItems.unknown_task', 'Unknown Task') }}
+                        </span>
                         <RequirementInfo
                           :need-type="props.need.needType"
                           :level-required="levelRequired"
@@ -284,35 +290,40 @@
     </div>
   </KeepAlive>
 </template>
-<script setup>
+<script setup lang="ts">
   import { useItemRowIntersection } from '@/composables/useItemRowIntersection';
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import ItemCountControls from '@/features/neededitems/ItemCountControls.vue';
   import {
     createDefaultNeededItemContext,
     neededItemKey,
+    type NeededItemContext,
   } from '@/features/neededitems/neededitem-keys';
   import RequirementInfo from '@/features/neededitems/RequirementInfo.vue';
   import TeamNeedsDisplay from '@/features/neededitems/TeamNeedsDisplay.vue';
   import { useTarkovStore } from '@/stores/useTarkov';
+  import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/tarkov';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
-  const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink'));
-  const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink'));
-  const props = defineProps({
-    need: {
-      type: Object,
-      required: true,
-    },
-    initiallyVisible: {
-      type: Boolean,
-      default: false,
-    },
-  });
+  const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink.vue'));
+  const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink.vue'));
+  const props = withDefaults(
+    defineProps<{
+      need: NeededItemTaskObjective | NeededItemHideoutModule;
+      initiallyVisible?: boolean;
+    }>(),
+    {
+      initiallyVisible: false,
+    }
+  );
   // Use shared breakpoints to avoid duplicate listeners
   const { belowMd, mdAndUp } = useSharedBreakpoints();
   const tarkovStore = useTarkovStore();
   const formatNumber = useLocaleNumberFormatter();
   const smallDialog = ref(false);
+  const neededItemContext: NeededItemContext = inject(
+    neededItemKey,
+    createDefaultNeededItemContext()
+  );
   const {
     selfCompletedNeed,
     relatedTask,
@@ -329,9 +340,11 @@
     item,
     teamNeeds,
     imageItem,
-  } = inject(neededItemKey, createDefaultNeededItemContext());
+  } = neededItemContext;
+  const resolvedImageItem = computed(() => imageItem.value ?? undefined);
+  const isFoundInRaid = computed(() => Boolean(props.need.foundInRaid));
   // Intersection observer for lazy loading
-  const cardRef = ref(null);
+  const cardRef = ref<HTMLElement | null>(null);
   const { isVisible } = useItemRowIntersection(cardRef, {
     initialVisible: props.initiallyVisible,
   });

@@ -198,6 +198,21 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
       category: itemData?.category?.name ?? '',
     };
   };
+  const getNeedTeamId = (
+    need: NeededItemTaskObjective | NeededItemHideoutModule
+  ): string | null => {
+    const teamData = need as {
+      teamId?: string | null;
+      team?: { id?: string | null } | string | null;
+    };
+    if (teamData.teamId) {
+      return teamData.teamId;
+    }
+    if (typeof teamData.team === 'string') {
+      return teamData.team || null;
+    }
+    return teamData.team?.id ?? null;
+  };
   const queueFullItemsLoad = (loadOptions: FullItemsLoadOptions = {}) => {
     if (itemsFullLoaded.value) return;
     const {
@@ -375,6 +390,15 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
           current = tarkovStore.getHideoutPartCount(item.id);
         }
         return current < count;
+      });
+    }
+    if (hideTeamItems.value) {
+      result = result.filter((item) => {
+        const teamId = getNeedTeamId(item);
+        if (!teamId || teamId === 'self') {
+          return true;
+        }
+        return progressStore.getTeamIndex(teamId) === 'self';
       });
     }
     if (search.value) {

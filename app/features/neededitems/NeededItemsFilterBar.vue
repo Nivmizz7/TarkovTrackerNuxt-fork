@@ -86,7 +86,7 @@
               variant="link"
               size="sm"
               icon="i-mdi-close-circle"
-              :aria-label="$t('neededItems.clear_search', 'Clear search')"
+              :aria-label="$t('page.neededItems.clear_search', 'Clear search')"
               @click="$emit('update:search', '')"
             />
           </template>
@@ -360,6 +360,7 @@
     'update:hideOwned': [value: boolean];
     'update:cardStyle': [value: CardStyle];
   }>();
+  const { t } = useI18n();
   const allTab = computed(() => props.filterTabs.find((tab) => tab.value === 'all'));
   const otherTabs = computed(() =>
     props.filterTabs.filter((tab) => {
@@ -403,12 +404,28 @@
   const isKappaDisabled = computed(() => {
     return props.modelValue === 'hideout';
   });
-  const sortOptions: { label: string; value: SortBy; icon: string }[] = [
-    { label: 'Priority', value: 'priority', icon: 'i-mdi-alert-circle-outline' },
-    { label: 'Name', value: 'name', icon: 'i-mdi-format-title' },
-    { label: 'Category', value: 'category', icon: 'i-mdi-shape-outline' },
-    { label: 'Count', value: 'count', icon: 'i-mdi-counter' },
-  ];
+  const sortOptions = computed(() => [
+    {
+      label: t('page.neededItems.sort.priority', 'Priority'),
+      value: 'priority' as SortBy,
+      icon: 'i-mdi-alert-circle-outline',
+    },
+    {
+      label: t('page.neededItems.sort.name', 'Name'),
+      value: 'name' as SortBy,
+      icon: 'i-mdi-format-title',
+    },
+    {
+      label: t('page.neededItems.sort.category', 'Category'),
+      value: 'category' as SortBy,
+      icon: 'i-mdi-shape-outline',
+    },
+    {
+      label: t('page.neededItems.sort.count', 'Count'),
+      value: 'count' as SortBy,
+      icon: 'i-mdi-counter',
+    },
+  ]);
   const setViewMode = (mode: ViewMode) => {
     emit('update:groupByItem', false);
     emit('update:viewMode', mode);

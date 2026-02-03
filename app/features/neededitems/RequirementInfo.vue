@@ -30,7 +30,7 @@
     levelRequired: number;
     lockedBefore: number;
     playerLevel: number;
-    relatedStation?: Pick<HideoutStation, 'id' | 'name'> | null;
+    relatedStation?: Pick<HideoutStation, 'id' | 'name' | 'imageLink'> | null;
     hideoutLevel?: number;
     hideoutModuleId?: string | null;
   }>();

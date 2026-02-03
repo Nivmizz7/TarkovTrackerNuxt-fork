@@ -113,72 +113,78 @@
     'update:fir': [count: number];
     'update:nonFir': [count: number];
   }>();
-  const isEditingFir = ref(false);
-  const firEditValue = ref(0);
-  const firInputRef = ref<HTMLInputElement | null>(null);
-  const isEditingNonFir = ref(false);
-  const nonFirEditValue = ref(0);
-  const nonFirInputRef = ref<HTMLInputElement | null>(null);
-  const startFirEdit = () => {
-    firEditValue.value = props.firCurrent;
-    isEditingFir.value = true;
-    nextTick(() => {
-      firInputRef.value?.focus();
-      firInputRef.value?.select();
+  const createEditController = (options: {
+    current: () => number;
+    needed: () => number;
+    onUpdate: (value: number) => void;
+  }) => {
+    const isEditing = ref(false);
+    const editValue = ref(0);
+    const inputRef = ref<HTMLInputElement | null>(null);
+    const startEdit = () => {
+      editValue.value = options.current();
+      isEditing.value = true;
+      nextTick(() => {
+        inputRef.value?.focus();
+        inputRef.value?.select();
+      });
+    };
+    const submitEdit = () => {
+      if (isEditing.value) {
+        const value = Math.floor(Math.min(options.needed(), Math.max(0, editValue.value || 0)));
+        options.onUpdate(value);
+        isEditing.value = false;
+      }
+    };
+    const cancelEdit = () => {
+      isEditing.value = false;
+    };
+    const increase = () => {
+      options.onUpdate(Math.min(options.needed(), options.current() + 1));
+    };
+    const decrease = () => {
+      options.onUpdate(Math.max(0, options.current() - 1));
+    };
+    watch(options.current, () => {
+      if (isEditing.value) isEditing.value = false;
     });
+    return {
+      isEditing,
+      editValue,
+      inputRef,
+      startEdit,
+      submitEdit,
+      cancelEdit,
+      increase,
+      decrease,
+    };
   };
-  const submitFirEdit = () => {
-    if (isEditingFir.value) {
-      const value = Math.floor(Math.min(props.firNeeded, Math.max(0, firEditValue.value || 0)));
-      emit('update:fir', value);
-      isEditingFir.value = false;
-    }
-  };
-  const cancelFirEdit = () => {
-    isEditingFir.value = false;
-  };
-  const increaseFir = () => {
-    emit('update:fir', Math.min(props.firNeeded, props.firCurrent + 1));
-  };
-  const decreaseFir = () => {
-    emit('update:fir', Math.max(0, props.firCurrent - 1));
-  };
-  const startNonFirEdit = () => {
-    nonFirEditValue.value = props.nonFirCurrent;
-    isEditingNonFir.value = true;
-    nextTick(() => {
-      nonFirInputRef.value?.focus();
-      nonFirInputRef.value?.select();
-    });
-  };
-  const submitNonFirEdit = () => {
-    if (isEditingNonFir.value) {
-      const value = Math.floor(
-        Math.min(props.nonFirNeeded, Math.max(0, nonFirEditValue.value || 0))
-      );
-      emit('update:nonFir', value);
-      isEditingNonFir.value = false;
-    }
-  };
-  const cancelNonFirEdit = () => {
-    isEditingNonFir.value = false;
-  };
-  const increaseNonFir = () => {
-    emit('update:nonFir', Math.min(props.nonFirNeeded, props.nonFirCurrent + 1));
-  };
-  const decreaseNonFir = () => {
-    emit('update:nonFir', Math.max(0, props.nonFirCurrent - 1));
-  };
-  watch(
-    () => props.firCurrent,
-    () => {
-      if (isEditingFir.value) isEditingFir.value = false;
-    }
-  );
-  watch(
-    () => props.nonFirCurrent,
-    () => {
-      if (isEditingNonFir.value) isEditingNonFir.value = false;
-    }
-  );
+  const {
+    isEditing: isEditingFir,
+    editValue: firEditValue,
+    inputRef: firInputRef,
+    startEdit: startFirEdit,
+    submitEdit: submitFirEdit,
+    cancelEdit: cancelFirEdit,
+    increase: increaseFir,
+    decrease: decreaseFir,
+  } = createEditController({
+    current: () => props.firCurrent,
+    needed: () => props.firNeeded,
+    onUpdate: (value) => emit('update:fir', value),
+  });
+  const {
+    isEditing: isEditingNonFir,
+    editValue: nonFirEditValue,
+    inputRef: nonFirInputRef,
+    startEdit: startNonFirEdit,
+    submitEdit: submitNonFirEdit,
+    cancelEdit: cancelNonFirEdit,
+    increase: increaseNonFir,
+    decrease: decreaseNonFir,
+  } = createEditController({
+    current: () => props.nonFirCurrent,
+    needed: () => props.nonFirNeeded,
+    onUpdate: (value) => emit('update:nonFir', value),
+  });
 </script>
