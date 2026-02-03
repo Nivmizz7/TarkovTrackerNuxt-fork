@@ -56,6 +56,31 @@
                       :label="$t('page.hideout.sort.readyfirst') || 'Sort ready to build first'"
                       color="info"
                     />
+                    <div class="border-surface-700/60 space-y-2 border-t pt-3">
+                      <div class="text-surface-400 text-xs font-semibold tracking-wider uppercase">
+                        {{ $t('page.hideout.prereqfilters.title') || 'Availability requirements' }}
+                      </div>
+                      <UCheckbox
+                        v-model="preferencesStore.hideoutRequireStationLevels"
+                        :label="
+                          $t('page.hideout.prereqfilters.station_levels') ||
+                          'Require station levels'
+                        "
+                      />
+                      <UCheckbox
+                        v-model="preferencesStore.hideoutRequireSkillLevels"
+                        :label="
+                          $t('page.hideout.prereqfilters.skill_levels') || 'Require skill levels'
+                        "
+                      />
+                      <UCheckbox
+                        v-model="preferencesStore.hideoutRequireTraderLoyalty"
+                        :label="
+                          $t('page.hideout.prereqfilters.trader_loyalty') ||
+                          'Require trader loyalty'
+                        "
+                      />
+                    </div>
                   </div>
                 </template>
               </UPopover>
@@ -104,9 +129,9 @@
   import { useI18n } from 'vue-i18n';
   import { useRoute, useRouter } from 'vue-router';
   import { useHideoutFiltering } from '@/composables/useHideoutFiltering';
+  import { useHideoutStationStatus } from '@/composables/useHideoutStationStatus';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
-  import { useProgressStore } from '@/stores/useProgress';
   // Page metadata
   useSeoMeta({
     title: 'Hideout',
@@ -120,8 +145,8 @@
   const { t } = useI18n({ useScope: 'global' });
   const metadataStore = useMetadataStore();
   const { hideoutStations } = storeToRefs(metadataStore);
-  const progressStore = useProgressStore();
   const preferencesStore = usePreferencesStore();
+  const { getStationStatus: getStationStatusForStation } = useHideoutStationStatus();
   const highlightedStationId = ref<string | null>(null);
   const highlightedModuleId = ref<string | null>(null);
   // Hideout filtering composable
@@ -161,19 +186,7 @@
   const getStationStatus = (stationId: string): 'available' | 'maxed' | 'locked' => {
     const station = hideoutStations.value?.find((s) => s.id === stationId);
     if (!station) return 'locked';
-    const currentLevel = progressStore.hideoutLevels?.[stationId]?.self || 0;
-    const maxLevel = station.levels?.length || 0;
-    // Check if maxed
-    if (currentLevel === maxLevel) return 'maxed';
-    // Check if available (can upgrade)
-    const nextLevelData = station.levels?.find((l) => l.level === currentLevel + 1);
-    if (nextLevelData) {
-      const prereqsMet = nextLevelData.stationLevelRequirements?.every(
-        (req) => (progressStore.hideoutLevels?.[req.station.id]?.self || 0) >= req.level
-      );
-      if (prereqsMet) return 'available';
-    }
-    return 'locked';
+    return getStationStatusForStation(station);
   };
   const scrollToStation = async (stationId: string) => {
     await nextTick();

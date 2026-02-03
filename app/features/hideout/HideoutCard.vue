@@ -265,16 +265,10 @@
 <script setup lang="ts">
   import { computed, defineAsyncComponent, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { useHideoutStationStatus } from '@/composables/useHideoutStationStatus';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
-  import type {
-    HideoutLevel,
-    HideoutStation,
-    ItemRequirement,
-    SkillRequirement,
-    StationLevelRequirement,
-    TraderRequirement,
-  } from '@/types/tarkov';
+  import type { HideoutLevel, HideoutStation, ItemRequirement } from '@/types/tarkov';
   import { SPECIAL_STATIONS } from '@/utils/constants';
   const GenericCard = defineAsyncComponent(() => import('@/components/ui/GenericCard.vue'));
   const HideoutRequirement = defineAsyncComponent(
@@ -295,6 +289,8 @@
   );
   const progressStore = useProgressStore();
   const tarkovStore = useTarkovStore();
+  const { arePrereqsMet, isSkillReqMet, isStationReqMet, isTraderReqMet } =
+    useHideoutStationStatus();
   const { t } = useI18n({ useScope: 'global' });
   const toast = useToast();
   const isContentVisible = ref(!props.collapsed);
@@ -349,44 +345,9 @@
     }
     return classes;
   });
-  const isStationReqMet = (requirement: StationLevelRequirement) => {
-    const currentStationLevel = progressStore.hideoutLevels?.[requirement.station.id]?.self || 0;
-    return currentStationLevel >= requirement.level;
-  };
-  const isSkillReqMet = (requirement: SkillRequirement) => {
-    if (!requirement?.name || typeof requirement?.level !== 'number') return true;
-    const currentSkills =
-      (tarkovStore.getCurrentProgressData?.() || {}).skills ||
-      // progressStore currently stores skills under current progress data; fallback to empty
-      {};
-    const currentLevel =
-      currentSkills?.[requirement.name] ?? tarkovStore.getSkillLevel(requirement.name);
-    return currentLevel >= requirement.level;
-  };
-  const isTraderReqMet = (requirement: TraderRequirement) => {
-    // Check user's current trader loyalty level against requirement
-    if (!requirement?.trader?.id || typeof requirement?.value !== 'number') return true;
-    const currentLevel = tarkovStore.getTraderLevel(requirement.trader.id);
-    return currentLevel >= requirement.value;
-  };
   const prerequisitesMet = computed(() => {
     if (!nextLevel.value) return true;
-    // Check station level requirements
-    const stationReqsMet =
-      nextLevel.value.stationLevelRequirements?.every((req: StationLevelRequirement) => {
-        return isStationReqMet(req);
-      }) ?? true;
-    // Check skill requirements
-    const skillReqsMet =
-      nextLevel.value.skillRequirements?.every((req: SkillRequirement) => {
-        return isSkillReqMet(req);
-      }) ?? true;
-    // Check trader requirements
-    const traderReqsMet =
-      nextLevel.value.traderRequirements?.every((req: TraderRequirement) => {
-        return isTraderReqMet(req);
-      }) ?? true;
-    return stationReqsMet && skillReqsMet && traderReqsMet;
+    return arePrereqsMet(nextLevel.value);
   });
   const upgradeDisabled = computed(() => {
     return nextLevel.value === null;

@@ -11,7 +11,7 @@ import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
 import type { SkillSortMode } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
-type TaskFilterPreset = {
+export type TaskFilterPreset = {
   id: string;
   name: string;
   settings: Record<string, unknown>;
@@ -50,6 +50,9 @@ export interface PreferencesState {
   hideoutPrimaryView?: string | null;
   hideoutCollapseCompleted: boolean;
   hideoutSortReadyFirst: boolean;
+  hideoutRequireStationLevels: boolean;
+  hideoutRequireSkillLevels: boolean;
+  hideoutRequireTraderLoyalty: boolean;
   localeOverride: string | null;
   // Task filter settings
   showNonSpecialTasks: boolean;
@@ -71,6 +74,7 @@ export interface PreferencesState {
   useAutomaticLevelCalculation: boolean;
   // Holiday effects
   enableHolidayEffects: boolean;
+  dashboardNoticeDismissed: boolean;
   // Map display settings
   showMapExtracts: boolean;
   mapZoomSpeed: number;
@@ -119,6 +123,9 @@ export const preferencesDefaultState: PreferencesState = {
   hideoutPrimaryView: null,
   hideoutCollapseCompleted: false,
   hideoutSortReadyFirst: false,
+  hideoutRequireStationLevels: true,
+  hideoutRequireSkillLevels: true,
+  hideoutRequireTraderLoyalty: true,
   localeOverride: null,
   // Task filter settings (all shown by default)
   showNonSpecialTasks: true,
@@ -140,6 +147,7 @@ export const preferencesDefaultState: PreferencesState = {
   useAutomaticLevelCalculation: false,
   // Holiday effects (enabled by default during holiday season)
   enableHolidayEffects: true,
+  dashboardNoticeDismissed: false,
   // Map display settings
   showMapExtracts: true,
   mapZoomSpeed: 1,
@@ -276,8 +284,20 @@ export const usePreferencesStore = defineStore('preferences', {
     getHideoutPrimaryView: (state) => {
       return state.hideoutPrimaryView ?? 'available';
     },
+    getHideoutCollapseCompleted: (state) => {
+      return state.hideoutCollapseCompleted ?? false;
+    },
     getHideoutSortReadyFirst: (state) => {
       return state.hideoutSortReadyFirst ?? false;
+    },
+    getHideoutRequireStationLevels: (state) => {
+      return state.hideoutRequireStationLevels ?? true;
+    },
+    getHideoutRequireSkillLevels: (state) => {
+      return state.hideoutRequireSkillLevels ?? true;
+    },
+    getHideoutRequireTraderLoyalty: (state) => {
+      return state.hideoutRequireTraderLoyalty ?? true;
     },
     getMapZoomSpeed: (state) => {
       return state.mapZoomSpeed ?? 1;
@@ -334,6 +354,9 @@ export const usePreferencesStore = defineStore('preferences', {
     },
     getEnableHolidayEffects: (state) => {
       return state.enableHolidayEffects ?? true;
+    },
+    getDashboardNoticeDismissed: (state) => {
+      return state.dashboardNoticeDismissed ?? false;
     },
     // Map display getters
     getShowMapExtracts: (state) => {
@@ -461,8 +484,20 @@ export const usePreferencesStore = defineStore('preferences', {
     setHideoutPrimaryView(view: string) {
       this.hideoutPrimaryView = view;
     },
+    setHideoutCollapseCompleted(enabled: boolean) {
+      this.hideoutCollapseCompleted = enabled;
+    },
     setHideoutSortReadyFirst(enabled: boolean) {
       this.hideoutSortReadyFirst = enabled;
+    },
+    setHideoutRequireStationLevels(enabled: boolean) {
+      this.hideoutRequireStationLevels = enabled;
+    },
+    setHideoutRequireSkillLevels(enabled: boolean) {
+      this.hideoutRequireSkillLevels = enabled;
+    },
+    setHideoutRequireTraderLoyalty(enabled: boolean) {
+      this.hideoutRequireTraderLoyalty = enabled;
     },
     setLocaleOverride(locale: string | null) {
       this.localeOverride = locale;
@@ -517,6 +552,9 @@ export const usePreferencesStore = defineStore('preferences', {
     setEnableHolidayEffects(enable: boolean) {
       this.enableHolidayEffects = enable;
     },
+    setDashboardNoticeDismissed(dismissed: boolean) {
+      this.dashboardNoticeDismissed = dismissed;
+    },
     // Map display actions
     setShowMapExtracts(show: boolean) {
       this.showMapExtracts = show;
@@ -536,7 +574,9 @@ export const usePreferencesStore = defineStore('preferences', {
         (existing) => existing.id === preset.id
       );
       if (existingIndex !== -1) {
-        this.taskFilterPresets[existingIndex] = preset;
+        this.taskFilterPresets = this.taskFilterPresets.map((existing) =>
+          existing.id === preset.id ? preset : existing
+        );
         return;
       }
       this.taskFilterPresets.push(preset);
@@ -610,8 +650,12 @@ export const usePreferencesStore = defineStore('preferences', {
       'showFailedFilter',
       'useAutomaticLevelCalculation',
       'enableHolidayEffects',
+      'dashboardNoticeDismissed',
       'hideoutCollapseCompleted',
       'hideoutSortReadyFirst',
+      'hideoutRequireStationLevels',
+      'hideoutRequireSkillLevels',
+      'hideoutRequireTraderLoyalty',
       'showMapExtracts',
       'mapZoomSpeed',
       'pinnedTaskIds',
@@ -709,6 +753,10 @@ if (shouldInitPreferencesWatchers) {
                       needed_items_hide_non_fir_special_equipment:
                         preferencesState.neededItemsHideNonFirSpecialEquipment,
                       needed_items_kappa_only: preferencesState.neededItemsKappaOnly,
+                      needed_items_sort_by: preferencesState.neededItemsSortBy,
+                      needed_items_sort_direction: preferencesState.neededItemsSortDirection,
+                      needed_items_hide_owned: preferencesState.neededItemsHideOwned,
+                      needed_items_card_style: preferencesState.neededItemsCardStyle,
                       items_hide_non_fir: preferencesState.itemsHideNonFIR,
                       hide_global_tasks: preferencesState.hideGlobalTasks,
                       hide_non_kappa_tasks: preferencesState.hideNonKappaTasks,
@@ -721,8 +769,14 @@ if (shouldInitPreferencesWatchers) {
                       task_card_density: preferencesState.taskCardDensity,
                       enable_holiday_effects: preferencesState.enableHolidayEffects,
                       show_map_extracts: preferencesState.showMapExtracts,
+                      pinned_task_ids: preferencesState.pinnedTaskIds,
                       neededitems_style: preferencesState.neededitemsStyle,
                       hideout_primary_view: preferencesState.hideoutPrimaryView,
+                      hideout_collapse_completed: preferencesState.hideoutCollapseCompleted,
+                      hideout_sort_ready_first: preferencesState.hideoutSortReadyFirst,
+                      hideout_require_station_levels: preferencesState.hideoutRequireStationLevels,
+                      hideout_require_skill_levels: preferencesState.hideoutRequireSkillLevels,
+                      hideout_require_trader_loyalty: preferencesState.hideoutRequireTraderLoyalty,
                       locale_override: preferencesState.localeOverride,
                       enable_manual_task_fail: preferencesState.enableManualTaskFail,
                       hide_completed_task_objectives: preferencesState.hideCompletedTaskObjectives,
@@ -731,6 +785,8 @@ if (shouldInitPreferencesWatchers) {
                       show_locked_filter: preferencesState.showLockedFilter,
                       show_completed_filter: preferencesState.showCompletedFilter,
                       show_failed_filter: preferencesState.showFailedFilter,
+                      task_filter_presets: preferencesState.taskFilterPresets,
+                      skill_sort_mode: preferencesState.skillSortMode,
                       use_automatic_level_calculation:
                         preferencesState.useAutomaticLevelCalculation,
                     };

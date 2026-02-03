@@ -136,8 +136,12 @@ const setup = async (view: string) => {
     getTraderLevel: (_id: string) => 1,
   };
   const preferencesStore = {
-    getTaskPrimaryView: view,
-    setTaskPrimaryView: vi.fn(),
+    getHideoutPrimaryView: view,
+    setHideoutPrimaryView: vi.fn(),
+    getHideoutSortReadyFirst: false,
+    getHideoutRequireStationLevels: true,
+    getHideoutRequireSkillLevels: true,
+    getHideoutRequireTraderLoyalty: true,
   };
   vi.resetModules();
   vi.doMock('pinia', async () => {

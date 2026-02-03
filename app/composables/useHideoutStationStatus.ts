@@ -1,3 +1,5 @@
+import { computed } from 'vue';
+import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import { useTarkovStore } from '@/stores/useTarkov';
 import type {
@@ -8,9 +10,20 @@ import type {
   TraderRequirement,
 } from '@/types/tarkov';
 export type HideoutStationStatus = 'available' | 'locked' | 'maxed';
-export const useHideoutStationStatus = () => {
+export type UseHideoutStationStatusReturn = {
+  arePrereqsMet: (nextLevel: HideoutLevel | null) => boolean;
+  getStationStatus: (station: HideoutStation) => HideoutStationStatus;
+  isSkillReqMet: (requirement: SkillRequirement) => boolean;
+  isStationReqMet: (requirement: StationLevelRequirement) => boolean;
+  isTraderReqMet: (requirement: TraderRequirement) => boolean;
+};
+export const useHideoutStationStatus = (): UseHideoutStationStatusReturn => {
+  const preferencesStore = usePreferencesStore();
   const progressStore = useProgressStore();
   const tarkovStore = useTarkovStore();
+  const requireStationLevels = computed(() => preferencesStore.getHideoutRequireStationLevels);
+  const requireSkillLevels = computed(() => preferencesStore.getHideoutRequireSkillLevels);
+  const requireTraderLoyalty = computed(() => preferencesStore.getHideoutRequireTraderLoyalty);
   const getCurrentLevel = (station: HideoutStation): number =>
     progressStore.hideoutLevels?.[station.id]?.self ?? 0;
   const getNextLevel = (station: HideoutStation): HideoutLevel | null => {
@@ -18,10 +31,12 @@ export const useHideoutStationStatus = () => {
     return station.levels.find((level) => level.level === currentLevel + 1) || null;
   };
   const isStationReqMet = (requirement: StationLevelRequirement): boolean => {
+    if (!requireStationLevels.value) return true;
     const currentStationLevel = progressStore.hideoutLevels?.[requirement.station.id]?.self || 0;
     return currentStationLevel >= requirement.level;
   };
   const isSkillReqMet = (requirement: SkillRequirement): boolean => {
+    if (!requireSkillLevels.value) return true;
     if (!requirement?.name || typeof requirement?.level !== 'number') return true;
     const currentSkills = (tarkovStore.getCurrentProgressData?.() || {}).skills || {};
     const currentLevel =
@@ -29,13 +44,17 @@ export const useHideoutStationStatus = () => {
     return currentLevel >= requirement.level;
   };
   const isTraderReqMet = (requirement: TraderRequirement): boolean => {
+    if (!requireTraderLoyalty.value) return true;
     if (!requirement?.trader?.id || typeof requirement?.value !== 'number') return true;
     const currentLevel = tarkovStore.getTraderLevel(requirement.trader.id);
     return currentLevel >= requirement.value;
   };
   const arePrereqsMet = (nextLevel: HideoutLevel | null): boolean => {
     if (!nextLevel) return false;
-    return nextLevel.stationLevelRequirements?.every(isStationReqMet) ?? true;
+    const stationReqsMet = nextLevel.stationLevelRequirements?.every(isStationReqMet) ?? true;
+    const skillReqsMet = nextLevel.skillRequirements?.every(isSkillReqMet) ?? true;
+    const traderReqsMet = nextLevel.traderRequirements?.every(isTraderReqMet) ?? true;
+    return stationReqsMet && skillReqsMet && traderReqsMet;
   };
   const getStationStatus = (station: HideoutStation): HideoutStationStatus => {
     const nextLevel = getNextLevel(station);
