@@ -24,6 +24,11 @@
     close: 'Fermer',
     refreshbutton: 'Actualiser',
   },
+  offlineMode: {
+    title: 'Mode hors ligne activé',
+    description: "Supabase n'est pas configuré. Les fonctionnalités de connexion et de synchronisation sont désactivées, mais vous pouvez toujours utiliser toutes les fonctionnalités de suivi en local. Consultez {envFile} pour activer la connexion.",
+    envFile: '.env.example',
+  },
   maps: {
     zoom: 'Vitesse du zoom',
     notAvailableTitle: 'Carte indisponible',
@@ -76,6 +81,20 @@
         available: 'Disponibles',
         failed: 'Échouées',
         level: 'Niveau',
+      },
+      notice: {
+        message: "L'UI/UX vient d'être mise à jour et est en cours de perfectionnement ; signalez les problèmes sur Discord ou GitHub. Soutenez le développement gratuit via le lien Ko-fi dans le pied de page.",
+        dismiss: 'Ignorer',
+        show: 'Afficher la notification de mise à jour',
+      },
+      changelog: {
+        title: 'Nouveautés',
+        show: 'Afficher les mises à jour',
+        hide: 'Masquer les mises à jour',
+        loading: 'Chargement des mises à jour...',
+        error: 'Impossible de charger les mises à jour.',
+        retry: 'Réessayer',
+        empty: 'Aucune mise à jour pour le moment.',
       },
       progress: {
         title: 'Détail de la progression',
@@ -144,7 +163,7 @@
         available: 'Disponible',
         completed: 'Terminée',
         locked: 'Vérrouillée',
-        failed: 'Failed',
+        failed: 'Échouée',
       },
       userviews: {
         all: 'Toutes',
@@ -203,21 +222,21 @@
         completebutton: 'Terminer',
         availablebutton: 'Disponible',
         uncompletebutton: 'Annuler',
-        markfailed: 'Mark Failed',
-        resetfailed: 'Reset Failed',
+        markfailed: 'Marquer comme échouée',
+        resetfailed: "Réinitialiser l'échec",
         statuscomplete: 'Marquer {name} comme terminé',
         statusuncomplete: 'Marquer {name} comme non terminé',
-        statusfailed: 'Marked {name} as failed',
-        statusresetfailed: 'Reset failed status for {name}',
+        statusfailed: '{name} marquée comme échouée',
+        statusresetfailed: "Statut d'échec réinitialisé pour {name}",
         statusavailable: 'Marquer tous les pre-requis de {name} comme terminés',
         undo: 'Annuler',
         undocomplete: 'Annulation de la finalisation de {name}',
         undouncomplete: 'Annulation du marquage de {name} comme non terminé',
-        undofailed: 'Undid failing {name}',
-        undoresetfailed: 'Restored failed status for {name}',
+        undofailed: "Annulation de l'échec de {name}",
+        undoresetfailed: "Statut d'échec restauré pour {name}",
         markfailedconfirm: 'Marquer cette quête comme échouée ? Ceci est uniquement pour les problèmes de données, non recommandé et peut bloquer les chaînes de quêtes.',
-        failedbecause: 'Failed because',
-        failedbecauseunknown: 'Failed manually or data missing',
+        failedbecause: 'Échouée car',
+        failedbecauseunknown: 'Échouée manuellement ou données manquantes',
         keysneeded: '{keys} requis sur {map} | Une des {keys} requis sur {map}',
         objectiveshidden: '{count} objectifs non présent sur la carte ({uncompleted} non terminés)',
         alternatives: 'Quêtes alternatives',
@@ -241,13 +260,11 @@
         lightkeeperTooltip: 'Cette quête est requise pour débloquer le marchand Lightkeeper',
         lightkeeperrequired: 'LIGHTKEEPER REQUIS',
         locationTooltip: 'Les objectifs de la quête sont sur {map}',
-        nextTasks: 'Quêtes suivantes:',
-        nexttasks: 'Quête(s) suivante(s) :',
+        nextTasks: 'Quête(s) suivante(s) :',
         objective: 'Objectif',
         objectives: 'Objectifs',
         openItemOnTarkovDev: 'Ouvrir {name} sur tarkov.dev',
-        previousTasks: 'Quêtes précédentes:',
-        previoustasks: 'Quête(s) précédente(s) :',
+        previousTasks: 'Quête(s) précédente(s) :',
         rewards: 'Récompenses',
         task: 'Quête',
         unlocksCount: '{count} déblocages',
@@ -262,6 +279,12 @@
       collapsecompleted: 'Réduire les modules terminés',
       sort: {
         readyfirst: 'Trier les stations prêtes à construire en premier',
+      },
+      prereqfilters: {
+        title: 'Exigences de disponibilité',
+        station_levels: 'Exiger les niveaux de station',
+        skill_levels: 'Exiger les niveaux de compétence',
+        trader_loyalty: 'Exiger la fidélité du marchand',
       },
       primaryviews: {
         all: 'Toutes',
@@ -293,6 +316,7 @@
       title: 'Objets Nécessaires',
       loading: 'Chargement des données des items requis',
       searchplaceholder: 'Rechercher des items...',
+      clear_search: 'Effacer la recherche',
       items: 'articles',
       empty: 'Aucun objet ne correspond à votre recherche.',
       filters: {
@@ -319,6 +343,10 @@
       sort: {
         label: 'Trier',
         by: 'TRIER PAR',
+        priority: 'Priorité',
+        name: 'Nom',
+        category: 'Catégorie',
+        count: 'Quantité',
       },
       neededviews: {
         all: 'Tous',
@@ -326,6 +354,7 @@
         hideout: 'Planque',
       },
       neededby: 'Requis par: {users}',
+      teammatesneeded: 'Les coéquipiers ont besoin de ceci',
       options: {
         title: 'Options',
         close: 'Fermer',
@@ -422,6 +451,10 @@
     },
     team: {
       title: 'Équipe',
+      warning: {
+        title: 'Équipes en cours de développement',
+        description: "Les équipes n'ont pas encore été entièrement mises à jour ou corrigées, donc certaines fonctionnalités peuvent ne pas fonctionner correctement.",
+      },
       card: {
         manageteam: {
           title: 'Membre de l’équipe',
@@ -556,6 +589,7 @@
     changelog: 'Journal des modifications',
   },
   navigation_drawer: {
+    brand_name: 'TarkovTracker.org',
     home: 'Tableau de bord',
     api: 'API',
     login: 'Connexion',
@@ -585,6 +619,10 @@
   },
   settings: {
     title: 'Paramètres',
+    ui_notice: {
+      title: "Mise à jour de l'interface en cours",
+      description: "L'UI/UX est en cours d'amélioration active. Certaines zones peuvent sembler un peu brouillonnes ou peu finies pour le moment.",
+    },
     density: {
       compact: 'Compact',
       comfortable: 'Confortable',

@@ -21,6 +21,11 @@
     close: 'Закрыть',
     refreshbutton: 'Попробовать снова',
   },
+  offlineMode: {
+    title: 'Работа в автономном режиме',
+    description: 'Supabase не настроен. Вход и синхронизация отключены, но вы все равно можете использовать все функции отслеживания локально. См. {envFile}, чтобы включить вход.',
+    envFile: '.env.example',
+  },
   maps: {
     zoom: 'Скорость зума',
     notAvailableTitle: 'Карта недоступна',
@@ -73,6 +78,20 @@
         available: 'Доступно',
         failed: 'Провалено',
         level: 'Уровень',
+      },
+      notice: {
+        message: 'UI/UX только что обновлён и дорабатывается; сообщайте о проблемах в Discord или GitHub. Поддержите бесплатную разработку через ссылку Ko-fi в подвале сайта.',
+        dismiss: 'Закрыть',
+        show: 'Показать уведомление об обновлении',
+      },
+      changelog: {
+        title: 'Что нового',
+        show: 'Показать обновления',
+        hide: 'Скрыть обновления',
+        loading: 'Загрузка обновлений...',
+        error: 'Не удалось загрузить обновления.',
+        retry: 'Повторить',
+        empty: 'Пока нет обновлений.',
       },
       progress: {
         title: 'Детализация прогресса',
@@ -141,7 +160,7 @@
         available: 'Доступные',
         completed: 'Завершенные',
         locked: 'Заблокированные',
-        failed: 'Failed',
+        failed: 'Проваленные',
       },
       userviews: {
         all: 'Все',
@@ -200,21 +219,21 @@
         completebutton: 'Завершено',
         availablebutton: 'Отметить Доступным',
         uncompletebutton: 'Отметить Не Завершенным',
-        markfailed: 'Mark Failed',
-        resetfailed: 'Reset Failed',
+        markfailed: 'Отметить как проваленное',
+        resetfailed: 'Сбросить провал',
         statuscomplete: 'Отмеченно {name} как завершено',
         statusuncomplete: 'Отмечено {name} как не завершено',
-        statusfailed: 'Marked {name} as failed',
-        statusresetfailed: 'Reset failed status for {name}',
+        statusfailed: '{name} отмечено как проваленное',
+        statusresetfailed: 'Статус провала для {name} сброшен',
         statusavailable: 'Все предварительные условия для {name} отмечены как завершенные',
         undo: 'Отменить',
         undocomplete: 'Отменено завершение {name}',
         undouncomplete: 'Отменено незавершение {name}',
-        undofailed: 'Undid failing {name}',
-        undoresetfailed: 'Restored failed status for {name}',
+        undofailed: 'Провал {name} отменён',
+        undoresetfailed: 'Статус провала для {name} восстановлен',
         markfailedconfirm: 'Отметить это задание как проваленное? Это только для проблем с данными, не рекомендуется и может заблокировать цепочки заданий.',
-        failedbecause: 'Failed because',
-        failedbecauseunknown: 'Failed manually or data missing',
+        failedbecause: 'Провалено из-за',
+        failedbecauseunknown: 'Провалено вручную или данные отсутствуют',
         keysneeded: '{keys} нужны на {map} | Один из {keys} нужен на {map}',
         objectiveshidden: '{count} целей не на этой карте ({uncompleted} не завершено)',
         alternatives: 'Альтернативные задания',
@@ -237,13 +256,11 @@
         lightkeeperTooltip: 'Это задание необходимо для открытия торговца Lightkeeper',
         lightkeeperrequired: 'LIGHTKEEPER ТРЕБУЕТСЯ',
         locationTooltip: 'Цели задания находятся на карте {map}',
-        nextTasks: 'Следующие задания:',
-        nexttasks: 'Следующее(ие) задание(я):',
+        nextTasks: 'Следующее(ие) задание(я):',
         objective: 'Цель',
         objectives: 'Цели',
         openItemOnTarkovDev: 'Открыть {name} на tarkov.dev',
-        previousTasks: 'Предыдущие задания:',
-        previoustasks: 'Предыдущее(ие) задание(я):',
+        previousTasks: 'Предыдущее(ие) задание(я):',
         rewards: 'Награды',
         task: 'Задание',
         unlocksCount: '{count} разблокировок',
@@ -258,6 +275,12 @@
       collapsecompleted: 'Свернуть завершённые станции',
       sort: {
         readyfirst: 'Сначала готовые к постройке',
+      },
+      prereqfilters: {
+        title: 'Требования доступности',
+        station_levels: 'Требовать уровни станций',
+        skill_levels: 'Требовать уровни навыков',
+        trader_loyalty: 'Требовать лояльность торговцев',
       },
       primaryviews: {
         all: 'Все',
@@ -289,6 +312,7 @@
       title: 'Необходимые предметы',
       loading: 'Загружаем данные заданий и убежища',
       searchplaceholder: 'Поиск предметов...',
+      clear_search: 'Очистить поиск',
       items: 'предметы',
       empty: 'Нет предметов, соответствующих вашему поиску.',
       filters: {
@@ -315,12 +339,17 @@
       sort: {
         label: 'Сортировать',
         by: 'СОРТИРОВАТЬ ПО',
+        priority: 'Приоритет',
+        name: 'Название',
+        category: 'Категория',
+        count: 'Количество',
       },
       neededviews: {
         all: 'Все',
         tasks: 'Задания',
         hideout: 'Убежище',
       },
+      teammatesneeded: 'Товарищам по команде это нужно',
       options: {
         title: 'Настройки Необходимых Предметов',
         close: 'Закрыть',
@@ -399,6 +428,10 @@
     },
     team: {
       title: 'Команда',
+      warning: {
+        title: 'Команды в разработке',
+        description: 'Команды ещё не полностью обновлены или исправлены, поэтому некоторые функции могут работать некорректно.',
+      },
       card: {
         manageteam: {
           title: 'Члены Команды',
@@ -534,6 +567,7 @@
   },
   navigation_drawer: {
     toggle: 'Переключить меню',
+    brand_name: 'TarkovTracker.org',
     home: 'Главная',
     api: 'API',
     login: 'Войти',
@@ -563,6 +597,10 @@
   },
   settings: {
     title: 'Настройки',
+    ui_notice: {
+      title: 'Обновление интерфейса в процессе',
+      description: 'UI/UX активно улучшается. Некоторые разделы пока могут выглядеть неаккуратно или сырыми.',
+    },
     density: {
       compact: 'Компактная',
       comfortable: 'Комфортная',

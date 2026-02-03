@@ -21,6 +21,11 @@
     close: 'Cerrar',
     refreshbutton: 'Intentar de nuevo',
   },
+  offlineMode: {
+    title: 'Modo sin conexión activo',
+    description: 'Supabase no está configurado. Las funciones de inicio de sesión y sincronización están deshabilitadas, pero aún puedes usar todas las funciones de seguimiento localmente. Consulta {envFile} para habilitar el inicio de sesión.',
+    envFile: '.env.example',
+  },
   maps: {
     zoom: 'Velocidad de zoom',
     notAvailableTitle: 'Mapa no disponible',
@@ -73,6 +78,20 @@
         available: 'Disponibles',
         failed: 'Fallidas',
         level: 'Nivel',
+      },
+      notice: {
+        message: 'La interfaz UI/UX acaba de actualizarse y está siendo pulida; reporta problemas en Discord o GitHub. Apoya el desarrollo gratuito a través del enlace de Ko-fi en el pie de página.',
+        dismiss: 'Descartar',
+        show: 'Mostrar aviso de actualización',
+      },
+      changelog: {
+        title: 'Novedades',
+        show: 'Mostrar actualizaciones',
+        hide: 'Ocultar actualizaciones',
+        loading: 'Cargando actualizaciones...',
+        error: 'No se pudieron cargar las actualizaciones.',
+        retry: 'Reintentar',
+        empty: 'Sin actualizaciones aún.',
       },
       progress: {
         title: 'Desglose del progreso',
@@ -141,7 +160,7 @@
         available: 'Disponible',
         completed: 'Completadas',
         locked: 'Bloqueadas',
-        failed: 'Failed',
+        failed: 'Fallidas',
       },
       userviews: {
         all: 'Todos',
@@ -177,21 +196,21 @@
         completebutton: 'Completar',
         availablebutton: 'Marcar como disponible',
         uncompletebutton: 'Marcar como no completado',
-        markfailed: 'Mark Failed',
-        resetfailed: 'Reset Failed',
+        markfailed: 'Marcar como fallida',
+        resetfailed: 'Restablecer fallida',
         statuscomplete: 'Marcado {name} como completo',
         statusuncomplete: 'Marcado {name} como no completado',
-        statusfailed: 'Marked {name} as failed',
-        statusresetfailed: 'Reset failed status for {name}',
+        statusfailed: 'Marcado {name} como fallida',
+        statusresetfailed: 'Estado de fallo restablecido para {name}',
         statusavailable: 'Marcados todos los requisitos previos para {name} como completados',
         undo: 'Deshacer',
         undocomplete: 'Deshecha la finalización de {name}',
         undouncomplete: 'Deshecha la marcación de no completado de {name}',
-        undofailed: 'Undid failing {name}',
-        undoresetfailed: 'Restored failed status for {name}',
+        undofailed: 'Deshecho el fallo de {name}',
+        undoresetfailed: 'Restaurado el estado de fallo de {name}',
         markfailedconfirm: '¿Marcar esta misión como fallida? Esto es solo para problemas de datos, no se recomienda y puede bloquear cadenas de misiones.',
-        failedbecause: 'Failed because',
-        failedbecauseunknown: 'Failed manually or data missing',
+        failedbecause: 'Falló porque',
+        failedbecauseunknown: 'Marcado como fallido manualmente o faltan datos',
         keysneeded: '{keys} necesaria en {map} | {keys} necesarias en {map}',
         objectiveshidden: '{count} objetivos no están en este mapa ({uncompleted} sin completar)',
         alternatives: 'Misiones alternativas',
@@ -214,13 +233,11 @@
         lightkeeperTooltip: 'Esta misión es necesaria para desbloquear al comerciante Lightkeeper',
         lightkeeperrequired: 'LIGHTKEEPER REQUERIDO',
         locationTooltip: 'Los objetivos de la misión están en {map}',
-        nextTasks: 'Siguientes misiones:',
-        nexttasks: 'Siguiente(s) misión(es):',
+        nextTasks: 'Siguiente(s) misión(es):',
         objective: 'Objetivo',
         objectives: 'Objetivos',
         openItemOnTarkovDev: 'Abrir {name} en tarkov.dev',
-        previousTasks: 'Misiones anteriores:',
-        previoustasks: 'Misión(es) anterior(es):',
+        previousTasks: 'Misión(es) anterior(es):',
         rewards: 'Recompensas',
         task: 'Misión',
         unlocksCount: '{count} desbloqueos',
@@ -235,6 +252,12 @@
       collapsecompleted: 'Colapsar estaciones completadas',
       sort: {
         readyfirst: 'Ordenar las estaciones listas para construir primero',
+      },
+      prereqfilters: {
+        title: 'Requisitos de disponibilidad',
+        station_levels: 'Requerir niveles de estación',
+        skill_levels: 'Requerir niveles de habilidad',
+        trader_loyalty: 'Requerir lealtad del comerciante',
       },
       primaryviews: {
         all: 'Todas',
@@ -266,6 +289,7 @@
       title: 'Objetos Necesarios',
       loading: 'Cargando datos de misiones y escondite',
       searchplaceholder: 'Buscar objetos...',
+      clear_search: 'Limpiar búsqueda',
       items: 'artículos',
       empty: 'No hay objetos que coincidan con tu búsqueda.',
       filters: {
@@ -292,12 +316,17 @@
       sort: {
         label: 'Ordenar',
         by: 'ORDENAR POR',
+        priority: 'Prioridad',
+        name: 'Nombre',
+        category: 'Categoría',
+        count: 'Cantidad',
       },
       neededviews: {
         all: 'Todos',
         tasks: 'Misiones',
         hideout: 'Escondite',
       },
+      teammatesneeded: 'Los compañeros de equipo necesitan esto',
       options: {
         title: 'Opciones de Objetos Necesarios',
         close: 'Cerrar',
@@ -376,6 +405,10 @@
     },
     team: {
       title: 'Equipo',
+      warning: {
+        title: 'Equipos en desarrollo',
+        description: 'Los equipos aún no han sido completamente actualizados o corregidos, por lo que algunas funciones pueden no funcionar correctamente.',
+      },
       card: {
         manageteam: {
           title: 'Miembros del Equipo',
@@ -492,6 +525,7 @@
   },
   navigation_drawer: {
     toggle: 'Alternar menú',
+    brand_name: 'TarkovTracker.org',
     home: 'Panel',
     api: 'API',
     login: 'Iniciar sesión',
@@ -521,6 +555,10 @@
   },
   settings: {
     title: 'Configuración',
+    ui_notice: {
+      title: 'Actualización de la interfaz en curso',
+      description: 'La UI/UX se está mejorando activamente. Algunas áreas pueden verse desordenadas o poco pulidas por ahora.',
+    },
     density: {
       compact: 'Compacta',
       comfortable: 'Cómoda',

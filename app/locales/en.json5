@@ -38,6 +38,11 @@
     close: 'Close',
     refreshbutton: 'Try again',
   },
+  offlineMode: {
+    title: 'Running in Offline Mode',
+    description: 'Supabase is not configured. Login and sync features are disabled, but you can still use all tracking features locally. See {envFile} to enable login.',
+    envFile: '.env.example',
+  },
   maps: {
     zoom: 'Zoom speed',
     notAvailableTitle: 'Map Not Available',
@@ -90,6 +95,21 @@
         available: 'Available',
         failed: 'Failed',
         level: 'Level',
+      },
+      notice: {
+        message: 'UI/UX just updated and being polished; report issues on Discord or GitHub. Support free development via the Ko-fi link in the footer.',
+        dismiss: 'Dismiss',
+        show: 'Show update notice',
+      },
+      changelog: {
+        title: "What's new",
+        show: 'Show updates',
+        hide: 'Hide updates',
+        loading: 'Loading updates...',
+        error: 'Unable to load updates.',
+        retry: 'Retry',
+        empty: 'No updates yet.',
+        viewAll: 'View all',
       },
       progress: {
         title: 'Progress Breakdown',
@@ -147,6 +167,22 @@
           stat: 'Kappa Tasks',
           details: 'Tasks required for the Kappa container.',
         },
+      },
+    },
+    changelog: {
+      title: 'Changelog',
+      back: 'Back to Dashboard',
+      loading: 'Loading changelog...',
+      error: 'Unable to load changelog.',
+      retry: 'Try again',
+      empty: 'No changelog entries yet.',
+      loadMore: 'Load more',
+      types: {
+        added: 'Added',
+        fixed: 'Fixed',
+        improved: 'Improved',
+        updated: 'Updated',
+        changed: 'Changed',
       },
     },
     tasks: {
@@ -383,13 +419,11 @@
         lightkeeperTooltip: 'This quest is required to unlock the Lightkeeper trader',
         lightkeeperrequired: 'LIGHTKEEPER REQUIRED',
         locationTooltip: 'Quest objectives are on {map}',
-        nextTasks: 'Next Tasks:',
-        nexttasks: 'Next Task(s):',
+        nextTasks: 'Next Task(s):',
         objective: 'Objective',
         objectives: 'Objectives',
         openItemOnTarkovDev: 'Open {name} on tarkov.dev',
-        previousTasks: 'Previous Tasks:',
-        previoustasks: 'Previous Task(s):',
+        previousTasks: 'Previous Task(s):',
         rewards: 'Rewards',
         task: 'Task',
         unlocksCount: '{count} unlocks',
@@ -404,6 +438,12 @@
       collapsecompleted: 'Collapse completed stations',
       sort: {
         readyfirst: 'Sort ready to build first',
+      },
+      prereqfilters: {
+        title: 'Availability requirements',
+        station_levels: 'Require station levels',
+        skill_levels: 'Require skill levels',
+        trader_loyalty: 'Require trader loyalty',
       },
       primaryviews: {
         all: 'All',
@@ -435,6 +475,7 @@
       title: 'Needed Items',
       loading: 'Loading task and hideout data',
       searchplaceholder: 'Search items, tasks, or hideout stations...',
+      clear_search: 'Clear search',
       items: 'items',
       empty: 'No items match your search.',
       filters: {
@@ -461,6 +502,10 @@
       sort: {
         label: 'Sort',
         by: 'SORT BY',
+        priority: 'Priority',
+        name: 'Name',
+        category: 'Category',
+        count: 'Count',
       },
       neededviews: {
         all: 'All',
@@ -468,6 +513,7 @@
         hideout: 'Hideout',
       },
       neededby: 'Needed by: {users}',
+      teammatesneeded: 'Teammates need this',
       options: {
         title: 'Needed Items Options',
         close: 'Close',
@@ -528,6 +574,10 @@
     },
     team: {
       title: 'Team',
+      warning: {
+        title: 'Teams work in progress',
+        description: 'Teams has not been fully updated or fixed yet, so some functionality may not work properly.',
+      },
       card: {
         manageteam: {
           title: 'Team Members',
@@ -658,6 +708,7 @@
   },
   navigation_drawer: {
     toggle: 'Toggle Menu Drawer',
+    brand_name: 'TarkovTracker.org',
     home: 'Dashboard',
     api: 'API',
     login: 'Log In',
@@ -691,6 +742,10 @@
       gameplay: 'Gameplay',
       interface: 'Interface',
       account: 'Account',
+    },
+    ui_notice: {
+      title: 'Interface update in progress',
+      description: 'The UI/UX is being actively improved. Some areas may look messy or feel unpolished for now.',
     },
     density: {
       compact: 'Compact',

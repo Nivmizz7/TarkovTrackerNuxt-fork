@@ -41,6 +41,11 @@
     close: '关闭',
     refreshbutton: '重试',
   },
+  offlineMode: {
+    title: '离线模式运行中',
+    description: 'Supabase 未配置。登录和同步功能已禁用，但你仍可以在本地使用所有追踪功能。请参阅 {envFile} 以启用登录。',
+    envFile: '.env.example',
+  },
   maps: {
     zoom: '缩放速度',
     notAvailableTitle: '地图不可用',
@@ -93,6 +98,20 @@
         available: '可接取',
         failed: '已失败',
         level: '等级',
+      },
+      notice: {
+        message: 'UI/UX 刚刚更新并正在完善中；请在 Discord 或 GitHub 上报告问题。通过页脚的 Ko-fi 链接支持免费开发。',
+        dismiss: '关闭',
+        show: '显示更新通知',
+      },
+      changelog: {
+        title: '更新日志',
+        show: '显示更新',
+        hide: '隐藏更新',
+        loading: '正在加载更新...',
+        error: '无法加载更新。',
+        retry: '重试',
+        empty: '暂无更新。',
       },
       progress: {
         title: '进度细分',
@@ -375,13 +394,11 @@
         lightkeeperTooltip: '该任务是解锁商人 Lightkeeper 的必需任务',
         lightkeeperrequired: 'LIGHTKEEPER 必需',
         locationTooltip: '任务目标位于 {map}',
-        nextTasks: '后续任务:',
-        nexttasks: '后续任务：',
+        nextTasks: '后续任务：',
         objective: '目标',
         objectives: '任务目标',
         openItemOnTarkovDev: '在 tarkov.dev 打开 {name}',
-        previousTasks: '前置任务:',
-        previoustasks: '前置任务：',
+        previousTasks: '前置任务：',
         rewards: '奖励',
         task: '任务',
         unlocksCount: '{count} 项解锁',
@@ -396,6 +413,12 @@
       collapsecompleted: '折叠已完成的设施',
       sort: {
         readyfirst: '优先显示可建造',
+      },
+      prereqfilters: {
+        title: '可用性要求',
+        station_levels: '要求设施等级',
+        skill_levels: '要求技能等级',
+        trader_loyalty: '要求商人忠诚度',
       },
       primaryviews: {
         all: '全部',
@@ -427,6 +450,7 @@
       title: '所需物品',
       loading: '加载任务及藏身处数据中',
       searchplaceholder: '搜索物品、任务或藏身处设施...',
+      clear_search: '清除搜索',
       items: '物品',
       empty: '没有符合搜索的物品。',
       filters: {
@@ -453,6 +477,10 @@
       sort: {
         label: '排序',
         by: '排序方式',
+        priority: '优先级',
+        name: '名称',
+        category: '类别',
+        count: '数量',
       },
       neededviews: {
         all: '全部',
@@ -460,6 +488,7 @@
         hideout: '藏身处所需',
       },
       neededby: '所需对象：{users}',
+      teammatesneeded: '队友需要这个',
       options: {
         title: '所需物品设置',
         close: '关闭',
@@ -520,6 +549,10 @@
     },
     team: {
       title: '队伍',
+      warning: {
+        title: '队伍功能开发中',
+        description: '队伍功能尚未完全更新或修复，部分功能可能无法正常工作。',
+      },
       card: {
         manageteam: {
           title: '队伍成员',
@@ -714,6 +747,10 @@
   },
   settings: {
     title: '设置',
+    ui_notice: {
+      title: '界面更新进行中',
+      description: 'UI/UX 正在积极改进。部分区域目前可能看起来有些凌乱或不够精致。',
+    },
     density: {
       compact: '紧凑',
       comfortable: '舒适',

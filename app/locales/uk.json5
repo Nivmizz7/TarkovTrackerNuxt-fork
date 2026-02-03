@@ -24,6 +24,11 @@
     close: 'Закрити',
     refreshbutton: 'Спробувати знову',
   },
+  offlineMode: {
+    title: 'Робота в автономному режимі',
+    description: 'Supabase не налаштовано. Вхід і синхронізацію вимкнено, але ви все одно можете використовувати всі функції відстеження локально. Див. {envFile}, щоб увімкнути вхід.',
+    envFile: '.env.example',
+  },
   maps: {
     zoom: 'Швидкість масштабування',
     notAvailableTitle: 'Карта недоступна',
@@ -76,6 +81,20 @@
         available: 'Доступно',
         failed: 'Провалено',
         level: 'Рівень',
+      },
+      notice: {
+        message: 'UI/UX щойно оновлено та вдосконалюється; повідомляйте про проблеми в Discord або GitHub. Підтримайте безкоштовну розробку через посилання Ko-fi у нижньому колонтитулі.',
+        dismiss: 'Закрити',
+        show: 'Показати сповіщення про оновлення',
+      },
+      changelog: {
+        title: 'Що нового',
+        show: 'Показати оновлення',
+        hide: 'Приховати оновлення',
+        loading: 'Завантаження оновлень...',
+        error: 'Не вдалося завантажити оновлення.',
+        retry: 'Повторити',
+        empty: 'Поки немає оновлень.',
       },
       progress: {
         title: 'Деталізація прогресу',
@@ -144,7 +163,7 @@
         available: 'Доступні',
         completed: 'Завершені',
         locked: 'Заблоковані',
-        failed: 'Failed',
+        failed: 'Провалені',
       },
       userviews: {
         all: 'Усі',
@@ -203,21 +222,21 @@
         completebutton: 'Завершено',
         availablebutton: 'Відзначити Доступним',
         uncompletebutton: 'Відзначити Незавершене',
-        markfailed: 'Mark Failed',
-        resetfailed: 'Reset Failed',
+        markfailed: 'Позначити як провалене',
+        resetfailed: 'Скинути провал',
         statuscomplete: 'Відзначено {name} як завершено',
         statusuncomplete: 'Відзначено {name} як незавершене',
-        statusfailed: 'Marked {name} as failed',
-        statusresetfailed: 'Reset failed status for {name}',
+        statusfailed: '{name} позначено як провалене',
+        statusresetfailed: 'Статус провалу для {name} скинуто',
         statusavailable: 'Усі попередні умови для {name} позначені як завершені',
         undo: 'Скасувати',
         undocomplete: 'Скасовано завершення {name}',
         undouncomplete: 'Скасовано незавершення {name}',
-        undofailed: 'Undid failing {name}',
-        undoresetfailed: 'Restored failed status for {name}',
+        undofailed: 'Провал {name} скасовано',
+        undoresetfailed: 'Статус провалу для {name} відновлено',
         markfailedconfirm: 'Позначити це завдання як провалене? Це лише для проблем з даними, не рекомендується і може заблокувати ланцюжки завдань.',
-        failedbecause: 'Failed because',
-        failedbecauseunknown: 'Failed manually or data missing',
+        failedbecause: 'Провалено через',
+        failedbecauseunknown: 'Провалено вручну або дані відсутні',
         keysneeded: '{keys} потрібні на {map} | Один з {keys} потрібен на {map}',
         objectiveshidden: '{count} цілей не на цій карті ({uncompleted} не завершено)',
         alternatives: 'Альтернативні завдання',
@@ -240,13 +259,11 @@
         lightkeeperTooltip: 'Це завдання необхідне для відкриття торговця Lightkeeper',
         lightkeeperrequired: 'LIGHTKEEPER ПОТРІБЕН',
         locationTooltip: 'Цілі завдання знаходяться на карті {map}',
-        nextTasks: 'Наступні завдання:',
-        nexttasks: 'Наступне(і) завдання(я):',
+        nextTasks: 'Наступне(і) завдання(я):',
         objective: 'Ціль',
         objectives: 'Цілі',
         openItemOnTarkovDev: 'Відкрити {name} на tarkov.dev',
-        previousTasks: 'Попередні завдання:',
-        previoustasks: 'Попереднє(і) завдання(я):',
+        previousTasks: 'Попереднє(і) завдання(я):',
         rewards: 'Нагороди',
         task: 'Завдання',
         unlocksCount: '{count} розблокувань',
@@ -261,6 +278,12 @@
       collapsecompleted: 'Згорнути завершені станції',
       sort: {
         readyfirst: 'Спочатку готові до побудови',
+      },
+      prereqfilters: {
+        title: 'Вимоги доступності',
+        station_levels: 'Вимагати рівні станцій',
+        skill_levels: 'Вимагати рівні навичок',
+        trader_loyalty: 'Вимагати лояльність торговців',
       },
       primaryviews: {
         all: 'Усі',
@@ -292,6 +315,7 @@
       title: 'Необхідні предмети',
       loading: 'Завантажуємо дані завдань та притулку',
       searchplaceholder: 'Пошук предметів...',
+      clear_search: 'Очистити пошук',
       items: 'предмети',
       empty: 'Немає предметів, що відповідають вашому пошуку.',
       filters: {
@@ -318,12 +342,17 @@
       sort: {
         label: 'Сортувати',
         by: 'СОРТУВАТИ ЗА',
+        priority: 'Пріоритет',
+        name: 'Назва',
+        category: 'Категорія',
+        count: 'Кількість',
       },
       neededviews: {
         all: 'Усі',
         tasks: 'Завдання',
         hideout: 'Притулок',
       },
+      teammatesneeded: 'Товаришам по команді це потрібно',
       options: {
         title: 'Налаштування необхідних предметів',
         close: 'Закрити',
@@ -402,6 +431,10 @@
     },
     team: {
       title: 'Команда',
+      warning: {
+        title: 'Команди в розробці',
+        description: 'Команди ще не повністю оновлені або виправлені, тому деякі функції можуть працювати некоректно.',
+      },
       card: {
         manageteam: {
           title: 'Члени Команди',
@@ -536,6 +569,7 @@
     changelog: 'Історія змін',
   },
   navigation_drawer: {
+    brand_name: 'TarkovTracker.org',
     home: 'Головна',
     api: 'API',
     login: 'Увійти',
@@ -565,6 +599,10 @@
   },
   settings: {
     title: 'Налаштування',
+    ui_notice: {
+      title: 'Оновлення інтерфейсу триває',
+      description: 'UI/UX активно покращується. Деякі розділи поки що можуть виглядати неохайними або недопрацьованими.',
+    },
     density: {
       compact: 'Компактна',
       comfortable: 'Комфортна',

@@ -38,6 +38,11 @@
     close: 'Schließen',
     refreshbutton: 'Erneut versuchen',
   },
+  offlineMode: {
+    title: 'Offline-Modus aktiv',
+    description: 'Supabase ist nicht konfiguriert. Anmelde- und Sync-Funktionen sind deaktiviert, aber du kannst alle Tracking-Funktionen lokal nutzen. Siehe {envFile}, um die Anmeldung zu aktivieren.',
+    envFile: '.env.example',
+  },
   maps: {
     zoom: 'Zoomgeschwindigkeit',
     notAvailableTitle: 'Karte nicht verfügbar',
@@ -90,6 +95,20 @@
         available: 'Verfügbar',
         failed: 'Gescheitert',
         level: 'Level',
+      },
+      notice: {
+        message: 'UI/UX wurde gerade aktualisiert und wird verfeinert; meldet Probleme auf Discord oder GitHub. Unterstützt die kostenlose Entwicklung über den Ko-fi-Link in der Fußzeile.',
+        dismiss: 'Schließen',
+        show: 'Aktualisierungshinweis anzeigen',
+      },
+      changelog: {
+        title: 'Neuigkeiten',
+        show: 'Updates anzeigen',
+        hide: 'Updates ausblenden',
+        loading: 'Updates werden geladen...',
+        error: 'Updates konnten nicht geladen werden.',
+        retry: 'Erneut versuchen',
+        empty: 'Noch keine Updates.',
       },
       progress: {
         title: 'Fortschrittsübersicht',
@@ -158,7 +177,7 @@
         available: 'Verfügbar',
         completed: 'Abgeschlossen',
         locked: 'Gesperrt',
-        failed: 'Failed',
+        failed: 'Gescheitert',
       },
       userviews: {
         all: 'Alle',
@@ -292,13 +311,11 @@
         lightkeeperTooltip: 'Diese Aufgabe ist erforderlich, um den Händler Lightkeeper freizuschalten',
         lightkeeperrequired: 'LIGHTKEEPER ERFORDERLICH',
         locationTooltip: 'Aufgabenziele sind auf {map}',
-        nextTasks: 'Nächste Aufgaben:',
-        nexttasks: 'Nächste Aufgabe(n):',
+        nextTasks: 'Nächste Aufgabe(n):',
         objective: 'Ziel',
         objectives: 'Ziele',
         openItemOnTarkovDev: '{name} auf tarkov.dev öffnen',
-        previousTasks: 'Vorherige Aufgaben:',
-        previoustasks: 'Vorherige Aufgabe(n):',
+        previousTasks: 'Vorherige Aufgabe(n):',
         rewards: 'Belohnungen',
         task: 'Aufgabe',
         unlocksCount: '{count} Freischaltungen',
@@ -313,6 +330,12 @@
       collapsecompleted: 'Fertige Stationen einklappen',
       sort: {
         readyfirst: 'Bereit zum Bauen zuerst sortieren',
+      },
+      prereqfilters: {
+        title: 'Verfügbarkeitsanforderungen',
+        station_levels: 'Stationsstufen erforderlich',
+        skill_levels: 'Fertigkeitsstufen erforderlich',
+        trader_loyalty: 'Händlerloyalität erforderlich',
       },
       primaryviews: {
         all: 'Alle',
@@ -344,6 +367,7 @@
       title: 'Benötigte Gegenstände',
       loading: 'Lade Aufgaben- und Versteckdaten',
       searchplaceholder: 'Suche Gegenstände, Aufgaben oder Versteck-Stationen...',
+      clear_search: 'Suche löschen',
       items: 'Gegenstände',
       empty: 'Keine Gegenstände entsprechen deiner Suche.',
       filters: {
@@ -370,6 +394,10 @@
       sort: {
         label: 'Sortieren',
         by: 'SORTIEREN NACH',
+        priority: 'Priorität',
+        name: 'Name',
+        category: 'Kategorie',
+        count: 'Anzahl',
       },
       neededviews: {
         all: 'Alle',
@@ -377,6 +405,7 @@
         hideout: 'Versteck',
       },
       neededby: 'Benötigt von: {users}',
+      teammatesneeded: 'Teammitglieder benötigen dies',
       options: {
         title: 'Optionen für benötigte Gegenstände',
         close: 'Schließen',
@@ -437,6 +466,10 @@
     },
     team: {
       title: 'Team',
+      warning: {
+        title: 'Teams in Bearbeitung',
+        description: 'Teams wurden noch nicht vollständig aktualisiert oder repariert, daher funktionieren einige Funktionen möglicherweise nicht richtig.',
+      },
       card: {
         manageteam: {
           title: 'Teammitglieder',
@@ -566,6 +599,7 @@
   },
   navigation_drawer: {
     toggle: 'Menü umschalten',
+    brand_name: 'TarkovTracker.org',
     home: 'Dashboard',
     api: 'API',
     login: 'Anmelden',
@@ -595,6 +629,10 @@
   },
   settings: {
     title: 'Einstellungen',
+    ui_notice: {
+      title: 'Interface-Update in Arbeit',
+      description: 'Die UI/UX wird aktiv verbessert. Einige Bereiche können momentan etwas unaufgeräumt oder unfertig wirken.',
+    },
     density: {
       compact: 'Kompakt',
       comfortable: 'Komfortabel',
