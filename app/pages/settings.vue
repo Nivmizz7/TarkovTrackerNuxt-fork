@@ -1,104 +1,121 @@
 <template>
   <div class="container mx-auto px-4 py-6">
-    <UTabs :items="tabs" class="w-full">
-      <template #gameplay>
-        <div class="space-y-4 py-4">
-          <ExperienceCard />
-          <GenericCard
-            icon="mdi-gamepad-variant"
-            icon-color="accent"
-            highlight-color="accent"
-            :fill-height="false"
-            :title="$t('settings.game_settings.title', 'Game Settings')"
-            title-classes="text-lg font-semibold"
-          >
-            <template #content>
-              <div class="grid gap-4 px-4 py-4 md:grid-cols-2 lg:grid-cols-2">
-                <div class="space-y-2">
-                  <p class="text-surface-200 text-sm font-semibold">
-                    {{ $t('settings.game_profile.game_edition', 'Game Edition') }}
-                  </p>
-                  <SelectMenuFixed
-                    v-model="selectedGameEdition"
-                    :items="gameEditionOptions"
-                    value-key="value"
-                  >
-                    <template #leading>
-                      <UIcon name="i-mdi-gift-open" class="text-surface-300 h-4 w-4" />
-                    </template>
-                  </SelectMenuFixed>
-                </div>
-                <div class="space-y-2">
-                  <p class="text-surface-200 text-sm font-semibold">
-                    {{ $t('settings.prestige.current_level', 'Current Prestige Level') }}
-                  </p>
-                  <SelectMenuFixed
-                    v-model="currentPrestige"
-                    :items="prestigeOptions"
-                    value-key="value"
-                    :disabled="isPveMode"
-                  >
-                    <template #leading>
-                      <UIcon
-                        name="i-mdi-trophy"
-                        class="text-warning-400 h-4 w-4"
-                        :class="{ 'opacity-50': isPveMode }"
-                      />
-                    </template>
-                  </SelectMenuFixed>
-                </div>
-              </div>
-            </template>
-          </GenericCard>
-          <SkillsCard />
-        </div>
-      </template>
-      <template #interface>
-        <div class="space-y-4 py-4">
-          <InterfaceSettingsCard />
-        </div>
-      </template>
-      <template #account>
-        <div class="space-y-4 py-4">
-          <GenericCard
-            icon="mdi-key-chain"
-            icon-color="secondary"
-            highlight-color="secondary"
-            :fill-height="false"
-            :title="$t('page.settings.card.apitokens.title', 'API Tokens')"
-            title-classes="text-lg font-semibold"
-          >
-            <template #content>
-              <div class="relative px-4 py-4">
-                <ApiTokens v-if="isLoggedIn" />
-                <UAlert
-                  v-else
-                  color="warning"
-                  variant="soft"
-                  icon="i-mdi-lock"
-                  :title="$t('page.settings.card.apitokens.not_logged_in')"
-                />
-              </div>
-            </template>
-          </GenericCard>
-          <AccountDeletionCard
-            :show-reset-actions="true"
-            @reset-pvp="showResetPvPDialog = true"
-            @reset-pve="showResetPvEDialog = true"
-            @reset-all="showResetAllDialog = true"
-          />
-          <div v-if="isAdmin" class="flex justify-center pt-4">
-            <NuxtLink
-              to="/admin"
-              class="hover:text-error-400 text-surface-500 flex items-center gap-1.5 text-xs transition-colors"
+    <div class="space-y-4">
+      <UAlert
+        icon="i-mdi-alert"
+        color="warning"
+        variant="soft"
+        :title="$t('settings.ui_notice.title', 'Interface update in progress')"
+      >
+        <template #description>
+          {{
+            $t(
+              'settings.ui_notice.description',
+              'The UI/UX is being actively improved. Some areas may look messy or feel unpolished for now.'
+            )
+          }}
+        </template>
+      </UAlert>
+      <UTabs :items="tabs" class="w-full">
+        <template #gameplay>
+          <div class="space-y-4 py-4">
+            <ExperienceCard />
+            <GenericCard
+              icon="mdi-gamepad-variant"
+              icon-color="accent"
+              highlight-color="accent"
+              :fill-height="false"
+              :title="$t('settings.game_settings.title', 'Game Settings')"
+              title-classes="text-lg font-semibold"
             >
-              <UIcon name="i-mdi-shield-crown" class="size-3.5" />
-              {{ $t('settings.general.admin_panel', 'Admin Panel') }}
-            </NuxtLink>
+              <template #content>
+                <div class="grid gap-4 px-4 py-4 md:grid-cols-2 lg:grid-cols-2">
+                  <div class="space-y-2">
+                    <p class="text-surface-200 text-sm font-semibold">
+                      {{ $t('settings.game_profile.game_edition', 'Game Edition') }}
+                    </p>
+                    <SelectMenuFixed
+                      v-model="selectedGameEdition"
+                      :items="gameEditionOptions"
+                      value-key="value"
+                    >
+                      <template #leading>
+                        <UIcon name="i-mdi-gift-open" class="text-surface-300 h-4 w-4" />
+                      </template>
+                    </SelectMenuFixed>
+                  </div>
+                  <div class="space-y-2">
+                    <p class="text-surface-200 text-sm font-semibold">
+                      {{ $t('settings.prestige.current_level', 'Current Prestige Level') }}
+                    </p>
+                    <SelectMenuFixed
+                      v-model="currentPrestige"
+                      :items="prestigeOptions"
+                      value-key="value"
+                      :disabled="isPveMode"
+                    >
+                      <template #leading>
+                        <UIcon
+                          name="i-mdi-trophy"
+                          class="text-warning-400 h-4 w-4"
+                          :class="{ 'opacity-50': isPveMode }"
+                        />
+                      </template>
+                    </SelectMenuFixed>
+                  </div>
+                </div>
+              </template>
+            </GenericCard>
+            <SkillsCard />
           </div>
-        </div>
-      </template>
-    </UTabs>
+        </template>
+        <template #interface>
+          <div class="space-y-4 py-4">
+            <InterfaceSettingsCard />
+          </div>
+        </template>
+        <template #account>
+          <div class="space-y-4 py-4">
+            <GenericCard
+              icon="mdi-key-chain"
+              icon-color="secondary"
+              highlight-color="secondary"
+              :fill-height="false"
+              :title="$t('page.settings.card.apitokens.title', 'API Tokens')"
+              title-classes="text-lg font-semibold"
+            >
+              <template #content>
+                <div class="relative px-4 py-4">
+                  <ApiTokens v-if="isLoggedIn" />
+                  <UAlert
+                    v-else
+                    color="warning"
+                    variant="soft"
+                    icon="i-mdi-lock"
+                    :title="$t('page.settings.card.apitokens.not_logged_in')"
+                  />
+                </div>
+              </template>
+            </GenericCard>
+            <AccountDeletionCard
+              :show-reset-actions="true"
+              @reset-pvp="showResetPvPDialog = true"
+              @reset-pve="showResetPvEDialog = true"
+              @reset-all="showResetAllDialog = true"
+            />
+            <div v-if="isAdmin" class="flex justify-center pt-4">
+              <NuxtLink
+                to="/admin"
+                class="hover:text-error-400 text-surface-500 flex items-center gap-1.5 text-xs transition-colors"
+              >
+                <UIcon name="i-mdi-shield-crown" class="size-3.5" />
+                {{ $t('settings.general.admin_panel', 'Admin Panel') }}
+              </NuxtLink>
+            </div>
+          </div>
+        </template>
+      </UTabs>
+    </div>
     <UModal v-model:open="showResetPvPDialog">
       <template #header>
         <div class="flex items-center gap-2">
@@ -341,7 +358,11 @@
   );
   const currentPrestige = computed({
     get: () => (isPveMode.value ? 0 : tarkovStore.getPrestigeLevel()),
-    set: (newValue: number) => !isPveMode.value && tarkovStore.setPrestigeLevel(newValue),
+    set: (newValue: number) => {
+      if (!isPveMode.value) {
+        tarkovStore.setPrestigeLevel(newValue);
+      }
+    },
   });
   interface ResetConfig {
     resetFn: () => Promise<void>;

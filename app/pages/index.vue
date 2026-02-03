@@ -1,5 +1,36 @@
 <template>
   <div class="container mx-auto min-h-[calc(100vh-250px)] max-w-7xl px-4 py-6">
+    <div v-if="!preferencesStore.dashboardNoticeDismissed" class="mb-3">
+      <div
+        class="border-surface-800 bg-surface-900/70 text-surface-200 flex items-start gap-2 rounded-lg border px-3 py-2 text-xs leading-snug sm:text-sm"
+      >
+        <UIcon name="i-mdi-bullhorn-outline" class="text-primary-400 mt-0.5 h-4 w-4 shrink-0" />
+        <span class="flex-1">
+          {{ $t('page.dashboard.notice.message') }}
+        </span>
+        <UButton
+          icon="i-mdi-close"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          :aria-label="$t('page.dashboard.notice.dismiss')"
+          :title="$t('page.dashboard.notice.dismiss')"
+          @click="dismissDashboardNotice"
+        />
+      </div>
+    </div>
+    <div v-else class="mb-3 flex justify-end">
+      <UButton
+        size="xs"
+        color="neutral"
+        variant="link"
+        :aria-label="$t('page.dashboard.notice.show')"
+        @click="showDashboardNotice"
+      >
+        {{ $t('page.dashboard.notice.show') }}
+      </UButton>
+    </div>
+    <DashboardChangelog />
     <!-- Progress Breakdown Section -->
     <div class="mb-8">
       <button
@@ -181,6 +212,12 @@
   const router = useRouter();
   const preferencesStore = usePreferencesStore();
   const xpCalculation = useXpCalculation();
+  const dismissDashboardNotice = () => {
+    preferencesStore.setDashboardNoticeDismissed(true);
+  };
+  const showDashboardNotice = () => {
+    preferencesStore.setDashboardNoticeDismissed(false);
+  };
   // Get current level - respect automatic calculation setting
   const useAutomaticLevel = computed(() => preferencesStore.getUseAutomaticLevelCalculation);
   // Watch for invalid manual level values

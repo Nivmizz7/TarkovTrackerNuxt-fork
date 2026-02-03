@@ -109,6 +109,8 @@ const setup = async (
       get getUseAutomaticLevelCalculation() {
         return useAutomaticLevel;
       },
+      dashboardNoticeDismissed: false,
+      setDashboardNoticeDismissed: vi.fn(),
       setTaskPrimaryView: vi.fn(),
       setTaskTraderView: vi.fn(),
     }),
@@ -128,6 +130,9 @@ const defaultGlobalStubs = {
   DashboardMilestoneCard: {
     props: ['completed', 'total', 'percentage', 'title'],
     template: `<div data-testid="milestone-card" :data-completed="completed" :data-total="total" :data-title="title"><slot /></div>`,
+  },
+  DashboardChangelog: {
+    template: '<div data-testid="dashboard-changelog"></div>',
   },
   UIcon: true,
 };

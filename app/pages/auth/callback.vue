@@ -14,6 +14,7 @@
 </template>
 <script setup lang="ts">
   import { onMounted } from 'vue';
+  import { logger } from '@/utils/logger';
   const route = useRoute();
   onMounted(async () => {
     // Check if this is a popup window (has opener)
@@ -33,8 +34,22 @@
       // This is a full redirect (not popup) - redirect to original page or dashboard
       // Wait a moment for the session to be established
       await new Promise((resolve) => setTimeout(resolve, 500));
-      const redirect = (route.query.redirect as string) || '/';
-      await navigateTo(redirect, { replace: true });
+      const redirectParam = route.query.redirect;
+      const redirectValue = Array.isArray(redirectParam) ? redirectParam[0] : redirectParam;
+      const redirectRaw = typeof redirectValue === 'string' ? redirectValue.trim() : '';
+      const isSafeRedirect =
+        redirectRaw.length > 0 &&
+        redirectRaw.startsWith('/') &&
+        !redirectRaw.startsWith('//') &&
+        !/https?:/i.test(redirectRaw) &&
+        !/^[a-z][a-z0-9+.-]*:/i.test(redirectRaw);
+      const redirect = isSafeRedirect ? redirectRaw : '/';
+      try {
+        await navigateTo(redirect, { replace: true });
+      } catch (error) {
+        logger.error('[AuthCallback] Navigation failed:', error);
+        await navigateTo('/', { replace: true });
+      }
     }
   });
 </script>
