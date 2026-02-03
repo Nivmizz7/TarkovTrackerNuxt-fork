@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime';
 import { describe, expect, it, vi } from 'vitest';
 import { computed, ref } from 'vue';
 import type { NeededItemTaskObjective } from '@/types/tarkov';
-import { createDefaultNeededItem } from '../../../tests/test-helpers/mockStores';
+import { createDefaultNeededItem } from '#tests/test-helpers/mockStores';
 const createMockUseNeededItems = (options: {
   neededItem?: NeededItemTaskObjective | null;
   viewMode?: 'list' | 'grid';

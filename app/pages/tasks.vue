@@ -681,9 +681,11 @@
       sortMode: getTaskSortMode.value,
       sortDirection: getTaskSortDirection.value,
     };
-    updateVisibleTasks(options, tasksLoading.value).catch((error) => {
+    try {
+      updateVisibleTasks(options, tasksLoading.value);
+    } catch (error) {
       logger.error('[Tasks] Failed to refresh tasks:', error);
-    });
+    }
   };
   watch(
     [

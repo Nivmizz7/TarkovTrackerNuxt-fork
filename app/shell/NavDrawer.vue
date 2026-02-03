@@ -37,7 +37,9 @@
           />
         </div>
         <div v-if="!isCollapsed" class="mt-1 text-center">
-          <div class="text-base leading-tight font-medium text-white">TarkovTracker.org</div>
+          <div class="text-base leading-tight font-medium text-white">
+            {{ t('navigation_drawer.brand_name') }}
+          </div>
         </div>
       </NuxtLink>
       <template v-if="!isCollapsed">

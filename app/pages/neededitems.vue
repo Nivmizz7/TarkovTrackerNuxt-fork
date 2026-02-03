@@ -371,6 +371,28 @@
     }
     return false;
   };
+  const getNeedTeamId = (
+    need: NeededItemTaskObjective | NeededItemHideoutModule
+  ): string | null => {
+    const teamData = need as {
+      teamId?: string | null;
+      team?: { id?: string | null } | string | null;
+    };
+    if (teamData.teamId) {
+      return teamData.teamId;
+    }
+    if (typeof teamData.team === 'string') {
+      return teamData.team || null;
+    }
+    return teamData.team?.id ?? null;
+  };
+  const isTeamOwned = (need: NeededItemTaskObjective | NeededItemHideoutModule): boolean => {
+    const teamId = getNeedTeamId(need);
+    if (!teamId || teamId === 'self') {
+      return false;
+    }
+    return progressStore.getTeamIndex(teamId) !== 'self';
+  };
   // Calculate item counts for each filter tab (single-pass for performance)
   const filterTabsWithCounts = computed(() => {
     const counts = { tasks: 0, hideout: 0, completed: 0, incomplete: 0 };
@@ -451,6 +473,9 @@
         const task = metadataStore.getTaskById(need.taskId);
         return task?.kappaRequired === true;
       });
+    }
+    if (hideTeamItems.value) {
+      items = items.filter((item) => !isTeamOwned(item));
     }
     if (search.value) {
       const tokens = splitSearchTokens(search.value);

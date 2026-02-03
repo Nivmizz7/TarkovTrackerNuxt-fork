@@ -1,7 +1,7 @@
+import type { I18n } from 'vue-i18n';
 import { markI18nReady } from '@/composables/i18nHelpers';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
-import type { I18n } from 'vue-i18n';
 const SUPPORTED_LOCALES = ['en', 'de', 'es', 'fr', 'ru', 'uk', 'zh'] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 const isSupportedLocale = (value: string): value is SupportedLocale =>
@@ -29,7 +29,7 @@ export default defineNuxtPlugin({
   enforce: 'post',
   setup(nuxtApp) {
     const i18n = (nuxtApp as { $i18n?: I18n }).$i18n;
-    if (import.meta.client && i18n?.global?.locale) {
+    if (i18n?.global?.locale) {
       const globalLocale = i18n.global.locale;
       if (typeof globalLocale === 'string') {
         i18n.global.locale = getInitialLocale();

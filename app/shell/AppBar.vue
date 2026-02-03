@@ -129,7 +129,7 @@
             color="neutral"
             variant="ghost"
             size="sm"
-            :label="t('navigation_drawer.login')"
+            :label="t('navigation_drawer.login', 'Login')"
             class="hidden sm:flex"
           />
           <UButton
@@ -139,7 +139,7 @@
             variant="ghost"
             size="sm"
             class="sm:hidden"
-            :aria-label="t('navigation_drawer.login')"
+            :aria-label="t('navigation_drawer.login', 'Login')"
           />
         </template>
       </div>
@@ -213,7 +213,7 @@
     if (name === 'needed-items' || name === 'neededitems') {
       return 'page.neededItems.title';
     }
-    return `page.${name.replace('-', '_')}.title`;
+    return `page.${name.replaceAll('-', '_')}.title`;
   });
   const pageTitle = computed(() => t(pageTitleKey.value));
   function handleKeydown(event: KeyboardEvent) {
