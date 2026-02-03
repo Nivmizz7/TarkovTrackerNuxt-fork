@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import type { Store } from 'pinia';
 import { computed } from 'vue';
 import type { UserProgressData, UserState } from '@/stores/progressState';
 import { useMetadataStore } from '@/stores/useMetadata';
@@ -10,7 +11,6 @@ import { GAME_MODES, SPECIAL_STATIONS, TASK_STATE, TRADER_UNLOCK_TASKS } from '@
 import { logger } from '@/utils/logger';
 import { perfEnd, perfStart } from '@/utils/perf';
 import { computeInvalidProgress } from '@/utils/progressInvalidation';
-import type { Store } from 'pinia';
 function getGameModeData(store: Store<string, UserState> | undefined): UserProgressData {
   if (!store) return {} as UserProgressData;
   const currentGameMode = store.$state.currentGameMode || GAME_MODES.PVP;
@@ -26,6 +26,17 @@ const getCompletionFlags = (completion: RawTaskCompletion) => {
     complete: completion?.complete === true,
     failed: completion?.failed === true,
   };
+};
+const isTaskComplete = (completion?: RawTaskCompletion) => {
+  const flags = getCompletionFlags(completion);
+  return flags.complete && !flags.failed;
+};
+const isTaskFailed = (completion?: RawTaskCompletion) => {
+  return getCompletionFlags(completion).failed;
+};
+const isTaskActiveRecord = (completion?: RawTaskCompletion) => {
+  if (!completion) return false;
+  return !isTaskComplete(completion) && !isTaskFailed(completion);
 };
 type TeamStoresMap = Record<string, Store<string, UserState>>;
 type CompletionsMap = Record<string, Record<string, boolean>>;
@@ -209,17 +220,6 @@ export const useProgressStore = defineStore('progress', () => {
       (statuses ?? []).map((status) => status.toLowerCase());
     const hasAnyStatus = (statuses: string[], values: string[]) =>
       values.some((value) => statuses.includes(value));
-    const isTaskComplete = (completion?: RawTaskCompletion) => {
-      const flags = getCompletionFlags(completion);
-      return flags.complete && !flags.failed;
-    };
-    const isTaskFailed = (completion?: RawTaskCompletion) => {
-      return getCompletionFlags(completion).failed;
-    };
-    const isTaskActiveRecord = (completion?: RawTaskCompletion) => {
-      if (!completion) return false;
-      return !isTaskComplete(completion) && !isTaskFailed(completion);
-    };
     const fenceTrader = metadataStore.traders.find((t) => t.normalizedName === 'fence');
     // Initialize availability map
     for (const task of tasks) {
@@ -777,7 +777,7 @@ export const useProgressStore = defineStore('progress', () => {
         state[taskId] = TASK_STATE.COMPLETE;
       } else if (completion?.failed) {
         state[taskId] = TASK_STATE.FAILED;
-      } else if (completion) {
+      } else if (isTaskActiveRecord(completion)) {
         state[taskId] = TASK_STATE.ACTIVE;
       } else if (unlockedTasks.value[taskId]?.['self']) {
         state[taskId] = TASK_STATE.AVAILABLE;

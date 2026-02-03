@@ -1,3 +1,4 @@
+import type { AbstractGraph } from 'graphology-types';
 import { defineStore } from 'pinia';
 import { markRaw } from 'vue';
 import { extractLanguageCode, useSafeLocale } from '@/composables/i18nHelpers';
@@ -58,7 +59,6 @@ import {
   setCachedData,
 } from '@/utils/tarkovCache';
 import { normalizeTaskObjectives } from '@/utils/taskNormalization';
-import type { AbstractGraph } from 'graphology-types';
 type IdleCallback = (deadline: { didTimeout: boolean; timeRemaining: () => number }) => void;
 type IdleTask = {
   task: () => void | Promise<void>;
@@ -525,20 +525,6 @@ export const useMetadataStore = defineStore('metadata', {
         }
       }
       return map;
-    },
-    /**
-     * Get all "New Beginning" task IDs that are prestige-gated
-     */
-    prestigeTaskIds: (state): string[] => {
-      const ids: string[] = [];
-      for (const prestige of state.prestigeLevels) {
-        for (const condition of prestige.conditions || []) {
-          if (condition.task?.id && condition.task?.name === 'New Beginning') {
-            ids.push(condition.task.id);
-          }
-        }
-      }
-      return ids;
     },
   },
   actions: {

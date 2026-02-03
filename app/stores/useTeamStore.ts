@@ -1,4 +1,5 @@
-import { defineStore } from 'pinia';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { defineStore, type Store } from 'pinia';
 import { computed, nextTick, ref, watch, type Ref } from 'vue';
 import { useToast } from '#imports';
 import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
@@ -9,8 +10,6 @@ import { useTarkovStore } from '@/stores/useTarkov';
 import type { MemberProfile, TeamGetters, TeamState } from '@/types/tarkov';
 import { GAME_MODES } from '@/utils/constants';
 import { logger } from '@/utils/logger';
-import type { RealtimeChannel } from '@supabase/supabase-js';
-import type { Store } from 'pinia';
 /**
  * Helper to get current game mode
  */

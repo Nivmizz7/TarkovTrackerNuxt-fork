@@ -1,3 +1,4 @@
+import type { PostgrestError } from '@supabase/supabase-js';
 import { defineStore, type Store } from 'pinia';
 import { computed, type Ref } from 'vue';
 import { useSupabaseListener } from '@/composables/supabase/useSupabaseListener';
@@ -5,7 +6,6 @@ import { useTarkovStore } from '@/stores/useTarkov';
 import type { SystemGetters, SystemState } from '@/types/tarkov';
 import { GAME_MODES } from '@/utils/constants';
 import { logger } from '@/utils/logger';
-import type { PostgrestError } from '@supabase/supabase-js';
 /**
  * Helper to get the current game mode from tarkov store.
  * Returns 'pvp' if not available.
