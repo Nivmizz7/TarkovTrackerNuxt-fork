@@ -106,6 +106,7 @@
 
 - Routes map to files in `app/pages/`.
 - Auto-imported components/composables should not be explicitly imported.
+- Do not import Vue/Nuxt auto-imported utilities (`ref`, `computed`, `watch`, hooks, `useRoute`, `useFetch`, etc.); remove them when found.
 - Explicitly import Pinia stores and utilities.
 - Use `definePageMeta` and `useHead` for page metadata.
 - Prefer Nuxt `useFetch`/`useAsyncData` for data fetching.
@@ -177,6 +178,7 @@
 - **No comments** unless explicitly requested. Comments are token overhead.
 - **Run `npm run format` once** before leaving code. It handles both formatting and linting. Only show errors, skip success output.
 - **Own all issues**. Fix formatting, linting, and pre-existing bugs without being asked. Don't deflect with "these are from earlier changes."
+- **Find root cause**. When fixing issues, identify and address the root cause, not just the symptoms.
 - **Self-assess code**. Don't ask "what does this do?" Read and understand it. Only clarify ambiguous intent ("Is this supposed to do X or Y?").
 - **Ask before acting on complex requests**. Clarify ambiguous or multi-interpretation tasks before proceeding—it's better to ask one question than redo work.
 
