@@ -70,7 +70,8 @@
   "name": "tarkovtracker-nuxt",
   "overrides": {
     "@tiptap/core": "3.14.0",
-    "@tiptap/pm": "3.14.0"
+    "@tiptap/pm": "3.14.0",
+    "@isaacs/brace-expansion": "^5.0.1"
   },
   "packageManager": "npm@11.8.0",
   "private": true,
