@@ -1,23 +1,18 @@
 import { defineEventHandler, getQuery, setResponseHeaders } from 'h3';
+import { useRuntimeConfig } from '#imports';
+import type {
+  ChangelogBullet,
+  ChangelogItem,
+  ChangelogResponse,
+  ChangelogStats,
+} from '@/types/changelog';
 import { createLogger } from '~/server/utils/logger';
-type ChangelogStats = {
-  additions: number;
-  deletions: number;
-};
-type ChangelogBullet = {
-  text: string;
-  stats?: ChangelogStats;
-};
-type ChangelogItem = {
-  date: string;
-  label?: string;
-  bullets: ChangelogBullet[];
-  stats?: ChangelogStats;
-};
-type ChangelogResponse = {
-  source: 'releases' | 'commits';
-  items: ChangelogItem[];
-};
+import {
+  cleanText,
+  extractReleaseBullets,
+  normalizeCommitMessage,
+  toSentence,
+} from '~/utils/changelog';
 type GitHubRelease = {
   name?: string | null;
   tag_name?: string | null;
@@ -57,37 +52,123 @@ type GitHubCompareResponse = {
     changes?: number;
   }>;
 };
+type StatsCacheEntry = { stats: ChangelogStats; timestamp: number };
+type GitHubConfig = { owner: string; repo: string; baseUrl: string };
 const logger = createLogger('Changelog');
-const OWNER = 'tarkovtracker-org';
-const REPO = 'TarkovTrackerNuxt';
-const BASE_URL = `https://api.github.com/repos/${OWNER}/${REPO}`;
+const DEFAULT_OWNER = 'tarkovtracker-org';
+const DEFAULT_REPO = 'TarkovTracker';
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
 const RELEASE_LIMIT = 3;
 const MAX_BULLETS_PER_GROUP = 5;
 const MAX_STATS_FETCHES = 20;
-const statsCache = new Map<string, { stats: ChangelogStats; timestamp: number }>();
+const statsCache = new Map<string, StatsCacheEntry>();
 const CACHE_TTL_MS = 30 * 60 * 1000;
-const cleanText = (value: string): string => {
-  let text = value.replace(/\s*\(#\d+\)\s*$/, '');
-  text = text.replace(/\s*\[[^\]]+\]\s*$/, '');
-  text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-  text = text.replace(/[`*_~]/g, '');
-  text = text.replace(/[_/]+/g, ' ');
-  text = text.replace(/\s+/g, ' ').trim();
-  return text;
+const MAX_CACHE_ENTRIES = 1000;
+const SHARED_CACHE_PREFIX = 'changelog-stats';
+const evictStaleAndOldest = (): void => {
+  const now = Date.now();
+  const activeEntries: Array<[string, number]> = [];
+  for (const [key, entry] of statsCache) {
+    if (now - entry.timestamp >= CACHE_TTL_MS) {
+      statsCache.delete(key);
+      continue;
+    }
+    activeEntries.push([key, entry.timestamp]);
+  }
+  if (activeEntries.length >= MAX_CACHE_ENTRIES) {
+    const overCapacity = activeEntries.length - MAX_CACHE_ENTRIES + 1;
+    activeEntries.sort(([, a], [, b]) => a - b);
+    for (const [key] of activeEntries.slice(0, overCapacity)) {
+      statsCache.delete(key);
+    }
+  }
 };
-const toSentence = (value: string): string => {
-  let text = cleanText(value);
-  if (!text) return '';
-  const firstChar = text.charAt(0);
-  if (firstChar) {
-    text = firstChar.toUpperCase() + text.slice(1);
+const getLocalCacheEntry = (key: string): StatsCacheEntry | null => {
+  const cached = statsCache.get(key);
+  if (!cached) return null;
+  if (Date.now() - cached.timestamp >= CACHE_TTL_MS) {
+    statsCache.delete(key);
+    return null;
   }
-  if (!/[.!?]$/.test(text)) {
-    text += '.';
+  return cached;
+};
+const setLocalCacheEntry = (key: string, entry: StatsCacheEntry): void => {
+  evictStaleAndOldest();
+  statsCache.set(key, entry);
+};
+const getSharedCache = (): Cache | null => {
+  const cacheStorage = (
+    globalThis as typeof globalThis & { caches?: CacheStorage & { default?: Cache } }
+  ).caches;
+  return cacheStorage?.default ?? null;
+};
+const getSharedCacheOrigin = (): { host: string; protocol: string } => {
+  const runtimeConfig = useRuntimeConfig();
+  const appUrl = runtimeConfig?.public?.appUrl;
+  if (!appUrl) {
+    return { host: 'tarkovtracker.org', protocol: 'https:' };
   }
-  return text;
+  try {
+    const parsedAppUrl = new URL(appUrl);
+    const hostname = parsedAppUrl.hostname;
+    const isLocalhost =
+      hostname === 'localhost' ||
+      hostname === '0.0.0.0' ||
+      hostname === '::1' ||
+      /^127\./.test(hostname);
+    if (isLocalhost) {
+      return { host: 'tarkovtracker.org', protocol: 'https:' };
+    }
+    return { host: parsedAppUrl.host, protocol: parsedAppUrl.protocol || 'https:' };
+  } catch {
+    return { host: 'tarkovtracker.org', protocol: 'https:' };
+  }
+};
+const buildSharedCacheRequest = (key: string): Request => {
+  const { host, protocol } = getSharedCacheOrigin();
+  const encodedKey = encodeURIComponent(key);
+  const cacheUrl = new URL(
+    `${protocol}//${host}/__edge-cache/${SHARED_CACHE_PREFIX}/${encodedKey}`
+  );
+  return new Request(cacheUrl.toString());
+};
+const getSharedCacheEntry = async (key: string): Promise<StatsCacheEntry | null> => {
+  const cache = getSharedCache();
+  if (!cache) return null;
+  try {
+    const cachedResponse = await cache.match(buildSharedCacheRequest(key));
+    if (!cachedResponse) return null;
+    const payload = (await cachedResponse.json()) as StatsCacheEntry | null;
+    if (!payload?.stats || typeof payload.timestamp !== 'number') return null;
+    if (Date.now() - payload.timestamp >= CACHE_TTL_MS) return null;
+    return payload;
+  } catch (error) {
+    logger.warn('[Changelog] Failed to read shared cache.', {
+      key,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+};
+const setSharedCacheEntry = async (key: string, entry: StatsCacheEntry): Promise<void> => {
+  const cache = getSharedCache();
+  if (!cache) return;
+  const ttlSeconds = Math.max(1, Math.floor(CACHE_TTL_MS / 1000));
+  try {
+    const response = new Response(JSON.stringify(entry), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds}`,
+      },
+    });
+    await cache.put(buildSharedCacheRequest(key), response);
+  } catch (error) {
+    logger.warn('[Changelog] Failed to write shared cache.', {
+      key,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 };
 const parseNumber = (value: unknown, fallback: number): number => {
   if (Array.isArray(value)) return parseNumber(value[0], fallback);
@@ -97,12 +178,24 @@ const parseNumber = (value: unknown, fallback: number): number => {
 const clamp = (value: number, min: number, max: number): number => {
   return Math.min(max, Math.max(min, value));
 };
-const fetchGithub = async <T>(url: string): Promise<T | null> => {
+const getGitHubConfig = (runtimeConfig: ReturnType<typeof useRuntimeConfig>): GitHubConfig => {
+  const owner =
+    (typeof runtimeConfig.githubOwner === 'string' && runtimeConfig.githubOwner.trim()) ||
+    DEFAULT_OWNER;
+  const repo =
+    (typeof runtimeConfig.githubRepo === 'string' && runtimeConfig.githubRepo.trim()) ||
+    DEFAULT_REPO;
+  const baseUrl = `https://api.github.com/repos/${owner}/${repo}`;
+  return { owner, repo, baseUrl };
+};
+const fetchGithub = async <T>(url: string, githubToken?: string): Promise<T | null> => {
   let response: Response;
   try {
+    const trimmedToken = typeof githubToken === 'string' ? githubToken.trim() : '';
     response = await fetch(url, {
       headers: {
         Accept: 'application/vnd.github+json',
+        ...(trimmedToken ? { Authorization: `token ${trimmedToken}` } : {}),
         'User-Agent': 'TarkovTracker',
       },
     });
@@ -140,61 +233,64 @@ const fetchGithub = async <T>(url: string): Promise<T | null> => {
     return null;
   }
 };
-const fetchCommitStats = async (sha: string): Promise<ChangelogStats | null> => {
-  const cached = statsCache.get(sha);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return cached.stats;
+const fetchCommitStats = async (
+  sha: string,
+  baseUrl: string,
+  githubToken?: string
+): Promise<ChangelogStats | null> => {
+  const cacheKey = `commit:${sha}`;
+  const sharedCached = await getSharedCacheEntry(cacheKey);
+  if (sharedCached) {
+    setLocalCacheEntry(cacheKey, sharedCached);
+    return sharedCached.stats;
   }
-  const detail = await fetchGithub<GitHubCommitDetail>(`${BASE_URL}/commits/${sha}`);
+  const cached = getLocalCacheEntry(cacheKey);
+  if (cached) return cached.stats;
+  const detail = await fetchGithub<GitHubCommitDetail>(`${baseUrl}/commits/${sha}`, githubToken);
   if (!detail?.stats) return null;
   const stats: ChangelogStats = {
     additions: detail.stats.additions ?? 0,
     deletions: detail.stats.deletions ?? 0,
   };
-  statsCache.set(sha, { stats, timestamp: Date.now() });
+  const entry = { stats, timestamp: Date.now() };
+  setLocalCacheEntry(cacheKey, entry);
+  await setSharedCacheEntry(cacheKey, entry);
   return stats;
 };
 const fetchReleaseStats = async (
   tagName: string,
-  prevTagName?: string
+  prevTagName: string | undefined,
+  baseUrl: string,
+  githubToken?: string
 ): Promise<ChangelogStats | null> => {
   const cacheKey = `release:${tagName}:${prevTagName || 'initial'}`;
-  const cached = statsCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return cached.stats;
+  const sharedCached = await getSharedCacheEntry(cacheKey);
+  if (sharedCached) {
+    setLocalCacheEntry(cacheKey, sharedCached);
+    return sharedCached.stats;
   }
+  const cached = getLocalCacheEntry(cacheKey);
+  if (cached) return cached.stats;
   if (!prevTagName) return null;
-  const compareUrl = `${BASE_URL}/compare/${prevTagName}...${tagName}`;
-  const compare = await fetchGithub<GitHubCompareResponse>(compareUrl);
+  const compareUrl = `${baseUrl}/compare/${prevTagName}...${tagName}`;
+  const compare = await fetchGithub<GitHubCompareResponse>(compareUrl, githubToken);
   if (!compare?.files) return null;
   const stats: ChangelogStats = {
     additions: compare.files.reduce((sum, f) => sum + (f.additions ?? 0), 0),
     deletions: compare.files.reduce((sum, f) => sum + (f.deletions ?? 0), 0),
   };
-  statsCache.set(cacheKey, { stats, timestamp: Date.now() });
+  const entry = { stats, timestamp: Date.now() };
+  setLocalCacheEntry(cacheKey, entry);
+  await setSharedCacheEntry(cacheKey, entry);
   return stats;
 };
-const extractReleaseBullets = (body: string | null | undefined): string[] => {
-  if (!body) return [];
-  const lines = body
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const bulletLines = lines.filter((line) => /^[-*]\s+/.test(line) || /^\d+\.\s+/.test(line));
-  const sourceLines = bulletLines.length
-    ? bulletLines
-    : lines.filter((line) => !line.startsWith('#')).slice(0, MAX_BULLETS_PER_GROUP);
-  return sourceLines
-    .map((line) =>
-      line
-        .replace(/^[-*]\s+/, '')
-        .replace(/^\d+\.\s+/, '')
-        .trim()
-    )
-    .filter(Boolean);
-};
-const buildReleaseItems = async (releases: GitHubRelease[]): Promise<ChangelogItem[]> => {
-  const validReleases = releases.filter((release) => !release.draft).slice(0, RELEASE_LIMIT);
+const buildReleaseItems = async (
+  releases: GitHubRelease[],
+  limit: number = RELEASE_LIMIT,
+  baseUrl: string,
+  githubToken?: string
+): Promise<ChangelogItem[]> => {
+  const validReleases = releases.filter((release) => !release.draft).slice(0, limit);
   const items: ChangelogItem[] = [];
   for (let i = 0; i < validReleases.length; i++) {
     const release = validReleases[i];
@@ -214,7 +310,7 @@ const buildReleaseItems = async (releases: GitHubRelease[]): Promise<ChangelogIt
     const prevTagName = prevRelease?.tag_name;
     let stats: ChangelogStats | undefined;
     if (tagName && prevTagName) {
-      const releaseStats = await fetchReleaseStats(tagName, prevTagName);
+      const releaseStats = await fetchReleaseStats(tagName, prevTagName, baseUrl, githubToken);
       if (releaseStats) {
         stats = releaseStats;
       }
@@ -230,62 +326,6 @@ const buildReleaseItems = async (releases: GitHubRelease[]): Promise<ChangelogIt
   }
   return items;
 };
-const normalizeCommitMessage = (message: string | null | undefined): string | null => {
-  if (!message) return null;
-  const firstLine = message.split('\n')[0]?.trim();
-  if (!firstLine) return null;
-  if (/^merge\b/i.test(firstLine)) return null;
-  if (/^revert\b/i.test(firstLine)) return null;
-  const conventional = firstLine.match(/^([a-z]+)(?:\([^)]+\))?:\s*(.+)$/i);
-  const type = conventional?.[1]?.toLowerCase() ?? '';
-  let subject = conventional?.[2] ?? firstLine;
-  const skipTypes = new Set(['chore', 'ci', 'test', 'tests', 'docs', 'build', 'style', 'deps']);
-  if (type && skipTypes.has(type)) return null;
-  const verbMap: Record<string, string> = {
-    feat: 'Added',
-    fix: 'Fixed',
-    perf: 'Improved',
-    ui: 'Updated',
-    refactor: 'Improved',
-  };
-  let verb = verbMap[type] || '';
-  subject = cleanText(subject);
-  if (!subject) return null;
-  const leadingVerb = subject.match(
-    /^(add|adds|added|fix|fixes|fixed|improve|improves|improved|update|updates|updated|refactor|refactors|refactored)\b/i
-  );
-  if (!verb && leadingVerb && leadingVerb[1]) {
-    const keyword = leadingVerb[1].toLowerCase();
-    const inferredMap: Record<string, string> = {
-      add: 'Added',
-      adds: 'Added',
-      added: 'Added',
-      fix: 'Fixed',
-      fixes: 'Fixed',
-      fixed: 'Fixed',
-      improve: 'Improved',
-      improves: 'Improved',
-      improved: 'Improved',
-      update: 'Updated',
-      updates: 'Updated',
-      updated: 'Updated',
-      refactor: 'Improved',
-      refactors: 'Improved',
-      refactored: 'Improved',
-    };
-    verb = inferredMap[keyword] || 'Updated';
-    subject = subject.replace(/^\w+\s+/i, '');
-  }
-  if (!verb) {
-    return null;
-  }
-  subject = subject.replace(
-    /^(add|adds|added|fix|fixes|fixed|improve|improves|improved|update|updates|updated|refactor|refactors|refactored)\b\s+/i,
-    ''
-  );
-  const sentence = toSentence(`${verb} ${subject}`);
-  return sentence || null;
-};
 type ProcessedCommit = {
   sha: string;
   date: string;
@@ -293,7 +333,9 @@ type ProcessedCommit = {
 };
 const buildCommitItems = async (
   commits: GitHubCommitListItem[],
-  limit: number
+  limit: number,
+  baseUrl: string,
+  githubToken?: string
 ): Promise<ChangelogItem[]> => {
   const processed: ProcessedCommit[] = [];
   for (const commit of commits) {
@@ -308,14 +350,17 @@ const buildCommitItems = async (
   }
   const statsToFetch = processed.slice(0, MAX_STATS_FETCHES);
   const statsMap = new Map<string, ChangelogStats>();
-  await Promise.all(
+  const settledResults = await Promise.allSettled(
     statsToFetch.map(async ({ sha }) => {
-      const stats = await fetchCommitStats(sha);
-      if (stats) {
-        statsMap.set(sha, stats);
-      }
+      const stats = await fetchCommitStats(sha, baseUrl, githubToken);
+      return { sha, stats };
     })
   );
+  for (const result of settledResults) {
+    if (result.status === 'fulfilled' && result.value.stats) {
+      statsMap.set(result.value.sha, result.value.stats);
+    }
+  }
   const grouped = new Map<string, ChangelogItem>();
   for (const { sha, date, bullet } of processed) {
     const existing = grouped.get(date) ?? {
@@ -344,24 +389,34 @@ const buildCommitItems = async (
 export default defineEventHandler(async (event): Promise<ChangelogResponse> => {
   setResponseHeaders(event, { 'Cache-Control': 'public, max-age=300, s-maxage=300' });
   try {
+    const runtimeConfig = useRuntimeConfig(event);
+    const githubToken = runtimeConfig.githubToken;
+    const { baseUrl } = getGitHubConfig(runtimeConfig);
     const query = getQuery(event);
     const limit = clamp(parseNumber(query.limit, DEFAULT_LIMIT), 1, MAX_LIMIT);
     const releaseLimit = clamp(parseNumber(query.releases, RELEASE_LIMIT), 1, 10);
-    const releaseUrl = `${BASE_URL}/releases?per_page=${releaseLimit}`;
-    const releases = await fetchGithub<GitHubRelease[]>(releaseUrl);
-    const releaseItems = Array.isArray(releases) ? await buildReleaseItems(releases) : [];
+    const releaseUrl = `${baseUrl}/releases?per_page=${releaseLimit}`;
+    const releases = await fetchGithub<GitHubRelease[]>(releaseUrl, githubToken);
+    const releaseItems = Array.isArray(releases)
+      ? await buildReleaseItems(releases, releaseLimit, baseUrl, githubToken)
+      : [];
     if (releaseItems.length) {
-      return { source: 'releases', items: releaseItems };
+      return { source: 'releases', items: releaseItems, hasMore: false };
     }
-    const commitFetchCount = Math.min(limit * 4, 100);
-    const commitUrl = `${BASE_URL}/commits?per_page=${commitFetchCount}`;
-    const commits = await fetchGithub<GitHubCommitListItem[]>(commitUrl);
-    const commitItems = Array.isArray(commits) ? await buildCommitItems(commits, limit) : [];
-    return { source: 'commits', items: commitItems };
+    const fetchLimit = limit + 1;
+    const commitFetchCount = Math.min(fetchLimit * 4, 100);
+    const commitUrl = `${baseUrl}/commits?per_page=${commitFetchCount}`;
+    const commits = await fetchGithub<GitHubCommitListItem[]>(commitUrl, githubToken);
+    const commitItems = Array.isArray(commits)
+      ? await buildCommitItems(commits, fetchLimit, baseUrl, githubToken)
+      : [];
+    const hasMore = commitItems.length > limit;
+    const items = hasMore ? commitItems.slice(0, limit) : commitItems;
+    return { source: 'commits', items, hasMore };
   } catch (error) {
     logger.error('[Changelog] Failed to build changelog.', {
       error: error instanceof Error ? error.message : String(error),
     });
-    return { source: 'commits', items: [] };
+    return { source: 'commits', items: [], hasMore: false, error: 'Failed to fetch changelog' };
   }
 });

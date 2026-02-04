@@ -18,7 +18,7 @@
             size="xs"
             color="neutral"
             variant="link"
-            :aria-controls="panelId"
+            :aria-controls="PANEL_ID"
             :aria-expanded="isOpen"
             @click="toggleOpen"
           >
@@ -26,7 +26,7 @@
           </UButton>
         </div>
       </div>
-      <div v-if="isOpen" :id="panelId" class="mt-2 space-y-3 text-xs sm:text-sm">
+      <div v-if="isOpen" :id="PANEL_ID" class="mt-2 space-y-3 text-xs sm:text-sm">
         <div v-if="pending" class="text-surface-400 text-xs">
           {{ t('page.dashboard.changelog.loading') }}
         </div>
@@ -57,73 +57,32 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  type ChangelogStats = {
-    additions: number;
-    deletions: number;
-  };
-  type ChangelogBullet = string | { text: string; stats?: ChangelogStats };
-  type ChangelogItem = {
-    date: string;
-    label?: string;
-    bullets: ChangelogBullet[];
-    stats?: ChangelogStats;
-  };
-  type ChangelogResponse = {
-    source: 'releases' | 'commits';
-    items: ChangelogItem[];
-  };
+  import {
+    cleanText,
+    extractReleaseBullets,
+    normalizeCommitMessage,
+    toSentence,
+  } from '@/utils/changelog';
+  import { logger } from '@/utils/logger';
+  import type { ChangelogBullet, ChangelogItem, ChangelogResponse } from '@/types/changelog';
+  const PANEL_ID = 'dashboard-changelog-panel';
+  const SERVER_CHANGELOG_KEY = 'dashboard-changelog-server';
+  const SERVER_CHANGELOG_URL = '/api/changelog';
+  const GITHUB_RELEASES_KEY = 'dashboard-changelog-github-releases';
+  const GITHUB_COMMITS_KEY = 'dashboard-changelog-github-commits';
+  const GITHUB_RELEASES_URL =
+    'https://api.github.com/repos/tarkovtracker-org/TarkovTracker/releases';
+  const GITHUB_COMMITS_URL = 'https://api.github.com/repos/tarkovtracker-org/TarkovTracker/commits';
   const { locale, t } = useI18n({ useScope: 'global' });
   const isOpen = ref(false);
   const hasRequested = ref(false);
-  const panelId = 'dashboard-changelog-panel';
   const entries = ref<ChangelogItem[]>([]);
   const pending = ref(false);
   const error = ref(false);
   const showEmpty = computed(() => !pending.value && !error.value && entries.value.length === 0);
   const getBulletText = (bullet: ChangelogBullet): string => {
     return typeof bullet === 'string' ? bullet : bullet.text;
-  };
-  const cleanText = (value: string): string => {
-    let text = value.replace(/\s*\(#\d+\)\s*$/, '');
-    text = text.replace(/\s*\[[^\]]+\]\s*$/, '');
-    text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-    text = text.replace(/[`*_~]/g, '');
-    text = text.replace(/[_/]+/g, ' ');
-    text = text.replace(/\s+/g, ' ').trim();
-    return text;
-  };
-  const toSentence = (value: string): string => {
-    let text = cleanText(value);
-    if (!text) return '';
-    const firstChar = text[0];
-    if (firstChar) {
-      text = firstChar.toUpperCase() + text.slice(1);
-    }
-    if (!/[.!?]$/.test(text)) {
-      text += '.';
-    }
-    return text;
-  };
-  const extractReleaseBullets = (body: string | null | undefined): string[] => {
-    if (!body) return [];
-    const lines = body
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean);
-    const bulletLines = lines.filter((line) => /^[-*]\s+/.test(line) || /^\d+\.\s+/.test(line));
-    const sourceLines = bulletLines.length
-      ? bulletLines
-      : lines.filter((line) => !line.startsWith('#'));
-    return sourceLines
-      .map((line) =>
-        line
-          .replace(/^[-*]\s+/, '')
-          .replace(/^\d+\.\s+/, '')
-          .trim()
-      )
-      .filter(Boolean);
   };
   const buildReleaseItems = (releases: Array<Record<string, unknown>>): ChangelogItem[] => {
     return releases
@@ -140,60 +99,6 @@
         return { date, label: label || undefined, bullets };
       })
       .filter((item) => item.date && item.bullets.length);
-  };
-  const normalizeCommitMessage = (message: string | null | undefined): string | null => {
-    if (!message) return null;
-    const firstLine = message.split('\n')[0]?.trim();
-    if (!firstLine) return null;
-    if (/^merge\b/i.test(firstLine)) return null;
-    if (/^revert\b/i.test(firstLine)) return null;
-    const conventional = firstLine.match(/^([a-z]+)(?:\([^)]+\))?:\s*(.+)$/i);
-    const type = conventional?.[1]?.toLowerCase() ?? '';
-    let subject = conventional?.[2] ?? firstLine;
-    const skipTypes = new Set(['chore', 'ci', 'test', 'tests', 'docs', 'build', 'style', 'deps']);
-    if (type && skipTypes.has(type)) return null;
-    const verbMap: Record<string, string> = {
-      feat: 'Added',
-      fix: 'Fixed',
-      perf: 'Improved',
-      ui: 'Updated',
-      refactor: 'Improved',
-    };
-    let verb = verbMap[type] || '';
-    subject = cleanText(subject);
-    if (!subject) return null;
-    const leadingVerb = subject.match(
-      /^(add|adds|added|fix|fixes|fixed|improve|improves|improved|update|updates|updated|refactor|refactors|refactored)\b/i
-    );
-    if (!verb && leadingVerb && leadingVerb[1]) {
-      const keyword = leadingVerb[1].toLowerCase();
-      const inferredMap: Record<string, string> = {
-        add: 'Added',
-        adds: 'Added',
-        added: 'Added',
-        fix: 'Fixed',
-        fixes: 'Fixed',
-        fixed: 'Fixed',
-        improve: 'Improved',
-        improves: 'Improved',
-        improved: 'Improved',
-        update: 'Updated',
-        updates: 'Updated',
-        updated: 'Updated',
-        refactor: 'Improved',
-        refactors: 'Improved',
-        refactored: 'Improved',
-      };
-      verb = inferredMap[keyword] || 'Updated';
-      subject = subject.replace(/^\w+\s+/i, '');
-    }
-    if (!verb) return null;
-    subject = subject.replace(
-      /^(add|adds|added|fix|fixes|fixed|improve|improves|improved|update|updates|updated|refactor|refactors|refactored)\b\s+/i,
-      ''
-    );
-    const sentence = toSentence(`${verb} ${subject}`);
-    return sentence || null;
   };
   const buildCommitItems = (commits: Array<Record<string, unknown>>): ChangelogItem[] => {
     const grouped = new Map<string, ChangelogItem>();
@@ -218,50 +123,103 @@
     }
     return Array.from(grouped.values());
   };
+  const logError = (message: string, err: unknown) => {
+    if (err instanceof Error) {
+      logger.error(message, { message: err.message, stack: err.stack });
+      return;
+    }
+    logger.error(message, err);
+  };
+  const serverRequest = useFetch<ChangelogResponse>(SERVER_CHANGELOG_URL, {
+    key: SERVER_CHANGELOG_KEY,
+    query: { limit: 10 },
+    headers: { Accept: 'application/json' },
+    immediate: false,
+    server: false,
+    onResponseError({ response }) {
+      logger.error('[DashboardChangelog] fetchServerItems failed.', {
+        status: response?.status,
+        url: response?.url ?? SERVER_CHANGELOG_URL,
+      });
+    },
+    onRequestError({ error }) {
+      logError('[DashboardChangelog] fetchServerItems error.', error);
+    },
+  });
+  const githubReleaseRequest = useFetch<Array<Record<string, unknown>>>(GITHUB_RELEASES_URL, {
+    key: GITHUB_RELEASES_KEY,
+    query: { per_page: 3 },
+    headers: { Accept: 'application/vnd.github+json' },
+    immediate: false,
+    server: false,
+    onResponseError({ response }) {
+      logger.error('[DashboardChangelog] fetchGithubItems releases failed.', {
+        status: response?.status,
+        url: response?.url ?? GITHUB_RELEASES_URL,
+      });
+    },
+    onRequestError({ error }) {
+      logError('[DashboardChangelog] fetchGithubItems releases error.', error);
+    },
+  });
+  const githubCommitRequest = useFetch<Array<Record<string, unknown>>>(GITHUB_COMMITS_URL, {
+    key: GITHUB_COMMITS_KEY,
+    query: { per_page: 40 },
+    headers: { Accept: 'application/vnd.github+json' },
+    immediate: false,
+    server: false,
+    onResponseError({ response }) {
+      logger.error('[DashboardChangelog] fetchGithubItems commits failed.', {
+        status: response?.status,
+        url: response?.url ?? GITHUB_COMMITS_URL,
+      });
+    },
+    onRequestError({ error }) {
+      logError('[DashboardChangelog] fetchGithubItems commits error.', error);
+    },
+  });
   const fetchServerItems = async (): Promise<ChangelogItem[] | null> => {
     try {
-      const response = await fetch('/api/changelog?limit=10', {
-        headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) return null;
-      const data = (await response.json()) as ChangelogResponse | null;
-      if (!data || !Array.isArray(data.items)) return null;
+      await serverRequest.refresh();
+      if (serverRequest.error.value) {
+        return null;
+      }
+      const data = serverRequest.data.value;
+      if (!data || !Array.isArray(data.items)) {
+        logger.error('[DashboardChangelog] fetchServerItems invalid response shape.', {
+          data,
+          url: SERVER_CHANGELOG_URL,
+        });
+        return null;
+      }
+      if (data.error) {
+        logger.error('[DashboardChangelog] fetchServerItems response error.', {
+          error: data.error,
+          url: SERVER_CHANGELOG_URL,
+        });
+        return null;
+      }
       return data.items;
-    } catch {
+    } catch (error) {
+      logError('[DashboardChangelog] fetchServerItems error.', error);
       return null;
     }
   };
   const fetchGithubItems = async (): Promise<ChangelogItem[] | null> => {
     try {
-      const releaseResponse = await fetch(
-        'https://api.github.com/repos/tarkovtracker-org/TarkovTrackerNuxt/releases?per_page=3',
-        {
-          headers: {
-            Accept: 'application/vnd.github+json',
-          },
-        }
-      );
-      if (releaseResponse.ok) {
-        const releases = (await releaseResponse.json()) as Array<Record<string, unknown>>;
-        if (Array.isArray(releases)) {
-          const releaseItems = buildReleaseItems(releases);
-          if (releaseItems.length) return releaseItems;
-        }
+      await githubReleaseRequest.refresh();
+      const releases = githubReleaseRequest.error.value ? null : githubReleaseRequest.data.value;
+      if (Array.isArray(releases)) {
+        const releaseItems = buildReleaseItems(releases);
+        if (releaseItems.length) return releaseItems;
       }
-      const commitResponse = await fetch(
-        'https://api.github.com/repos/tarkovtracker-org/TarkovTrackerNuxt/commits?per_page=40',
-        {
-          headers: {
-            Accept: 'application/vnd.github+json',
-          },
-        }
-      );
-      if (!commitResponse.ok) return null;
-      const commits = (await commitResponse.json()) as Array<Record<string, unknown>>;
+      await githubCommitRequest.refresh();
+      if (githubCommitRequest.error.value) return null;
+      const commits = githubCommitRequest.data.value;
       if (!Array.isArray(commits)) return null;
-      const commitItems = buildCommitItems(commits);
-      return commitItems;
-    } catch {
+      return buildCommitItems(commits);
+    } catch (error) {
+      logError('[DashboardChangelog] fetchGithubItems error.', error);
       return null;
     }
   };
@@ -301,6 +259,7 @@
   const formatDate = (date: string): string => {
     if (!date) return '';
     const parsed = new Date(`${date}T00:00:00Z`);
+    if (Number.isNaN(parsed.getTime())) return '';
     return parsed.toLocaleDateString(locale.value, {
       month: 'short',
       day: 'numeric',
