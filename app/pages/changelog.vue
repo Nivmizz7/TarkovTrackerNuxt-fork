@@ -18,7 +18,7 @@
       <div v-else-if="error" class="py-12 text-center">
         <UIcon name="i-mdi-alert-circle" class="text-error-400 mb-2 h-8 w-8" />
         <p class="text-surface-400 mb-4">{{ t('page.changelog.error') }}</p>
-        <UButton color="primary" variant="soft" @click="loadChangelog(true)">
+        <UButton color="primary" variant="soft" @click="loadChangelog">
           {{ t('page.changelog.retry') }}
         </UButton>
       </div>
@@ -97,34 +97,64 @@
   </UContainer>
 </template>
 <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
-  type ChangelogStats = {
-    additions: number;
-    deletions: number;
-  };
-  type ChangelogBullet = string | { text: string; stats?: ChangelogStats };
-  type ChangelogItem = {
-    date: string;
-    label?: string;
-    bullets: ChangelogBullet[];
-    stats?: ChangelogStats;
-  };
-  type ChangelogResponse = {
-    source: 'releases' | 'commits';
-    items: ChangelogItem[];
-  };
+  import { logger } from '@/utils/logger';
+  import type {
+    ChangelogBullet,
+    ChangelogItem,
+    ChangelogResponse,
+    ChangelogStats,
+  } from '@/types/changelog';
   const { locale, t } = useI18n({ useScope: 'global' });
-  useSeoMeta({
-    title: 'Changelog',
-    description: 'View the latest updates and changes to TarkovTracker.',
+  definePageMeta({
+    layout: 'default',
   });
+  useHead(() => ({
+    title: t('page.changelog.title'),
+    meta: [
+      {
+        name: 'description',
+        content: t('page.changelog.description'),
+      },
+    ],
+  }));
   const entries = ref<ChangelogItem[]>([]);
-  const pending = ref(true);
   const error = ref(false);
   const loadingMore = ref(false);
   const currentLimit = ref(20);
-  const hasMore = computed(() => entries.value.length >= currentLimit.value);
+  const hasMore = ref(false);
+  const {
+    data: changelogData,
+    pending,
+    error: fetchError,
+    refresh,
+  } = useFetch<ChangelogResponse>(() => `/api/changelog?limit=${currentLimit.value}`, {
+    server: true,
+    immediate: true,
+    key: () => `changelog-${currentLimit.value}`,
+    watch: false,
+  });
+  watchEffect(() => {
+    if (fetchError.value) {
+      logger.error('Failed to fetch changelog entries', fetchError.value);
+      error.value = true;
+      entries.value = [];
+      hasMore.value = false;
+      return;
+    }
+    if (changelogData.value?.error) {
+      logger.error('Failed to fetch changelog entries', {
+        error: changelogData.value.error,
+      });
+      error.value = true;
+      entries.value = [];
+      hasMore.value = false;
+      return;
+    }
+    error.value = false;
+    entries.value = changelogData.value?.items ?? [];
+    hasMore.value = changelogData.value?.hasMore ?? false;
+  });
   const groupedEntries = computed(() => {
     const groups = new Map<string, ChangelogItem[]>();
     for (const entry of entries.value) {
@@ -185,36 +215,13 @@
   const cleanBulletText = (text: string): string => {
     return text.replace(/^(added|fixed|improved|updated)\s+/i, '').replace(/\.$/, '');
   };
-  const loadChangelog = async (force = false) => {
-    if (pending.value && !force) return;
-    pending.value = true;
-    error.value = false;
-    try {
-      const response = await fetch(`/api/changelog?limit=${currentLimit.value}`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch changelog');
-      }
-      const data = (await response.json()) as ChangelogResponse | null;
-      if (!data || !Array.isArray(data.items)) {
-        throw new Error('Invalid response format');
-      }
-      entries.value = data.items;
-    } catch {
-      error.value = true;
-      entries.value = [];
-    } finally {
-      pending.value = false;
-    }
+  const loadChangelog = async () => {
+    await refresh();
   };
   const loadMore = async () => {
     loadingMore.value = true;
     currentLimit.value += 20;
-    await loadChangelog(true);
+    await loadChangelog();
     loadingMore.value = false;
   };
-  onMounted(() => {
-    loadChangelog(true);
-  });
 </script>
