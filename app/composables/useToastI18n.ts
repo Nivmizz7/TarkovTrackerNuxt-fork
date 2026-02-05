@@ -1,4 +1,5 @@
 import { useI18n } from 'vue-i18n';
+import { logger } from '@/utils/logger';
 export type LocalIgnoredReason = 'other_account' | 'unsaved' | 'guest';
 export type ToastTranslate = (key: string, params?: Record<string, unknown>) => string;
 const LOAD_FAILED_TOAST_DURATION = 10000;
@@ -12,7 +13,8 @@ export const useToastI18n = (translate?: ToastTranslate): UseToastI18nReturn => 
   const getGlobalT = (): ToastTranslate => {
     try {
       return useI18n({ useScope: 'global' }).t;
-    } catch {
+    } catch (err) {
+      logger.warn('[useToastI18n] Failed to resolve global i18n translator. Using fallback.', err);
       return (key: string) => key;
     }
   };

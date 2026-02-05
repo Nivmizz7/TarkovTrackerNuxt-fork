@@ -1,5 +1,5 @@
 export function useTaskSettingsDrawer(): {
-  isOpen: Ref<boolean>;
+  isOpen: globalThis.Ref<boolean>;
   open: () => void;
   close: () => void;
   toggle: () => void;

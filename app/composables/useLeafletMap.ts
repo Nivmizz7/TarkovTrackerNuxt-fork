@@ -401,8 +401,8 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     for (let index = 0; index < floors.value.length; index++) {
       const floor = floors.value[index];
       if (!floor) continue;
-      const safeFloorId = floor.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      const floorGroup = svgElement.querySelector(`[id="${safeFloorId}"]`);
+      const escapedFloorId = CSS.escape(floor);
+      const floorGroup = svgElement.querySelector(`[id="${escapedFloorId}"]`);
       if (floorGroup instanceof SVGElement) {
         const keepWith = floorGroup.getAttribute('data-keep-with-group');
         const isSelected = floor === selectedFloor.value;

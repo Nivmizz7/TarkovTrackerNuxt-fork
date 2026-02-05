@@ -8,7 +8,7 @@ export type UseMapResizeOptions = {
   step?: number;
 };
 export interface UseMapResizeReturn {
-  mapHeight: Readonly<Ref<number>>;
+  mapHeight: Ref<number>;
   mapHeightMax: Readonly<Ref<number>>;
   mapHeightMin: number;
   resizeHandleRef: Ref<HTMLElement | null>;
@@ -84,7 +84,7 @@ export function useMapResize(options: UseMapResizeOptions = {}): UseMapResizeRet
     const handle = resizeHandleRef.value;
     if (!handle) return;
     event.preventDefault();
-    handle.setPointerCapture(event.pointerId);
+    handle?.setPointerCapture?.(event.pointerId);
     resizeState.value = {
       startY: event.clientY,
       startHeight: mapHeight.value,
@@ -95,7 +95,7 @@ export function useMapResize(options: UseMapResizeOptions = {}): UseMapResizeRet
     window.addEventListener('pointermove', onResizeMove);
     window.addEventListener('pointerup', stopResize);
     window.addEventListener('pointercancel', stopResize);
-    handle.addEventListener('lostpointercapture', stopResize);
+    handle?.addEventListener?.('lostpointercapture', stopResize);
   };
   const onResizeKeydown = (event: KeyboardEvent) => {
     if (event.key === 'ArrowUp') {

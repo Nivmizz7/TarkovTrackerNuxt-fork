@@ -103,9 +103,9 @@ export function useTaskNotification() {
   const undoLastAction = () => {
     if (!undoData.value) return;
     const { taskId, taskName, action } = undoData.value;
+    const taskToUndo = tasks.value.find((task) => task.id === taskId);
     if (action === 'complete') {
       tarkovStore.setTaskUncompleted(taskId);
-      const taskToUndo = tasks.value.find((task) => task.id === taskId);
       if (taskToUndo?.objectives) {
         handleTaskObjectives(taskToUndo.objectives, 'setTaskObjectiveUncomplete');
         handleAlternatives(
@@ -117,7 +117,6 @@ export function useTaskNotification() {
       updateTaskStatus('page.tasks.questcard.undo_complete', taskName);
     } else if (action === 'uncomplete') {
       tarkovStore.setTaskComplete(taskId);
-      const taskToUndo = tasks.value.find((task) => task.id === taskId);
       if (taskToUndo?.objectives) {
         handleTaskObjectives(taskToUndo.objectives, 'setTaskObjectiveComplete');
         handleAlternatives(taskToUndo.alternatives, 'setTaskFailed', 'setTaskObjectiveComplete');
@@ -133,14 +132,12 @@ export function useTaskNotification() {
       updateTaskStatus('page.tasks.questcard.undo_uncomplete', taskName);
     } else if (action === 'reset_failed') {
       tarkovStore.setTaskFailed(taskId);
-      const taskToUndo = tasks.value.find((task) => task.id === taskId);
       if (taskToUndo?.objectives) {
         clearTaskObjectives(taskToUndo.objectives);
       }
       updateTaskStatus('page.tasks.questcard.undo_reset_failed', taskName);
     } else if (action === 'fail') {
       tarkovStore.setTaskUncompleted(taskId);
-      const taskToUndo = tasks.value.find((task) => task.id === taskId);
       if (taskToUndo?.objectives) {
         handleTaskObjectives(taskToUndo.objectives, 'setTaskObjectiveUncomplete');
       }

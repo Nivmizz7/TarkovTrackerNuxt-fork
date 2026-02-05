@@ -5,11 +5,16 @@ export interface UseTaskCardLinksOptions {
   task: () => Task;
   objectives: () => TaskObjective[];
 }
+type SelectedTaskItem = {
+  id: string;
+  name?: string;
+  wikiLink?: string;
+};
 export function useTaskCardLinks(options: UseTaskCardLinksOptions) {
   const { task, objectives } = options;
   const router = useRouter();
   const tarkovStore = useTarkovStore();
-  const selectedItem = ref<{ id: string; wikiLink?: string } | null>(null);
+  const selectedItem = ref<SelectedTaskItem | null>(null);
   const tarkovDevTaskUrl = computed(() => `https://tarkov.dev/task/${task().id}`);
   const copyTextToClipboard = async (text: string): Promise<boolean> => {
     try {
@@ -43,11 +48,11 @@ export function useTaskCardLinks(options: UseTaskCardLinksOptions) {
   const openTaskWiki = () => {
     const wikiLink = task().wikiLink;
     if (wikiLink) {
-      window.open(wikiLink, '_blank');
+      window.open(wikiLink, '_blank', 'noopener,noreferrer');
     }
   };
   const openTaskOnTarkovDev = () => {
-    window.open(tarkovDevTaskUrl.value, '_blank');
+    window.open(tarkovDevTaskUrl.value, '_blank', 'noopener,noreferrer');
   };
   const getTaskDataIssueUrl = (): string => {
     const currentTask = task();
@@ -78,24 +83,30 @@ export function useTaskCardLinks(options: UseTaskCardLinksOptions) {
     return `https://issue.tarkovtracker.org/data?${params.toString()}`;
   };
   const openTaskDataIssue = () => {
-    window.open(getTaskDataIssueUrl(), '_blank');
+    window.open(getTaskDataIssueUrl(), '_blank', 'noopener,noreferrer');
   };
-  const setSelectedItem = (item: { id: string; wikiLink?: string } | null) => {
+  const setSelectedItem = (item: SelectedTaskItem | null) => {
     selectedItem.value = item;
   };
   const openItemOnTarkovDev = () => {
     if (!selectedItem.value) return;
-    window.open(`https://tarkov.dev/item/${selectedItem.value.id}`, '_blank');
+    window.open(
+      `https://tarkov.dev/item/${selectedItem.value.id}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
   const openItemOnWiki = () => {
     if (!selectedItem.value) return;
     if (selectedItem.value.wikiLink) {
-      window.open(selectedItem.value.wikiLink, '_blank');
+      window.open(selectedItem.value.wikiLink, '_blank', 'noopener,noreferrer');
       return;
     }
+    const fallbackQuery = selectedItem.value.name?.trim() || selectedItem.value.id;
     window.open(
-      `https://escapefromtarkov.fandom.com/wiki/Special:Search?query=${selectedItem.value.id}`,
-      '_blank'
+      `https://escapefromtarkov.fandom.com/wiki/Special:Search?query=${encodeURIComponent(fallbackQuery)}`,
+      '_blank',
+      'noopener,noreferrer'
     );
   };
   return {

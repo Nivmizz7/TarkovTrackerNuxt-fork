@@ -3,6 +3,7 @@ import { useMetadataStore } from '@/stores/useMetadata';
 import { useTarkovStore } from '@/stores/useTarkov';
 import { MANUAL_FAIL_TASK_IDS } from '@/utils/constants';
 import { logger } from '@/utils/logger';
+import type { Ref } from '#imports';
 export type RepairConfirmResolver = (confirmed: boolean) => void;
 export type RequestRepairConfirm = () => Promise<boolean>;
 export interface RepairableTask {
@@ -13,7 +14,7 @@ export interface UseTaskRepairOptions {
   requestRepairConfirm: RequestRepairConfirm;
 }
 export interface UseTaskRepairReturn {
-  failedTasksCount: Readonly<globalThis.Ref<number>>;
+  failedTasksCount: Readonly<Ref<number>>;
   repairFailedTasks: () => Promise<void>;
   buildAlternativeSources: () => Map<string, string[]>;
   shouldTaskBeFailed: (task: RepairableTask, alternativeSources: Map<string, string[]>) => boolean;

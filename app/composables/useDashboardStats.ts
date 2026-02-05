@@ -5,6 +5,7 @@ import { useTarkovStore } from '@/stores/useTarkov';
 import { CURRENCY_ITEM_IDS } from '@/utils/constants';
 import { isTaskAvailableForEdition as checkTaskEdition } from '@/utils/editionHelpers';
 import { buildTaskTypeFilterOptions, filterTasksByTypeSettings } from '@/utils/taskTypeFilters';
+import type { ComputedRef } from '#imports';
 import type { TaskObjective, Trader } from '@/types/tarkov';
 export type TraderStats = {
   id: Trader['id'];

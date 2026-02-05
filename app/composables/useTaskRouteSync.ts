@@ -3,6 +3,7 @@ import { usePreferencesStore } from '@/stores/usePreferences';
 import { isValidPrimaryView } from '@/types/taskFilter';
 import { logger } from '@/utils/logger';
 import { getQueryString } from '@/utils/routeHelpers';
+import type { Ref } from '#imports';
 import type { TarkovMap, Trader } from '@/types/tarkov';
 import type { TaskPrimaryView } from '@/types/taskFilter';
 import type { LocationQuery, LocationQueryRaw } from 'vue-router';
@@ -166,7 +167,8 @@ export function useTaskRouteSync({
       const prevPrimaryView = prevValues[0];
       const shouldReplace = normalizedPrimary === prevPrimaryView;
       syncRoute(buildViewQuery(route.query, normalizedPrimary, mapView, traderView), shouldReplace);
-    }
+    },
+    { flush: 'post' }
   );
   return {
     isSyncingFromRoute,
