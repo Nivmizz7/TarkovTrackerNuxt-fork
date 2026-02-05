@@ -25,6 +25,7 @@ export interface MapSvgConfig {
 }
 export interface MapTileConfig {
   tilePath: string;
+  tileFallbacks?: string[];
   coordinateRotation: number;
   transform?: [number, number, number, number];
   bounds: number[][];
@@ -241,11 +242,16 @@ export function isValidMapSvgConfig(svg: unknown): svg is MapSvgConfig {
 export function isValidMapTileConfig(tile: unknown): tile is MapTileConfig {
   if (!tile || typeof tile !== 'object') return false;
   const config = tile as Record<string, unknown>;
+  const fallbackValue = config.tileFallbacks;
+  const hasValidFallbacks =
+    fallbackValue === undefined ||
+    (Array.isArray(fallbackValue) && fallbackValue.every((value) => typeof value === 'string'));
   return (
     typeof config.tilePath === 'string' &&
     typeof config.coordinateRotation === 'number' &&
     Array.isArray(config.bounds) &&
-    config.bounds.length >= 2
+    config.bounds.length >= 2 &&
+    hasValidFallbacks
   );
 }
 export function normalizeTileConfig(tileConfig: MapTileConfig): MapTileConfig {

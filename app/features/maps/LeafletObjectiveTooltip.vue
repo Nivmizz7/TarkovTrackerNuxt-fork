@@ -100,7 +100,11 @@
       return i18nT(...args);
     }
     const [key] = args;
-    return typeof key === 'string' ? key : '';
+    if (typeof key === 'string') {
+      return key;
+    }
+    logger.warn('LeafletObjectiveTooltip: invalid translation key', { key });
+    return '';
   }) as Composer['t'];
   const router = inject<Router>('router');
   const metadataStore = useMetadataStore();

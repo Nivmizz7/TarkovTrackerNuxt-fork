@@ -62,6 +62,9 @@
   "lab": {
     "tile": {
       "tilePath": "https://assets.tarkov.dev/maps/labs_v4/1st/{z}/{x}/{y}.png",
+      "tileFallbacks": [
+        "https://tarkovtracker.github.io/tarkovdata/maps/labs_v4/1st/{z}/{x}/{y}.png"
+      ],
       "coordinateRotation": 270,
       "transform": [0.575, 281.2, 0.575, 193.7],
       "bounds": [

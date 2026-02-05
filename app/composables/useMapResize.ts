@@ -1,4 +1,5 @@
 import { useStorage, useWindowSize } from '@vueuse/core';
+import type { Ref } from 'vue';
 export type UseMapResizeOptions = {
   storageKey?: string;
   defaultHeight?: number;
@@ -7,11 +8,11 @@ export type UseMapResizeOptions = {
   step?: number;
 };
 export interface UseMapResizeReturn {
-  mapHeight: Readonly<globalThis.Ref<number>>;
-  mapHeightMax: Readonly<globalThis.Ref<number>>;
+  mapHeight: Readonly<Ref<number>>;
+  mapHeightMax: Readonly<Ref<number>>;
   mapHeightMin: number;
-  resizeHandleRef: globalThis.Ref<HTMLElement | null>;
-  isResizing: Readonly<globalThis.Ref<boolean>>;
+  resizeHandleRef: Ref<HTMLElement | null>;
+  isResizing: Readonly<Ref<boolean>>;
   startResize: (event: PointerEvent) => void;
   stopResize: () => void;
   onResizeKeydown: (event: KeyboardEvent) => void;
