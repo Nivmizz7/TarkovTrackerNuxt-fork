@@ -37,7 +37,7 @@
             </p>
             <SelectMenuFixed
               v-model="taskCardDensity"
-              :items="DENSITY_OPTIONS"
+              :items="densityOptions"
               value-key="value"
               label-key="label"
             />
@@ -53,7 +53,7 @@
               <span class="text-sm font-medium">{{ $t('page.tasks.title', 'Tasks') }}</span>
               <SelectMenuFixed
                 v-model="taskDefaultView"
-                :items="TASK_VIEW_OPTIONS"
+                :items="taskViewOptions"
                 value-key="value"
                 label-key="label"
               />
@@ -62,7 +62,7 @@
               <span class="text-sm font-medium">{{ $t('page.hideout.title', 'Hideout') }}</span>
               <SelectMenuFixed
                 v-model="hideoutDefaultView"
-                :items="HIDEOUT_VIEW_OPTIONS"
+                :items="hideoutViewOptions"
                 value-key="value"
                 label-key="label"
               />
@@ -183,7 +183,7 @@
     get: () => preferencesStore.getTaskCardDensity,
     set: (val) => preferencesStore.setTaskCardDensity(val),
   });
-  const DENSITY_OPTIONS = computed(() => [
+  const densityOptions = computed(() => [
     { label: t('settings.density.compact', 'Compact'), value: 'compact' },
     { label: t('settings.density.comfortable', 'Comfortable'), value: 'comfortable' },
   ]);
@@ -191,7 +191,7 @@
     get: () => preferencesStore.getTaskPrimaryView,
     set: (val) => preferencesStore.setTaskPrimaryView(val),
   });
-  const TASK_VIEW_OPTIONS = computed(() => [
+  const taskViewOptions = computed(() => [
     { label: t('tasks.view.all', 'List'), value: 'all' },
     { label: t('tasks.view.map', 'Map'), value: 'maps' },
     { label: t('tasks.view.traders', 'Traders'), value: 'traders' },
@@ -200,7 +200,7 @@
     get: () => preferencesStore.getHideoutPrimaryView,
     set: (val) => preferencesStore.setHideoutPrimaryView(val),
   });
-  const HIDEOUT_VIEW_OPTIONS = computed(() => [
+  const hideoutViewOptions = computed(() => [
     { label: t('hideout.view.available', 'Available'), value: 'available' },
     { label: t('hideout.view.all', 'All'), value: 'all' },
     { label: t('hideout.view.maxed', 'Maxed'), value: 'maxed' },
