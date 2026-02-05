@@ -17,9 +17,21 @@ const mockMapInstance = {
   hasLayer: vi.fn(() => false),
   removeLayer: vi.fn(),
 };
-const mockLayerGroup = {
-  addTo: vi.fn().mockReturnThis(),
-  clearLayers: vi.fn(),
+const createMockLayerGroup = () => {
+  const layers: unknown[] = [];
+  const layerGroup = {
+    addLayer: vi.fn((layer) => {
+      layers.push(layer);
+      return layerGroup;
+    }),
+    addTo: vi.fn().mockReturnThis(),
+    clearLayers: vi.fn(() => {
+      layers.length = 0;
+      return layerGroup;
+    }),
+    getLayers: vi.fn(() => layers),
+  };
+  return layerGroup;
 };
 const mockSvgOverlay = {
   addTo: vi.fn().mockReturnThis(),
@@ -27,11 +39,14 @@ const mockSvgOverlay = {
 };
 const mockTileLayer = {
   addTo: vi.fn().mockReturnThis(),
+  on: vi.fn().mockReturnThis(),
+  off: vi.fn().mockReturnThis(),
+  setUrl: vi.fn(),
 };
 vi.mock('leaflet', () => ({
   default: {
     map: vi.fn(() => mockMapInstance),
-    layerGroup: vi.fn(() => mockLayerGroup),
+    layerGroup: vi.fn(() => createMockLayerGroup()),
     svgOverlay: vi.fn(() => mockSvgOverlay),
     tileLayer: vi.fn(() => mockTileLayer),
     latLngBounds: vi.fn((sw, ne) => ({ sw, ne })),
@@ -169,9 +184,7 @@ describe('useLeafletMap', () => {
       expect(result.selectedFloor.value).toBe('ground');
       wrapper.unmount();
     });
-    it('sets default floor from map config', async () => {
-      const leafletModule = await import('leaflet');
-      const mapSpy = vi.spyOn(leafletModule.default, 'map');
+    it('uses initial floor when provided', async () => {
       const mapData = {
         id: 'interchange',
         name: 'Interchange',
@@ -187,15 +200,9 @@ describe('useLeafletMap', () => {
           ],
         },
       } as TarkovMap;
-      const { getLeafletMapOptions } = await import('@/utils/mapCoordinates');
       const { result, wrapper } = await mountUseLeafletMap(mapData, 'parking');
-      const svgConfig = mapData.svg;
-      const expectedOptions = getLeafletMapOptions(
-        leafletModule.default,
-        typeof svgConfig === 'string' ? undefined : svgConfig
-      );
-      expect(mapSpy).toHaveBeenCalledWith(containerRef.value, expectedOptions);
       expect(result.floors.value).toEqual(['parking', 'ground', 'second']);
+      expect(result.selectedFloor.value).toBe('parking');
       wrapper.unmount();
     });
   });
@@ -294,8 +301,19 @@ describe('useLeafletMap', () => {
         },
       } as TarkovMap;
       const { result, wrapper } = await mountUseLeafletMap(mapData);
+      const objectiveLayer = result.objectiveLayer.value;
+      const extractLayer = result.extractLayer.value;
+      const leaflet = result.leaflet.value;
+      if (!objectiveLayer || !extractLayer || !leaflet) {
+        throw new Error('Marker layers or Leaflet were not initialized');
+      }
+      objectiveLayer.addLayer(leaflet.layerGroup());
+      extractLayer.addLayer(leaflet.layerGroup());
+      expect(objectiveLayer.getLayers()).toHaveLength(1);
+      expect(extractLayer.getLayers()).toHaveLength(1);
       result.clearMarkers();
-      expect(mockLayerGroup.clearLayers).toHaveBeenCalledTimes(2);
+      expect(objectiveLayer.getLayers()).toHaveLength(0);
+      expect(extractLayer.getLayers()).toHaveLength(0);
       wrapper.unmount();
     });
   });

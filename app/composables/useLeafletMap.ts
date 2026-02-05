@@ -205,6 +205,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       return JSON.stringify({
         type: 'tile',
         tilePath: tileConfig.tilePath,
+        tileFallbacks: tileConfig.tileFallbacks ?? null,
         minZoom: tileConfig.minZoom ?? null,
         maxZoom: tileConfig.maxZoom ?? null,
       });
@@ -297,19 +298,49 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     const leafletMap = mapInstance.value;
     if (!leafletMap) return;
     if (tileLayer.value) {
+      tileLayer.value.off();
       leafletMap.removeLayer(tileLayer.value);
       tileLayer.value = null;
     }
     try {
       const bounds = getLeafletBounds(tileConfig);
-      tileLayer.value = L.tileLayer(tileConfig.tilePath, {
+      const tilePaths = [tileConfig.tilePath, ...(tileConfig.tileFallbacks ?? [])];
+      tileLayer.value = L.tileLayer(tilePaths[0] ?? tileConfig.tilePath, {
         minZoom: tileConfig.minZoom ?? 1,
         maxZoom: tileConfig.maxZoom ?? 6,
         noWrap: true,
         bounds,
         pane: 'mapBackground',
       });
-      tileLayer.value.addTo(leafletMap);
+      const layer = tileLayer.value;
+      const attachTileErrorHandler = (currentIndex: number) => {
+        const handleTileError = (event: L.LeafletEvent) => {
+          if (!layer || tileLayer.value !== layer) return;
+          const failedUrl = tilePaths[currentIndex] ?? tileConfig.tilePath;
+          const nextIndex = currentIndex + 1;
+          const nextUrl = tilePaths[nextIndex];
+          if (nextUrl) {
+            logger.warn(`Tile layer failed for ${failedUrl}. Trying fallback: ${nextUrl}`, event);
+            layer.off('tileerror', handleTileError);
+            layer.setUrl(nextUrl, true);
+            attachTileErrorHandler(nextIndex);
+            return;
+          }
+          logger.error(`Tile layer failed for ${failedUrl}. No fallback URLs available.`, event);
+          layer.off('tileerror', handleTileError);
+          if (leafletMap.hasLayer(layer)) {
+            leafletMap.removeLayer(layer);
+          }
+          if (tileLayer.value === layer) {
+            tileLayer.value = null;
+          }
+        };
+        layer.on('tileerror', handleTileError);
+      };
+      if (layer) {
+        attachTileErrorHandler(0);
+        layer.addTo(leafletMap);
+      }
       if (svgLayer.value) {
         leafletMap.removeLayer(svgLayer.value);
         svgLayer.value = null;

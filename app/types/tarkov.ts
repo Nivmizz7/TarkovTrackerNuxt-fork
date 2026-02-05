@@ -291,6 +291,7 @@ export interface MapSvgConfig {
 }
 export interface MapTileConfig {
   tilePath: string;
+  tileFallbacks?: string[];
   coordinateRotation: number;
   transform?: [number, number, number, number];
   bounds: [[number, number], [number, number]];
@@ -402,6 +403,7 @@ export interface NeededItemHideoutModule extends NeededItemBase {
   needType: 'hideoutModule';
   hideoutModule: HideoutModule;
 }
+export type Need = NeededItemTaskObjective | NeededItemHideoutModule;
 export type GroupedItemInfo = Pick<
   TarkovItem,
   'id' | 'iconLink' | 'image512pxLink' | 'wikiLink' | 'link'
