@@ -27,7 +27,6 @@ function extractSvgFilename(svgPath) {
   return parts[parts.length - 1];
 }
 
-
 /**
  * Extracts unique floor names from layers array
  * Layers have svgLayerName property for the floor they belong to
@@ -66,17 +65,41 @@ function extractFloors(layers, defaultLayer) {
     'Ground_Floor',
     'First_Level',
     'First_Floor',
+    '1st_Floor',
     'Second_Level',
     'Second_Floor',
+    '2nd_Floor',
     'Third_Level',
     'Third_Floor',
+    '3rd_Floor',
+    'Fourth_Level',
     'Fourth_Floor',
+    '4th_Floor',
+    'Fifth_Level',
     'Fifth_Floor',
+    '5th_Floor',
   ];
+  // Normalize floor names for consistent ordering
+  const floorAliases = {
+    Ground_Floor: 'Ground_Level',
+    First_Floor: 'First_Level',
+    '1st_Floor': 'First_Level',
+    Second_Floor: 'Second_Level',
+    '2nd_Floor': 'Second_Level',
+    Third_Floor: 'Third_Level',
+    '3rd_Floor': 'Third_Level',
+    Fourth_Floor: 'Fourth_Level',
+    '4th_Floor': 'Fourth_Level',
+    Fifth_Floor: 'Fifth_Level',
+    '5th_Floor': 'Fifth_Level',
+  };
+  const normalizeFloor = (name) => floorAliases[name] || name;
 
   return Array.from(floors).sort((a, b) => {
-    const aIndex = floorOrder.indexOf(a);
-    const bIndex = floorOrder.indexOf(b);
+    const aNorm = normalizeFloor(a);
+    const bNorm = normalizeFloor(b);
+    const aIndex = floorOrder.indexOf(a) !== -1 ? floorOrder.indexOf(a) : floorOrder.indexOf(aNorm);
+    const bIndex = floorOrder.indexOf(b) !== -1 ? floorOrder.indexOf(b) : floorOrder.indexOf(bNorm);
     if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
     if (aIndex === -1) return 1;
     if (bIndex === -1) return -1;
@@ -174,19 +197,20 @@ function normalizeMapKey(normalizedName) {
 }
 
 /**
- * Deep merges source object into target
+ * Deep merges source object into target (non-mutating)
+ * @returns A new merged object without modifying target
  */
 function deepMerge(target, source) {
+  const result = { ...target };
   for (const key of Object.keys(source)) {
     if (key === '$comment') continue;
     if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      if (!target[key]) target[key] = {};
-      deepMerge(target[key], source[key]);
+      result[key] = deepMerge(result[key] || {}, source[key]);
     } else {
-      target[key] = source[key];
+      result[key] = source[key];
     }
   }
-  return target;
+  return result;
 }
 
 /**
@@ -251,12 +275,8 @@ async function syncMaps() {
 
   console.log(`\nWritten to ${OUTPUT_PATH}`);
   console.log(`Total maps: ${Object.keys(sorted).length}`);
-  console.log(
-    `  Available: ${Object.values(sorted).filter((m) => !m.unavailable).length}`
-  );
-  console.log(
-    `  Unavailable: ${Object.values(sorted).filter((m) => m.unavailable).length}`
-  );
+  console.log(`  Available: ${Object.values(sorted).filter((m) => !m.unavailable).length}`);
+  console.log(`  Unavailable: ${Object.values(sorted).filter((m) => m.unavailable).length}`);
 }
 
 syncMaps().catch((err) => {
