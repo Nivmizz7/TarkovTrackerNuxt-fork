@@ -37,7 +37,7 @@
           </div>
           <button
             class="text-surface-400 hover:text-white"
-            aria-label="Close modal"
+            :aria-label="$t('generic.close_button', 'Close')"
             @click="$emit('update:open', false)"
           >
             <UIcon name="i-mdi-close" class="h-6 w-6" />
@@ -168,7 +168,7 @@
                       :alt="getStation(mod)?.name"
                       class="h-6 w-6 shrink-0"
                     />
-                    <span class="text-info-400 hover:text-info-300 truncate text-sm font-medium">
+                    <span class="text-link hover:text-link-hover truncate text-sm font-medium">
                       {{
                         getStation(mod)?.name ||
                         $t('needed_items.unknown_station', 'Unknown Station')

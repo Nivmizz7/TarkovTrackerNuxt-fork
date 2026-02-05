@@ -50,8 +50,7 @@
             block
             size="xl"
             variant="solid"
-            :style="{ backgroundColor: 'var(--color-twitch)' }"
-            class="hover:bg-twitch-hover hover:shadow-twitch/25 flex h-12 w-full items-center justify-center text-white ring-1 ring-white/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            class="hover:bg-twitch-hover hover:shadow-twitch bg-twitch flex h-12 w-full items-center justify-center text-white ring-1 ring-white/10 transition-all duration-200 hover:-translate-y-0.5"
             :loading="loading.twitch"
             :disabled="oauthDisabled"
             :aria-label="$t('page.login.continue_twitch')"
@@ -66,8 +65,7 @@
             block
             size="xl"
             variant="solid"
-            :style="{ backgroundColor: 'var(--color-discord)' }"
-            class="hover:bg-discord-hover hover:shadow-discord/25 flex h-12 w-full items-center justify-center text-white ring-1 ring-white/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            class="hover:bg-discord-hover hover:shadow-discord bg-discord flex h-12 w-full items-center justify-center text-white ring-1 ring-white/10 transition-all duration-200 hover:-translate-y-0.5"
             :loading="loading.discord"
             :disabled="oauthDisabled"
             :aria-label="$t('page.login.continue_discord')"
@@ -122,8 +120,7 @@
             block
             size="xl"
             variant="solid"
-            :style="{ backgroundColor: 'var(--color-github)' }"
-            class="ring-surface-600 hover:bg-github-hover hover:shadow-github/25 flex h-12 w-full items-center justify-center text-white ring-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            class="ring-surface-600 hover:bg-github-hover hover:shadow-github bg-github flex h-12 w-full items-center justify-center text-white ring-1 transition-all duration-200 hover:-translate-y-0.5"
             :loading="loading.github"
             :disabled="oauthDisabled"
             :aria-label="$t('page.login.continue_github')"
@@ -248,6 +245,7 @@
       window.location.href = url;
     }, 1500);
   };
+  let activeOAuthCleanup: (() => void) | null = null;
   const openPopupOrRedirect = (
     url: string,
     provider: 'twitch' | 'discord' | 'google' | 'github'
@@ -353,9 +351,14 @@
         logger.debug('[Login] Could not close popup (cross-origin)', err);
         popup = null;
       }
+      activeOAuthCleanup = null;
     };
+    activeOAuthCleanup = cleanup;
     window.addEventListener('message', messageHandler);
   };
+  onBeforeUnmount(() => {
+    if (activeOAuthCleanup) activeOAuthCleanup();
+  });
   const signInWithTwitch = async () => {
     try {
       loading.value.twitch = true;

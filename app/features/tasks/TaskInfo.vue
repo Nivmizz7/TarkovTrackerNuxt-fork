@@ -181,7 +181,7 @@
   };
   const openTaskWiki = () => {
     if (selectedTask.value?.wikiLink) {
-      window.open(selectedTask.value.wikiLink, '_blank');
+      window.open(selectedTask.value.wikiLink, '_blank', 'noopener,noreferrer');
     }
   };
 </script>

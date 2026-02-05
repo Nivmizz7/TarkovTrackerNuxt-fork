@@ -39,7 +39,7 @@
     },
     sameAs: ['https://github.com/tarkovtracker-org/TarkovTracker'],
   };
-  useHead(() => ({
+  useHeadSafe(() => ({
     htmlAttrs: {
       lang: locale.value,
     },
@@ -52,7 +52,7 @@
     script: [
       {
         type: 'application/ld+json',
-        innerHTML: JSON.stringify(webApplicationSchema),
+        textContent: JSON.stringify(webApplicationSchema),
       },
     ],
   }));

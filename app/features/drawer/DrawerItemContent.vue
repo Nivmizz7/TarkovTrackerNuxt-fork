@@ -38,9 +38,8 @@
       <span class="sr-only">({{ $t('common.opens_in_new_tab', 'opens in new tab') }})</span>
     </span>
   </a>
-  <div
+  <span
     v-else
-    role="link"
     class="group flex min-h-12 cursor-not-allowed items-center rounded-sm border-l-2 border-transparent px-3 py-3 text-base font-medium text-white/50 opacity-60 transition-colors duration-200"
     :class="[props.isCollapsed ? 'justify-center' : '']"
     aria-disabled="true"
@@ -52,7 +51,7 @@
       :has-margin="props.hasMargin"
     />
     <span v-if="!props.isCollapsed" class="truncate">{{ props.labelText }}</span>
-  </div>
+  </span>
 </template>
 <script setup lang="ts">
   import { logger } from '@/utils/logger';

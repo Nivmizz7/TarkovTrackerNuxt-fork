@@ -9,10 +9,12 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n';
   const { t } = useI18n({ useScope: 'global' });
-  useSeoMeta({
+  definePageMeta({
+    layout: 'default',
+  });
+  useHead({
     title: t('page.not_found.title', 'Not Found'),
-    robots: 'noindex, nofollow',
+    meta: [{ name: 'robots', content: 'noindex, nofollow' }],
   });
 </script>
