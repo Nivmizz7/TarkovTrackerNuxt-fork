@@ -57,8 +57,8 @@ type StatsCacheEntry = { stats: ChangelogStats; timestamp: number };
 type GitHubConfig = { owner: string; repo: string; baseUrl: string };
 const logger = createLogger('Changelog');
 const changelogConfig = (() => {
-  const MAX_CACHE_ENTRIES = 1000;
-  const CACHE_TTL_MS = 30 * 60 * 1000;
+  const MAX_CACHE_ENTRIES = 1000; // Local in-memory only; cross-instance persistence needs useStorage() + external KV/Redis.
+  const CACHE_TTL_MS = 30 * 60 * 1000; // Best-effort per-instance TTL; cold starts clear this cache.
   return {
     DEFAULT_OWNER: 'tarkovtracker-org',
     DEFAULT_REPO: 'TarkovTracker',
@@ -69,13 +69,13 @@ const changelogConfig = (() => {
     MAX_STATS_FETCHES: 20,
     CACHE_TTL_MS,
     MAX_CACHE_ENTRIES,
-    SHARED_CACHE_PREFIX: 'changelog-stats',
-    MAX_KEY_LENGTH: 200,
-    EVICTION_BATCH_SIZE: Math.ceil(MAX_CACHE_ENTRIES * 0.1),
-    FULL_EVICTION_INTERVAL_MS: 5 * 60 * 1000,
+    SHARED_CACHE_PREFIX: 'changelog-stats', // Cache API secondary layer key prefix; cache misses always fall back to GitHub API.
+    MAX_KEY_LENGTH: 200, // Defensive bound for local/Cache API cache keys.
+    EVICTION_BATCH_SIZE: Math.ceil(MAX_CACHE_ENTRIES * 0.1), // Local in-memory eviction batch size.
+    FULL_EVICTION_INTERVAL_MS: 5 * 60 * 1000, // Local in-memory eviction cadence; not shared across instances.
     cache: {
-      statsCache: new LRUCache<string, StatsCacheEntry>({ max: MAX_CACHE_ENTRIES }),
-      lastFullEviction: 0,
+      statsCache: new LRUCache<string, StatsCacheEntry>({ max: MAX_CACHE_ENTRIES }), // Non-persistent per-instance cache; reset on cold starts.
+      lastFullEviction: 0, // Non-persistent local timestamp; Cache API + GitHub fallback handle cross-instance misses.
     },
   };
 })();
