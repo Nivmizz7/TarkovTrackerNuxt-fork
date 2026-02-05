@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { reactive, computed, nextTick } from 'vue';
+import { nextTick, reactive } from 'vue';
 const mockPreferencesState = reactive({
   taskTeamAllHidden: false,
   itemsTeamAllHidden: false,
@@ -26,7 +26,7 @@ const mockPreferencesStore = {
   },
   setQuestTeamHideAll: vi.fn(),
   setItemsTeamHideAll: vi.fn(),
-  setItemsTeamNonFIR: vi.fn(),
+  setItemsTeamHideNonFIR: vi.fn(),
   setItemsTeamHideHideout: vi.fn(),
   setMapTeamHideAll: vi.fn(),
 };
@@ -59,49 +59,52 @@ describe('TeamOptions preferences', () => {
     mockPreferencesState.mapTeamAllHidden = false;
     vi.clearAllMocks();
   });
-  describe('taskHideAll computed', () => {
-    it('returns current taskTeamAllHidden value', () => {
-      const taskHideAll = computed({
-        get: () => mockPreferencesState.taskTeamAllHidden,
-        set: (value) => {
-          mockPreferencesState.taskTeamAllHidden = value;
-        },
-      });
-      expect(taskHideAll.value).toBe(false);
-      mockPreferencesState.taskTeamAllHidden = true;
-      expect(taskHideAll.value).toBe(true);
+  describe('taskHideAll checkbox', () => {
+    it('calls setQuestTeamHideAll when toggled on', async () => {
+      const wrapper = await mountTeamOptions();
+      const taskInput = wrapper.find('[data-testid="task-checkbox"]');
+      expect(taskInput.exists()).toBe(true);
+      await taskInput.setValue(true);
+      expect(mockPreferencesStore.setQuestTeamHideAll).toHaveBeenCalledWith(true);
+      wrapper.unmount();
     });
-    it('sets taskTeamAllHidden when assigned', () => {
-      const taskHideAll = computed({
-        get: () => mockPreferencesState.taskTeamAllHidden,
-        set: (value) => {
-          mockPreferencesState.taskTeamAllHidden = value;
-        },
-      });
-      taskHideAll.value = true;
-      expect(mockPreferencesState.taskTeamAllHidden).toBe(true);
+    it('calls setQuestTeamHideAll when toggled off', async () => {
+      mockPreferencesState.taskTeamAllHidden = true;
+      const wrapper = await mountTeamOptions();
+      const taskInput = wrapper.find('[data-testid="task-checkbox"]');
+      expect(taskInput.exists()).toBe(true);
+      await taskInput.setValue(false);
+      expect(mockPreferencesStore.setQuestTeamHideAll).toHaveBeenCalledWith(false);
+      wrapper.unmount();
     });
   });
-  describe('itemsHideAll computed', () => {
-    it('returns current itemsTeamAllHidden value', () => {
-      const itemsHideAll = computed({
-        get: () => mockPreferencesState.itemsTeamAllHidden,
-        set: (value) => {
-          mockPreferencesState.itemsTeamAllHidden = value;
-        },
-      });
-      expect(itemsHideAll.value).toBe(false);
+  describe('itemsHideAll checkbox', () => {
+    it('calls setItemsTeamHideAll when toggled on', async () => {
+      const wrapper = await mountTeamOptions();
+      const itemsInput = wrapper.find('[data-testid="items-checkbox"]');
+      expect(itemsInput.exists()).toBe(true);
+      await itemsInput.setValue(true);
+      expect(mockPreferencesStore.setItemsTeamHideAll).toHaveBeenCalledWith(true);
+      wrapper.unmount();
+    });
+    it('calls setItemsTeamHideAll when toggled off', async () => {
       mockPreferencesState.itemsTeamAllHidden = true;
-      expect(itemsHideAll.value).toBe(true);
+      const wrapper = await mountTeamOptions();
+      const itemsInput = wrapper.find('[data-testid="items-checkbox"]');
+      expect(itemsInput.exists()).toBe(true);
+      await itemsInput.setValue(false);
+      expect(mockPreferencesStore.setItemsTeamHideAll).toHaveBeenCalledWith(false);
+      wrapper.unmount();
     });
   });
   describe('dependent toggles', () => {
     it('disables item toggles when itemsTeamAllHidden is true', async () => {
       mockPreferencesState.itemsTeamAllHidden = true;
       const wrapper = await mountTeamOptions();
-      const inputs = wrapper.findAll('input[type="checkbox"]');
-      const nonFirInput = inputs[2]?.element as HTMLInputElement;
-      const hideoutInput = inputs[3]?.element as HTMLInputElement;
+      const nonFirInput = wrapper.find('[data-testid="nonfir-checkbox"]')
+        .element as HTMLInputElement;
+      const hideoutInput = wrapper.find('[data-testid="hideout-checkbox"]')
+        .element as HTMLInputElement;
       expect(nonFirInput.disabled).toBe(true);
       expect(hideoutInput.disabled).toBe(true);
       wrapper.unmount();
@@ -109,40 +112,39 @@ describe('TeamOptions preferences', () => {
     it('enables item toggles when itemsTeamAllHidden is false', async () => {
       mockPreferencesState.itemsTeamAllHidden = false;
       const wrapper = await mountTeamOptions();
-      const inputs = wrapper.findAll('input[type="checkbox"]');
-      const nonFirInput = inputs[2]?.element as HTMLInputElement;
-      const hideoutInput = inputs[3]?.element as HTMLInputElement;
+      const nonFirInput = wrapper.find('[data-testid="nonfir-checkbox"]')
+        .element as HTMLInputElement;
+      const hideoutInput = wrapper.find('[data-testid="hideout-checkbox"]')
+        .element as HTMLInputElement;
       expect(nonFirInput.disabled).toBe(false);
       expect(hideoutInput.disabled).toBe(false);
       wrapper.unmount();
     });
   });
   describe('label computation', () => {
-    const taskHideAllLabel = computed(() =>
-      mockPreferencesState.taskTeamAllHidden
-        ? 'page.team.card.teamoptions.task_hide_all'
-        : 'page.team.card.teamoptions.task_show_all'
-    );
-    it('returns hide label when preference is true', () => {
+    it('renders hide label when preference is true', async () => {
       mockPreferencesState.taskTeamAllHidden = true;
-      expect(taskHideAllLabel.value).toBe('page.team.card.teamoptions.task_hide_all');
+      const wrapper = await mountTeamOptions();
+      const taskToggle = wrapper.find('[data-testid="task-toggle"]');
+      expect(taskToggle.text()).toContain('page.team.card.teamoptions.task_hide_all');
+      wrapper.unmount();
     });
-    it('returns show label when preference is false', () => {
+    it('renders show label when preference is false', async () => {
       mockPreferencesState.taskTeamAllHidden = false;
-      expect(taskHideAllLabel.value).toBe('page.team.card.teamoptions.task_show_all');
+      const wrapper = await mountTeamOptions();
+      const taskToggle = wrapper.find('[data-testid="task-toggle"]');
+      expect(taskToggle.text()).toContain('page.team.card.teamoptions.task_show_all');
+      wrapper.unmount();
     });
   });
-  describe('mapHideAll computed', () => {
-    it('toggles map team visibility', () => {
-      const mapHideAll = computed({
-        get: () => mockPreferencesState.mapTeamAllHidden,
-        set: (value) => {
-          mockPreferencesState.mapTeamAllHidden = value;
-        },
-      });
-      expect(mapHideAll.value).toBe(false);
-      mapHideAll.value = true;
-      expect(mockPreferencesState.mapTeamAllHidden).toBe(true);
+  describe('mapHideAll toggle', () => {
+    it('toggles map team visibility when clicked', async () => {
+      mockPreferencesState.mapTeamAllHidden = false;
+      const wrapper = await mountTeamOptions();
+      const mapCheckbox = wrapper.find('[data-testid="map-checkbox"]');
+      await mapCheckbox.setValue(true);
+      expect(mockPreferencesStore.setMapTeamHideAll).toHaveBeenCalledWith(true);
+      wrapper.unmount();
     });
   });
   describe('all preferences independent', () => {

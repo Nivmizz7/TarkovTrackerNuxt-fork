@@ -6,16 +6,28 @@
     <template #content>
       <div class="space-y-4 p-4">
         <div class="flex items-center justify-between">
-          <div class="text-sm font-medium">{{ $t(taskHideAllLabel) }}</div>
+          <div class="text-sm font-medium" data-testid="task-toggle">
+            {{ $t(taskHideAllLabel) }}
+          </div>
           <label class="relative inline-flex cursor-pointer items-center">
-            <input v-model="taskHideAll" type="checkbox" class="peer sr-only" />
+            <input
+              v-model="taskHideAll"
+              type="checkbox"
+              class="peer sr-only"
+              data-testid="task-checkbox"
+            />
             <div :class="toggleClasses"></div>
           </label>
         </div>
         <div class="flex items-center justify-between">
           <div class="text-sm font-medium">{{ $t(itemsHideAllLabel) }}</div>
           <label class="relative inline-flex cursor-pointer items-center">
-            <input v-model="itemsHideAll" type="checkbox" class="peer sr-only" />
+            <input
+              v-model="itemsHideAll"
+              type="checkbox"
+              class="peer sr-only"
+              data-testid="items-checkbox"
+            />
             <div :class="toggleClasses"></div>
           </label>
         </div>
@@ -29,6 +41,7 @@
               type="checkbox"
               :disabled="itemsHideAll"
               class="peer sr-only"
+              data-testid="nonfir-checkbox"
             />
             <div :class="toggleClassesDisabled"></div>
           </label>
@@ -43,6 +56,7 @@
               type="checkbox"
               :disabled="itemsHideAll"
               class="peer sr-only"
+              data-testid="hideout-checkbox"
             />
             <div :class="toggleClassesDisabled"></div>
           </label>
@@ -50,7 +64,12 @@
         <div class="flex items-center justify-between">
           <div class="text-sm font-medium">{{ $t(mapHideAllLabel) }}</div>
           <label class="relative inline-flex cursor-pointer items-center">
-            <input v-model="mapHideAll" type="checkbox" class="peer sr-only" />
+            <input
+              v-model="mapHideAll"
+              type="checkbox"
+              class="peer sr-only"
+              data-testid="map-checkbox"
+            />
             <div :class="toggleClasses"></div>
           </label>
         </div>
@@ -58,7 +77,7 @@
     </template>
   </GenericCard>
 </template>
-<script setup>
+<script setup lang="ts">
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
   const toggleClasses =

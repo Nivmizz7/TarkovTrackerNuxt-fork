@@ -1,5 +1,5 @@
 import { mockNuxtImport } from '@nuxt/test-utils/runtime';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { nextTick, reactive, ref } from 'vue';
 import type { SystemState } from '@/types/tarkov';
@@ -128,7 +128,6 @@ const mountMyTeam = async () => {
     },
   });
 };
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 const setupMembershipQueries = (teamId: string) => {
   let membershipCall = 0;
   mockSupabaseClient.from = vi.fn((table: string) => {
@@ -248,6 +247,7 @@ describe('MyTeam store interactions', () => {
       const createButton = wrapper
         .findAll('button')
         .find((button) => button.text().includes('page.team.card.myteam.create_new_team'));
+      expect(createButton).toBeTruthy();
       await createButton!.trigger('click');
       await flushPromises();
       expect(mockEdgeFunctions.createTeam).toHaveBeenCalledWith(
@@ -263,7 +263,7 @@ describe('MyTeam store interactions', () => {
   describe('loading state management', () => {
     it('marks create button as loading while creating team', async () => {
       setupMembershipQueries('team-123');
-      let resolveCreate: (value: CreateTeamResponse) => void;
+      let resolveCreate!: (value: CreateTeamResponse) => void;
       const createPromise = new Promise<CreateTeamResponse>((resolve) => {
         resolveCreate = resolve;
       });

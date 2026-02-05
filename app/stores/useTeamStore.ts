@@ -415,31 +415,95 @@ export function useTeammateStores() {
   const { teamStore } = useTeamStoreWithSupabase();
   const teammateStores = ref<Record<string, Store<string, UserState>>>({});
   const teammateUnsubscribes = ref<Record<string, () => void>>({});
-  // Track pending retry timeouts for cleanup
   const pendingRetryTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-  // Watch team state changes to manage teammate stores
+  function createTeammateStore(teammateId: string) {
+    try {
+      const storeDefinition = defineStore(`teammate-${teammateId}`, {
+        state: () => JSON.parse(JSON.stringify(defaultState)),
+        getters: getters,
+        actions: actions,
+      });
+      const storeInstance = storeDefinition();
+      teammateStores.value[teammateId] = storeInstance;
+      const handleTeammateData = (data: Record<string, unknown> | null) => {
+        if (data) {
+          storeInstance.$patch({
+            currentGameMode: data.current_game_mode || GAME_MODES.PVP,
+            gameEdition: data.game_edition || 1,
+            pvp: data.pvp_data || {},
+            pve: data.pve_data || {},
+          });
+        }
+      };
+      const { cleanup } = useSupabaseListener({
+        store: storeInstance,
+        table: 'user_progress',
+        filter: `user_id=eq.${teammateId}`,
+        storeId: `teammate-${teammateId}`,
+        onData: handleTeammateData,
+      });
+      teammateUnsubscribes.value[teammateId] = cleanup;
+      const handleTaskUpdate = (event: Event) => {
+        const data = (event as CustomEvent).detail as {
+          userId: string;
+          gameMode: 'pvp' | 'pve';
+          taskId: string;
+          complete: boolean;
+          failed: boolean;
+        };
+        if (data.userId !== teammateId) return;
+        const modeKey = data.gameMode === 'pve' ? 'pve' : 'pvp';
+        const currentModeData = storeInstance.$state[modeKey] || {};
+        const currentCompletions =
+          (
+            currentModeData as {
+              taskCompletions?: Record<string, { complete?: boolean; failed?: boolean }>;
+            }
+          ).taskCompletions || {};
+        storeInstance.$patch({
+          [modeKey]: {
+            ...currentModeData,
+            taskCompletions: {
+              ...currentCompletions,
+              [data.taskId]: { complete: data.complete, failed: data.failed },
+            },
+          },
+        });
+        logger.debug(`[TeammateStore] Applied task-update for ${teammateId}:`, data);
+      };
+      window.addEventListener('teammate-task-update', handleTaskUpdate);
+      const originalCleanup = teammateUnsubscribes.value[teammateId];
+      teammateUnsubscribes.value[teammateId] = () => {
+        window.removeEventListener('teammate-task-update', handleTaskUpdate);
+        originalCleanup?.();
+      };
+    } catch (error) {
+      logger.error(`Error creating store for teammate ${teammateId}:`, error);
+    }
+  }
+  const toast = useToast();
+  const { $supabase } = useNuxtApp();
+  function getTeammatesFromState(state: TeamState): string[] {
+    const currentUID = $supabase.user?.id;
+    return state.members?.filter((member: string) => member !== currentUID) || [];
+  }
   watch(
     () => teamStore.$state,
     async (newState, _oldState) => {
-      await nextTick();
-      const { $supabase } = useNuxtApp();
-      const currentUID = $supabase.user?.id;
-      const newTeammatesArray =
-        newState.members?.filter((member: string) => member !== currentUID) || [];
-      // Remove stores for teammates no longer in the team
-      for (const teammate of Object.keys(teammateStores.value)) {
-        if (!newTeammatesArray.includes(teammate)) {
-          if (teammateUnsubscribes.value[teammate]) {
-            teammateUnsubscribes.value[teammate]();
-            const { [teammate]: _removed, ...rest } = teammateUnsubscribes.value;
-            teammateUnsubscribes.value = rest;
-          }
-          const { [teammate]: _storeRemoved, ...restStores } = teammateStores.value;
-          teammateStores.value = restStores as typeof teammateStores.value;
-        }
-      }
-      // Add stores for new teammates
       try {
+        await nextTick();
+        const newTeammatesArray = getTeammatesFromState(newState);
+        for (const teammate of Object.keys(teammateStores.value)) {
+          if (!newTeammatesArray.includes(teammate)) {
+            if (teammateUnsubscribes.value[teammate]) {
+              teammateUnsubscribes.value[teammate]();
+              const { [teammate]: _removed, ...rest } = teammateUnsubscribes.value;
+              teammateUnsubscribes.value = rest;
+            }
+            const { [teammate]: _storeRemoved, ...restStores } = teammateStores.value;
+            teammateStores.value = restStores as typeof teammateStores.value;
+          }
+        }
         for (const teammate of newTeammatesArray) {
           if (!teammateStores.value[teammate]) {
             createTeammateStore(teammate);
@@ -447,13 +511,11 @@ export function useTeammateStores() {
         }
       } catch (error) {
         logger.error('Error managing teammate stores:', error);
-        const toast = useToast();
         toast.add({ title: 'Failed to load teammate data. Retrying…', color: 'warning' });
-        // Clear any existing retry timeout before setting a new one
         if (pendingRetryTimeout.value) {
           clearTimeout(pendingRetryTimeout.value);
         }
-        // Basic retry once after a short delay for transient issues
+        const newTeammatesArray = getTeammatesFromState(newState);
         pendingRetryTimeout.value = setTimeout(() => {
           pendingRetryTimeout.value = null;
           try {
@@ -475,78 +537,6 @@ export function useTeammateStores() {
       deep: true,
     }
   );
-  // Create a store for a specific teammate
-  const createTeammateStore = (teammateId: string) => {
-    try {
-      const storeDefinition = defineStore(`teammate-${teammateId}`, {
-        state: () => JSON.parse(JSON.stringify(defaultState)),
-        getters: getters,
-        actions: actions,
-      });
-      const storeInstance = storeDefinition();
-      teammateStores.value[teammateId] = storeInstance;
-      // Setup Supabase listener for this teammate with data transformation
-      // Transform Supabase field names to match store structure
-      const handleTeammateData = (data: Record<string, unknown> | null) => {
-        if (data) {
-          storeInstance.$patch({
-            currentGameMode: data.current_game_mode || GAME_MODES.PVP,
-            gameEdition: data.game_edition || 1,
-            pvp: data.pvp_data || {},
-            pve: data.pve_data || {},
-          });
-        }
-      };
-      const { cleanup } = useSupabaseListener({
-        store: storeInstance,
-        table: 'user_progress',
-        filter: `user_id=eq.${teammateId}`,
-        storeId: `teammate-${teammateId}`,
-        onData: handleTeammateData,
-      });
-      teammateUnsubscribes.value[teammateId] = cleanup;
-      // Listen for task-update broadcasts for this teammate
-      const handleTaskUpdate = (event: Event) => {
-        const data = (event as CustomEvent).detail as {
-          userId: string;
-          gameMode: 'pvp' | 'pve';
-          taskId: string;
-          complete: boolean;
-          failed: boolean;
-        };
-        if (data.userId !== teammateId) return;
-        // Update the teammate store with the task change
-        const modeKey = data.gameMode === 'pve' ? 'pve' : 'pvp';
-        const currentModeData = storeInstance.$state[modeKey] || {};
-        const currentCompletions =
-          (
-            currentModeData as {
-              taskCompletions?: Record<string, { complete?: boolean; failed?: boolean }>;
-            }
-          ).taskCompletions || {};
-        storeInstance.$patch({
-          [modeKey]: {
-            ...currentModeData,
-            taskCompletions: {
-              ...currentCompletions,
-              [data.taskId]: { complete: data.complete, failed: data.failed },
-            },
-          },
-        });
-        logger.debug(`[TeammateStore] Applied task-update for ${teammateId}:`, data);
-      };
-      window.addEventListener('teammate-task-update', handleTaskUpdate);
-      // Update cleanup to also remove the event listener
-      const originalCleanup = teammateUnsubscribes.value[teammateId];
-      teammateUnsubscribes.value[teammateId] = () => {
-        window.removeEventListener('teammate-task-update', handleTaskUpdate);
-        originalCleanup?.();
-      };
-    } catch (error) {
-      logger.error(`Error creating store for teammate ${teammateId}:`, error);
-    }
-  };
-  // Cleanup all teammate stores
   const cleanup = () => {
     // Clear any pending retry timeout
     if (pendingRetryTimeout.value) {
