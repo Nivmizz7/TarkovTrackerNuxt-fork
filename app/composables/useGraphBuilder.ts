@@ -271,7 +271,7 @@ export function useGraphBuilder() {
    * Extracts item requirements from hideout modules
    */
   function extractItemRequirements(modules: HideoutModule[]): NeededItemHideoutModule[] {
-    const needed_items: NeededItemHideoutModule[] = [];
+    const neededItems: NeededItemHideoutModule[] = [];
     modules.forEach((module) => {
       module.itemRequirements?.forEach((req) => {
         if (req?.item?.id) {
@@ -285,7 +285,7 @@ export function useGraphBuilder() {
               foundInRaid = firAttribute.value === 'true';
             }
           }
-          needed_items.push({
+          neededItems.push({
             id: req.id,
             needType: 'hideoutModule',
             hideoutModule: { ...module },
@@ -296,7 +296,7 @@ export function useGraphBuilder() {
         }
       });
     });
-    return needed_items;
+    return neededItems;
   }
   /**
    * Processes task data and returns enhanced tasks with graph relationships
