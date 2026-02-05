@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
-import { ref } from 'vue';
+import { mount } from '@vue/test-utils';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { defineComponent, nextTick, reactive, ref } from 'vue';
 import { TASK_STATE, type TaskState } from '@/utils/constants';
+import type { UseNeededItemsReturn } from '@/composables/useNeededItems';
 import type { NeededItemHideoutModule, NeededItemTaskObjective, TarkovItem } from '@/types/tarkov';
 const createItem = (id: string, name: string): TarkovItem => ({
   id,
@@ -82,60 +84,61 @@ const createNeededItems = (options: { includeTeamItems?: boolean } = {}) => {
 const createMetadataStore = (
   taskObjectives: NeededItemTaskObjective[],
   hideoutModules: NeededItemHideoutModule[]
-) => ({
-  neededItemTaskObjectives: taskObjectives,
-  neededItemHideoutModules: hideoutModules,
-  itemsFullLoaded: true,
-  items: [
-    createItem('item-bolts', 'Bolts'),
-    createItem('item-screws', 'Screws'),
-    createItem('item-wires', 'Wires'),
-    createItem('item-cpu', 'CPU'),
-  ],
-  itemsLoading: false,
-  itemsError: null as Error | null,
-  tasksObjectivesHydrated: true,
-  tasksObjectivesPending: false,
-  hideoutStations: [{ id: 'station-1', name: 'Workbench' }],
-  hideoutLoading: false,
-  editions: new Map(),
-  getTaskById: (taskId: string) => {
-    const tasks: Record<
-      string,
-      { id: string; name: string; factionName: string; kappaRequired?: boolean }
-    > = {
-      'task-1': { id: 'task-1', name: 'Task One', factionName: 'Any' },
-      'task-2': { id: 'task-2', name: 'Task Two', factionName: 'Any' },
-      'task-kappa': {
-        id: 'task-kappa',
-        name: 'Kappa Task',
-        factionName: 'Any',
-        kappaRequired: true,
-      },
-    };
-    return tasks[taskId];
-  },
-  getItemById: (itemId: string) => {
-    const items: Record<string, TarkovItem> = {
-      'item-bolts': createItem('item-bolts', 'Bolts'),
-      'item-screws': createItem('item-screws', 'Screws'),
-      'item-wires': createItem('item-wires', 'Wires'),
-      'item-cpu': createItem('item-cpu', 'CPU'),
-    };
-    return items[itemId];
-  },
-  getStationById: (stationId: string) => {
-    const stations: Record<string, { id: string; name: string }> = {
-      'station-1': { id: 'station-1', name: 'Workbench' },
-      'station-2': { id: 'station-2', name: 'Intelligence Center' },
-    };
-    return stations[stationId];
-  },
-  fetchItemsLiteData: vi.fn(),
-  fetchTaskObjectivesData: vi.fn(),
-  fetchHideoutData: vi.fn(),
-  ensureItemsFullLoaded: vi.fn(),
-});
+) =>
+  reactive({
+    neededItemTaskObjectives: taskObjectives,
+    neededItemHideoutModules: hideoutModules,
+    itemsFullLoaded: true,
+    items: [
+      createItem('item-bolts', 'Bolts'),
+      createItem('item-screws', 'Screws'),
+      createItem('item-wires', 'Wires'),
+      createItem('item-cpu', 'CPU'),
+    ],
+    itemsLoading: false,
+    itemsError: null as Error | null,
+    tasksObjectivesHydrated: true,
+    tasksObjectivesPending: false,
+    hideoutStations: [{ id: 'station-1', name: 'Workbench' }],
+    hideoutLoading: false,
+    editions: new Map(),
+    getTaskById: (taskId: string) => {
+      const tasks: Record<
+        string,
+        { id: string; name: string; factionName: string; kappaRequired?: boolean }
+      > = {
+        'task-1': { id: 'task-1', name: 'Task One', factionName: 'Any' },
+        'task-2': { id: 'task-2', name: 'Task Two', factionName: 'Any' },
+        'task-kappa': {
+          id: 'task-kappa',
+          name: 'Kappa Task',
+          factionName: 'Any',
+          kappaRequired: true,
+        },
+      };
+      return tasks[taskId];
+    },
+    getItemById: (itemId: string) => {
+      const items: Record<string, TarkovItem> = {
+        'item-bolts': createItem('item-bolts', 'Bolts'),
+        'item-screws': createItem('item-screws', 'Screws'),
+        'item-wires': createItem('item-wires', 'Wires'),
+        'item-cpu': createItem('item-cpu', 'CPU'),
+      };
+      return items[itemId];
+    },
+    getStationById: (stationId: string) => {
+      const stations: Record<string, { id: string; name: string }> = {
+        'station-1': { id: 'station-1', name: 'Workbench' },
+        'station-2': { id: 'station-2', name: 'Intelligence Center' },
+      };
+      return stations[stationId];
+    },
+    fetchItemsLiteData: vi.fn(),
+    fetchTaskObjectivesData: vi.fn(),
+    fetchHideoutData: vi.fn(),
+    ensureItemsFullLoaded: vi.fn(),
+  });
 const createProgressStore = () => ({
   playerFaction: { self: 'USEC' },
   tasksCompletions: {
@@ -197,6 +200,13 @@ const createTarkovStore = () => ({
     return counts[id] ?? 0;
   },
 });
+const mountedWrappers: Array<ReturnType<typeof mount>> = [];
+afterEach(() => {
+  for (const wrapper of mountedWrappers) {
+    wrapper.unmount();
+  }
+  mountedWrappers.length = 0;
+});
 const setup = async (
   overrides: {
     includeTeamItems?: boolean;
@@ -229,13 +239,27 @@ const setup = async (
   }));
   const { useNeededItems } = await import('@/composables/useNeededItems');
   const search = ref('');
+  let neededItems: UseNeededItemsReturn | null = null;
+  const wrapper = mount(
+    defineComponent({
+      setup() {
+        neededItems = useNeededItems({ search });
+        return () => null;
+      },
+    })
+  );
+  mountedWrappers.push(wrapper);
+  await nextTick();
+  if (!neededItems) {
+    throw new Error('useNeededItems did not initialize - result is null after mounting');
+  }
   return {
     metadataStore,
     progressStore,
     preferencesStore,
     tarkovStore,
     search,
-    neededItems: useNeededItems({ search }),
+    neededItems: neededItems as UseNeededItemsReturn,
   };
 };
 describe('useNeededItems', () => {
@@ -452,6 +476,19 @@ describe('useNeededItems', () => {
       const error = new Error('Items failed to load');
       metadataStore.itemsError = error;
       expect(neededItems.itemsError.value).toBe(error);
+      expect(neededItems.itemsReady.value).toBe(false);
+    });
+    it('transitions through loading, success, and error states', async () => {
+      const { metadataStore, neededItems } = await setup();
+      metadataStore.itemsLoading = true;
+      expect(neededItems.itemsReady.value).toBe(false);
+      expect(neededItems.itemsError.value).toBeNull();
+      metadataStore.items = [createItem('item-bolts', 'Bolts')];
+      metadataStore.itemsLoading = false;
+      expect(neededItems.itemsReady.value).toBe(true);
+      expect(neededItems.itemsError.value).toBeNull();
+      metadataStore.itemsError = new Error('Subsequent fetch failed');
+      expect(neededItems.itemsError.value).not.toBeNull();
       expect(neededItems.itemsReady.value).toBe(false);
     });
   });

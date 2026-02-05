@@ -83,10 +83,10 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
   const preferencesStore = usePreferencesStore();
   const tarkovStore = useTarkovStore();
   const defaultTranslations: Record<string, string> = {
-    'neededItems.filters.all': 'All',
-    'neededItems.filters.tasks': 'Tasks',
-    'neededItems.filters.hideout': 'Hideout',
-    'neededItems.filters.completed': 'Completed',
+    'needed_items.filters.all': 'All',
+    'needed_items.filters.tasks': 'Tasks',
+    'needed_items.filters.hideout': 'Hideout',
+    'needed_items.filters.completed': 'Completed',
   };
   const translate = (key: string) => (t ? t(key) : defaultTranslations[key] || key);
   const neededItemTaskObjectives = computed(() => metadataStore.neededItemTaskObjectives);
@@ -174,6 +174,7 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
     }
     return need.team?.id ?? null;
   };
+  const fullItemsLoadTimerId = ref<number | null>(null);
   const queueFullItemsLoad = (loadOptions: FullItemsLoadOptions = {}) => {
     if (itemsFullLoaded.value) return;
     const {
@@ -187,14 +188,31 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
       fullItemsQueued.value = true;
     }
     const run = () => {
+      if (fullItemsLoadTimerId.value !== null && typeof window !== 'undefined') {
+        window.clearTimeout(fullItemsLoadTimerId.value);
+      }
+      fullItemsLoadTimerId.value = null;
+      if (priority !== 'high') {
+        fullItemsQueued.value = false;
+      }
       void metadataStore.ensureItemsFullLoaded(false, { priority, timeout, minTime });
     };
     if (typeof window === 'undefined' || delayMs <= 0 || priority === 'high') {
       run();
       return;
     }
-    window.setTimeout(run, delayMs);
+    if (fullItemsLoadTimerId.value !== null) {
+      window.clearTimeout(fullItemsLoadTimerId.value);
+    }
+    fullItemsLoadTimerId.value = window.setTimeout(run, delayMs);
   };
+  onUnmounted(() => {
+    if (fullItemsLoadTimerId.value !== null && typeof window !== 'undefined') {
+      window.clearTimeout(fullItemsLoadTimerId.value);
+    }
+    fullItemsLoadTimerId.value = null;
+    fullItemsQueued.value = false;
+  });
   const ensureNeededItemsData = () => {
     if (!itemsLoaded.value && !metadataStore.itemsLoading) {
       void metadataStore.fetchItemsLiteData();
@@ -284,25 +302,25 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
     }
     return [
       {
-        label: translate('neededItems.filters.all'),
+        label: translate('needed_items.filters.all'),
         value: 'all' as NeededItemsFilterType,
         icon: 'i-mdi-clipboard-list',
         count: counts.incomplete,
       },
       {
-        label: translate('neededItems.filters.tasks'),
+        label: translate('needed_items.filters.tasks'),
         value: 'tasks' as NeededItemsFilterType,
         icon: 'i-mdi-checkbox-marked-circle-outline',
         count: counts.tasks,
       },
       {
-        label: translate('neededItems.filters.hideout'),
+        label: translate('needed_items.filters.hideout'),
         value: 'hideout' as NeededItemsFilterType,
         icon: 'i-mdi-home',
         count: counts.hideout,
       },
       {
-        label: translate('neededItems.filters.completed'),
+        label: translate('needed_items.filters.completed'),
         value: 'completed' as NeededItemsFilterType,
         icon: 'i-mdi-check-all',
         count: counts.completed,
@@ -346,7 +364,7 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
     }
     if (hideOwned.value) {
       result = result.filter((item) => {
-        const count = item.count || 1;
+        const count = item.count ?? 1;
         let current = 0;
         if (item.needType === 'taskObjective') {
           current = tarkovStore.getObjectiveCount(item.id);
@@ -359,7 +377,7 @@ export function useNeededItems(options: UseNeededItemsOptions = {}): UseNeededIt
     if (hideTeamItems.value) {
       result = result.filter((item) => {
         const teamId = getNeedTeamId(item);
-        if (!teamId || teamId === 'self') {
+        if (!teamId) {
           return true;
         }
         return progressStore.getTeamIndex(teamId) === 'self';

@@ -64,7 +64,7 @@ const createMockUseNeededItems = (options: {
       { label: 'Hideout', value: 'hideout', icon: 'i-mdi-home', count: 0 },
       { label: 'Completed', value: 'completed', icon: 'i-mdi-check-all', count: 0 },
     ]),
-    itemsReady: computed(() => !itemsLoading && !emptyState),
+    itemsReady: computed(() => !itemsLoading),
     itemsError: computed(() => null),
     itemsFullLoaded: computed(() => true),
     ensureNeededItemsData: vi.fn(),

@@ -20,14 +20,14 @@
         {{ item.name }}
         <AppTooltip
           v-if="props.need.foundInRaid"
-          :text="$t('neededItems.fir_required', 'Found in Raid required')"
+          :text="$t('needed_items.fir_required', 'Found in Raid required')"
         >
           <UIcon
             name="i-mdi-checkbox-marked-circle-outline"
             class="ml-0.5 inline-block h-3.5 w-3.5"
           />
         </AppTooltip>
-        <AppTooltip v-if="isKappaRequired" :text="$t('task.kappa_req', 'Required for Kappa quest')">
+        <AppTooltip v-if="isKappaRequired" :text="$t('task_kappa_req', 'Required for Kappa quest')">
           <UIcon name="i-mdi-trophy" class="text-warning-400 ml-0.5 inline-block h-3.5 w-3.5" />
         </AppTooltip>
         <AppTooltip v-if="isCraftable" :text="craftableTitle">
@@ -53,7 +53,7 @@
         <div class="line-clamp-2 text-center">
           <task-link v-if="relatedTask" :task="relatedTask" />
           <span v-else class="text-surface-300 text-sm">
-            {{ $t('neededItems.unknown_task', 'Unknown Task') }}
+            {{ $t('needed_items.unknown_task', 'Unknown Task') }}
           </span>
         </div>
       </template>
@@ -66,7 +66,7 @@
             class="justify-center"
           />
           <span v-else class="text-surface-300 text-sm">
-            {{ $t('neededItems.unknown_station', 'Unknown Station') }}
+            {{ $t('needed_items.unknown_station', 'Unknown Station') }}
           </span>
           <span class="ml-1 text-sm">{{ props.need.hideoutModule.level }}</span>
         </div>

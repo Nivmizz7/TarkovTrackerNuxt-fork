@@ -34,14 +34,14 @@
               >
                 {{ formatNumber(currentCount) }}/{{ formatNumber(neededCount) }}
                 <ItemIndicators
-                  :found-in-raid="props.need.foundInRaid"
+                  :found-in-raid="props.need.foundInRaid ?? false"
                   fir-icon-class="h-4 w-4"
                   :is-craftable="isCraftable"
                   :craftable-title="craftableTitle"
                   craftable-icon-base-class="h-4 w-4 opacity-90"
                   :craftable-icon-class="craftableIconClass"
                   :kappa-required="isKappaRequired"
-                  :kappa-title="$t('task.kappa_req', 'Required for Kappa quest')"
+                  :kappa-title="$t('task_kappa_req', 'Required for Kappa quest')"
                   kappa-icon-class="h-4 w-4 text-warning-400"
                   @craft="goToCraftStation"
                 />
@@ -186,18 +186,16 @@
   } from '@/features/neededitems/neededitem-keys';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
+  import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/tarkov';
   const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink.vue'));
   const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink.vue'));
   const emit = defineEmits<{
     (event: 'decreaseCount' | 'increaseCount' | 'toggleCount'): void;
     (event: 'setCount', count: number): void;
   }>();
-  const props = defineProps({
-    need: {
-      type: Object,
-      required: true,
-    },
-  });
+  const props = defineProps<{
+    need: NeededItemTaskObjective | NeededItemHideoutModule;
+  }>();
   const { t } = useI18n({ useScope: 'global' });
   const formatNumber = useLocaleNumberFormatter();
   const tarkovStore = useTarkovStore();
@@ -222,15 +220,15 @@
   const hasItem = computed(() => Boolean(item.value));
   const isSingleItem = computed(() => neededCount.value === 1);
   const cardAriaLabel = computed(() => {
-    const itemName = item.value?.name || t('neededItems.item', 'Item');
+    const itemName = item.value?.name || t('needed_items.item', 'Item');
     const status =
       currentCount.value >= neededCount.value
-        ? t('neededItems.collected', 'Collected')
-        : t('neededItems.notCollected', 'Not collected');
+        ? t('needed_items.collected', 'Collected')
+        : t('needed_items.not_collected', 'Not collected');
     const action =
       currentCount.value >= neededCount.value
-        ? t('neededItems.clickToUncollect', 'Click to uncollect')
-        : t('neededItems.clickToCollect', 'Click to collect');
+        ? t('needed_items.click_to_uncollect', 'Click to uncollect')
+        : t('needed_items.click_to_collect', 'Click to collect');
     return `${itemName}. ${status}. ${action}`;
   });
   const handleCardClick = () => {

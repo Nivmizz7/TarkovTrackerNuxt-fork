@@ -2,10 +2,11 @@
   <div
     role="button"
     tabindex="0"
+    :aria-label="`View details for ${groupedItem.item.name}`"
     class="bg-surface-800 hover:bg-surface-700 flex h-full cursor-pointer flex-col rounded-lg transition-colors"
     @click="handleCardClick"
     @keydown.enter="handleCardClick"
-    @keydown.space="handleCardClick"
+    @keydown.space.prevent="handleCardClick"
   >
     <!-- Top section: Image + Name side by side -->
     <div class="flex items-center gap-3 p-3">
@@ -37,7 +38,7 @@
           </AppTooltip>
         </div>
         <div class="mt-1 flex items-center gap-1">
-          <span class="text-surface-400 text-xs">{{ $t('neededItems.total', 'Total:') }}</span>
+          <span class="text-surface-400 text-xs">{{ $t('needed_items.total', 'Total:') }}</span>
           <span
             class="text-lg font-bold"
             :class="isComplete ? 'text-success-400' : 'text-primary-400'"
@@ -61,11 +62,11 @@
           class="text-surface-400 mb-1.5 flex items-center gap-1"
         >
           <UIcon name="i-mdi-clipboard-list" class="h-3.5 w-3.5" />
-          <span class="font-medium">{{ $t('neededItems.tasks', 'Tasks') }}</span>
+          <span class="font-medium">{{ $t('needed_items.tasks', 'Tasks') }}</span>
         </div>
         <div class="flex gap-3">
           <div v-if="groupedItem.taskFir > 0" class="flex items-center gap-1">
-            <AppTooltip :text="$t('neededItems.fir_required', 'Found in Raid required')">
+            <AppTooltip :text="$t('needed_items.fir_required', 'Found in Raid required')">
               <UIcon
                 name="i-mdi-checkbox-marked-circle-outline"
                 class="h-3 w-3"
@@ -123,11 +124,11 @@
           class="text-surface-400 mb-1.5 flex items-center gap-1"
         >
           <UIcon name="i-mdi-home" class="h-3.5 w-3.5" />
-          <span class="font-medium">{{ $t('neededItems.hideout_label', 'Hideout') }}</span>
+          <span class="font-medium">{{ $t('needed_items.hideout_label', 'Hideout') }}</span>
         </div>
         <div class="flex gap-3">
           <div v-if="groupedItem.hideoutFir > 0" class="flex items-center gap-1">
-            <AppTooltip :text="$t('neededItems.fir_required', 'Found in Raid required')">
+            <AppTooltip :text="$t('needed_items.fir_required', 'Found in Raid required')">
               <UIcon
                 name="i-mdi-checkbox-marked-circle-outline"
                 class="h-3 w-3"
@@ -210,7 +211,7 @@
     if (interactiveTarget && interactiveTarget !== currentTarget) {
       return;
     }
-    if ('key' in event && event.key === ' ') {
+    if ('key' in event && (event.key === ' ' || event.key === 'Enter')) {
       event.preventDefault();
     }
     showModal.value = true;

@@ -24,10 +24,10 @@
       >
         <UIcon name="i-mdi-alert-circle" class="text-error-400 h-8 w-8" />
         <span class="text-error-400">
-          {{ $t('page.neededItems.error', 'Failed to load items.') }}
+          {{ $t('page.needed_items.error', 'Failed to load items.') }}
         </span>
         <UButton color="primary" @click="ensureNeededItemsData">
-          {{ $t('page.neededItems.retry', 'Retry') }}
+          {{ $t('page.needed_items.retry', 'Retry') }}
         </UButton>
       </div>
       <div
@@ -35,11 +35,11 @@
         class="text-surface-400 flex items-center justify-center gap-2 p-8"
       >
         <UIcon name="i-mdi-loading" class="h-5 w-5 animate-spin" />
-        <span>{{ $t('page.neededItems.loading', 'Loading items...') }}</span>
+        <span>{{ $t('page.needed_items.loading', 'Loading items...') }}</span>
       </div>
       <template v-else>
         <div v-if="displayItems.length === 0" class="text-surface-400 p-8 text-center">
-          {{ $t('page.neededItems.empty', 'No items match your search.') }}
+          {{ $t('page.needed_items.empty', 'No items match your search.') }}
         </div>
         <div v-else-if="groupByItem" class="p-2">
           <div
@@ -117,19 +117,13 @@
     SCREEN_SIZE_MULTIPLIERS,
   } from '@/features/neededitems/neededitems-constants';
   import NeededItemsFilterBar from '@/features/neededitems/NeededItemsFilterBar.vue';
-  import type { UseInfiniteScrollOptions } from '@/composables/useInfiniteScroll';
   definePageMeta({
     usesWindowScroll: true,
   });
-  useHead({
+  useSeoMeta({
     title: 'Needed Items',
-    meta: [
-      {
-        name: 'description',
-        content:
-          'View all items needed for your active quests and hideout upgrades. Filter by quest, craft, and find-in-raid requirements.',
-      },
-    ],
+    description:
+      'View all items needed for your active quests and hideout upgrades. Filter by quest, craft, and find-in-raid requirements.',
   });
   const props = defineProps({
     baseRenderCount: {
@@ -213,10 +207,7 @@
   const infiniteScrollEnabled = computed(() => {
     return visibleCount.value < displayItems.value.length;
   });
-  const infiniteScrollOptions: UseInfiniteScrollOptions & {
-    autoFill?: boolean;
-    autoLoadOnReady?: boolean;
-  } = {
+  const infiniteScrollOptions = {
     enabled: infiniteScrollEnabled,
     rootMargin: INFINITE_SCROLL_MARGIN,
     autoFill: false,

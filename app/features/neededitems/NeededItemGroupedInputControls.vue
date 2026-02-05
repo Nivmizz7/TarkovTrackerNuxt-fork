@@ -3,13 +3,13 @@
     <div v-if="firNeeded > 0" class="flex items-center justify-between gap-4">
       <div class="flex items-center gap-2">
         <UIcon name="i-mdi-checkbox-marked-circle-outline" class="text-warning-400 h-4 w-4" />
-        <span class="text-sm font-medium">{{ $t('neededItems.fir', 'FIR') }}</span>
+        <span class="text-sm font-medium">{{ $t('needed_items.fir', 'FIR') }}</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="bg-surface-700 flex items-center rounded-lg border border-white/20">
           <button
             class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-8 w-8 items-center justify-center rounded-l-lg transition-colors hover:text-white"
-            :aria-label="$t('neededItems.aria.decreaseFir')"
+            :aria-label="$t('needed_items.aria.decrease_fir')"
             @click="decreaseFir"
           >
             <UIcon name="i-mdi-minus" class="h-4 w-4" />
@@ -40,27 +40,27 @@
           </div>
           <button
             class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-8 w-8 items-center justify-center rounded-r-lg transition-colors hover:text-white"
-            :aria-label="$t('neededItems.aria.increaseFir')"
+            :aria-label="$t('needed_items.aria.increase_fir')"
             @click="increaseFir"
           >
             <UIcon name="i-mdi-plus" class="h-4 w-4" />
           </button>
         </div>
         <span class="text-surface-400 text-sm">
-          / {{ firNeeded }} {{ $t('neededItems.needed', 'needed') }}
+          / {{ firNeeded }} {{ $t('needed_items.needed', 'needed') }}
         </span>
       </div>
     </div>
     <div v-if="nonFirNeeded > 0" class="flex items-center justify-between gap-4">
       <div class="flex items-center gap-2">
         <UIcon name="i-mdi-checkbox-blank-circle-outline" class="text-surface-400 h-4 w-4" />
-        <span class="text-sm font-medium">{{ $t('neededItems.nonFir', 'Non-FIR') }}</span>
+        <span class="text-sm font-medium">{{ $t('needed_items.non_fir', 'Non-FIR') }}</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="bg-surface-700 flex items-center rounded-lg border border-white/20">
           <button
             class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-8 w-8 items-center justify-center rounded-l-lg transition-colors hover:text-white"
-            :aria-label="$t('neededItems.aria.decreaseNonFir')"
+            :aria-label="$t('needed_items.aria.decrease_non_fir')"
             @click="decreaseNonFir"
           >
             <UIcon name="i-mdi-minus" class="h-4 w-4" />
@@ -91,14 +91,14 @@
           </div>
           <button
             class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-8 w-8 items-center justify-center rounded-r-lg transition-colors hover:text-white"
-            :aria-label="$t('neededItems.aria.increaseNonFir')"
+            :aria-label="$t('needed_items.aria.increase_non_fir')"
             @click="increaseNonFir"
           >
             <UIcon name="i-mdi-plus" class="h-4 w-4" />
           </button>
         </div>
         <span class="text-surface-400 text-sm">
-          / {{ nonFirNeeded }} {{ $t('neededItems.needed', 'needed') }}
+          / {{ nonFirNeeded }} {{ $t('needed_items.needed', 'needed') }}
         </span>
       </div>
     </div>
@@ -119,11 +119,19 @@
   }>();
   const { t } = useI18n({ useScope: 'global' });
   const toast = useToast();
+  const firInputRef = ref<HTMLInputElement | null>(null);
+  const nonFirInputRef = ref<HTMLInputElement | null>(null);
+  const handleExternalChange = (value: number) => {
+    toast.add({
+      title: t('toast.count_edit_updated.title'),
+      description: t('toast.count_edit_updated.description', { value }),
+      color: 'warning',
+    });
+  };
   const {
     isEditing: isEditingFir,
     editValue: firEditValue,
-    inputRef: firInputRef,
-    startEdit: startFirEdit,
+    startEdit: startFirEditBase,
     commitEdit: submitFirEdit,
     cancelEdit: cancelFirEdit,
     increase: increaseFir,
@@ -132,19 +140,12 @@
     current: () => props.firCurrent,
     max: () => props.firNeeded,
     onUpdate: (value) => emit('update:fir', value),
-    onExternalChange: (value) => {
-      toast.add({
-        title: t('toast.countEditUpdated.title'),
-        description: t('toast.countEditUpdated.description', { value }),
-        color: 'warning',
-      });
-    },
+    onExternalChange: handleExternalChange,
   });
   const {
     isEditing: isEditingNonFir,
     editValue: nonFirEditValue,
-    inputRef: nonFirInputRef,
-    startEdit: startNonFirEdit,
+    startEdit: startNonFirEditBase,
     commitEdit: submitNonFirEdit,
     cancelEdit: cancelNonFirEdit,
     increase: increaseNonFir,
@@ -153,12 +154,14 @@
     current: () => props.nonFirCurrent,
     max: () => props.nonFirNeeded,
     onUpdate: (value) => emit('update:nonFir', value),
-    onExternalChange: (value) => {
-      toast.add({
-        title: t('toast.countEditUpdated.title'),
-        description: t('toast.countEditUpdated.description', { value }),
-        color: 'warning',
-      });
-    },
+    onExternalChange: handleExternalChange,
   });
+  const startFirEdit = () => {
+    startFirEditBase();
+    nextTick(() => firInputRef.value?.focus());
+  };
+  const startNonFirEdit = () => {
+    startNonFirEditBase();
+    nextTick(() => nonFirInputRef.value?.focus());
+  };
 </script>

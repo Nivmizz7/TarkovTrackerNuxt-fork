@@ -19,7 +19,17 @@ export interface UseNeededItemsSortingOptions {
   sortBy: Ref<NeededItemsSortBy> | ComputedRef<NeededItemsSortBy>;
   sortDirection: Ref<NeededItemsSortDirection> | ComputedRef<NeededItemsSortDirection>;
 }
-export function useNeededItemsSorting(options: UseNeededItemsSortingOptions) {
+export interface UseNeededItemsSortingReturn {
+  createSorter: <T>(getValues: (item: T) => SortValues) => (a: T, b: T) => number;
+  getNeededItemPriority: (item: NeededItemTaskObjective | NeededItemHideoutModule) => number;
+  getNeededItemSortValues: (item: NeededItemTaskObjective | NeededItemHideoutModule) => SortValues;
+  getGroupedItemSortValues: (item: GroupedNeededItem) => SortValues;
+  sortNeededItems: <T extends NeededItemTaskObjective | NeededItemHideoutModule>(items: T[]) => T[];
+  sortGroupedItems: (items: GroupedNeededItem[]) => GroupedNeededItem[];
+}
+export function useNeededItemsSorting(
+  options: UseNeededItemsSortingOptions
+): UseNeededItemsSortingReturn {
   const { sortBy, sortDirection } = options;
   const metadataStore = useMetadataStore();
   const progressStore = useProgressStore();
@@ -65,8 +75,16 @@ export function useNeededItemsSorting(options: UseNeededItemsSortingOptions) {
   };
   const getGroupedItemSortValues = (item: GroupedNeededItem): SortValues => {
     const itemData = metadataStore.getItemById(item.item.id);
+    const hasTasks = item.taskFir > 0 || item.taskNonFir > 0;
+    const hasHideout = item.hideoutFir > 0 || item.hideoutNonFir > 0;
+    let groupedPriority = 0;
+    if (hasTasks) {
+      groupedPriority = 2;
+    } else if (hasHideout) {
+      groupedPriority = 1;
+    }
     return {
-      priority: item.total,
+      priority: groupedPriority,
       count: item.total,
       name: item.item.name ?? '',
       category: itemData?.category?.name ?? '',

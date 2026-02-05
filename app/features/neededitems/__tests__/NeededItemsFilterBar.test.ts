@@ -15,6 +15,9 @@ const UInputStub = {
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false,
+  silentTranslationWarn: true,
   messages: {
     en: {},
     de: {},

@@ -26,7 +26,7 @@
                   :craftable-title="craftableTitle"
                   :craftable-icon-class="craftableIconClass"
                   :kappa-required="isKappaRequired"
-                  :kappa-title="$t('task.kappa_req', 'Required for Kappa quest')"
+                  :kappa-title="$t('task_kappa_req', 'Required for Kappa quest')"
                   @craft="goToCraftStation"
                 />
               </span>
@@ -34,7 +34,7 @@
                 <template v-if="props.need.needType == 'taskObjective'">
                   <TaskLink v-if="relatedTask" :task="relatedTask" />
                   <span v-else class="text-surface-300 text-sm">
-                    {{ $t('neededItems.unknown_task', 'Unknown Task') }}
+                    {{ $t('needed_items.unknown_task', 'Unknown Task') }}
                   </span>
                 </template>
                 <template v-else-if="props.need.needType == 'hideoutModule'">
@@ -44,7 +44,7 @@
                     :module-id="props.need.hideoutModule.id"
                   />
                   <span v-else class="text-surface-300 text-sm">
-                    {{ $t('neededItems.unknown_station', 'Unknown Station') }}
+                    {{ $t('needed_items.unknown_station', 'Unknown Station') }}
                   </span>
                 </template>
               </span>
@@ -105,7 +105,7 @@
                           craftable-icon-base-class="ml-1 h-4 w-4"
                           :craftable-icon-class="craftableIconClass"
                           :kappa-required="isKappaRequired"
-                          :kappa-title="$t('task.kappa_req', 'Required for Kappa quest')"
+                          :kappa-title="$t('task_kappa_req', 'Required for Kappa quest')"
                           kappa-icon-class="ml-1 h-4 w-4 text-warning-400"
                           @craft="goToCraftStation"
                         />
@@ -115,7 +115,7 @@
                         <template v-if="props.need.needType == 'taskObjective'">
                           <TaskLink v-if="relatedTask" :task="relatedTask" />
                           <span v-else class="text-surface-300 text-sm">
-                            {{ $t('neededItems.unknown_task', 'Unknown Task') }}
+                            {{ $t('needed_items.unknown_task', 'Unknown Task') }}
                           </span>
                           <RequirementInfo
                             :need-type="props.need.needType"
@@ -136,7 +136,7 @@
                               </template>
                               <template v-else>
                                 <span class="text-surface-300 text-sm">
-                                  {{ $t('neededItems.unknown_station', 'Unknown Station') }}
+                                  {{ $t('needed_items.unknown_station', 'Unknown Station') }}
                                 </span>
                               </template>
                             </div>
@@ -174,8 +174,8 @@
                           <AppTooltip
                             :text="
                               isCollected
-                                ? $t('neededItems.collected', 'Collected')
-                                : $t('neededItems.mark_collected', 'Mark as collected')
+                                ? $t('needed_items.collected', 'Collected')
+                                : $t('needed_items.mark_collected', 'Mark as collected')
                             "
                           >
                             <CollectedToggleButton
@@ -188,8 +188,8 @@
                               "
                               :aria-label="
                                 isCollected
-                                  ? $t('neededItems.collected', 'Collected')
-                                  : $t('neededItems.mark_collected', 'Mark as collected')
+                                  ? $t('needed_items.collected', 'Collected')
+                                  : $t('needed_items.mark_collected', 'Mark as collected')
                               "
                               icon-class="h-6 w-6"
                               @toggle="$emit('toggleCount')"
@@ -255,8 +255,8 @@
                   <AppTooltip
                     :text="
                       isCollected
-                        ? $t('neededItems.collected', 'Collected')
-                        : $t('neededItems.mark_collected', 'Mark as collected')
+                        ? $t('needed_items.collected', 'Collected')
+                        : $t('needed_items.mark_collected', 'Mark as collected')
                     "
                   >
                     <CollectedToggleButton
@@ -269,8 +269,8 @@
                       "
                       :aria-label="
                         isCollected
-                          ? $t('neededItems.collected', 'Collected')
-                          : $t('neededItems.mark_collected', 'Mark as collected')
+                          ? $t('needed_items.collected', 'Collected')
+                          : $t('needed_items.mark_collected', 'Mark as collected')
                       "
                       icon-class="h-6 w-6"
                       @toggle="$emit('toggleCount')"
