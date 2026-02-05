@@ -1,5 +1,6 @@
 import { createError, defineEventHandler, getQuery, getRequestHeader } from 'h3';
 import { useRuntimeConfig } from '#imports';
+import { logger } from '@/utils/logger';
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
   const supabaseUrl = config.supabaseUrl as string;
@@ -75,7 +76,7 @@ export default defineEventHandler(async (event) => {
   );
   if (!profilesResp.ok) {
     const errorText = await profilesResp.text();
-    console.error(`[team/members] Profiles fetch error (${profilesResp.status}):`, errorText);
+    logger.error(`[team/members] Profiles fetch error (${profilesResp.status}):`, errorText);
   }
   const profileMap: Record<
     string,

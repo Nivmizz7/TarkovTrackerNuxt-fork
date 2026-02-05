@@ -1,18 +1,18 @@
 import { defineEventHandler, getQuery, setResponseHeaders } from 'h3';
 import { useRuntimeConfig } from '#imports';
+import { createLogger } from '@/server/utils/logger';
+import {
+  cleanText,
+  extractReleaseBullets,
+  normalizeCommitMessage,
+  toSentence,
+} from '@/utils/changelog';
 import type {
   ChangelogBullet,
   ChangelogItem,
   ChangelogResponse,
   ChangelogStats,
 } from '@/types/changelog';
-import { createLogger } from '~/server/utils/logger';
-import {
-  cleanText,
-  extractReleaseBullets,
-  normalizeCommitMessage,
-  toSentence,
-} from '~/utils/changelog';
 type GitHubRelease = {
   name?: string | null;
   tag_name?: string | null;
@@ -66,35 +66,60 @@ const statsCache = new Map<string, StatsCacheEntry>();
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 1000;
 const SHARED_CACHE_PREFIX = 'changelog-stats';
-const evictStaleAndOldest = (): void => {
+const MAX_KEY_LENGTH = 200;
+const EVICTION_BATCH_SIZE = Math.ceil(MAX_CACHE_ENTRIES * 0.1);
+let lastFullEviction = 0;
+const FULL_EVICTION_INTERVAL_MS = 5 * 60 * 1000;
+const evictStaleEntries = (): number => {
   const now = Date.now();
-  const activeEntries: Array<[string, number]> = [];
+  let evicted = 0;
   for (const [key, entry] of statsCache) {
     if (now - entry.timestamp >= CACHE_TTL_MS) {
       statsCache.delete(key);
-      continue;
-    }
-    activeEntries.push([key, entry.timestamp]);
-  }
-  if (activeEntries.length >= MAX_CACHE_ENTRIES) {
-    const overCapacity = activeEntries.length - MAX_CACHE_ENTRIES + 1;
-    activeEntries.sort(([, a], [, b]) => a - b);
-    for (const [key] of activeEntries.slice(0, overCapacity)) {
-      statsCache.delete(key);
+      evicted++;
     }
   }
+  return evicted;
+};
+const evictLRU = (count: number): void => {
+  if (count <= 0 || statsCache.size === 0) return;
+  const entries = Array.from(statsCache.entries());
+  entries.sort(([, a], [, b]) => a.timestamp - b.timestamp);
+  const toEvict = Math.min(count, entries.length);
+  for (let i = 0; i < toEvict; i++) {
+    const entry = entries[i];
+    if (entry) statsCache.delete(entry[0]);
+  }
+};
+const maybeRunFullEviction = (): void => {
+  const now = Date.now();
+  if (now - lastFullEviction < FULL_EVICTION_INTERVAL_MS) return;
+  lastFullEviction = now;
+  evictStaleEntries();
+  if (statsCache.size > MAX_CACHE_ENTRIES) {
+    evictLRU(statsCache.size - MAX_CACHE_ENTRIES + EVICTION_BATCH_SIZE);
+  }
+};
+const isValidCacheKey = (key: string): boolean => {
+  return typeof key === 'string' && key.length > 0 && key.length <= MAX_KEY_LENGTH;
 };
 const getLocalCacheEntry = (key: string): StatsCacheEntry | null => {
   const cached = statsCache.get(key);
   if (!cached) return null;
-  if (Date.now() - cached.timestamp >= CACHE_TTL_MS) {
+  const now = Date.now();
+  if (now - cached.timestamp >= CACHE_TTL_MS) {
     statsCache.delete(key);
     return null;
   }
+  cached.timestamp = now;
   return cached;
 };
 const setLocalCacheEntry = (key: string, entry: StatsCacheEntry): void => {
-  evictStaleAndOldest();
+  if (!isValidCacheKey(key)) return;
+  maybeRunFullEviction();
+  if (statsCache.size >= MAX_CACHE_ENTRIES && !statsCache.has(key)) {
+    evictLRU(EVICTION_BATCH_SIZE);
+  }
   statsCache.set(key, entry);
 };
 const getSharedCache = (): Cache | null => {
@@ -206,6 +231,17 @@ const fetchGithub = async <T>(url: string, githubToken?: string): Promise<T | nu
     });
     return null;
   }
+  const rateLimitRemaining = response.headers.get('x-ratelimit-remaining');
+  const rateLimitReset = response.headers.get('x-ratelimit-reset');
+  if (response.status === 403 || response.status === 429 || rateLimitRemaining === '0') {
+    logger.warn('[Changelog] GitHub rate limit reached.', {
+      url,
+      status: response.status,
+      rateLimitRemaining,
+      rateLimitReset: rateLimitReset ? new Date(Number(rateLimitReset) * 1000).toISOString() : null,
+    });
+    return null;
+  }
   if (!response.ok) {
     let bodySnippet = '';
     try {
@@ -291,7 +327,14 @@ const buildReleaseItems = async (
   githubToken?: string
 ): Promise<ChangelogItem[]> => {
   const validReleases = releases.filter((release) => !release.draft).slice(0, limit);
-  const items: ChangelogItem[] = [];
+  type ReleaseItemData = {
+    date: string;
+    label: string;
+    bullets: ChangelogBullet[];
+    tagName: string | undefined;
+    prevTagName: string | undefined;
+  };
+  const releaseData: ReleaseItemData[] = [];
   for (let i = 0; i < validReleases.length; i++) {
     const release = validReleases[i];
     if (!release) continue;
@@ -305,26 +348,25 @@ const buildReleaseItems = async (
     if (!bullets.length && label) {
       bullets.push({ text: toSentence(label) });
     }
-    const tagName = release.tag_name;
+    const tagName = release.tag_name ?? undefined;
     const prevRelease = validReleases[i + 1];
-    const prevTagName = prevRelease?.tag_name;
-    let stats: ChangelogStats | undefined;
-    if (tagName && prevTagName) {
-      const releaseStats = await fetchReleaseStats(tagName, prevTagName, baseUrl, githubToken);
-      if (releaseStats) {
-        stats = releaseStats;
-      }
-    }
+    const prevTagName = prevRelease?.tag_name ?? undefined;
     if (date && bullets.length) {
-      items.push({
-        date,
-        label: label || undefined,
-        bullets,
-        stats,
-      });
+      releaseData.push({ date, label, bullets, tagName, prevTagName });
     }
   }
-  return items;
+  const statsPromises = releaseData.map((data) =>
+    data.tagName && data.prevTagName
+      ? fetchReleaseStats(data.tagName, data.prevTagName, baseUrl, githubToken)
+      : Promise.resolve(null)
+  );
+  const statsResults = await Promise.all(statsPromises);
+  return releaseData.map((data, i) => ({
+    date: data.date,
+    label: data.label || undefined,
+    bullets: data.bullets,
+    stats: statsResults[i] ?? undefined,
+  }));
 };
 type ProcessedCommit = {
   sha: string;
