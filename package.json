@@ -23,6 +23,7 @@
     "graphology-types": "^0.24.8",
     "ipaddr.js": "^2.3.0",
     "leaflet": "^1.9.4",
+    "lru-cache": "^11.2.5",
     "nuxt": "^4.3.0",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",

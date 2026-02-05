@@ -7,6 +7,7 @@ import withNuxt from './.nuxt/eslint.config.mjs';
 const importXPlugin = /** @type {import('eslint').ESLint.Plugin} */ (
   /** @type {unknown} */ (importX)
 );
+// Target: Vue 3.5+ / Nuxt 4.3+ (see package.json dependencies).
 const AUTO_VUE_IMPORT_NAMES = [
   'Component',
   'ComponentPublicInstance',
@@ -89,6 +90,7 @@ const AUTO_VUE_IMPORT_NAMES = [
   'withModifiers',
   'withScopeId',
 ];
+const AUTO_VUE_IMPORT_NAMES_WITHOUT_REF = AUTO_VUE_IMPORT_NAMES.filter((name) => name !== 'Ref');
 export default withNuxt(
   {
     ignores: [
@@ -152,14 +154,31 @@ export default withNuxt(
     },
   },
   {
-    // Override for 'app/composables/useGraphBuilder.ts':
+    files: ['app/composables/useMapResize.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'vue',
+              importNames: AUTO_VUE_IMPORT_NAMES_WITHOUT_REF,
+              message: 'Use Nuxt auto-imports instead of importing from vue.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Override for modules importing graphology-types.
     // The import-x/order rule's pathGroups entry for 'graphology-types' must affect
     // type imports to preserve required ordering. The global config excludes 'type'
     // from pathGroupsExcludedImportTypes, which prevents pathGroups from matching
     // type-only imports. Here we intentionally omit 'type' (only excluding 'builtin')
     // so the { pattern: 'graphology-types', group: 'external' } entry can reorder
     // type imports from graphology-types alongside regular imports.
-    files: ['app/composables/useGraphBuilder.ts'],
+    files: ['app/composables/useGraphBuilder.ts', 'app/stores/useMetadata.ts'],
     rules: {
       'import-x/order': [
         'warn',
