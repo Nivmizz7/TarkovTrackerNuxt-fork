@@ -1,0 +1,21 @@
+language: en-US
+reviews:
+  auto_review:
+    enabled: true
+  path_instructions:
+    - path: "**/*.{ts,tsx,vue,js,jsx}"
+      instructions: |
+        Import ordering is handled by ESLint with eslint-plugin-import-x.
+        The project sorts imports alphabetically by module path, not by symbol name.
+        Do not flag import order issues - defer to the project's ESLint configuration.
+
+        The useI18n composable from vue-i18n is NOT auto-imported by @nuxtjs/i18n.
+        Only these are auto-imported: useRouteBaseName, useLocalePath, useLocaleRoute,
+        useSwitchLocalePath, useLocaleHead, useBrowserLocale, useCookieLocale,
+        useSetI18nParams, useI18nPreloadKeys, defineI18nRoute, defineI18nLocale, defineI18nConfig.
+        The explicit import of useI18n from 'vue-i18n' is required and correct.
+  tools:
+    biome:
+      enabled: false
+    eslint:
+      enabled: true

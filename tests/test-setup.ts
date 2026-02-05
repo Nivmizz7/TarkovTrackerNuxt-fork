@@ -107,6 +107,11 @@ const cleanupNuxtApp = (): void => {
   ).__unctx__;
   context?.get?.('nuxt-app')?.unset?.();
 };
+const shouldFilterConsoleArgs = (...args: unknown[]): boolean =>
+  args.some(
+    (arg) =>
+      typeof arg === 'string' && (arg.includes('[@nuxtjs/sitemap]') || arg.startsWith('[Storage]'))
+  );
 beforeAll(() => {
   const originalWarn = console.warn.bind(console);
   vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
@@ -120,26 +125,12 @@ beforeAll(() => {
   });
   const originalInfo = console.info.bind(console);
   vi.spyOn(console, 'info').mockImplementation((...args: unknown[]) => {
-    const hasSitemapInfo = args.some(
-      (arg) => typeof arg === 'string' && arg.includes('[@nuxtjs/sitemap]')
-    );
-    if (hasSitemapInfo) return;
-    const hasStorageInfo = args.some(
-      (arg) => typeof arg === 'string' && arg.startsWith('[Storage]')
-    );
-    if (hasStorageInfo) return;
+    if (shouldFilterConsoleArgs(...args)) return;
     originalInfo(...args);
   });
   const originalLog = console.log.bind(console);
   vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-    const hasSitemapInfo = args.some(
-      (arg) => typeof arg === 'string' && arg.includes('[@nuxtjs/sitemap]')
-    );
-    if (hasSitemapInfo) return;
-    const hasStorageInfo = args.some(
-      (arg) => typeof arg === 'string' && arg.startsWith('[Storage]')
-    );
-    if (hasStorageInfo) return;
+    if (shouldFilterConsoleArgs(...args)) return;
     originalLog(...args);
   });
 });

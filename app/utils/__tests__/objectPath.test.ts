@@ -203,7 +203,7 @@ describe('objectPath', () => {
       try {
         set(obj, '__proto__.polluted', 'yes');
       } catch {
-        // Expected to throw
+        /* empty */
       }
       expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
     });
@@ -212,7 +212,7 @@ describe('objectPath', () => {
       try {
         set(obj, 'constructor.prototype.polluted', 'yes');
       } catch {
-        // Expected to throw
+        /* empty */
       }
       expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
     });
