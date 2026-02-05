@@ -58,26 +58,26 @@ export function useHideoutFiltering() {
     if (Object.keys(progressStore.visibleTeamStores).length === 0) return true;
     return false;
   });
-  // Filter stations based on current view
+  const filterAndSortStations = (
+    stations: HideoutStation[],
+    status?: 'available' | 'maxed' | 'locked'
+  ): HideoutStation[] => {
+    const filtered = status ? stations.filter((s) => getStationStatus(s) === status) : stations;
+    return sortStationsByReadiness(filtered);
+  };
   const visibleStations = computed(() => {
     if (isStoreLoading.value) return [];
     const hideoutStationList = hideoutStations.value as HideoutStation[];
     if (activePrimaryView.value === 'available') {
-      return sortStationsByReadiness(
-        hideoutStationList.filter((s) => getStationStatus(s) === 'available')
-      );
+      return filterAndSortStations(hideoutStationList, 'available');
     }
     if (activePrimaryView.value === 'maxed') {
-      return sortStationsByReadiness(
-        hideoutStationList.filter((s) => getStationStatus(s) === 'maxed')
-      );
+      return filterAndSortStations(hideoutStationList, 'maxed');
     }
     if (activePrimaryView.value === 'locked') {
-      return sortStationsByReadiness(
-        hideoutStationList.filter((s) => getStationStatus(s) === 'locked')
-      );
+      return filterAndSortStations(hideoutStationList, 'locked');
     }
-    return sortStationsByReadiness(hideoutStationList);
+    return filterAndSortStations(hideoutStationList);
   });
   return {
     activePrimaryView,

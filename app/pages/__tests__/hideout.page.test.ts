@@ -55,9 +55,22 @@ vi.mock('@/stores/useMetadata', () => ({
 }));
 vi.mock('pinia', async () => {
   const actualPinia = await vi.importActual('pinia');
+  const { isRef, ref, computed } = await import('vue');
   return {
     ...actualPinia,
-    storeToRefs: vi.fn((store: Record<string, unknown>) => store),
+    storeToRefs: vi.fn((store: Record<string, unknown>) => {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(store)) {
+        if (isRef(value)) {
+          result[key] = value;
+        } else if (typeof value === 'function') {
+          result[key] = computed(value as () => unknown);
+        } else {
+          result[key] = ref(value);
+        }
+      }
+      return result;
+    }),
   };
 });
 vi.mock('@/stores/usePreferences', () => ({
@@ -88,7 +101,8 @@ vi.mock('vue-router', () => ({
 }));
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (_key: string, fallback?: string) => fallback ?? _key,
+    t: (key: string, fallback?: string | Record<string, unknown>) =>
+      typeof fallback === 'string' ? fallback : key,
   }),
 }));
 describe('hideout page', () => {

@@ -48,22 +48,24 @@
                   <div class="w-64 space-y-3 p-3">
                     <UCheckbox
                       v-model="preferencesStore.hideoutCollapseCompleted"
-                      :label="$t('page.hideout.collapsecompleted') || 'Collapse completed stations'"
+                      :label="
+                        $t('page.hideout.collapse_completed') || 'Collapse completed stations'
+                      "
                       color="success"
                     />
                     <UCheckbox
                       v-model="preferencesStore.hideoutSortReadyFirst"
-                      :label="$t('page.hideout.sort.readyfirst') || 'Sort ready to build first'"
+                      :label="$t('page.hideout.sort.ready_first') || 'Sort ready to build first'"
                       color="info"
                     />
                     <div class="border-surface-700/60 space-y-2 border-t pt-3">
                       <div class="text-surface-400 text-xs font-semibold tracking-wider uppercase">
-                        {{ $t('page.hideout.prereqfilters.title') || 'Availability requirements' }}
+                        {{ $t('page.hideout.prereq_filters.title') || 'Availability requirements' }}
                       </div>
                       <UCheckbox
                         :model-value="preferencesStore.hideoutRequireStationLevels"
                         :label="
-                          $t('page.hideout.prereqfilters.station_levels') ||
+                          $t('page.hideout.prereq_filters.station_levels') ||
                           'Require station levels'
                         "
                         @update:model-value="
@@ -73,14 +75,14 @@
                       <UCheckbox
                         :model-value="preferencesStore.hideoutRequireSkillLevels"
                         :label="
-                          $t('page.hideout.prereqfilters.skill_levels') || 'Require skill levels'
+                          $t('page.hideout.prereq_filters.skill_levels') || 'Require skill levels'
                         "
                         @update:model-value="(value) => handlePrereqToggle('skill', Boolean(value))"
                       />
                       <UCheckbox
                         :model-value="preferencesStore.hideoutRequireTraderLoyalty"
                         :label="
-                          $t('page.hideout.prereqfilters.trader_loyalty') ||
+                          $t('page.hideout.prereq_filters.trader_loyalty') ||
                           'Require trader loyalty'
                         "
                         @update:model-value="
@@ -116,10 +118,10 @@
           <template #footer>
             <div class="flex justify-end gap-2 px-4 pb-4">
               <UButton color="neutral" variant="ghost" @click="cancelPrereqToggle">
-                {{ $t('page.hideout.prereqfilters.confirm_cancel') || 'Cancel' }}
+                {{ $t('page.hideout.prereq_filters.confirm_cancel') || 'Cancel' }}
               </UButton>
               <UButton color="warning" variant="solid" @click="confirmPrereqToggle">
-                {{ $t('page.hideout.prereqfilters.confirm_confirm') || 'Enable' }}
+                {{ $t('page.hideout.prereq_filters.confirm_confirm') || 'Enable' }}
               </UButton>
             </div>
           </template>
@@ -140,7 +142,7 @@
           color="neutral"
           variant="soft"
           class="max-w-xl"
-          :title="$t('page.hideout.nostationsfound')"
+          :title="$t('page.hideout.no_stations_found')"
         />
       </div>
       <div v-else class="mt-2 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -166,6 +168,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import { useHideoutFiltering } from '@/composables/useHideoutFiltering';
   import { useHideoutStationStatus } from '@/composables/useHideoutStationStatus';
+  import { usePrereqModal, type PrereqType } from '@/composables/usePrereqModal';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
@@ -187,35 +190,58 @@
   const { getStationStatus: getStationStatusForStation } = useHideoutStationStatus();
   const highlightedStationId = ref<string | null>(null);
   const highlightedModuleId = ref<string | null>(null);
-  const showPrereqConfirm = ref(false);
-  const pendingPrereqToggle = ref<'station' | 'skill' | 'trader' | null>(null);
+  const prereqPreferenceSetters = {
+    station: (value: boolean) => preferencesStore.setHideoutRequireStationLevels(value),
+    skill: (value: boolean) => preferencesStore.setHideoutRequireSkillLevels(value),
+    trader: (value: boolean) => preferencesStore.setHideoutRequireTraderLoyalty(value),
+  } satisfies Record<'station' | 'skill' | 'trader', (value: boolean) => void>;
+  const setPrereqPreference = (key: 'station' | 'skill' | 'trader', enabled: boolean) => {
+    const setter = prereqPreferenceSetters[key];
+    if (!setter) return;
+    setter(enabled);
+  };
+  const hasEnforcedPrereqs = ref(false);
+  const {
+    showPrereqConfirm,
+    pendingPrereqToggle,
+    handlePrereqToggle,
+    cancelPrereqToggle,
+    confirmPrereqToggle,
+  } = usePrereqModal({
+    onConfirm: (key: PrereqType) => {
+      setPrereqPreference(key, true);
+      tarkovStore.enforceHideoutPrereqsNow();
+      hasEnforcedPrereqs.value = true;
+    },
+    setPreference: setPrereqPreference,
+  });
   // Hideout filtering composable
   const { activePrimaryView, isStoreLoading, visibleStations, stationCounts } =
     useHideoutFiltering();
   const primaryViews = computed(() => [
     {
-      title: t('page.hideout.primaryviews.all'),
+      title: t('page.hideout.primary_views.all'),
       icon: 'mdi-clipboard-check',
       view: 'all',
       count: stationCounts.value.all,
       badgeColor: 'bg-secondary-600',
     },
     {
-      title: t('page.hideout.primaryviews.available'),
+      title: t('page.hideout.primary_views.available'),
       icon: 'mdi-tag-arrow-up-outline',
       view: 'available',
       count: stationCounts.value.available,
       badgeColor: 'bg-info-600',
     },
     {
-      title: t('page.hideout.primaryviews.locked'),
+      title: t('page.hideout.primary_views.locked'),
       icon: 'mdi-lock',
       view: 'locked',
       count: stationCounts.value.locked,
       badgeColor: 'bg-surface-600',
     },
     {
-      title: t('page.hideout.primaryviews.maxed'),
+      title: t('page.hideout.primary_views.maxed'),
       icon: 'mdi-arrow-collapse-up',
       view: 'maxed',
       count: stationCounts.value.maxed,
@@ -223,9 +249,9 @@
     },
   ]);
   const prereqLabels = computed(() => ({
-    station: t('page.hideout.prereqfilters.station_levels') || 'Require station levels',
-    skill: t('page.hideout.prereqfilters.skill_levels') || 'Require skill levels',
-    trader: t('page.hideout.prereqfilters.trader_loyalty') || 'Require trader loyalty',
+    station: t('page.hideout.prereq_filters.station_levels') || 'Require station levels',
+    skill: t('page.hideout.prereq_filters.skill_levels') || 'Require skill levels',
+    trader: t('page.hideout.prereq_filters.trader_loyalty') || 'Require trader loyalty',
   }));
   const pendingPrereqLabel = computed(() => {
     if (!pendingPrereqToggle.value) return '';
@@ -237,49 +263,16 @@
       preferencesStore.hideoutRequireSkillLevels ||
       preferencesStore.hideoutRequireTraderLoyalty
   );
-  const hasEnforcedPrereqs = ref(false);
   const prereqConfirmTitle = computed(
-    () => t('page.hideout.prereqfilters.confirm_title') || 'Enable availability requirement?'
+    () => t('page.hideout.prereq_filters.confirm_title') || 'Enable availability requirement?'
   );
   const prereqConfirmDescription = computed(
     () =>
-      t('page.hideout.prereqfilters.confirm_description', {
+      t('page.hideout.prereq_filters.confirm_description', {
         requirement: pendingPrereqLabel.value,
       }) ||
       'Enabling this requirement may remove hideout upgrades that no longer meet prerequisites.'
   );
-  const prereqPreferenceSetters = {
-    station: (value: boolean) => preferencesStore.setHideoutRequireStationLevels(value),
-    skill: (value: boolean) => preferencesStore.setHideoutRequireSkillLevels(value),
-    trader: (value: boolean) => preferencesStore.setHideoutRequireTraderLoyalty(value),
-  } satisfies Record<'station' | 'skill' | 'trader', (value: boolean) => void>;
-  const setPrereqPreference = (key: 'station' | 'skill' | 'trader', enabled: boolean) => {
-    const setter = prereqPreferenceSetters[key];
-    if (!setter) return;
-    setter(enabled);
-  };
-  const handlePrereqToggle = (key: 'station' | 'skill' | 'trader', value: boolean) => {
-    if (!value) {
-      setPrereqPreference(key, false);
-      return;
-    }
-    pendingPrereqToggle.value = key;
-    showPrereqConfirm.value = true;
-  };
-  const confirmPrereqToggle = () => {
-    if (!pendingPrereqToggle.value) {
-      showPrereqConfirm.value = false;
-      return;
-    }
-    setPrereqPreference(pendingPrereqToggle.value, true);
-    showPrereqConfirm.value = false;
-    tarkovStore.enforceHideoutPrereqsNow();
-    pendingPrereqToggle.value = null;
-  };
-  const cancelPrereqToggle = () => {
-    showPrereqConfirm.value = false;
-    pendingPrereqToggle.value = null;
-  };
   watch(
     [isStoreLoading, shouldEnforcePrereqs],
     ([loading, shouldEnforce]) => {
