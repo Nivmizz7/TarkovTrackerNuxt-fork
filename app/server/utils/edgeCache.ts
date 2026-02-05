@@ -27,7 +27,10 @@ function getOverlayHeadersMeta(payload: unknown): OverlayHeadersMeta | null {
 }
 function isTruthyFlag(value: unknown): boolean {
   if (typeof value === 'boolean') return value;
-  if (Array.isArray(value)) return isTruthyFlag(value[0]);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return false;
+    return isTruthyFlag(value[0]);
+  }
   if (typeof value !== 'string') return false;
   return ['1', 'true', 'yes', 'y', 'on'].includes(value.toLowerCase());
 }
@@ -250,6 +253,32 @@ const sanitizeErrorMessage = (message: string): string => {
   }
   return sanitized;
 };
+const sanitizeGraphQLErrors = (errors: unknown): string => {
+  try {
+    if (Array.isArray(errors)) {
+      const sanitized = errors.map((err) => {
+        if (typeof err === 'object' && err !== null) {
+          const e = err as Record<string, unknown>;
+          return {
+            code:
+              e.extensions && typeof e.extensions === 'object'
+                ? (e.extensions as Record<string, unknown>).code
+                : undefined,
+            type: typeof e.message === 'string' ? e.message.slice(0, 100) : 'Unknown error',
+          };
+        }
+        return { type: 'Unknown error' };
+      });
+      return JSON.stringify(sanitized);
+    }
+    if (typeof errors === 'object' && errors !== null) {
+      return JSON.stringify({ type: 'Non-array error object' });
+    }
+    return 'Unknown error format';
+  } catch {
+    return 'Error sanitization failed';
+  }
+};
 function sanitizeVariables(variables: Record<string, unknown>): Record<string, unknown> {
   const sanitizeValue = (value: unknown): unknown => {
     if (Array.isArray(value)) {
@@ -294,33 +323,6 @@ export function createTarkovFetcher<T = unknown>(
         });
         if (response && typeof response === 'object' && 'errors' in response) {
           const responseErrors = (response as { errors?: unknown }).errors;
-          const sanitizeGraphQLErrors = (errors: unknown): string => {
-            try {
-              if (Array.isArray(errors)) {
-                const sanitized = errors.map((err) => {
-                  if (typeof err === 'object' && err !== null) {
-                    const e = err as Record<string, unknown>;
-                    return {
-                      code:
-                        e.extensions && typeof e.extensions === 'object'
-                          ? (e.extensions as Record<string, unknown>).code
-                          : undefined,
-                      type:
-                        typeof e.message === 'string' ? e.message.slice(0, 100) : 'Unknown error',
-                    };
-                  }
-                  return { type: 'Unknown error' };
-                });
-                return JSON.stringify(sanitized);
-              }
-              if (typeof errors === 'object' && errors !== null) {
-                return JSON.stringify({ type: 'Non-array error object' });
-              }
-              return 'Unknown error format';
-            } catch {
-              return 'Error sanitization failed';
-            }
-          };
           if (Array.isArray(responseErrors)) {
             throw new Error(`GraphQL errors: ${sanitizeGraphQLErrors(responseErrors)}`);
           }

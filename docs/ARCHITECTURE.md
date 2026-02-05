@@ -218,6 +218,10 @@ sequenceDiagram
 
 ### OAuth Popup Flow (Login)
 
+- Initial conditions:
+  - `loading.value[provider]` is set to `true` before popup open.
+  - `popupConfirmedOpen` starts as `false`.
+  - `pollTimer`, `fallbackTimer`, and `abandonedTimer` are created.
 - `pollTimer` runs every 500ms; if the popup closes, it clears `loading.value[provider]` and runs
   `cleanup()`, otherwise it sets `popupConfirmedOpen`.
 - `fallbackTimer` runs at 3s; if `didCleanup` is false, loading is still active, the popup was never
@@ -225,10 +229,42 @@ sequenceDiagram
   `fallbackToRedirect(url, provider)`.
 - `abandonedTimer` runs at 90s; if `didCleanup` is still false, it clears `loading.value[provider]` and
   runs `cleanup()` to abort the flow.
+- Success path: on `OAUTH_SUCCESS` message from the popup, it clears `loading.value[provider]`, runs
+  `cleanup()`, and navigates to the safe redirect.
 - `popupConfirmedOpen` tracks whether the popup has been detected as open at least once to avoid
   triggering the redirect fallback unnecessarily.
 - `loading.value[provider]` acts as the gate for the fallback timer; if loading is cleared, fallback exits.
 - `cleanup()` clears timers, removes the message listener, and attempts to close the popup safely.
+
+```mermaid
+sequenceDiagram
+    participant Login as login.vue
+    participant Popup as OAuth Popup
+    participant Callback as /auth/callback
+
+    Login->>Login: loading.value[provider] = true
+    Login->>Popup: window.open(url)
+    Login->>Login: start pollTimer + fallbackTimer + abandonedTimer
+    Popup->>Callback: OAuth provider redirects back
+    Callback-->>Popup: postMessage('OAUTH_SUCCESS')
+    Popup-->>Login: message event
+    Login->>Login: loading.value[provider] = false
+    Login->>Login: cleanup()
+    Login->>Login: navigateTo(redirect)
+
+    alt popup blocked or closed early
+        Login->>Login: fallbackTimer + !popupConfirmedOpen
+        Login->>Login: cleanup()
+        Login->>Login: fallbackToRedirect(url, provider)
+    end
+```
+
+### Supabase Authentication
+
+1. User authenticates via Supabase (OAuth/email)
+2. JWT stored in session
+3. Protected routes validate token
+4. Team API validates membership
 
 ## API Architecture
 
@@ -299,13 +335,6 @@ runtimeConfig: {
   }
 }
 ```
-
-### Authentication Flow
-
-1. User authenticates via Supabase (OAuth/email)
-2. JWT stored in session
-3. Protected routes validate token
-4. Team API validates membership
 
 ## Performance Optimizations
 

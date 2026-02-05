@@ -74,7 +74,11 @@ const changelogConfig = (() => {
     EVICTION_BATCH_SIZE: Math.ceil(MAX_CACHE_ENTRIES * 0.1), // Local in-memory eviction batch size.
     FULL_EVICTION_INTERVAL_MS: 5 * 60 * 1000, // Local in-memory eviction cadence; not shared across instances.
     cache: {
-      statsCache: new LRUCache<string, StatsCacheEntry>({ max: MAX_CACHE_ENTRIES }), // Non-persistent per-instance cache; reset on cold starts.
+      // TTL is NOT set on LRUCache itself; TTL is managed manually via
+      // getLocalCacheEntry() (active validation) and maybeRunFullEviction()
+      // (periodic sweep). This avoids double-handling and gives explicit
+      // control over eviction behaviour and memory trade-offs.
+      statsCache: new LRUCache<string, StatsCacheEntry>({ max: MAX_CACHE_ENTRIES }),
       lastFullEviction: 0, // Non-persistent local timestamp; Cache API + GitHub fallback handle cross-instance misses.
     },
   };
@@ -293,13 +297,13 @@ const fetchCommitStats = async (
   githubToken?: string
 ): Promise<ChangelogStats | null> => {
   const cacheKey = `commit:${sha}`;
+  const cached = getLocalCacheEntry(cacheKey);
+  if (cached) return cached.stats;
   const sharedCached = await getSharedCacheEntry(cacheKey);
   if (sharedCached) {
     setLocalCacheEntry(cacheKey, sharedCached);
     return sharedCached.stats;
   }
-  const cached = getLocalCacheEntry(cacheKey);
-  if (cached) return cached.stats;
   const detail = await fetchGithub<GitHubCommitDetail>(`${baseUrl}/commits/${sha}`, githubToken);
   if (!detail?.stats) return null;
   const stats: ChangelogStats = {
@@ -318,13 +322,13 @@ const fetchReleaseStats = async (
   githubToken?: string
 ): Promise<ChangelogStats | null> => {
   const cacheKey = `release:${tagName}:${prevTagName || 'initial'}`;
+  const cached = getLocalCacheEntry(cacheKey);
+  if (cached) return cached.stats;
   const sharedCached = await getSharedCacheEntry(cacheKey);
   if (sharedCached) {
     setLocalCacheEntry(cacheKey, sharedCached);
     return sharedCached.stats;
   }
-  const cached = getLocalCacheEntry(cacheKey);
-  if (cached) return cached.stats;
   if (!prevTagName) return null;
   const compareUrl = `${baseUrl}/compare/${prevTagName}...${tagName}`;
   const compare = await fetchGithub<GitHubCompareResponse>(compareUrl, githubToken);

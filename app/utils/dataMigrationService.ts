@@ -401,6 +401,9 @@ export default class DataMigrationService {
    * @param {ProgressData} importedData The imported data to save
    * @returns {Promise<boolean>} True if import was successful
    */
+  // TODO: _targetGameMode is reserved for future game-mode-specific import logic.
+  // When multi-mode import is implemented, this parameter will determine which
+  // game mode's data store receives the imported data.
   static async importDataToUser(
     uid: string,
     importedData: ProgressData,

@@ -23,8 +23,8 @@ const OVERRIDES_PATH = join(__dirname, '../app/data/maps-overrides.json');
  * e.g., "https://assets.tarkov.dev/maps/svg/Customs.svg" -> "Customs.svg"
  */
 function extractSvgFilename(svgPath) {
-  if (!svgPath) return null;
-  const parts = svgPath.split('/');
+  if (!svgPath || String(svgPath).trim() === '') return null;
+  const parts = String(svgPath).split('/');
   return parts[parts.length - 1];
 }
 /**
@@ -270,7 +270,9 @@ syncMaps().catch((err) => {
   const isNetwork =
     name === 'FetchError' ||
     (name === 'TypeError' && /fetch|network/i.test(message)) ||
-    (code ? ['ECONNRESET', 'EAI_AGAIN', 'ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT'].includes(code) : false);
+    (code
+      ? ['ECONNRESET', 'EAI_AGAIN', 'ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT'].includes(code)
+      : false);
   const isFilesystem =
     (code ? ['EACCES', 'EISDIR', 'ENOENT', 'ENOSPC', 'EROFS'].includes(code) : false) ||
     (err && typeof err === 'object' && 'syscall' in err && String(err.syscall).includes('write'));
