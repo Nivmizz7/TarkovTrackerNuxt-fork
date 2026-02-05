@@ -118,14 +118,12 @@
   import TeamNeedsDisplay from '@/features/neededitems/TeamNeedsDisplay.vue';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
+  import type { Need } from '@/types/tarkov';
   const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink.vue'));
   const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink.vue'));
-  const props = defineProps({
-    need: {
-      type: Object,
-      required: true,
-    },
-  });
+  const props = defineProps<{
+    need: Need;
+  }>();
   defineEmits(['increaseCount', 'decreaseCount', 'toggleCount', 'setCount']);
   const tarkovStore = useTarkovStore();
   const formatNumber = useLocaleNumberFormatter();

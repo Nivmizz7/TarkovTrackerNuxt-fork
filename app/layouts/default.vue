@@ -47,6 +47,8 @@
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useAppStore } from '@/stores/useApp';
   import { usePreferencesStore } from '@/stores/usePreferences';
+  const DRAWER_EXPANDED_WIDTH = '224px';
+  const DRAWER_COLLAPSED_WIDTH = '64px';
   const appStore = useAppStore();
   const route = useRoute();
   const preferencesStore = usePreferencesStore();
@@ -56,9 +58,9 @@
   const { belowMd } = useSharedBreakpoints();
   const mainMarginLeft = computed(() => {
     if (belowMd.value) {
-      return appStore.mobileDrawerExpanded ? '224px' : '64px';
+      return appStore.mobileDrawerExpanded ? DRAWER_EXPANDED_WIDTH : DRAWER_COLLAPSED_WIDTH;
     }
-    return appStore.drawerRail ? '64px' : '224px';
+    return appStore.drawerRail ? DRAWER_COLLAPSED_WIDTH : DRAWER_EXPANDED_WIDTH;
   });
   const usesWindowScroll = computed(() => {
     return Boolean(route.meta?.usesWindowScroll);

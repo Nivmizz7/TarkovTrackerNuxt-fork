@@ -447,8 +447,7 @@
     const active = document.activeElement as HTMLElement | null;
     if (active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA') return;
     if (active?.isContentEditable) return;
-    const inputRef = searchInput.value?.inputRef;
-    inputRef?.focus();
+    searchInput.value?.inputRef?.focus();
   };
   onMounted(() => {
     if (props.autoFocus) {

@@ -9,10 +9,10 @@
           icon="i-mdi-alert"
           color="warning"
           variant="soft"
-          :title="$t('page.team.warning.title')"
+          :title="t('page.team.warning.title')"
         >
           <template #description>
-            {{ $t('page.team.warning.description') }}
+            {{ t('page.team.warning.description') }}
           </template>
         </UAlert>
         <div class="grid gap-4 lg:grid-cols-2">

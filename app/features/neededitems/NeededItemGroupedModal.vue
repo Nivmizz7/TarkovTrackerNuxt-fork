@@ -395,18 +395,14 @@
   const increaseObjective = (obj: NeededItemTaskObjective) => {
     const current = getObjectiveCount(obj);
     const newCount = Math.min(current + 1, obj.count);
-    tarkovStore.setObjectiveCount(obj.id, newCount);
-    if (newCount >= obj.count) {
-      tarkovStore.setTaskObjectiveComplete(obj.id);
-    }
+    const isComplete = newCount >= obj.count;
+    tarkovStore.setTaskObjectiveCountWithStatus(obj.id, newCount, isComplete);
   };
   const decreaseObjective = (obj: NeededItemTaskObjective) => {
     const current = getObjectiveCount(obj);
     const newCount = Math.max(current - 1, 0);
-    tarkovStore.setObjectiveCount(obj.id, newCount);
-    if (newCount < obj.count) {
-      tarkovStore.setTaskObjectiveUncomplete(obj.id);
-    }
+    const isComplete = newCount >= obj.count;
+    tarkovStore.setTaskObjectiveCountWithStatus(obj.id, newCount, isComplete);
   };
   const increaseHideout = (mod: NeededItemHideoutModule) => {
     const current = getHideoutCount(mod);

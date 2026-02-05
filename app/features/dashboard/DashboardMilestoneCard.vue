@@ -27,7 +27,7 @@
       color?: MilestoneColor;
     }>(),
     {
-      color: 'primary' as MilestoneColor,
+      color: 'primary',
     }
   );
   const colorClasses: Record<MilestoneColor, { achieved: string; icon: string }> = {

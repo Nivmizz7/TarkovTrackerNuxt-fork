@@ -182,6 +182,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useI18n } from 'vue-i18n';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
   import { logger } from '@/utils/logger';
   import type ContextMenu from '@/components/ui/ContextMenu.vue';
@@ -257,6 +258,8 @@
     decrease: [];
     toggle: [];
   }>();
+  const { t } = useI18n({ useScope: 'global' });
+  const toast = useToast();
   const formatNumber = useLocaleNumberFormatter();
   const backgroundClassMap = {
     violet: 'bg-rarity-violet',
@@ -369,6 +372,11 @@
     if (textToCopy) {
       try {
         await navigator.clipboard.writeText(textToCopy);
+        toast.add({
+          title: t('toast.clipboard_copied.title'),
+          description: t('toast.clipboard_copied.description', { value: textToCopy }),
+          color: 'success',
+        });
       } catch (error) {
         logger.error('[GameItem] Failed to copy item name:', error);
       }

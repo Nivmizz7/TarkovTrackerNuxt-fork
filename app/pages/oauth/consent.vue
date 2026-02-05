@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { logger } from '@/utils/logger';
   definePageMeta({
     layout: 'default',
   });
@@ -32,7 +33,7 @@
       const { data, error: fetchError } = await supabase.auth.oauth.getAuthorizationDetails(
         authorizationId.value
       );
-      console.log('[OAuth] Authorization details:', JSON.stringify(data, null, 2));
+      logger.debug('[OAuth] Authorization details:', JSON.stringify(data, null, 2));
       if (fetchError) {
         if (fetchError.message?.includes('cannot be processed')) {
           error.value = 'This authorization request has expired or was already processed.';
@@ -42,7 +43,7 @@
         return;
       }
       if (data?.redirect_url) {
-        console.log('[OAuth] Auto-redirecting to:', data.redirect_url);
+        logger.info('[OAuth] Auto-redirecting to:', data.redirect_url);
         window.location.href = data.redirect_url;
         return;
       }
@@ -57,20 +58,20 @@
     loading.value = true;
     error.value = '';
     try {
-      console.log('[OAuth] Approving authorization:', authorizationId.value);
+      logger.info('[OAuth] Approving authorization:', authorizationId.value);
       const { data, error: approveError } = await supabase.auth.oauth.approveAuthorization(
         authorizationId.value
       );
-      console.log('[OAuth] Approve result:', { data, error: approveError });
+      logger.debug('[OAuth] Approve result:', { data, error: approveError });
       if (approveError) throw approveError;
       if (data?.redirect_url) {
-        console.log('[OAuth] Redirecting to:', data.redirect_url);
+        logger.info('[OAuth] Redirecting to:', data.redirect_url);
         window.location.href = data.redirect_url;
       } else {
         throw new Error('No redirect URL returned');
       }
     } catch (e) {
-      console.error('[OAuth] Approve error:', e);
+      logger.error('[OAuth] Approve error:', e);
       error.value = e instanceof Error ? e.message : 'Failed to approve authorization';
       loading.value = false;
     }

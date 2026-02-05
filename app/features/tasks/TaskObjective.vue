@@ -11,8 +11,8 @@
       isParentTaskLocked ? 'cursor-not-allowed opacity-80' : 'cursor-pointer',
     ]"
     @click="handleRowClick"
-    @keydown.enter="handleRowClick"
-    @keydown.space.prevent="handleRowClick"
+    @keydown.enter.self="handleRowClick"
+    @keydown.space.prevent.self="handleRowClick"
     @mouseenter="objectiveMouseEnter()"
     @mouseleave="objectiveMouseLeave()"
   >
