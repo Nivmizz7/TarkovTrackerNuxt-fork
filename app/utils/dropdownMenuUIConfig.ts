@@ -1,4 +1,10 @@
-export const DROPDOWN_MENU_UI_CONFIG = {
+type DropdownMenuUIConfig = {
+  content: string;
+  group: string;
+  item: string;
+  itemLeadingIcon: string;
+};
+export const DROPDOWN_MENU_UI_CONFIG: DropdownMenuUIConfig = {
   content:
     'bg-surface-800 border border-surface-600 border-t-0 rounded-t-none rounded-b-md min-w-[var(--reka-dropdown-menu-trigger-width)] ring-0 outline-none shadow-none',
   group: 'p-1',

@@ -12,6 +12,10 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TARKOV_DEV_MAPS_URL =
   'https://raw.githubusercontent.com/the-hideout/tarkov-dev/main/src/data/maps.json';
+const FETCH_TIMEOUT_MS = (() => {
+  const value = Number.parseInt(process.env.MAP_SYNC_FETCH_TIMEOUT_MS ?? '10000', 10);
+  return Number.isFinite(value) && value > 0 ? value : 10000;
+})();
 const OUTPUT_PATH = join(__dirname, '../app/data/maps.json');
 const OVERRIDES_PATH = join(__dirname, '../app/data/maps-overrides.json');
 /**
@@ -206,7 +210,19 @@ function loadOverrides() {
 }
 async function syncMaps() {
   console.log('Fetching maps from tarkov-dev...');
-  const response = await fetch(TARKOV_DEV_MAPS_URL);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  let response;
+  try {
+    response = await fetch(TARKOV_DEV_MAPS_URL, { signal: controller.signal });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(`Fetching maps timed out after ${FETCH_TIMEOUT_MS}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
   if (!response.ok) {
     throw new Error(`Failed to fetch maps: ${response.status} ${response.statusText}`);
   }

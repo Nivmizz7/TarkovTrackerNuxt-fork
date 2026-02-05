@@ -5,20 +5,23 @@ reviews:
   path_instructions:
     - path: "**/*.{ts,tsx,vue,js,jsx}"
       instructions: |
-        Import ordering is handled by ESLint with eslint-plugin-import-x.
-        The project sorts imports alphabetically by module path, not by symbol name.
-        Do not flag import order issues - defer to the project's ESLint configuration.
+        IMPORTANT: If a suggestion conflicts with ESLint/Prettier/AGENTS.md rules, do not suggest it.
+        Treat those style suggestions as non-actionable.
+
+        Import ordering is enforced by ESLint (import-x/order + pathGroups).
+        Do not request alternate ordering when ESLint already passes.
+
+        Known conflict patterns to avoid suggesting:
+        - Moving type imports above utils/internal imports when that violates import-x/order.
+        - Adding a blank line after imports in app code (no-multiple-empty-lines has max: 0).
+        - Importing Vue auto-imported symbols from 'vue' in app code when restricted by no-restricted-imports.
+          Prefer existing project patterns (Nuxt auto-imports, `#imports`, or `globalThis.Ref` where used).
 
         Nuxt auto-imports Vue runtime functions (ref, computed, watch, etc.) and composables.
         Do NOT flag missing imports for these runtime usages in .vue files.
-        However, TYPE annotations (Ref<T>, ComputedRef<T>, etc.) in .ts files require explicit
-        type imports: import type { Ref } from 'vue'. This is correct and necessary for TypeScript.
 
-        The useI18n composable from vue-i18n is NOT auto-imported by @nuxtjs/i18n.
-        Only these are auto-imported: useRouteBaseName, useLocalePath, useLocaleRoute,
-        useSwitchLocalePath, useLocaleHead, useBrowserLocale, useCookieLocale,
-        useSetI18nParams, useI18nPreloadKeys, defineI18nRoute, defineI18nLocale, defineI18nConfig.
-        The explicit import of useI18n from 'vue-i18n' is required and correct.
+        In this project, `useI18n` may be auto-imported in .vue files via Nuxt i18n integration.
+        Do not require explicit `import { useI18n } from 'vue-i18n'` unless typecheck fails.
   tools:
     biome:
       enabled: false

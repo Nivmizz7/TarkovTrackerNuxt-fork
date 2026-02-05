@@ -81,7 +81,7 @@ export const normalizeCommitMessage = (message: string | null | undefined): stri
   const leadingVerb = subject.match(verbPattern);
   if (!verb && leadingVerb && leadingVerb[1]) {
     const keyword = leadingVerb[1].toLowerCase();
-    verb = INFERRED_MAP[keyword] || 'Updated';
+    verb = INFERRED_MAP[keyword]!;
     subject = subject.replace(verbPattern, '');
   }
   if (!verb) return null;
