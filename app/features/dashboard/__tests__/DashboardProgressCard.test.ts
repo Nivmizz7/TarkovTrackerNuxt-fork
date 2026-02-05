@@ -11,11 +11,6 @@ const colorVariants: Array<{ color: ProgressCardColor; barClass: string }> = [
 ];
 const setup = async () => {
   vi.resetModules();
-  vi.doMock('@/stores/usePreferences', () => ({
-    usePreferencesStore: () => ({
-      getEnableHolidayEffects: false,
-    }),
-  }));
   const { default: DashboardProgressCard } =
     await import('@/features/dashboard/DashboardProgressCard.vue');
   return DashboardProgressCard;

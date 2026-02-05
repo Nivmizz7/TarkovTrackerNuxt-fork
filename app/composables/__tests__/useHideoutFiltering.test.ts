@@ -251,5 +251,16 @@ describe('useHideoutFiltering', () => {
       const lockedIdx = ids.indexOf('station-locked');
       expect(availableIdx).toBeLessThan(lockedIdx);
     });
+    it('unlocks skill-locked station when skill levels are sufficient', async () => {
+      const { hideoutFiltering } = await initHideoutTest({
+        view: 'all',
+        sortReadyFirst: true,
+        skillLevels: { Strength: 5 },
+      });
+      const ids = hideoutFiltering.visibleStations.value.map((s) => s.id);
+      const skillLockedIdx = ids.indexOf('station-skill-locked');
+      const lockedIdx = ids.indexOf('station-locked');
+      expect(skillLockedIdx).toBeLessThan(lockedIdx);
+    });
   });
 });
