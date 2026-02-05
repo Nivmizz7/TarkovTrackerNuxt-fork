@@ -1,30 +1,30 @@
 <template>
   <UModal
-    :open="props.show"
+    :open="show"
     :ui="{ content: 'bg-transparent border-0 p-0 shadow-none ring-0 outline-none' }"
     @update:open="$emit('update:show', $event)"
   >
     <template #content>
       <UCard>
         <template #header>
-          <div class="px-4 py-3 text-xl font-medium">{{ t('importConfirm.title') }}</div>
+          <div class="px-4 py-3 text-xl font-medium">{{ t('import_confirm.title') }}</div>
         </template>
         <div class="px-4 pb-4">
-          <p class="mb-3">{{ t('importConfirm.description') }}</p>
+          <p class="mb-3">{{ t('import_confirm.description') }}</p>
           <div class="bg-surface-800 mb-4 rounded-lg p-3">
             <div class="flex items-center">
               <UIcon name="i-mdi-sword-cross" class="mr-2 h-4 w-4" />
-              <span class="font-medium">{{ t('importConfirm.targetMode') }}</span>
+              <span class="font-medium">{{ t('import_confirm.target_mode') }}</span>
             </div>
             <UAlert
               icon="i-mdi-information"
               color="primary"
               variant="soft"
               class="mt-3 mb-0"
-              :title="t('importConfirm.notice')"
+              :title="t('import_confirm.notice')"
             />
           </div>
-          <p class="mb-4">{{ t('importConfirm.listTitle') }}</p>
+          <p class="mb-4">{{ t('import_confirm.list_title') }}</p>
           <DataPreviewCard
             :data="data"
             :completed-tasks="completedTasks"
@@ -35,7 +35,7 @@
             @show-objectives-details="$emit('show-objectives-details')"
             @show-failed-tasks-details="$emit('show-failed-tasks-details')"
           />
-          <p class="text-error-500 mt-5 font-bold">{{ t('importConfirm.warning') }}</p>
+          <p class="text-error-500 mt-5 font-bold">{{ t('import_confirm.warning') }}</p>
         </div>
         <template #footer>
           <div class="flex justify-end px-4 pb-4">
@@ -49,7 +49,7 @@
               class="ml-3 px-4"
               @click="$emit('confirm')"
             >
-              {{ t('importConfirm.confirm') }}
+              {{ t('import_confirm.confirm') }}
             </UButton>
           </div>
         </template>
@@ -60,7 +60,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
   const { t } = useI18n({ useScope: 'global' });
-  const props = defineProps({
+  defineProps({
     show: {
       type: Boolean,
       default: false,

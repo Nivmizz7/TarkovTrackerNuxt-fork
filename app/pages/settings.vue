@@ -314,6 +314,7 @@
     title: 'Settings',
     description:
       'Customize your TarkovTracker experience. Manage preferences, game mode, and account settings.',
+    robots: 'noindex, nofollow',
   });
   const { t } = useI18n({ useScope: 'global' });
   const { $supabase } = useNuxtApp();

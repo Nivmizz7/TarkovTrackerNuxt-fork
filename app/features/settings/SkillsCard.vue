@@ -67,7 +67,7 @@
                   </span>
                   <UTooltip
                     v-if="skill.requiredByTasks.length > 0"
-                    :text="$t('skills.requiredFor', { items: skill.requiredByTasks.join(', ') })"
+                    :text="$t('skills.required_for', { items: skill.requiredByTasks.join(', ') })"
                   >
                     <UBadge color="warning" variant="soft" size="xs">
                       {{ $t('skills.req', 'Req') }}
@@ -75,7 +75,7 @@
                   </UTooltip>
                   <UTooltip
                     v-if="skill.requiredLevels.length > 0"
-                    :text="$t('skills.requiredLevels', { items: skill.requiredLevels.join(', ') })"
+                    :text="$t('skills.required_levels', { items: skill.requiredLevels.join(', ') })"
                   >
                     <UBadge color="accent" variant="soft" size="xs">
                       {{ $t('skills.lv', 'Lv') }} {{ formatRequiredLevels(skill.requiredLevels) }}
@@ -138,7 +138,7 @@
                 @update:model-value="(value) => updateSkillLevel(skill.name, value)"
               />
               <span :id="`skill-range-${skill.name}`" class="sr-only">
-                {{ $t('settings.skills.validRange', 'Valid range: 0 to 51') }}
+                {{ $t('settings.skills.valid_range', 'Valid range: 0 to 51') }}
               </span>
               <UButton
                 icon="i-mdi-refresh"
@@ -230,6 +230,10 @@
     return level >= 51 ? t('skills.elite_level', 'ELITE Level') : level;
   };
   const updateSkillLevel = (skillName: string, value: string | number) => {
+    if (value === '') {
+      skillCalculation.setTotalSkillLevel(skillName, 0);
+      return;
+    }
     const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
     if (!isNaN(numValue) && numValue >= 0) {
       const clampedValue = Math.min(Math.max(numValue, 0), 51);
@@ -237,6 +241,9 @@
     }
   };
   const preventInvalidInput = (e: KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      return;
+    }
     if (['-', '+', 'e', '.'].includes(e.key)) {
       e.preventDefault();
       return;
@@ -255,16 +262,14 @@
         'PageDown',
         'Tab',
         'Enter',
-      ].includes(e.key) ||
-      e.ctrlKey ||
-      e.metaKey
+      ].includes(e.key)
     ) {
       return;
     }
     const target = e.target as HTMLInputElement;
     const currentVal = target.value;
-    const selectionStart = target.selectionStart || 0;
-    const selectionEnd = target.selectionEnd || 0;
+    const selectionStart = target.selectionStart ?? 0;
+    const selectionEnd = target.selectionEnd ?? currentVal.length;
     const nextValStr = currentVal.slice(0, selectionStart) + e.key + currentVal.slice(selectionEnd);
     const nextVal = parseInt(nextValStr, 10);
     const isNumeric = /^\d+$/.test(nextValStr);
@@ -286,6 +291,7 @@
   };
   const resetSkillLimitToast = () => {
     skillLimitToastShown.value = false;
+    toast.remove('skill-limit-error');
   };
   const onPaste = (e: ClipboardEvent, skillName: string) => {
     e.preventDefault();

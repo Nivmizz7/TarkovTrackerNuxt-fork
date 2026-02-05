@@ -7,7 +7,7 @@
         rel="noopener noreferrer"
         class="text-primary-400 hover:text-primary-300 text-sm underline"
       >
-        {{ t('page.settings.card.apitokens.openAPI_documentation') }}
+        {{ t('page.settings.card.apitokens.open_api_documentation') }}
       </a>
       <UButton
         color="primary"
@@ -302,7 +302,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n';
   import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
   import { API_PERMISSIONS, GAME_MODE_OPTIONS, GAME_MODES, type GameMode } from '@/utils/constants';
   import { logger } from '@/utils/logger';
