@@ -25,8 +25,10 @@ Nuxt 4 SPA (`ssr:false`), Vue 3 `<script setup>`, Tailwind v4 only (no `<style>`
 - Find root cause—fix the underlying issue, not just symptoms
 - Ask before complex/ambiguous tasks
 - No SSR, no relative imports (`../`), no hex colors
+- Import order: builtin → external → internal → parent → sibling → index → object → type
 - Do not import Vue/Nuxt auto-imported utilities (`ref`, `computed`, `watch`, hooks, `useRoute`, `useFetch`, etc.); remove them when found
 - Errors via `logger` from `@/utils/logger`
+- Locale keys must be snake_case
 
 ## Testing
 

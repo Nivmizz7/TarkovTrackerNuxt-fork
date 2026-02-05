@@ -159,6 +159,7 @@
 
 - Locale files live in `app/locales/*.json5`.
 - Add keys consistently with existing namespace patterns.
+- Locale keys must be snake_case.
 - Provide safe fallback strings where appropriate.
 - Keep locale keys stable to avoid churn.
 - Avoid hard-coded user-facing strings in components.
