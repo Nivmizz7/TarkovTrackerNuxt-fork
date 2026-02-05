@@ -22,215 +22,49 @@
       />
     </div>
     <div class="space-y-3">
-      <section class="bg-surface-800/50 rounded-lg border border-white/5 p-3">
-        <div class="mb-2 flex items-center gap-2">
-          <UIcon name="i-mdi-filter-variant" class="text-primary-400 h-4 w-4" />
-          <h3 class="text-xs font-semibold tracking-wide text-white uppercase">
-            {{ t('page.tasks.settings.tabs.filters', 'Task Filters') }}
-          </h3>
-        </div>
-        <p class="text-surface-500 mb-2 text-xs">
-          {{ t('page.tasks.settings.filters.hint', 'Control which tasks appear.') }}
-        </p>
-        <div class="space-y-1">
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showNonSpecialTasks" />
-            <div class="min-w-0 flex-1">
-              <span class="text-surface-200 text-sm">
-                {{ t('page.tasks.settings.filters.regular_tasks', 'Regular Tasks') }}
-              </span>
-            </div>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showKappaTasks" />
-            <div class="flex min-w-0 flex-1 items-center gap-2">
-              <span class="text-surface-200 text-sm">
-                {{ t('page.tasks.settings.filters.kappa_required', 'Kappa Required') }}
-              </span>
-              <UBadge color="kappa" variant="soft" size="xs">KAPPA</UBadge>
-            </div>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showLightkeeperTasks" />
-            <div class="flex min-w-0 flex-1 items-center gap-2">
-              <span class="text-surface-200 text-sm">
-                {{ t('page.tasks.settings.filters.lightkeeper_required', 'Lightkeeper Required') }}
-              </span>
-              <UBadge color="lightkeeper" variant="soft" size="xs">LIGHTKEEPER</UBadge>
-            </div>
-          </label>
-          <label
-            v-if="hasTeammates"
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="sharedByAllOnly" />
-            <div class="min-w-0 flex-1">
-              <span class="text-surface-200 text-sm">
-                {{ t('page.tasks.settings.filters.team_shared_only', 'Team Shared Only') }}
-              </span>
-            </div>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showGlobalTasks" />
-            <div class="min-w-0 flex-1">
-              <span class="text-surface-200 text-sm">
-                {{ t('page.tasks.settings.filters.show_global_tasks', 'Show Global Tasks on Map') }}
-              </span>
-            </div>
-          </label>
-        </div>
-      </section>
-      <section class="bg-surface-800/50 rounded-lg border border-white/5 p-3">
-        <div class="mb-2 flex items-center gap-2">
-          <UIcon name="i-mdi-card-text" class="text-info-400 h-4 w-4" />
-          <h3 class="text-xs font-semibold tracking-wide text-white uppercase">
-            {{ t('page.tasks.settings.tabs.appearance', 'Card Display') }}
-          </h3>
-        </div>
-        <p class="text-surface-500 mb-2 text-xs">
-          {{ t('page.tasks.settings.appearance.hint', 'Choose what to show on cards.') }}
-        </p>
-        <div class="space-y-1">
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showRequiredLabels" />
-            <span class="text-surface-200 text-sm">
-              {{ t('page.tasks.settings.appearance.required_labels', '"Required" Labels') }}
-            </span>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showExperienceRewards" />
-            <span class="text-surface-200 text-sm">
-              {{ t('page.tasks.settings.appearance.experience_rewards', 'Experience Rewards') }}
-            </span>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showNextQuests" />
-            <span class="text-surface-200 text-sm">
-              {{ t('page.tasks.settings.appearance.next_tasks', 'Next Tasks') }}
-            </span>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showPreviousQuests" />
-            <span class="text-surface-200 text-sm">
-              {{ t('page.tasks.settings.appearance.previous_tasks', 'Previous Tasks') }}
-            </span>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="hideCompletedTaskObjectives" />
-            <span class="text-surface-200 text-sm">
-              {{
-                t(
-                  'page.tasks.settings.appearance.collapse_completed_objectives',
-                  'Collapse Objectives on Completed Tasks'
-                )
-              }}
-            </span>
-          </label>
-        </div>
-      </section>
-      <section class="bg-surface-800/50 rounded-lg border border-white/5 p-3">
-        <div class="mb-2 flex items-center gap-2">
-          <UIcon name="i-mdi-filter-variant" class="text-success-400 h-4 w-4" />
-          <h3 class="text-xs font-semibold tracking-wide text-white uppercase">
-            {{ t('page.tasks.settings.tabs.filter_bar', 'Filter Bar') }}
-          </h3>
-        </div>
-        <p class="text-surface-500 mb-2 text-xs">
-          {{ t('page.tasks.settings.filter_bar.hint', 'Show or hide status filters.') }}
-        </p>
-        <div class="space-y-1">
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showAllFilter" />
-            <span class="text-surface-200 text-sm">
-              {{ t('page.tasks.settings.filter_bar.all_filter', 'All Filter') }}
-            </span>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showAvailableFilter" />
-            <span class="text-surface-200 text-sm">
-              {{ t('page.tasks.settings.filter_bar.available_filter', 'Available Filter') }}
-            </span>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showLockedFilter" />
-            <span class="text-surface-200 text-sm">
-              {{ t('page.tasks.settings.filter_bar.locked_filter', 'Locked Filter') }}
-            </span>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showCompletedFilter" />
-            <span class="text-surface-200 text-sm">
-              {{ t('page.tasks.settings.filter_bar.completed_filter', 'Completed Filter') }}
-            </span>
-          </label>
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="showFailedFilter" />
-            <span class="text-surface-200 text-sm">
-              {{ t('page.tasks.settings.filter_bar.failed_filter', 'Failed Filter') }}
-            </span>
-          </label>
-        </div>
-      </section>
-      <section class="bg-surface-800/50 rounded-lg border border-white/5 p-3">
-        <div class="mb-2 flex items-center gap-2">
-          <UIcon name="i-mdi-cog" class="text-warning-400 h-4 w-4" />
-          <h3 class="text-xs font-semibold tracking-wide text-white uppercase">
-            {{ t('page.tasks.settings.tabs.advanced', 'Advanced') }}
-          </h3>
-        </div>
-        <div class="space-y-1">
-          <label
-            class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
-          >
-            <UCheckbox v-model="enableManualTaskFail" />
-            <span class="text-surface-200 text-sm">
-              {{ t('page.tasks.settings.advanced.manual_fail_actions', 'Manual Fail Actions') }}
-            </span>
-          </label>
-          <div v-if="failedTasksCount > 0" class="bg-surface-900/50 mt-2 rounded p-2">
-            <div class="mb-1.5 flex items-center justify-between">
-              <span class="text-surface-400 text-xs">
-                {{ t('page.tasks.settings.advanced.failed_tasks_label', 'Failed tasks') }}
-              </span>
-              <UBadge color="warning" variant="soft" size="xs">
-                {{ failedTasksCount }}
-              </UBadge>
-            </div>
-            <UButton color="warning" variant="soft" size="xs" block @click="repairFailedTasks">
-              <UIcon name="i-mdi-wrench" class="mr-1 h-3.5 w-3.5" />
-              {{ t('page.tasks.settings.advanced.repair_failed_action', 'Repair') }}
-            </UButton>
-          </div>
-        </div>
-      </section>
+      <TaskFiltersSection
+        :has-teammates="hasTeammates"
+        :show-non-special-tasks="showNonSpecialTasks"
+        :show-kappa-tasks="showKappaTasks"
+        :show-lightkeeper-tasks="showLightkeeperTasks"
+        :shared-by-all-only="sharedByAllOnly"
+        :show-global-tasks="showGlobalTasks"
+        @update:show-non-special-tasks="showNonSpecialTasks = $event"
+        @update:show-kappa-tasks="showKappaTasks = $event"
+        @update:show-lightkeeper-tasks="showLightkeeperTasks = $event"
+        @update:shared-by-all-only="sharedByAllOnly = $event"
+        @update:show-global-tasks="showGlobalTasks = $event"
+      />
+      <CardDisplaySection
+        :show-required-labels="showRequiredLabels"
+        :show-experience-rewards="showExperienceRewards"
+        :show-next-quests="showNextQuests"
+        :show-previous-quests="showPreviousQuests"
+        :hide-completed-task-objectives="hideCompletedTaskObjectives"
+        @update:show-required-labels="showRequiredLabels = $event"
+        @update:show-experience-rewards="showExperienceRewards = $event"
+        @update:show-next-quests="showNextQuests = $event"
+        @update:show-previous-quests="showPreviousQuests = $event"
+        @update:hide-completed-task-objectives="hideCompletedTaskObjectives = $event"
+      />
+      <FilterBarSection
+        :show-all-filter="showAllFilter"
+        :show-available-filter="showAvailableFilter"
+        :show-locked-filter="showLockedFilter"
+        :show-completed-filter="showCompletedFilter"
+        :show-failed-filter="showFailedFilter"
+        @update:show-all-filter="showAllFilter = $event"
+        @update:show-available-filter="showAvailableFilter = $event"
+        @update:show-locked-filter="showLockedFilter = $event"
+        @update:show-completed-filter="showCompletedFilter = $event"
+        @update:show-failed-filter="showFailedFilter = $event"
+      />
+      <AdvancedTasksSection
+        :enable-manual-task-fail="enableManualTaskFail"
+        :failed-tasks-count="failedTasksCount"
+        @update:enable-manual-task-fail="enableManualTaskFail = $event"
+        @repair="repairFailedTasks"
+      />
     </div>
     <UModal v-model:open="showRepairConfirm" @close="resolveRepairConfirm(false)">
       <template #content>
@@ -268,6 +102,10 @@
   import { useI18n } from 'vue-i18n';
   import { useTaskRepair } from '@/composables/useTaskRepair';
   import { useTaskSettingsDrawer } from '@/composables/useTaskSettingsDrawer';
+  import AdvancedTasksSection from '@/features/tasks/AdvancedTasksSection.vue';
+  import CardDisplaySection from '@/features/tasks/CardDisplaySection.vue';
+  import FilterBarSection from '@/features/tasks/FilterBarSection.vue';
+  import TaskFiltersSection from '@/features/tasks/TaskFiltersSection.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTeamStore } from '@/stores/useTeamStore';
   const { t } = useI18n({ useScope: 'global' });
