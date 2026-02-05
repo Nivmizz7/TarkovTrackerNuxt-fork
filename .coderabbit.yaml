@@ -9,6 +9,11 @@ reviews:
         The project sorts imports alphabetically by module path, not by symbol name.
         Do not flag import order issues - defer to the project's ESLint configuration.
 
+        Nuxt auto-imports Vue runtime functions (ref, computed, watch, etc.) and composables.
+        Do NOT flag missing imports for these runtime usages in .vue files.
+        However, TYPE annotations (Ref<T>, ComputedRef<T>, etc.) in .ts files require explicit
+        type imports: import type { Ref } from 'vue'. This is correct and necessary for TypeScript.
+
         The useI18n composable from vue-i18n is NOT auto-imported by @nuxtjs/i18n.
         Only these are auto-imported: useRouteBaseName, useLocalePath, useLocaleRoute,
         useSwitchLocalePath, useLocaleHead, useBrowserLocale, useCookieLocale,
