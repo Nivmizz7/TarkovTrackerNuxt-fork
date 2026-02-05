@@ -71,6 +71,9 @@
   const SERVER_CHANGELOG_URL = '/api/changelog';
   const GITHUB_RELEASES_KEY = 'dashboard-changelog-github-releases';
   const GITHUB_COMMITS_KEY = 'dashboard-changelog-github-commits';
+  const GITHUB_CACHE_KEY_PREFIX = 'dashboard-changelog-cache';
+  const GITHUB_CACHE_TTL_MS = 15 * 60 * 1000;
+  const GITHUB_RATE_LIMIT_LOW_THRESHOLD = 2;
   const runtimeConfig = useRuntimeConfig();
   const githubOwner = runtimeConfig.public.githubOwner || 'tarkovtracker-org';
   const githubRepo = runtimeConfig.public.githubRepo || 'TarkovTracker';
@@ -83,8 +86,142 @@
   const pending = ref(false);
   const error = ref(false);
   const showEmpty = computed(() => !pending.value && !error.value && entries.value.length === 0);
+  type GitHubPayload = Array<Record<string, unknown>>;
+  type GitHubRateLimitState = {
+    remaining: number | null;
+    resetEpoch: number | null;
+    status: number | null;
+  };
+  type GitHubCacheEntry = {
+    timestamp: number;
+    data: GitHubPayload;
+  };
+  const createGitHubRateLimitState = (): GitHubRateLimitState => ({
+    remaining: null,
+    resetEpoch: null,
+    status: null,
+  });
+  const githubReleaseRateLimit = ref<GitHubRateLimitState>(createGitHubRateLimitState());
+  const githubCommitRateLimit = ref<GitHubRateLimitState>(createGitHubRateLimitState());
+  const githubMemoryCache = new Map<string, GitHubCacheEntry>();
   const getBulletText = (bullet: ChangelogBullet): string => {
     return typeof bullet === 'string' ? bullet : bullet.text;
+  };
+  const parseHeaderValue = (headers: unknown, key: string): string | null => {
+    if (!headers) return null;
+    const lowerKey = key.toLowerCase();
+    if (
+      typeof headers === 'object' &&
+      headers !== null &&
+      'get' in headers &&
+      typeof (headers as Headers).get === 'function'
+    ) {
+      return (headers as Headers).get(key);
+    }
+    if (typeof headers === 'object' && headers !== null) {
+      const record = headers as Record<string, string | string[] | undefined>;
+      const matchedKey = Object.keys(record).find(
+        (headerKey) => headerKey.toLowerCase() === lowerKey
+      );
+      if (!matchedKey) return null;
+      const value = record[matchedKey];
+      if (Array.isArray(value)) return value[0] ?? null;
+      return value ?? null;
+    }
+    return null;
+  };
+  const formatResetAt = (resetEpoch: number | null): string | null => {
+    if (resetEpoch === null) return null;
+    const parsed = new Date(resetEpoch * 1000);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toISOString();
+  };
+  const updateRateLimitState = (
+    target: globalThis.Ref<GitHubRateLimitState>,
+    response: { status?: number; headers?: unknown } | undefined
+  ) => {
+    if (!response) return;
+    const remainingHeader = parseHeaderValue(response.headers, 'x-ratelimit-remaining');
+    const resetHeader = parseHeaderValue(response.headers, 'x-ratelimit-reset');
+    const parsedRemaining = Number(remainingHeader);
+    const parsedReset = Number(resetHeader);
+    target.value = {
+      remaining: Number.isFinite(parsedRemaining) ? parsedRemaining : null,
+      resetEpoch: Number.isFinite(parsedReset) ? parsedReset : null,
+      status: response.status ?? null,
+    };
+  };
+  const getGitHubCacheKey = (url: string) => `${GITHUB_CACHE_KEY_PREFIX}:${url}`;
+  const getCachedGithubData = (url: string): GitHubPayload | null => {
+    const now = Date.now();
+    const memoryEntry = githubMemoryCache.get(url);
+    if (memoryEntry) {
+      if (now - memoryEntry.timestamp < GITHUB_CACHE_TTL_MS) {
+        return memoryEntry.data;
+      }
+      githubMemoryCache.delete(url);
+    }
+    if (!import.meta.client) return null;
+    try {
+      const raw = localStorage.getItem(getGitHubCacheKey(url));
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as GitHubCacheEntry;
+      if (!parsed || !Array.isArray(parsed.data) || typeof parsed.timestamp !== 'number') {
+        localStorage.removeItem(getGitHubCacheKey(url));
+        return null;
+      }
+      if (now - parsed.timestamp >= GITHUB_CACHE_TTL_MS) {
+        localStorage.removeItem(getGitHubCacheKey(url));
+        return null;
+      }
+      githubMemoryCache.set(url, parsed);
+      return parsed.data;
+    } catch (err) {
+      logger.warn('[DashboardChangelog] Failed to read changelog cache entry.', { url, err });
+      return null;
+    }
+  };
+  const setCachedGithubData = (url: string, data: GitHubPayload): void => {
+    const entry: GitHubCacheEntry = {
+      timestamp: Date.now(),
+      data,
+    };
+    githubMemoryCache.set(url, entry);
+    if (!import.meta.client) return;
+    try {
+      localStorage.setItem(getGitHubCacheKey(url), JSON.stringify(entry));
+    } catch (err) {
+      logger.warn('[DashboardChangelog] Failed to persist changelog cache entry.', { url, err });
+    }
+  };
+  const shouldPreferCachedData = (remaining: number | null): boolean => {
+    return remaining !== null && remaining > 0 && remaining <= GITHUB_RATE_LIMIT_LOW_THRESHOLD;
+  };
+  const withRateLimitDetails = (
+    state: globalThis.Ref<GitHubRateLimitState>,
+    extra: Record<string, unknown>
+  ): Record<string, unknown> => ({
+    ...extra,
+    status: state.value.status,
+    remaining: state.value.remaining,
+    resetEpoch: state.value.resetEpoch,
+    resetAt: formatResetAt(state.value.resetEpoch),
+  });
+  const logGithubResponseError = (
+    source: 'releases' | 'commits',
+    url: string,
+    response: { status?: number; url?: string } | undefined,
+    rateLimitState: globalThis.Ref<GitHubRateLimitState>
+  ) => {
+    const details = withRateLimitDetails(rateLimitState, {
+      url: response?.url ?? url,
+      hasCachedData: Boolean(getCachedGithubData(url)),
+    });
+    if (response?.status === 403) {
+      logger.error(`[DashboardChangelog] fetchGithubItems ${source} rate-limited.`, details);
+      return;
+    }
+    logger.error(`[DashboardChangelog] fetchGithubItems ${source} failed.`, details);
   };
   const buildReleaseItems = (releases: Array<Record<string, unknown>>): ChangelogItem[] => {
     return releases
@@ -125,12 +262,12 @@
     }
     return Array.from(grouped.values());
   };
-  const logError = (message: string, err: unknown) => {
+  const logError = (message: string, err: unknown, context: Record<string, unknown> = {}) => {
     if (err instanceof Error) {
-      logger.error(message, { message: err.message, stack: err.stack });
+      logger.error(message, { ...context, message: err.message, stack: err.stack });
       return;
     }
-    logger.error(message, err);
+    logger.error(message, { ...context, err });
   };
   const serverRequest = useFetch<ChangelogResponse>(SERVER_CHANGELOG_URL, {
     key: SERVER_CHANGELOG_KEY,
@@ -154,14 +291,26 @@
     headers: { Accept: 'application/vnd.github+json' },
     immediate: false,
     server: false,
+    onResponse({ response }) {
+      updateRateLimitState(githubReleaseRateLimit, response);
+      const payload = response._data;
+      if (Array.isArray(payload)) {
+        setCachedGithubData(GITHUB_RELEASES_URL, payload);
+      }
+    },
     onResponseError({ response }) {
-      logger.error('[DashboardChangelog] fetchGithubItems releases failed.', {
-        status: response?.status,
-        url: response?.url ?? GITHUB_RELEASES_URL,
-      });
+      updateRateLimitState(githubReleaseRateLimit, response);
+      logGithubResponseError('releases', GITHUB_RELEASES_URL, response, githubReleaseRateLimit);
     },
     onRequestError({ error }) {
-      logError('[DashboardChangelog] fetchGithubItems releases error.', error);
+      logError(
+        '[DashboardChangelog] fetchGithubItems releases error.',
+        error,
+        withRateLimitDetails(githubReleaseRateLimit, {
+          url: GITHUB_RELEASES_URL,
+          hasCachedData: Boolean(getCachedGithubData(GITHUB_RELEASES_URL)),
+        })
+      );
     },
   });
   const githubCommitRequest = useFetch<Array<Record<string, unknown>>>(GITHUB_COMMITS_URL, {
@@ -170,14 +319,26 @@
     headers: { Accept: 'application/vnd.github+json' },
     immediate: false,
     server: false,
+    onResponse({ response }) {
+      updateRateLimitState(githubCommitRateLimit, response);
+      const payload = response._data;
+      if (Array.isArray(payload)) {
+        setCachedGithubData(GITHUB_COMMITS_URL, payload);
+      }
+    },
     onResponseError({ response }) {
-      logger.error('[DashboardChangelog] fetchGithubItems commits failed.', {
-        status: response?.status,
-        url: response?.url ?? GITHUB_COMMITS_URL,
-      });
+      updateRateLimitState(githubCommitRateLimit, response);
+      logGithubResponseError('commits', GITHUB_COMMITS_URL, response, githubCommitRateLimit);
     },
     onRequestError({ error }) {
-      logError('[DashboardChangelog] fetchGithubItems commits error.', error);
+      logError(
+        '[DashboardChangelog] fetchGithubItems commits error.',
+        error,
+        withRateLimitDetails(githubCommitRateLimit, {
+          url: GITHUB_COMMITS_URL,
+          hasCachedData: Boolean(getCachedGithubData(GITHUB_COMMITS_URL)),
+        })
+      );
     },
   });
   const fetchServerItems = async (): Promise<ChangelogItem[] | null> => {
@@ -210,14 +371,45 @@
   const fetchGithubItems = async (): Promise<ChangelogItem[] | null> => {
     try {
       await githubReleaseRequest.refresh();
-      const releases = githubReleaseRequest.error.value ? null : githubReleaseRequest.data.value;
+      const cachedReleases = getCachedGithubData(GITHUB_RELEASES_URL);
+      const releaseRequestFailed = Boolean(githubReleaseRequest.error.value);
+      const shouldUseCachedReleases =
+        releaseRequestFailed || shouldPreferCachedData(githubReleaseRateLimit.value.remaining);
+      const releases = shouldUseCachedReleases
+        ? cachedReleases
+        : (githubReleaseRequest.data.value as GitHubPayload | null);
+      if (releaseRequestFailed && !releases) {
+        logger.error('[DashboardChangelog] fetchGithubItems releases failed without cache.', {
+          ...withRateLimitDetails(githubReleaseRateLimit, { url: GITHUB_RELEASES_URL }),
+        });
+      } else if (shouldUseCachedReleases && releases) {
+        logger.warn('[DashboardChangelog] Using cached GitHub releases data.', {
+          ...withRateLimitDetails(githubReleaseRateLimit, { url: GITHUB_RELEASES_URL }),
+        });
+      }
       if (Array.isArray(releases)) {
         const releaseItems = buildReleaseItems(releases);
         if (releaseItems.length) return releaseItems;
       }
       await githubCommitRequest.refresh();
-      if (githubCommitRequest.error.value) return null;
-      const commits = githubCommitRequest.data.value;
+      const cachedCommits = getCachedGithubData(GITHUB_COMMITS_URL);
+      const commitRequestFailed = Boolean(githubCommitRequest.error.value);
+      const shouldUseCachedCommits =
+        commitRequestFailed || shouldPreferCachedData(githubCommitRateLimit.value.remaining);
+      const commits = shouldUseCachedCommits
+        ? cachedCommits
+        : (githubCommitRequest.data.value as GitHubPayload | null);
+      if (commitRequestFailed && !commits) {
+        logger.error('[DashboardChangelog] fetchGithubItems commits failed without cache.', {
+          ...withRateLimitDetails(githubCommitRateLimit, { url: GITHUB_COMMITS_URL }),
+        });
+        return null;
+      }
+      if (shouldUseCachedCommits && commits) {
+        logger.warn('[DashboardChangelog] Using cached GitHub commits data.', {
+          ...withRateLimitDetails(githubCommitRateLimit, { url: GITHUB_COMMITS_URL }),
+        });
+      }
       if (!Array.isArray(commits)) return null;
       return buildCommitItems(commits);
     } catch (err) {
