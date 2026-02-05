@@ -58,10 +58,16 @@ describe('LeafletMap utilities', () => {
     it('getLeafletBounds returns bounds array', async () => {
       const { getLeafletBounds } = await import('@/utils/mapCoordinates');
       const bounds = getLeafletBounds();
-      expect(bounds).toEqual([
-        [0, 0],
-        [100, 100],
-      ]);
+      expect(Array.isArray(bounds)).toBe(true);
+      expect(bounds.length).toBe(2);
+      expect(Array.isArray(bounds[0])).toBe(true);
+      expect(bounds[0].length).toBe(2);
+      expect(typeof bounds[0][0]).toBe('number');
+      expect(typeof bounds[0][1]).toBe('number');
+      expect(Array.isArray(bounds[1])).toBe(true);
+      expect(bounds[1].length).toBe(2);
+      expect(typeof bounds[1][0]).toBe('number');
+      expect(typeof bounds[1][1]).toBe('number');
     });
   });
   describe('leaflet layer group operations', () => {

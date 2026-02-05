@@ -35,6 +35,9 @@ vi.mock('leaflet', () => ({
     svgOverlay: vi.fn(() => mockSvgOverlay),
     tileLayer: vi.fn(() => mockTileLayer),
     latLngBounds: vi.fn((sw, ne) => ({ sw, ne })),
+    control: {
+      zoom: vi.fn(() => ({ addTo: vi.fn() })),
+    },
     CRS: {
       Simple: {},
     },
@@ -72,6 +75,14 @@ vi.mock('@/utils/mapCoordinates', () => ({
   isValidMapTileConfig: vi.fn((config) => !!config?.tilePath),
   normalizeTileConfig: vi.fn((config) => config),
 }));
+const waitFor = async (predicate: () => boolean) => {
+  for (let index = 0; index < 10; index++) {
+    if (predicate()) return;
+    await vi.runAllTimersAsync();
+    await nextTick();
+  }
+  throw new Error('Condition not met in time');
+};
 describe('useLeafletMap', () => {
   let useLeafletMap: typeof import('../useLeafletMap').useLeafletMap;
   let containerRef: Ref<HTMLElement | null>;
@@ -94,29 +105,44 @@ describe('useLeafletMap', () => {
     vi.unstubAllGlobals();
     vi.resetModules();
   });
-  const mountUseLeafletMap = async (mapData: Ref<TarkovMap | null>, initialFloor?: string) => {
+  const mountUseLeafletMap = async (
+    mapValue: TarkovMap | null,
+    initialFloor?: string
+  ): Promise<{
+    result: ReturnType<typeof useLeafletMap>;
+    wrapper: ReturnType<typeof mount>;
+    mapRef: Ref<TarkovMap | null>;
+  }> => {
     let result: ReturnType<typeof useLeafletMap> | null = null;
+    let mapRef: Ref<TarkovMap | null> | null = null;
     const wrapper = mount(
       defineComponent({
         setup() {
+          mapRef = ref(mapValue) as Ref<TarkovMap | null>;
           result = useLeafletMap({
             containerRef,
-            map: mapData,
+            map: mapRef,
             initialFloor,
+            enableIdleDetection: false,
           });
           return () => null;
         },
       })
     );
     await nextTick();
-    await Promise.resolve();
-    return { result: result!, wrapper };
+    await vi.runAllTimersAsync();
+    await nextTick();
+    if (!result || !mapRef) {
+      throw new Error('useLeafletMap did not initialize - result is null after mounting');
+    }
+    await waitFor(() => result?.objectiveLayer.value !== null);
+    return { result, wrapper, mapRef };
   };
   describe('initialization', () => {
     it('creates map instance with correct options on mount', async () => {
       const leafletModule = await import('leaflet');
       const mapSpy = vi.spyOn(leafletModule.default, 'map');
-      const mapData = ref<TarkovMap | null>({
+      const mapData = {
         id: 'customs',
         name: 'Customs',
         normalizedName: 'customs',
@@ -130,10 +156,10 @@ describe('useLeafletMap', () => {
             [100, 100],
           ],
         },
-      } as TarkovMap);
+      } as TarkovMap;
       const { getLeafletMapOptions } = await import('@/utils/mapCoordinates');
       const { result, wrapper } = await mountUseLeafletMap(mapData);
-      const svgConfig = mapData.value?.svg;
+      const svgConfig = mapData.svg;
       const expectedOptions = getLeafletMapOptions(
         leafletModule.default,
         typeof svgConfig === 'string' ? undefined : svgConfig
@@ -146,7 +172,7 @@ describe('useLeafletMap', () => {
     it('sets default floor from map config', async () => {
       const leafletModule = await import('leaflet');
       const mapSpy = vi.spyOn(leafletModule.default, 'map');
-      const mapData = ref<TarkovMap | null>({
+      const mapData = {
         id: 'interchange',
         name: 'Interchange',
         normalizedName: 'interchange',
@@ -160,10 +186,10 @@ describe('useLeafletMap', () => {
             [100, 100],
           ],
         },
-      } as TarkovMap);
+      } as TarkovMap;
       const { getLeafletMapOptions } = await import('@/utils/mapCoordinates');
       const { result, wrapper } = await mountUseLeafletMap(mapData, 'parking');
-      const svgConfig = mapData.value?.svg;
+      const svgConfig = mapData.svg;
       const expectedOptions = getLeafletMapOptions(
         leafletModule.default,
         typeof svgConfig === 'string' ? undefined : svgConfig
@@ -175,7 +201,7 @@ describe('useLeafletMap', () => {
   });
   describe('floor management', () => {
     it('setFloor updates selectedFloor ref', async () => {
-      const mapData = ref<TarkovMap | null>({
+      const mapData = {
         id: 'reserve',
         name: 'Reserve',
         normalizedName: 'reserve',
@@ -189,16 +215,14 @@ describe('useLeafletMap', () => {
             [100, 100],
           ],
         },
-      } as TarkovMap);
-      const result = useLeafletMap({
-        containerRef,
-        map: mapData,
-      });
+      } as TarkovMap;
+      const { result, wrapper } = await mountUseLeafletMap(mapData);
       result.setFloor('bunker');
       expect(result.selectedFloor.value).toBe('bunker');
+      wrapper.unmount();
     });
-    it('hasMultipleFloors returns true when floors > 1', () => {
-      const mapData = ref<TarkovMap | null>({
+    it('hasMultipleFloors returns true when floors > 1', async () => {
+      const mapData = {
         id: 'labs',
         name: 'The Lab',
         normalizedName: 'labs',
@@ -212,15 +236,13 @@ describe('useLeafletMap', () => {
             [100, 100],
           ],
         },
-      } as TarkovMap);
-      const result = useLeafletMap({
-        containerRef,
-        map: mapData,
-      });
+      } as TarkovMap;
+      const { result, wrapper } = await mountUseLeafletMap(mapData);
       expect(result.hasMultipleFloors.value).toBe(true);
+      wrapper.unmount();
     });
     it('availableFloors computed is reactive to map changes', async () => {
-      const mapData = ref<TarkovMap | null>({
+      const mapData = {
         id: 'factory',
         name: 'Factory',
         normalizedName: 'factory',
@@ -234,13 +256,10 @@ describe('useLeafletMap', () => {
             [100, 100],
           ],
         },
-      } as TarkovMap);
-      const result = useLeafletMap({
-        containerRef,
-        map: mapData,
-      });
+      } as TarkovMap;
+      const { result, wrapper, mapRef } = await mountUseLeafletMap(mapData);
       expect(result.floors.value).toEqual(['basement', 'ground']);
-      const currentSvg = mapData.value?.svg;
+      const currentSvg = mapRef.value?.svg;
       const nextSvg =
         typeof currentSvg === 'string' || !currentSvg
           ? currentSvg
@@ -248,17 +267,18 @@ describe('useLeafletMap', () => {
               ...currentSvg,
               floors: ['ground', 'upper'],
             };
-      mapData.value = {
-        ...(mapData.value as TarkovMap),
+      mapRef.value = {
+        ...(mapRef.value as TarkovMap),
         svg: nextSvg,
       } as TarkovMap;
       await nextTick();
       expect(result.floors.value).toEqual(['ground', 'upper']);
+      wrapper.unmount();
     });
   });
   describe('marker management', () => {
     it('clearMarkers removes all layers', async () => {
-      const mapData = ref<TarkovMap | null>({
+      const mapData = {
         id: 'customs',
         name: 'Customs',
         normalizedName: 'customs',
@@ -272,18 +292,16 @@ describe('useLeafletMap', () => {
             [100, 100],
           ],
         },
-      } as TarkovMap);
-      const result = useLeafletMap({
-        containerRef,
-        map: mapData,
-      });
+      } as TarkovMap;
+      const { result, wrapper } = await mountUseLeafletMap(mapData);
       result.clearMarkers();
-      expect(result.objectiveLayer.value).toBe(null);
+      expect(mockLayerGroup.clearLayers).toHaveBeenCalledTimes(2);
+      wrapper.unmount();
     });
   });
   describe('cleanup', () => {
     it('destroy removes map instance', async () => {
-      const mapData = ref<TarkovMap | null>({
+      const mapData = {
         id: 'woods',
         name: 'Woods',
         normalizedName: 'woods',
@@ -297,17 +315,15 @@ describe('useLeafletMap', () => {
             [100, 100],
           ],
         },
-      } as TarkovMap);
-      const result = useLeafletMap({
-        containerRef,
-        map: mapData,
-      });
+      } as TarkovMap;
+      const { result, wrapper } = await mountUseLeafletMap(mapData);
       result.destroy();
       expect(result.mapInstance.value).toBe(null);
       expect(result.svgLayer.value).toBe(null);
       expect(result.objectiveLayer.value).toBe(null);
       expect(result.extractLayer.value).toBe(null);
       expect(result.leaflet.value).toBe(null);
+      wrapper.unmount();
     });
   });
 });

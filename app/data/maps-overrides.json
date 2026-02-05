@@ -1,0 +1,8 @@
+{
+  "$comment": "TarkovTracker-specific overrides merged into synced tarkov-dev map data",
+  "reserve": {
+    "svg": {
+      "stackFloors": false
+    }
+  }
+}

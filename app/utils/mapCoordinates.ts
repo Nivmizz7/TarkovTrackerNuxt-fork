@@ -34,7 +34,7 @@ export interface MapTileConfig {
 export type MapRenderConfig = MapSvgConfig | MapTileConfig;
 /**
  * Applies coordinate rotation using trigonometric functions.
- * This matches tarkov.dev's rotation implementation.
+ * Matches tarkov.dev's rotation: treats (lng, lat) as (x, y) for rotation.
  * @param latLng LatLng object with lat and lng properties
  * @param rotation Rotation in degrees
  * @returns Rotated LatLng object
@@ -49,9 +49,10 @@ export function applyRotation(
   const angleInRadians = (rotation * Math.PI) / 180;
   const cos = Math.cos(angleInRadians);
   const sin = Math.sin(angleInRadians);
+  const { lng: x, lat: y } = latLng;
   return {
-    lat: latLng.lat * cos - latLng.lng * sin,
-    lng: latLng.lat * sin + latLng.lng * cos,
+    lat: x * sin + y * cos,
+    lng: x * cos - y * sin,
   };
 }
 /**
@@ -210,7 +211,7 @@ export function getLeafletMapOptions(
     wheelPxPerZoomLevel: 120,
     wheelDebounceTime: 15,
     attributionControl: false,
-    zoomControl: true,
+    zoomControl: false,
     zoomAnimation: true,
     zoomAnimationThreshold: 8,
     // Touch support for mobile

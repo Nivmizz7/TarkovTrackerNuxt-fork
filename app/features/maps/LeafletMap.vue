@@ -7,10 +7,12 @@
       :style="mapHeightStyle"
     >
       <UIcon name="i-mdi-map-marker-off" class="text-surface-500 mb-4 h-16 w-16" />
-      <h3 class="text-surface-300 mb-2 text-lg font-semibold">{{ t('maps.notAvailableTitle') }}</h3>
+      <h3 class="text-surface-300 mb-2 text-lg font-semibold">
+        {{ t('maps.not_available_title') }}
+      </h3>
       <p class="text-surface-500 max-w-md text-center text-sm">
         {{
-          t('maps.notAvailableDescription', {
+          t('maps.not_available_description', {
             mapName: props.map?.name || t('maps.placeholder'),
           })
         }}
@@ -18,10 +20,10 @@
     </div>
     <!-- Map content (only shown when map is available) -->
     <template v-else>
-      <!-- Floor selector (positioned below Leaflet zoom controls) -->
+      <!-- Floor selector -->
       <div
         v-if="hasMultipleFloors"
-        class="bg-surface-800/90 absolute top-20 left-2 z-1000 flex flex-col gap-1 rounded p-1.5"
+        class="bg-surface-800/90 absolute top-2 left-2 z-1000 flex flex-col gap-1 rounded p-1.5"
       >
         <span class="text-surface-400 px-1 text-[10px] font-medium tracking-wide uppercase">
           {{ t('maps.floors') }}
@@ -58,7 +60,7 @@
           variant="soft"
           size="sm"
           icon="i-mdi-fit-to-screen"
-          :title="t('maps.resetTitle')"
+          :title="t('maps.reset_title')"
           @click="refreshView"
         >
           {{ t('maps.reset') }}
@@ -95,7 +97,7 @@
             :max="ZOOM_SPEED_MAX"
             step="0.1"
             class="accent-primary-500 h-1.5 w-24 cursor-pointer"
-            :aria-label="t('maps.aria.zoomSpeed')"
+            :aria-label="t('maps.aria.zoom_speed')"
           />
           <span class="text-surface-300 text-[10px] tabular-nums">{{ zoomSpeedLabel }}</span>
         </div>
@@ -115,33 +117,33 @@
         >
           <div class="flex items-center gap-1">
             <div class="bg-extract-pmc h-3 w-3 rounded-full" />
-            <span>{{ t('maps.legend.yourObjectives') }}</span>
+            <span>{{ t('maps.legend.your_objectives') }}</span>
           </div>
           <div class="flex items-center gap-1">
             <div class="bg-extract-scav h-3 w-3 rounded-full" />
-            <span>{{ t('maps.legend.teamObjectives') }}</span>
+            <span>{{ t('maps.legend.team_objectives') }}</span>
           </div>
           <div v-if="showPmcExtracts" class="flex items-center gap-1">
             <UIcon name="i-mdi-exit-run" class="text-success-500 h-3 w-3" />
-            <span>{{ t('maps.legend.pmcExtract') }}</span>
+            <span>{{ t('maps.legend.pmc_extract') }}</span>
           </div>
           <div v-if="showScavExtracts" class="flex items-center gap-1">
             <UIcon name="i-mdi-exit-run" class="text-extract-shared-primary h-3 w-3" />
-            <span>{{ t('maps.legend.scavExtract') }}</span>
+            <span>{{ t('maps.legend.scav_extract') }}</span>
           </div>
           <div
             v-if="(showPmcExtracts || showScavExtracts) && hasSharedExtracts"
             class="flex items-center gap-1"
           >
             <UIcon name="i-mdi-exit-run" class="text-extract-shared-secondary h-3 w-3" />
-            <span>{{ t('maps.legend.sharedExtract') }}</span>
+            <span>{{ t('maps.legend.shared_extract') }}</span>
           </div>
           <div
             v-if="(showPmcExtracts || showScavExtracts) && hasCoopExtracts"
             class="flex items-center gap-1"
           >
             <UIcon name="i-mdi-exit-run" class="text-extract-shared-coop h-3 w-3" />
-            <span>{{ t('maps.legend.coopExtract') }}</span>
+            <span>{{ t('maps.legend.coop_extract') }}</span>
           </div>
         </div>
         <!-- Controls Legend -->
@@ -150,7 +152,7 @@
         >
           <div v-if="hasMultipleFloors" class="flex items-center gap-1">
             <kbd class="bg-surface-700 text-surface-300 rounded px-1 py-0.5 font-mono">Ctrl</kbd>
-            <span>{{ t('maps.controls.keyboard.cycleFloors') }}</span>
+            <span>{{ t('maps.controls.keyboard.cycle_floors') }}</span>
           </div>
           <div class="flex items-center gap-1">
             <kbd class="bg-surface-700 text-surface-300 rounded px-1 py-0.5 font-mono">Shift</kbd>
@@ -285,7 +287,7 @@
     string,
     { layer: L.Layer; getLatLng: () => L.LatLngExpression; showPopup: (pinned: boolean) => void }
   >();
-  let lastMarksHash = '';
+  const lastMarksHash = ref('');
   const mountObjectiveTooltip = (
     objectiveId: string,
     onClose: () => void
@@ -483,10 +485,10 @@
     const L = leaflet.value;
     if (!isValidMapSvgConfig(props.map.svg) && !isValidMapTileConfig(props.map.tile)) return;
     const currentHash = getMarksHash(props.marks, props.map.id);
-    if (currentHash === lastMarksHash && objectiveMarkers.size > 0) {
+    if (currentHash === lastMarksHash.value && objectiveMarkers.size > 0) {
       return;
     }
-    lastMarksHash = currentHash;
+    lastMarksHash.value = currentHash;
     if (activePinnedPopupCleanup) {
       activePinnedPopupCleanup();
       activePinnedPopupCleanup = null;
@@ -700,7 +702,7 @@
   });
   watch([showPmcExtracts, showScavExtracts], () => createExtractMarkers());
   watch(selectedFloor, () => {
-    lastMarksHash = '';
+    lastMarksHash.value = '';
     updateMarkers();
   });
   // Wait for map to be ready, then create markers

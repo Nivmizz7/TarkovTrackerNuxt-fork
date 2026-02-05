@@ -8,8 +8,8 @@
         <button
           type="button"
           class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-200 hover:bg-white/10"
-          :aria-label="translate('maps.tooltip.goToInTaskList')"
-          :title="translate('maps.tooltip.goTo')"
+          :aria-label="translate('maps.tooltip.go_to_in_task_list')"
+          :title="translate('maps.tooltip.go_to')"
           @click.stop="scrollToObjective"
         >
           <UIcon name="i-mdi-arrow-down-circle-outline" class="h-4 w-4" />
@@ -43,7 +43,7 @@
     </div>
     <div class="mt-1">
       <div v-if="!objective" class="text-xs text-gray-400">
-        {{ translate('maps.tooltip.objectiveUnavailable') }}
+        {{ translate('maps.tooltip.objective_unavailable') }}
       </div>
       <div v-else class="text-sm text-gray-200">
         <div class="text-gray-300">{{ objective.description }}</div>
@@ -113,7 +113,7 @@
     if (!taskId) return null;
     return metadataStore.tasks.find((t) => t.id === taskId) ?? null;
   });
-  const taskName = computed(() => task.value?.name ?? translate('maps.tooltip.taskFallback'));
+  const taskName = computed(() => task.value?.name ?? translate('maps.tooltip.task_fallback'));
   const isComplete = computed(() => tarkovStore.isTaskObjectiveComplete(props.objectiveId));
   const requiredCount = computed(() => objective.value?.count ?? 1);
   const currentCount = computed(() => tarkovStore.getObjectiveCount(props.objectiveId));

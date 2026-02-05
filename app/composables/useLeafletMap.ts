@@ -189,10 +189,8 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     return normalizeTileConfig(tileConfig);
   };
   const getRenderConfig = (): MapRenderConfig | undefined => getSvgConfig() ?? getTileConfig();
-  const getRenderKey = (
-    svgConfig?: MapSvgConfig,
-    tileConfig?: MapTileConfig
-  ): string | undefined => {
+  const renderKeyRef = computed<string | undefined>(() => {
+    const svgConfig = getSvgConfig();
     if (svgConfig) {
       return JSON.stringify({
         type: 'svg',
@@ -202,6 +200,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
         svgBounds: svgConfig.svgBounds ?? null,
       });
     }
+    const tileConfig = getTileConfig();
     if (tileConfig) {
       return JSON.stringify({
         type: 'tile',
@@ -211,7 +210,8 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       });
     }
     return undefined;
-  };
+  });
+  const getRenderKey = (): string | undefined => renderKeyRef.value;
   const floors = computed<string[]>(() => {
     return getSvgConfig()?.floors ?? [];
   });
@@ -294,10 +294,10 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     L: typeof import('leaflet'),
     tileConfig: MapTileConfig
   ): Promise<void> {
-    const map = mapInstance.value;
-    if (!map) return;
+    const leafletMap = mapInstance.value;
+    if (!leafletMap) return;
     if (tileLayer.value) {
-      map.removeLayer(tileLayer.value);
+      leafletMap.removeLayer(tileLayer.value);
       tileLayer.value = null;
     }
     try {
@@ -309,14 +309,14 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
         bounds,
         pane: 'mapBackground',
       });
-      tileLayer.value.addTo(map);
+      tileLayer.value.addTo(leafletMap);
       if (svgLayer.value) {
-        map.removeLayer(svgLayer.value);
+        leafletMap.removeLayer(svgLayer.value);
         svgLayer.value = null;
       }
     } catch (error) {
-      if (tileLayer.value && map.hasLayer(tileLayer.value)) {
-        map.removeLayer(tileLayer.value);
+      if (tileLayer.value && leafletMap.hasLayer(tileLayer.value)) {
+        leafletMap.removeLayer(tileLayer.value);
       }
       tileLayer.value = null;
       logger.error('Failed to load tile map layer:', error);
@@ -369,7 +369,9 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     let selectedFloorGroup: SVGElement | null = null;
     for (let index = 0; index < floors.value.length; index++) {
       const floor = floors.value[index];
-      const floorGroup = svgElement.querySelector(`#${floor}`);
+      if (!floor) continue;
+      const safeFloorId = floor.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const floorGroup = svgElement.querySelector(`[id="${safeFloorId}"]`);
       if (floorGroup instanceof SVGElement) {
         const keepWith = floorGroup.getAttribute('data-keep-with-group');
         const isSelected = floor === selectedFloor.value;
@@ -436,6 +438,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       // Create map instance with custom CRS
       const mapOptions = getLeafletMapOptions(leaflet.value, renderConfig);
       mapInstance.value = leaflet.value.map(containerRef.value, mapOptions);
+      leaflet.value.control.zoom({ position: 'bottomright' }).addTo(mapInstance.value);
       // Create a custom pane for the map background to ensure it stays behind markers
       const backgroundPane = mapInstance.value.createPane('mapBackground');
       backgroundPane.style.zIndex = '200'; // Below overlayPane (400) and markerPane (600)
@@ -452,7 +455,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       } else {
         selectedFloor.value = '';
       }
-      renderKey.value = getRenderKey(svgConfig, tileConfig) ?? '';
+      renderKey.value = getRenderKey() ?? '';
       await loadMapLayer();
       // Create layer groups for markers
       objectiveLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
@@ -495,13 +498,12 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
    */
   async function loadMapLayer(): Promise<void> {
     if (!leaflet.value || !mapInstance.value) return;
-    const svgConfig = getSvgConfig();
     const tileConfig = getTileConfig();
-    renderKey.value = getRenderKey(svgConfig, tileConfig) ?? '';
     if (tileConfig) {
       await loadTileMap(leaflet.value, tileConfig);
       return;
     }
+    const svgConfig = getSvgConfig();
     if (svgConfig) {
       await loadStandardMapSvg(leaflet.value);
     }
@@ -589,16 +591,16 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       } else {
         selectedFloor.value = '';
       }
-      const nextRenderKey = getRenderKey(newSvgConfig, newTileConfig) ?? '';
-      isLoading.value = true;
-      try {
-        if (nextRenderKey !== renderKey.value) {
+      const nextRenderKey = getRenderKey() ?? '';
+      if (nextRenderKey !== renderKey.value) {
+        isLoading.value = true;
+        try {
           renderKey.value = nextRenderKey;
+          await loadMapLayer();
+          refreshView();
+        } finally {
+          isLoading.value = false;
         }
-        await loadMapLayer();
-        refreshView();
-      } finally {
-        isLoading.value = false;
       }
     }
   );
