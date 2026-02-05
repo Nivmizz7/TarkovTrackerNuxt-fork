@@ -10,8 +10,8 @@
 </template>
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
+  import TaskLink from '@/features/tasks/TaskLink.vue';
   import type { Task } from '@/types/tarkov';
-  const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink.vue'));
   const props = defineProps<{
     alternatives: string[];
     tasks: Task[];

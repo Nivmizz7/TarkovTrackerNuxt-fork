@@ -16,7 +16,7 @@
               class="peer sr-only"
               data-testid="task-checkbox"
             />
-            <div :class="toggleClasses"></div>
+            <div :class="TOGGLE_CLASSES"></div>
           </label>
         </div>
         <div class="flex items-center justify-between">
@@ -28,7 +28,7 @@
               class="peer sr-only"
               data-testid="items-checkbox"
             />
-            <div :class="toggleClasses"></div>
+            <div :class="TOGGLE_CLASSES"></div>
           </label>
         </div>
         <div class="flex items-center justify-between">
@@ -43,7 +43,7 @@
               class="peer sr-only"
               data-testid="nonfir-checkbox"
             />
-            <div :class="toggleClassesDisabled"></div>
+            <div :class="TOGGLE_CLASSES_DISABLED"></div>
           </label>
         </div>
         <div class="flex items-center justify-between">
@@ -58,7 +58,7 @@
               class="peer sr-only"
               data-testid="hideout-checkbox"
             />
-            <div :class="toggleClassesDisabled"></div>
+            <div :class="TOGGLE_CLASSES_DISABLED"></div>
           </label>
         </div>
         <div class="flex items-center justify-between">
@@ -70,7 +70,7 @@
               class="peer sr-only"
               data-testid="map-checkbox"
             />
-            <div :class="toggleClasses"></div>
+            <div :class="TOGGLE_CLASSES"></div>
           </label>
         </div>
       </div>
@@ -80,9 +80,9 @@
 <script setup lang="ts">
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
-  const toggleClasses =
+  const TOGGLE_CLASSES =
     "peer bg-surface-700 peer-checked:bg-error-600 peer-focus:ring-error-300 after:border-surface-300 h-6 w-11 rounded-full peer-focus:ring-2 peer-focus:outline-none after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:border after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white";
-  const toggleClassesDisabled = `${toggleClasses} peer-disabled:cursor-not-allowed peer-disabled:opacity-50`;
+  const TOGGLE_CLASSES_DISABLED = `${TOGGLE_CLASSES} peer-disabled:cursor-not-allowed peer-disabled:opacity-50`;
   const preferencesStore = usePreferencesStore();
   const taskHideAll = computed({
     get: () => preferencesStore.taskTeamAllHidden,

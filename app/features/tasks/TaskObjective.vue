@@ -147,7 +147,10 @@
     const status = isComplete.value
       ? t('page.tasks.questcard.completed', 'Completed')
       : t('page.tasks.questcard.not_completed', 'Not completed');
-    return `${objectiveLabel.value}. ${status}. ${toggleObjectiveLabel.value}`;
+    const toggleAction = isComplete.value
+      ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
+      : t('page.tasks.questcard.complete', 'Complete');
+    return `${objectiveLabel.value}. ${status}. ${toggleAction}.`;
   });
   const fullObjective = computed(() => {
     return objectives.value.find((o) => o.id == props.objective.id);

@@ -37,7 +37,10 @@
         >
           FiR
         </span>
-        <AppTooltip v-if="rowHasMapLocation(row)" :text="t('page.tasks.questcard.jump_to_map')">
+        <AppTooltip
+          v-if="rowHasMapLocation(row)"
+          :text="t('page.tasks.questcard.jump_to_map', 'Jump To Map')"
+        >
           <button
             type="button"
             class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 text-surface-300 flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"

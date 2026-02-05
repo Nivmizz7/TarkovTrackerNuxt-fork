@@ -8,7 +8,7 @@
         header: 'p-0 sm:px-0',
         footer: 'p-0 sm:px-0',
       }"
-      role="article"
+      role="region"
       :aria-label="$t('page.login.login_options', 'Login options')"
     >
       <template #header>
@@ -166,6 +166,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useI18n } from 'vue-i18n';
   import DiscordIcon from '@/components/ui/DiscordIcon.vue';
   import { logger } from '@/utils/logger';
   useSeoMeta({
