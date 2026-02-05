@@ -800,6 +800,14 @@ if (shouldInitPreferencesWatchers) {
                       show_failed_filter: preferencesState.showFailedFilter,
                       use_automatic_level_calculation:
                         preferencesState.useAutomaticLevelCalculation,
+                      needed_items_sort_by: preferencesState.neededItemsSortBy,
+                      needed_items_sort_direction: preferencesState.neededItemsSortDirection,
+                      needed_items_hide_owned: preferencesState.neededItemsHideOwned,
+                      needed_items_card_style: preferencesState.neededItemsCardStyle,
+                      map_zoom_speed: preferencesState.mapZoomSpeed,
+                      pinned_task_ids: preferencesState.pinnedTaskIds,
+                      task_filter_presets: preferencesState.taskFilterPresets,
+                      skill_sort_mode: preferencesState.skillSortMode,
                     };
                   },
                 });

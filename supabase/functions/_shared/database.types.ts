@@ -1,5 +1,3 @@
-import type { TaskFilterPreset } from './user-preferences.types.ts';
-
 export type Json =
   | string
   | number
@@ -337,7 +335,7 @@ export type Database = {
           skill_sort_mode: string | null
           streamer_mode: boolean | null
           task_card_density: string | null
-          task_filter_presets: TaskFilterPreset[] | null
+          task_filter_presets: Json | null
           task_map_view: string | null
           task_primary_view: string | null
           task_secondary_view: string | null
@@ -397,7 +395,7 @@ export type Database = {
           skill_sort_mode?: string | null
           streamer_mode?: boolean | null
           task_card_density?: string | null
-          task_filter_presets?: TaskFilterPreset[] | null
+          task_filter_presets?: Json | null
           task_map_view?: string | null
           task_primary_view?: string | null
           task_secondary_view?: string | null
@@ -457,7 +455,7 @@ export type Database = {
           skill_sort_mode?: string | null
           streamer_mode?: boolean | null
           task_card_density?: string | null
-          task_filter_presets?: TaskFilterPreset[] | null
+          task_filter_presets?: Json | null
           task_map_view?: string | null
           task_primary_view?: string | null
           task_secondary_view?: string | null

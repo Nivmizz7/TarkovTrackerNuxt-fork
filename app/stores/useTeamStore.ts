@@ -419,7 +419,7 @@ export function useTeammateStores() {
   const teammateUnsubscribes = ref<Record<string, () => void>>({});
   const pendingRetryTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
   const pendingRetryAttempts = ref(0);
-  function createTeammateStore(teammateId: string) {
+  function createTeammateStore(teammateId: string): boolean {
     try {
       const storeDefinition = defineStore(`teammate-${teammateId}`, {
         state: () => JSON.parse(JSON.stringify(defaultState)),
@@ -480,8 +480,10 @@ export function useTeammateStores() {
         window.removeEventListener('teammate-task-update', handleTaskUpdate);
         originalCleanup?.();
       };
+      return true;
     } catch (error) {
       logger.error(`Error creating store for teammate ${teammateId}:`, error);
+      return false;
     }
   }
   const toast = useToast();
@@ -512,13 +514,22 @@ export function useTeammateStores() {
     pendingRetryTimeout.value = setTimeout(() => {
       pendingRetryTimeout.value = null;
       try {
+        const failedTeammates: string[] = [];
         for (const teammate of teammatesArray) {
           if (!teammateStores.value[teammate]) {
-            createTeammateStore(teammate);
+            const created = createTeammateStore(teammate);
+            if (!created) {
+              failedTeammates.push(teammate);
+            }
           }
         }
-        toast.add({ title: 'Teammate data loaded on retry', color: 'primary' });
-        pendingRetryAttempts.value = 0;
+        if (failedTeammates.length === 0) {
+          toast.add({ title: 'Teammate data loaded on retry', color: 'primary' });
+          pendingRetryAttempts.value = 0;
+          return;
+        }
+        logger.error('Retry failed for teammate stores:', { failedTeammates });
+        scheduleRetry(teammatesArray);
       } catch (e) {
         logger.error('Retry failed for teammate stores:', e);
         scheduleRetry(teammatesArray);
@@ -542,10 +553,16 @@ export function useTeammateStores() {
             teammateStores.value = restStores as typeof teammateStores.value;
           }
         }
+        let creationFailed = false;
         for (const teammate of newTeammatesArray) {
           if (!teammateStores.value[teammate]) {
-            createTeammateStore(teammate);
+            if (!createTeammateStore(teammate)) {
+              creationFailed = true;
+            }
           }
+        }
+        if (creationFailed) {
+          throw new Error('Failed to create teammate store');
         }
         pendingRetryAttempts.value = 0;
       } catch (error) {
