@@ -173,6 +173,7 @@
         tasks: 'Aufgaben',
         loyalty_level: 'Loyalitätsstufe',
         reputation: 'Ruf',
+        reputation_input_label: 'Ruf-Eingabe',
         set_loyalty_level: 'Loyalitätsstufe {level} setzen',
         scav_karma: 'Scav-Karma',
         unlock_required: 'Freischaltung erforderlich:',
@@ -438,6 +439,7 @@
       clear_search: 'Suche löschen',
       items: 'Gegenstände',
       empty: 'Keine Gegenstände entsprechen deiner Suche.',
+      task_kappa_req: 'Erforderlich für Kappa',
       filters: {
         label: 'Filter',
         sections: {
@@ -513,6 +515,7 @@
           list: {
             created: 'Erstellt',
             last_used: 'Zuletzt verwendet',
+            last_used_tooltip: 'Zuletzt verwendet: {value}',
             never: 'Nie',
             usage_count: '{count} Nutzungen',
             revoked: 'Widerrufen',
@@ -879,6 +882,9 @@
     collapse: 'Einklappen',
     expand: 'Ausklappen',
   },
+  needed_items: {
+    progress_format: '{current}/{total}',
+  },
   skills: {
     required_for: 'Benötigt für: {items}',
     required_levels: 'Benötigte Stufen: {items}',
@@ -895,5 +901,4 @@
     no_prestige: 'Kein Prestige',
     prestige_n: 'Prestige {n}',
   },
-  task_kappa_req: 'Erforderlich für Kappa',
 }

@@ -173,6 +173,7 @@
         tasks: '任务',
         loyalty_level: '忠诚度等级',
         reputation: '声望',
+        reputation_input_label: '声望输入',
         set_loyalty_level: '设置忠诚度等级 {level}',
         scav_karma: 'Scav 信誉',
         unlock_required: '需要解锁:',
@@ -518,6 +519,7 @@
       clear_search: '清除搜索',
       items: '物品',
       empty: '没有符合搜索的物品。',
+      task_kappa_req: 'Kappa保险箱任务必备',
       filters: {
         label: '筛选',
         sections: {
@@ -593,6 +595,7 @@
           list: {
             created: '创建时间',
             last_used: '最后使用',
+            last_used_tooltip: '最后使用：{value}',
             never: '从未使用',
             usage_count: '使用 {count} 次',
             revoked: '已撤销',
@@ -997,6 +1000,9 @@
     collapse: '折叠',
     expand: '展开',
   },
+  needed_items: {
+    progress_format: '{current}/{total}',
+  },
   skills: {
     required_for: '需要: {items}',
     required_levels: '需求等级: {items}',
@@ -1013,5 +1019,4 @@
     no_prestige: '无声望',
     prestige_n: '声望 {n}',
   },
-  task_kappa_req: 'Kappa保险箱任务必备',
 }

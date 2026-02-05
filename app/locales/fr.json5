@@ -156,6 +156,7 @@
         tasks: 'quêtes',
         loyalty_level: 'Niveau de fidélité',
         reputation: 'Réputation',
+        reputation_input_label: 'Entrée de réputation',
         set_loyalty_level: 'Définir le niveau de fidélité {level}',
         scav_karma: 'Karma de Scav',
         unlock_required: 'Déblocage requis:',
@@ -382,6 +383,7 @@
       clear_search: 'Effacer la recherche',
       items: 'articles',
       empty: 'Aucun objet ne correspond à votre recherche.',
+      task_kappa_req: 'Requis pour Kappa',
       filters: {
         label: 'Filtres',
         sections: {
@@ -493,6 +495,7 @@
           list: {
             created: 'Créé le',
             last_used: 'Dernière utilisation',
+            last_used_tooltip: 'Dernière utilisation : {value}',
             never: 'Jamais',
             usage_count: '{count} utilisations',
             revoked: 'Révoqué',
@@ -832,6 +835,9 @@
     collapse: 'Réduire',
     expand: 'Développer',
   },
+  needed_items: {
+    progress_format: '{current}/{total}',
+  },
   skills: {
     required_for: 'Requis pour : {items}',
     required_levels: 'Niveaux requis : {items}',
@@ -848,5 +854,4 @@
     no_prestige: 'Pas de Prestige',
     prestige_n: 'Prestige {n}',
   },
-  task_kappa_req: 'Requis pour Kappa',
 }

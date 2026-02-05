@@ -156,6 +156,7 @@
         tasks: 'завдань',
         loyalty_level: 'Рівень лояльності',
         reputation: 'Репутація',
+        reputation_input_label: 'Поле введення репутації',
         set_loyalty_level: 'Встановити рівень лояльності {level}',
         scav_karma: 'Карма Дикого',
         unlock_required: 'Потрібно розблокувати:',
@@ -381,6 +382,7 @@
       clear_search: 'Очистити пошук',
       items: 'предмети',
       empty: 'Немає предметів, що відповідають вашому пошуку.',
+      task_kappa_req: 'Потрібно для Каппа',
       filters: {
         label: 'Фільтри',
         sections: {
@@ -474,6 +476,7 @@
           list: {
             created: 'Створено',
             last_used: 'Останнє використання',
+            last_used_tooltip: 'Останнє використання: {value}',
             never: 'Ніколи',
             usage_count: '{count} використань',
             revoked: 'Відкликано',
@@ -812,6 +815,9 @@
     collapse: 'Згорнути',
     expand: 'Розгорнути',
   },
+  needed_items: {
+    progress_format: '{current}/{total}',
+  },
   skills: {
     required_for: 'Потрібно для: {items}',
     required_levels: 'Потрібні рівні: {items}',
@@ -828,5 +834,4 @@
     no_prestige: 'Без престижу',
     prestige_n: 'Престиж {n}',
   },
-  task_kappa_req: 'Потрібно для Каппа',
 }

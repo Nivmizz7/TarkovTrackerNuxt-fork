@@ -181,6 +181,7 @@
         tasks: 'tasks',
         loyalty_level: 'Loyalty Level',
         reputation: 'Reputation',
+        reputation_input_label: 'Reputation input',
         set_loyalty_level: 'Set loyalty level {level}',
         scav_karma: 'Scav Karma',
         unlock_required: 'Unlock required:',
@@ -601,6 +602,7 @@
           list: {
             created: 'Created',
             last_used: 'Last used',
+            last_used_tooltip: 'Last used: {value}',
             never: 'Never',
             usage_count: '{count} uses',
             revoked: 'Revoked',
@@ -1007,12 +1009,14 @@
   needed_items: {
     filter_type_label: 'Filter by item type',
     total: 'Total:',
+    progress_format: '{current}/{total}',
     tasks: 'Tasks',
     hideout_label: 'Hideout',
     fir: 'FIR',
     non: 'Non',
     non_fir: 'Non-FIR',
     fir_required: 'Found in Raid required',
+    task_kappa_req: 'Required for Kappa',
     collected_items: 'Collected Items',
     smart_fill: 'Smart Fill',
     reset: 'Reset',
@@ -1068,5 +1072,4 @@
     loading: 'Loading...',
     error: 'Error',
   },
-  task_kappa_req: 'Required for Kappa',
 }

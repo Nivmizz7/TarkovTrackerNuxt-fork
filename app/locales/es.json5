@@ -157,6 +157,7 @@
         tasks: 'misiones',
         loyalty_level: 'Nivel de lealtad',
         reputation: 'Reputación',
+        reputation_input_label: 'Entrada de reputación',
         set_loyalty_level: 'Establecer nivel de lealtad {level}',
         scav_karma: 'Karma de Scav',
         unlock_required: 'Se requiere desbloqueo:',
@@ -359,6 +360,7 @@
       clear_search: 'Limpiar búsqueda',
       items: 'artículos',
       empty: 'No hay objetos que coincidan con tu búsqueda.',
+      task_kappa_req: 'Requerido para Kappa',
       filters: {
         label: 'Filtros',
         sections: {
@@ -452,6 +454,7 @@
           list: {
             created: 'Creado',
             last_used: 'Último uso',
+            last_used_tooltip: 'Último uso: {value}',
             never: 'Nunca',
             usage_count: '{count} usos',
             revoked: 'Revocado',
@@ -771,6 +774,9 @@
     collapse: 'Colapsar',
     expand: 'Expandir',
   },
+  needed_items: {
+    progress_format: '{current}/{total}',
+  },
   skills: {
     required_for: 'Requerido para: {items}',
     required_levels: 'Niveles requeridos: {items}',
@@ -787,5 +793,4 @@
     no_prestige: 'Sin Prestigio',
     prestige_n: 'Prestigio {n}',
   },
-  task_kappa_req: 'Requerido para Kappa',
 }
