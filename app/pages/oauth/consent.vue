@@ -1,4 +1,7 @@
 <script setup lang="ts">
+  definePageMeta({
+    layout: 'default',
+  });
   const route = useRoute();
   const { client: supabase } = useNuxtApp().$supabase;
   const authorizationId = computed(() => {
@@ -88,8 +91,9 @@
       loading.value = false;
     }
   }
-  useHead({
+  useSeoMeta({
     title: 'OAuth Consent - TarkovTracker',
+    robots: 'noindex, nofollow',
   });
 </script>
 <template>

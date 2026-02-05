@@ -4,7 +4,7 @@
       <header class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <UIcon name="i-mdi-history" class="text-primary-400 h-6 w-6" />
-          <h1 class="text-2xl font-bold text-white">{{ t('page.changelog.title') }}</h1>
+          <h1 class="text-surface-100 text-2xl font-bold">{{ t('page.changelog.title') }}</h1>
         </div>
         <NuxtLink to="/" class="text-surface-400 hover:text-primary-400 transition-colors">
           <UIcon name="i-mdi-arrow-left" class="mr-1 inline h-4 w-4" />
@@ -33,8 +33,8 @@
           </h2>
           <div class="space-y-3">
             <article
-              v-for="entry in group.entries"
-              :key="entry.date"
+              v-for="(entry, index) in group.entries"
+              :key="`${entry.date}-${index}`"
               class="bg-surface-900/60 rounded-xl border border-white/5 p-4"
             >
               <div class="mb-3 flex flex-wrap items-center gap-2">
@@ -58,8 +58,8 @@
               </div>
               <ul class="space-y-2">
                 <li
-                  v-for="(bullet, index) in entry.bullets"
-                  :key="index"
+                  v-for="(bullet, bulletIndex) in entry.bullets"
+                  :key="bulletIndex"
                   class="flex items-start gap-2"
                 >
                   <UBadge
@@ -87,9 +87,15 @@
           </div>
         </section>
         <div v-if="hasMore" class="flex justify-center pt-4">
-          <UButton color="neutral" variant="soft" :loading="loadingMore" @click="loadMore">
+          <UButton
+            color="neutral"
+            variant="soft"
+            :loading="loadingMore"
+            :disabled="loadingMore"
+            @click="loadMore"
+          >
             <UIcon name="i-mdi-plus" class="mr-1 h-4 w-4" />
-            {{ t('page.changelog.loadMore') }}
+            {{ t('page.changelog.load_more') }}
           </UButton>
         </div>
       </div>
@@ -97,7 +103,6 @@
   </UContainer>
 </template>
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n';
   import { logger } from '@/utils/logger';
   import type {
     ChangelogBullet,
@@ -109,15 +114,10 @@
   definePageMeta({
     layout: 'default',
   });
-  useHead(() => ({
-    title: t('page.changelog.title'),
-    meta: [
-      {
-        name: 'description',
-        content: t('page.changelog.description'),
-      },
-    ],
-  }));
+  useSeoMeta({
+    title: computed(() => t('page.changelog.title')),
+    description: computed(() => t('page.changelog.description')),
+  });
   const entries = ref<ChangelogItem[]>([]);
   const error = ref(false);
   const loadingMore = ref(false);
@@ -129,9 +129,8 @@
     error: fetchError,
     refresh,
   } = useFetch<ChangelogResponse>(() => `/api/changelog?limit=${currentLimit.value}`, {
-    server: true,
     immediate: true,
-    key: () => `changelog-${currentLimit.value}`,
+    key: 'changelog',
     watch: false,
   });
   watchEffect(() => {
@@ -157,13 +156,14 @@
   });
   const groupedEntries = computed(() => {
     const groups = new Map<string, ChangelogItem[]>();
+    const dateFormatter = new Intl.DateTimeFormat(locale.value, {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
     for (const entry of entries.value) {
       const date = new Date(`${entry.date}T00:00:00Z`);
-      const monthKey = date.toLocaleDateString(locale.value, {
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'UTC',
-      });
+      const monthKey = dateFormatter.format(date);
       const existing = groups.get(monthKey) ?? [];
       existing.push(entry);
       groups.set(monthKey, existing);
@@ -176,6 +176,7 @@
   const formatDate = (date: string): string => {
     if (!date) return '';
     const parsed = new Date(`${date}T00:00:00Z`);
+    if (Number.isNaN(parsed.getTime())) return '';
     return parsed.toLocaleDateString(locale.value, {
       weekday: 'short',
       month: 'short',
@@ -216,6 +217,7 @@
     return text.replace(/^(added|fixed|improved|updated)\s+/i, '').replace(/\.$/, '');
   };
   const loadChangelog = async () => {
+    error.value = false;
     await refresh();
   };
   const loadMore = async () => {

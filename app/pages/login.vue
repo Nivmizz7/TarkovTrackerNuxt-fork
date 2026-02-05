@@ -32,12 +32,12 @@
               class="mt-0.5 h-5 w-5 shrink-0 text-amber-400"
             />
             <div>
-              <p class="font-medium text-amber-200">{{ $t('offlineMode.title') }}</p>
+              <p class="font-medium text-amber-200">{{ $t('offline_mode.title') }}</p>
               <p class="mt-1 text-sm text-amber-300/80">
-                <i18n-t keypath="offlineMode.description" tag="span" scope="global">
+                <i18n-t keypath="offline_mode.description" tag="span" scope="global">
                   <template #envFile>
                     <code class="rounded bg-amber-500/20 px-1 text-amber-200">
-                      {{ $t('offlineMode.envFile') }}
+                      {{ $t('offline_mode.env_file') }}
                     </code>
                   </template>
                 </i18n-t>
@@ -53,9 +53,7 @@
             :style="{ backgroundColor: 'var(--color-twitch)' }"
             class="hover:bg-twitch-hover hover:shadow-twitch/25 flex h-12 w-full items-center justify-center text-white ring-1 ring-white/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
             :loading="loading.twitch"
-            :disabled="
-              isOfflineMode || loading.twitch || loading.discord || loading.google || loading.github
-            "
+            :disabled="oauthDisabled"
             :aria-label="$t('page.login.continue_twitch')"
             @click="signInWithTwitch"
           >
@@ -71,24 +69,11 @@
             :style="{ backgroundColor: 'var(--color-discord)' }"
             class="hover:bg-discord-hover hover:shadow-discord/25 flex h-12 w-full items-center justify-center text-white ring-1 ring-white/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
             :loading="loading.discord"
-            :disabled="
-              isOfflineMode || loading.twitch || loading.discord || loading.google || loading.github
-            "
+            :disabled="oauthDisabled"
             :aria-label="$t('page.login.continue_discord')"
             @click="signInWithDiscord"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              class="mr-3 h-6 w-6 shrink-0 text-white"
-            >
-              <path
-                d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09c-.01-.02-.04-.03-.07-.03c-1.5.26-2.93.71-4.27 1.33c-.01 0-.02.01-.03.02c-2.72 4.07-3.47 8.03-3.1 11.95c0 .02.01.04.03.05c1.8 1.32 3.53 2.12 5.24 2.65c.03.01.06 0 .07-.02c.4-.55.76-1.13 1.07-1.74c.02-.04 0-.08-.04-.09c-.57-.22-1.11-.48-1.64-.78c-.04-.02-.04-.08-.01-.11c.11-.08.22-.17.33-.25c.02-.02.05-.02.07-.01c3.44 1.57 7.15 1.57 10.55 0c.02-.01.05-.01.07.01c.11.09.22.17.33.26c.04.03.04.09-.01.11c-.52.31-1.07.56-1.64.78c-.04.01-.05.06-.04.09c.32.61.68 1.19 1.07 1.74c.03.01.06.02.09.01c1.72-.53 3.45-1.33 5.25-2.65c.02-.01.03-.03.03-.05c.44-4.53-.73-8.46-3.1-11.95c-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.83 2.12-1.89 2.12z"
-              />
-            </svg>
+            <DiscordIcon :size="24" class="mr-3 shrink-0 text-white" />
             <span class="font-medium whitespace-nowrap text-white">
               {{ $t('page.login.continue_discord') }}
             </span>
@@ -99,9 +84,7 @@
             variant="solid"
             class="ring-surface-600 hover:bg-surface-100 flex h-12 w-full items-center justify-center bg-white ring-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/10"
             :loading="loading.google"
-            :disabled="
-              isOfflineMode || loading.twitch || loading.discord || loading.google || loading.github
-            "
+            :disabled="oauthDisabled"
             :aria-label="$t('page.login.continue_google')"
             @click="signInWithGoogle"
           >
@@ -142,9 +125,7 @@
             :style="{ backgroundColor: 'var(--color-github)' }"
             class="ring-surface-600 hover:bg-github-hover hover:shadow-github/25 flex h-12 w-full items-center justify-center text-white ring-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
             :loading="loading.github"
-            :disabled="
-              isOfflineMode || loading.twitch || loading.discord || loading.google || loading.github
-            "
+            :disabled="oauthDisabled"
             :aria-label="$t('page.login.continue_github')"
             @click="signInWithGitHub"
           >
@@ -185,12 +166,13 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n';
+  import DiscordIcon from '@/components/ui/DiscordIcon.vue';
   import { logger } from '@/utils/logger';
   useSeoMeta({
     title: 'Login',
     description:
       'Sign in to TarkovTracker to sync your progress across devices and collaborate with your team.',
+    robots: 'noindex, nofollow',
   });
   const { $supabase } = useNuxtApp();
   const isOfflineMode = computed(() => $supabase.isOfflineMode === true);
@@ -200,6 +182,14 @@
     google: false,
     github: false,
   });
+  const oauthDisabled = computed(
+    () =>
+      isOfflineMode.value ||
+      loading.value.twitch ||
+      loading.value.discord ||
+      loading.value.google ||
+      loading.value.github
+  );
   const route = useRoute();
   const getSafeRedirect = (
     redirectParam: string | (string | null)[] | null | undefined
@@ -325,6 +315,14 @@
       navigateTo(redirect, { replace: true });
     };
     let popupConfirmedOpen = false;
+    // Timer hierarchy:
+    // - pollTimer (every 500ms): Checks if popup is closed or open; sets popupConfirmedOpen=true if popup detected.
+    //   Clears loading.value[provider] and calls cleanup() if popup is closed.
+    // - fallbackTimer (3000ms): If popup never confirmed open and didCleanup is false, calls cleanup() and
+    //   fallbackToRedirect(url, provider) to switch to full-page redirect as a fallback.
+    // - abandonedTimer (90000ms): Final safety net; if didCleanup is still false after 90s, clears loading
+    //   and calls cleanup() to abort the flow. All timers check didCleanup to avoid double-execution
+    //   after cleanup() runs.
     const pollTimer = window.setInterval(() => {
       if (isPopupClosed()) {
         loading.value[provider] = false;
