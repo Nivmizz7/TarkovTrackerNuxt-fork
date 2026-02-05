@@ -1,3 +1,4 @@
+import { useI18n } from 'vue-i18n';
 import { useMetadataStore } from '@/stores/useMetadata';
 import { useTarkovStore } from '@/stores/useTarkov';
 import type { TaskActionPayload } from '@/composables/useTaskActions';
@@ -121,8 +122,12 @@ export function useTaskNotification() {
         handleTaskObjectives(taskToUndo.objectives, 'setTaskObjectiveComplete');
         handleAlternatives(taskToUndo.alternatives, 'setTaskFailed', 'setTaskObjectiveComplete');
         const minLevel = taskToUndo.minPlayerLevel;
-        if (minLevel !== undefined && tarkovStore.playerLevel() < minLevel) {
-          tarkovStore.setLevel(minLevel);
+        if (minLevel !== undefined) {
+          const currentLevel = tarkovStore.playerLevel();
+          const isValidLevel = typeof currentLevel === 'number' && Number.isFinite(currentLevel);
+          if (!isValidLevel || currentLevel < minLevel) {
+            tarkovStore.setLevel(minLevel);
+          }
         }
       }
       updateTaskStatus('page.tasks.questcard.undo_uncomplete', taskName);

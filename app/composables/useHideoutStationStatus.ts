@@ -38,13 +38,14 @@ export const useHideoutStationStatus = (): UseHideoutStationStatusReturn => {
   const isSkillReqMet = (requirement: SkillRequirement): boolean => {
     if (!requireSkillLevels.value) return true;
     if (!requirement?.name || typeof requirement?.level !== 'number') {
-      const warn = logger?.warn ?? console.warn;
-      warn('[useHideoutStationStatus] Invalid skill requirement; treating as satisfied', {
+      logger.warn('[useHideoutStationStatus] Invalid skill requirement; treating as satisfied', {
         context: 'useHideoutStationStatus.isSkillReqMet',
         requirement,
       });
       return true;
     }
+    // Prefer tarkovStore.getCurrentProgressData().skills when available (fresh snapshot); fall back
+    // to tarkovStore.getSkillLevel for stored/derived values.
     const currentSkills = (tarkovStore.getCurrentProgressData?.() || {}).skills || {};
     const currentLevel =
       currentSkills?.[requirement.name] ?? tarkovStore.getSkillLevel(requirement.name);
@@ -53,7 +54,13 @@ export const useHideoutStationStatus = (): UseHideoutStationStatusReturn => {
   };
   const isTraderReqMet = (requirement: TraderRequirement): boolean => {
     if (!requireTraderLoyalty.value) return true;
-    if (!requirement?.trader?.id || typeof requirement?.value !== 'number') return true;
+    if (!requirement?.trader?.id || typeof requirement?.value !== 'number') {
+      logger.warn('[useHideoutStationStatus] Invalid TraderRequirement; treating as satisfied', {
+        context: 'useHideoutStationStatus.isTraderReqMet',
+        requirement,
+      });
+      return true;
+    }
     const currentLevel = tarkovStore.getTraderLevel(requirement.trader.id);
     return currentLevel >= requirement.value;
   };

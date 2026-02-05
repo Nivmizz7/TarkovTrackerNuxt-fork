@@ -4,7 +4,19 @@ import { useMetadataStore } from '@/stores/useMetadata';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import type { HideoutStation } from '@/types/tarkov';
-export function useHideoutFiltering() {
+export type HideoutStationCounts = {
+  available: number;
+  maxed: number;
+  locked: number;
+  all: number;
+};
+export type UseHideoutFilteringReturn = {
+  activePrimaryView: WritableComputedRef<string>;
+  isStoreLoading: ComputedRef<boolean>;
+  visibleStations: ComputedRef<HideoutStation[]>;
+  stationCounts: ComputedRef<HideoutStationCounts>;
+};
+export function useHideoutFiltering(): UseHideoutFilteringReturn {
   const metadataStore = useMetadataStore();
   const { hideoutStations, hideoutLoading } = storeToRefs(metadataStore);
   const progressStore = useProgressStore();

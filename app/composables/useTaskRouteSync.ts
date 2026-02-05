@@ -130,6 +130,21 @@ export function useTaskRouteSync({
     }
     isSyncingFromRoute.value = false;
   };
+  let syncStateFromRouteTimeout: ReturnType<typeof setTimeout> | null = null;
+  const debouncedSyncStateFromRoute = () => {
+    if (syncStateFromRouteTimeout) {
+      clearTimeout(syncStateFromRouteTimeout);
+    }
+    syncStateFromRouteTimeout = setTimeout(() => {
+      syncStateFromRouteTimeout = null;
+      syncStateFromRoute();
+    }, 200);
+  };
+  onBeforeUnmount(() => {
+    if (!syncStateFromRouteTimeout) return;
+    clearTimeout(syncStateFromRouteTimeout);
+    syncStateFromRouteTimeout = null;
+  });
   watch(
     [
       () => route.query.view,
@@ -139,7 +154,7 @@ export function useTaskRouteSync({
       () => traders.value.length,
     ],
     () => {
-      syncStateFromRoute();
+      debouncedSyncStateFromRoute();
     },
     { immediate: true }
   );

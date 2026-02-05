@@ -53,6 +53,8 @@ export function useNeededItemsSorting(
       return sortDirection.value === 'asc' ? cmp : -cmp;
     };
   };
+  // getNeededItemPriority priority order (higher values sort first, descending): NeededItemTaskObjective with
+  // TASK_STATE.ACTIVE = 3, NeededItemHideoutModule = 2, NeededItemTaskObjective with TASK_STATE.AVAILABLE = 1, others = 0.
   const getNeededItemPriority = (
     item: NeededItemTaskObjective | NeededItemHideoutModule
   ): number => {
