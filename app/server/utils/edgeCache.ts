@@ -11,7 +11,6 @@ import { createLogger } from '@/server/utils/logger';
 import type { H3Event } from 'h3';
 const logger = createLogger('EdgeCache');
 interface CacheOptions {
-  ttl?: number;
   cacheKeyPrefix?: string;
 }
 type OverlayHeadersMeta = {
@@ -28,6 +27,7 @@ function getOverlayHeadersMeta(payload: unknown): OverlayHeadersMeta | null {
 }
 function isTruthyFlag(value: unknown): boolean {
   if (typeof value === 'boolean') return value;
+  if (Array.isArray(value)) return isTruthyFlag(value[0]);
   if (typeof value !== 'string') return false;
   return ['1', 'true', 'yes', 'y', 'on'].includes(value.toLowerCase());
 }
@@ -185,48 +185,70 @@ export async function edgeCache<T>(
       return response;
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error(`Error in edgeCache for ${fullCacheKey}:`, error);
+    const sanitizedErrorMessage = sanitizeErrorMessage(errorMessage);
     throw createError({
       statusCode: 502,
-      statusMessage: `Failed to fetch data for ${fullCacheKey}`,
+      statusMessage: sanitizedErrorMessage
+        ? `Failed to fetch data for ${fullCacheKey}: ${sanitizedErrorMessage}`
+        : `Failed to fetch data for ${fullCacheKey}`,
     });
   }
 }
+const STATUS_MESSAGE_MAX_LENGTH = 160;
 const REDACTED_PLACEHOLDER = '[redacted]';
-const SENSITIVE_VARIABLE_KEYS = [
-  'api_key',
-  'apikey',
-  'auth',
-  'authorization',
-  'bearer',
-  'card',
-  'ccnum',
-  'client_secret',
-  'credential',
-  'credit_card',
-  'cvv',
-  'dob',
-  'email',
-  'otp',
-  'passwd',
-  'password',
-  'phone',
-  'pin',
-  'private_key',
-  'pwd',
-  'refresh',
-  'secret',
-  'session',
-  'signature',
-  'ssn',
-  'token',
-  'user_id',
-  'userid',
+const SENSITIVE_VARIABLE_PATTERNS = [
+  '^api_?key$',
+  '^apikey$',
+  '^auth$',
+  '^authorization$',
+  '^bearer$',
+  '^card$',
+  '^ccnum$',
+  '^client_secret$',
+  '^credential$',
+  '^credit_card$',
+  '^cvv$',
+  '^dob$',
+  '^email$',
+  '^otp$',
+  '^passwd$',
+  '^password$',
+  '^phone$',
+  '^pin$',
+  '^private_key$',
+  '^pwd$',
+  '^refresh$',
+  '^secret$',
+  '^session$',
+  '^signature$',
+  '^ssn$',
+  '^token$',
+  '^user_?id$',
+  '^userid$',
 ];
+const SENSITIVE_VARIABLE_REGEX = SENSITIVE_VARIABLE_PATTERNS.map((pattern) => new RegExp(pattern));
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   if (!value || typeof value !== 'object') return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
+};
+const sanitizeErrorMessage = (message: string): string => {
+  let sanitized = message.trim();
+  if (!sanitized) return '';
+  sanitized = sanitized.replace(/\bhttps?:\/\/[^\s]+/gi, '[host]');
+  sanitized = sanitized.replace(/\b[a-z0-9.-]+\.[a-z]{2,}(?::\d+)?\b/gi, '[host]');
+  sanitized = sanitized.replace(/(?:[A-Za-z]:\\|\/)[^\s]+/g, '[path]');
+  sanitized = sanitized.replace(
+    /\b(select|insert|update|delete|drop|alter|create|truncate|union)\b\s+[^;]+/gi,
+    '[sql]'
+  );
+  sanitized = sanitized.replace(/\s+/g, ' ').trim();
+  if (sanitized.length > STATUS_MESSAGE_MAX_LENGTH) {
+    sanitized = `${sanitized.slice(0, STATUS_MESSAGE_MAX_LENGTH - 3)}...`;
+  }
+  return sanitized;
 };
 function sanitizeVariables(variables: Record<string, unknown>): Record<string, unknown> {
   const sanitizeValue = (value: unknown): unknown => {
@@ -237,11 +259,8 @@ function sanitizeVariables(variables: Record<string, unknown>): Record<string, u
       const sanitized: Record<string, unknown> = {};
       for (const [key, entry] of Object.entries(value)) {
         const normalizedKey = key.toLowerCase();
-        if (SENSITIVE_VARIABLE_KEYS.some((sensitiveKey) => normalizedKey.includes(sensitiveKey))) {
-          sanitized[key] = REDACTED_PLACEHOLDER;
-        } else {
-          sanitized[key] = sanitizeValue(entry);
-        }
+        const shouldRedact = SENSITIVE_VARIABLE_REGEX.some((regex) => regex.test(normalizedKey));
+        sanitized[key] = shouldRedact ? REDACTED_PLACEHOLDER : sanitizeValue(entry);
       }
       return sanitized;
     }
@@ -273,6 +292,42 @@ export function createTarkovFetcher<T = unknown>(
           timeout: safeTimeoutMs,
           retry: 0,
         });
+        if (response && typeof response === 'object' && 'errors' in response) {
+          const responseErrors = (response as { errors?: unknown }).errors;
+          const sanitizeGraphQLErrors = (errors: unknown): string => {
+            try {
+              if (Array.isArray(errors)) {
+                const sanitized = errors.map((err) => {
+                  if (typeof err === 'object' && err !== null) {
+                    const e = err as Record<string, unknown>;
+                    return {
+                      code:
+                        e.extensions && typeof e.extensions === 'object'
+                          ? (e.extensions as Record<string, unknown>).code
+                          : undefined,
+                      type:
+                        typeof e.message === 'string' ? e.message.slice(0, 100) : 'Unknown error',
+                    };
+                  }
+                  return { type: 'Unknown error' };
+                });
+                return JSON.stringify(sanitized);
+              }
+              if (typeof errors === 'object' && errors !== null) {
+                return JSON.stringify({ type: 'Non-array error object' });
+              }
+              return 'Unknown error format';
+            } catch {
+              return 'Error sanitization failed';
+            }
+          };
+          if (Array.isArray(responseErrors)) {
+            throw new Error(`GraphQL errors: ${sanitizeGraphQLErrors(responseErrors)}`);
+          }
+          throw new Error(
+            `GraphQL response contained non-array errors (${typeof responseErrors}): ${sanitizeGraphQLErrors(responseErrors)}`
+          );
+        }
         return response;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));

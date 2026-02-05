@@ -196,7 +196,7 @@ async function validateAuthToken(
       signal: controller.signal,
     });
     if (!response.ok) {
-      logger.debug('Auth validation failed', { status: response.status });
+      logger.warn('Auth validation failed', { status: response.status });
       return null;
     }
     const user = (await response.json()) as { id: string };
@@ -205,7 +205,7 @@ async function validateAuthToken(
     if (error instanceof Error && error.name === 'AbortError') {
       logger.warn('Auth validation timed out after 5000ms');
     } else {
-      logger.error({ error, message: 'Auth validation error' });
+      logger.error('Auth validation error', { error });
     }
     return null;
   } finally {
@@ -327,7 +327,6 @@ export default defineEventHandler(async (event) => {
         origin,
         clientIp: clientIp || 'unknown',
         errorMessage: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
       });
     }
   }

@@ -44,6 +44,8 @@ describe('Team Members API', () => {
             id: 'user-123',
           },
         },
+        siteConfig: { stack: [], push: vi.fn(), get: vi.fn() },
+        siteConfigNitroOrigin: '',
       },
     };
   });
@@ -169,6 +171,7 @@ describe('Team Members API', () => {
   });
   describe('Profile fallback handling', () => {
     it('should fall back to individual fetches if bulk fetch fails', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockFetch
         // Mock successful membership check
@@ -207,11 +210,19 @@ describe('Team Members API', () => {
         level: 10,
         tasksCompleted: 5,
       });
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[team/members] Profiles fetch error (500):',
+        'Internal server error'
+      );
+      errorSpy.mockRestore();
     });
   });
   describe('Authentication fallback', () => {
     it('should validate auth token when context.auth is missing', async () => {
-      mockEvent.context = {}; // No auth context
+      mockEvent.context = {
+        siteConfig: { stack: [], push: vi.fn(), get: vi.fn() },
+        siteConfigNitroOrigin: '',
+      }; // No auth context
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockImplementation((_, header: string) => {
         if (header === 'authorization') return 'Bearer valid-token';
@@ -243,14 +254,20 @@ describe('Team Members API', () => {
       expect(result.members).toEqual(['user-123']);
     });
     it('should reject requests without auth token or context', async () => {
-      mockEvent.context = {}; // No auth context
+      mockEvent.context = {
+        siteConfig: { stack: [], push: vi.fn(), get: vi.fn() },
+        siteConfigNitroOrigin: '',
+      }; // No auth context
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockReturnValue(undefined); // No auth header
       const { default: handler } = await import('../members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing auth token');
     });
     it('should reject requests with invalid auth token format', async () => {
-      mockEvent.context = {}; // No auth context
+      mockEvent.context = {
+        siteConfig: { stack: [], push: vi.fn(), get: vi.fn() },
+        siteConfigNitroOrigin: '',
+      }; // No auth context
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockImplementation((_, header: string) => {
         if (header === 'authorization') return 'InvalidFormat token123';
@@ -260,7 +277,10 @@ describe('Team Members API', () => {
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing auth token');
     });
     it('should reject requests when token validation fails', async () => {
-      mockEvent.context = {}; // No auth context
+      mockEvent.context = {
+        siteConfig: { stack: [], push: vi.fn(), get: vi.fn() },
+        siteConfigNitroOrigin: '',
+      }; // No auth context
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockImplementation((_, header: string) => {
         if (header === 'authorization') return 'Bearer invalid-token';

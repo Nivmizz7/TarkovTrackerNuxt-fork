@@ -121,7 +121,7 @@ export const useEdgeFunctions = () => {
         logger.debug('[EdgeFunctions] Gateway call succeeded:', result);
         return result;
       } catch (error) {
-        logger.error('[EdgeFunctions] Gateway failed, falling back to Supabase:', error);
+        logger.warn('[EdgeFunctions] Gateway failed, falling back to Supabase:', error);
       }
     }
     const fnName = `team-${action}`;
@@ -184,7 +184,7 @@ export const useEdgeFunctions = () => {
       try {
         return await callTokenGateway<T>(action, body);
       } catch (error) {
-        logger.error('[EdgeFunctions] Token gateway failed, falling back to Supabase:', error);
+        logger.warn('[EdgeFunctions] Token gateway failed, falling back to Supabase:', error);
       }
     }
     const fnName = action === 'revoke' ? 'token-revoke' : 'token-create';

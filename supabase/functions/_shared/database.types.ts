@@ -292,18 +292,25 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string | null
+          dashboard_notice_dismissed: boolean | null
           enable_holiday_effects: boolean | null
           enable_manual_task_fail: boolean | null
           hide_completed_map_objectives: boolean | null
           hide_global_tasks: boolean | null
           hide_non_kappa_tasks: boolean | null
+          hideout_collapse_completed: boolean | null
           hideout_primary_view: string | null
+          hideout_require_skill_levels: boolean | null
+          hideout_require_station_levels: boolean | null
+          hideout_require_trader_loyalty: boolean | null
+          hideout_sort_ready_first: boolean | null
           items_hide_non_fir: boolean | null
           items_team_hide_all: boolean | null
           items_team_hide_hideout: boolean | null
           items_team_hide_non_fir: boolean | null
           locale_override: string | null
           map_team_hide_all: boolean | null
+          map_zoom_speed: number | null
           needed_items_card_style: string | null
           needed_items_fir_filter: string | null
           needed_items_group_by_item: boolean | null
@@ -315,6 +322,7 @@ export type Database = {
           needed_items_view_mode: string | null
           needed_type_view: string | null
           neededitems_style: string | null
+          pinned_task_ids: Json | null
           show_experience_rewards: boolean | null
           show_lightkeeper_tasks: boolean | null
           show_map_extracts: boolean | null
@@ -324,8 +332,10 @@ export type Database = {
           show_previous_quests: boolean | null
           show_required_labels: boolean | null
           show_task_ids: boolean | null
+          skill_sort_mode: string | null
           streamer_mode: boolean | null
           task_card_density: string | null
+          task_filter_presets: Json | null
           task_map_view: string | null
           task_primary_view: string | null
           task_secondary_view: string | null
@@ -342,18 +352,25 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          dashboard_notice_dismissed?: boolean | null
           enable_holiday_effects?: boolean | null
           enable_manual_task_fail?: boolean | null
           hide_completed_map_objectives?: boolean | null
           hide_global_tasks?: boolean | null
           hide_non_kappa_tasks?: boolean | null
+          hideout_collapse_completed?: boolean | null
           hideout_primary_view?: string | null
+          hideout_require_skill_levels?: boolean | null
+          hideout_require_station_levels?: boolean | null
+          hideout_require_trader_loyalty?: boolean | null
+          hideout_sort_ready_first?: boolean | null
           items_hide_non_fir?: boolean | null
           items_team_hide_all?: boolean | null
           items_team_hide_hideout?: boolean | null
           items_team_hide_non_fir?: boolean | null
           locale_override?: string | null
           map_team_hide_all?: boolean | null
+          map_zoom_speed?: number | null
           needed_items_card_style?: string | null
           needed_items_fir_filter?: string | null
           needed_items_group_by_item?: boolean | null
@@ -365,6 +382,7 @@ export type Database = {
           needed_items_view_mode?: string | null
           needed_type_view?: string | null
           neededitems_style?: string | null
+          pinned_task_ids?: Json | null
           show_experience_rewards?: boolean | null
           show_lightkeeper_tasks?: boolean | null
           show_map_extracts?: boolean | null
@@ -374,8 +392,10 @@ export type Database = {
           show_previous_quests?: boolean | null
           show_required_labels?: boolean | null
           show_task_ids?: boolean | null
+          skill_sort_mode?: string | null
           streamer_mode?: boolean | null
           task_card_density?: string | null
+          task_filter_presets?: Json | null
           task_map_view?: string | null
           task_primary_view?: string | null
           task_secondary_view?: string | null
@@ -392,18 +412,25 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          dashboard_notice_dismissed?: boolean | null
           enable_holiday_effects?: boolean | null
           enable_manual_task_fail?: boolean | null
           hide_completed_map_objectives?: boolean | null
           hide_global_tasks?: boolean | null
           hide_non_kappa_tasks?: boolean | null
+          hideout_collapse_completed?: boolean | null
           hideout_primary_view?: string | null
+          hideout_require_skill_levels?: boolean | null
+          hideout_require_station_levels?: boolean | null
+          hideout_require_trader_loyalty?: boolean | null
+          hideout_sort_ready_first?: boolean | null
           items_hide_non_fir?: boolean | null
           items_team_hide_all?: boolean | null
           items_team_hide_hideout?: boolean | null
           items_team_hide_non_fir?: boolean | null
           locale_override?: string | null
           map_team_hide_all?: boolean | null
+          map_zoom_speed?: number | null
           needed_items_card_style?: string | null
           needed_items_fir_filter?: string | null
           needed_items_group_by_item?: boolean | null
@@ -415,6 +442,7 @@ export type Database = {
           needed_items_view_mode?: string | null
           needed_type_view?: string | null
           neededitems_style?: string | null
+          pinned_task_ids?: Json | null
           show_experience_rewards?: boolean | null
           show_lightkeeper_tasks?: boolean | null
           show_map_extracts?: boolean | null
@@ -424,8 +452,10 @@ export type Database = {
           show_previous_quests?: boolean | null
           show_required_labels?: boolean | null
           show_task_ids?: boolean | null
+          skill_sort_mode?: string | null
           streamer_mode?: boolean | null
           task_card_density?: string | null
+          task_filter_presets?: Json | null
           task_map_view?: string | null
           task_primary_view?: string | null
           task_secondary_view?: string | null
