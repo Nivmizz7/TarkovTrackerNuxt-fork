@@ -54,6 +54,7 @@ type GitHubCompareResponse = {
 };
 type StatsCacheEntry = { stats: ChangelogStats; timestamp: number };
 type GitHubConfig = { owner: string; repo: string; baseUrl: string };
+type LRUNode = { key: string; prev: LRUNode | null; next: LRUNode | null };
 const logger = createLogger('Changelog');
 const DEFAULT_OWNER = 'tarkovtracker-org';
 const DEFAULT_REPO = 'TarkovTracker';
@@ -63,6 +64,41 @@ const RELEASE_LIMIT = 3;
 const MAX_BULLETS_PER_GROUP = 5;
 const MAX_STATS_FETCHES = 20;
 const statsCache = new Map<string, StatsCacheEntry>();
+const lruNodeMap = new Map<string, LRUNode>();
+let lruHead: LRUNode | null = null;
+let lruTail: LRUNode | null = null;
+const lruMoveToTail = (key: string): void => {
+  let node = lruNodeMap.get(key);
+  if (!node) {
+    node = { key, prev: null, next: null };
+    lruNodeMap.set(key, node);
+  } else if (node === lruTail) {
+    return;
+  } else {
+    if (node.prev) node.prev.next = node.next;
+    if (node.next) node.next.prev = node.prev;
+    if (node === lruHead) lruHead = node.next;
+    node.prev = null;
+    node.next = null;
+  }
+  if (!lruHead) {
+    lruHead = node;
+    lruTail = node;
+  } else if (lruTail) {
+    lruTail.next = node;
+    node.prev = lruTail;
+    lruTail = node;
+  }
+};
+const lruRemove = (key: string): void => {
+  const node = lruNodeMap.get(key);
+  if (!node) return;
+  if (node.prev) node.prev.next = node.next;
+  if (node.next) node.next.prev = node.prev;
+  if (node === lruHead) lruHead = node.next;
+  if (node === lruTail) lruTail = node.prev;
+  lruNodeMap.delete(key);
+};
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 1000;
 const SHARED_CACHE_PREFIX = 'changelog-stats';
@@ -76,19 +112,20 @@ const evictStaleEntries = (): number => {
   for (const [key, entry] of statsCache) {
     if (now - entry.timestamp >= CACHE_TTL_MS) {
       statsCache.delete(key);
+      lruRemove(key);
       evicted++;
     }
   }
   return evicted;
 };
 const evictLRU = (count: number): void => {
-  if (count <= 0 || statsCache.size === 0) return;
-  const entries = Array.from(statsCache.entries());
-  entries.sort(([, a], [, b]) => a.timestamp - b.timestamp);
-  const toEvict = Math.min(count, entries.length);
-  for (let i = 0; i < toEvict; i++) {
-    const entry = entries[i];
-    if (entry) statsCache.delete(entry[0]);
+  if (count <= 0 || !lruHead) return;
+  let evicted = 0;
+  while (lruHead && evicted < count) {
+    const key = lruHead.key;
+    statsCache.delete(key);
+    lruRemove(key);
+    evicted++;
   }
 };
 const maybeRunFullEviction = (): void => {
@@ -109,9 +146,10 @@ const getLocalCacheEntry = (key: string): StatsCacheEntry | null => {
   const now = Date.now();
   if (now - cached.timestamp >= CACHE_TTL_MS) {
     statsCache.delete(key);
+    lruRemove(key);
     return null;
   }
-  cached.timestamp = now;
+  lruMoveToTail(key);
   return cached;
 };
 const setLocalCacheEntry = (key: string, entry: StatsCacheEntry): void => {
@@ -121,6 +159,7 @@ const setLocalCacheEntry = (key: string, entry: StatsCacheEntry): void => {
     evictLRU(EVICTION_BATCH_SIZE);
   }
   statsCache.set(key, entry);
+  lruMoveToTail(key);
 };
 const getSharedCache = (): Cache | null => {
   const cacheStorage = (
