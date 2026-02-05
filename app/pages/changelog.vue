@@ -176,6 +176,7 @@
   });
   const formatDate = (date: string): string => {
     if (!date) return '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
     const parsed = new Date(`${date}T00:00:00Z`);
     if (Number.isNaN(parsed.getTime())) return '';
     return parsed.toLocaleDateString(locale.value, {

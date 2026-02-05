@@ -104,7 +104,11 @@
         metadataStore.updateLanguageAndGameMode();
         await metadataStore.fetchAllData();
       } catch (err) {
-        await tarkovStore.switchGameMode(previousMode);
+        try {
+          await tarkovStore.switchGameMode(previousMode);
+        } catch (rollbackErr) {
+          logger.error('[DrawerGameSettings] rollback failed:', rollbackErr);
+        }
         switchModeError.value = t(
           'settings.game_settings.switch_mode_fetch_failed',
           'Game mode switched but failed to refresh data, please retry'
