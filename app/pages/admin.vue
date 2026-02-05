@@ -47,7 +47,7 @@
       color="error"
       variant="soft"
       title="Connection Error"
-      :description="`Failed to load admin data. Please refresh or contact support. Reference: ${errorReference}`"
+      :description="`Failed to load admin data. Please refresh or contact support. Reference: ${errorReference ?? 'N/A'}`"
     />
   </div>
   <div v-else-if="systemStore.isAdmin" class="container mx-auto space-y-6 px-4 py-6">

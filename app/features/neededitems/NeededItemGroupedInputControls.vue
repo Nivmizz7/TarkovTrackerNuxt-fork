@@ -8,9 +8,15 @@
       <div class="flex items-center gap-2">
         <div class="bg-surface-700 flex items-center rounded-lg border border-white/20">
           <button
-            class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-8 w-8 items-center justify-center rounded-l-lg transition-colors hover:text-white"
+            :disabled="isFirDecreaseDisabled"
+            :class="[
+              'text-surface-200 flex h-8 w-8 items-center justify-center rounded-l-lg transition-colors',
+              isFirDecreaseDisabled
+                ? 'opacity-40'
+                : 'hover:bg-surface-600 active:bg-surface-500 hover:text-white',
+            ]"
             :aria-label="$t('needed_items.aria.decrease_fir')"
-            @click="decreaseFir"
+            @click="handleDecreaseFir"
           >
             <UIcon name="i-mdi-minus" class="h-4 w-4" />
           </button>
@@ -39,9 +45,15 @@
             </button>
           </div>
           <button
-            class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-8 w-8 items-center justify-center rounded-r-lg transition-colors hover:text-white"
+            :disabled="isFirIncreaseDisabled"
+            :class="[
+              'text-surface-200 flex h-8 w-8 items-center justify-center rounded-r-lg transition-colors',
+              isFirIncreaseDisabled
+                ? 'opacity-40'
+                : 'hover:bg-surface-600 active:bg-surface-500 hover:text-white',
+            ]"
             :aria-label="$t('needed_items.aria.increase_fir')"
-            @click="increaseFir"
+            @click="handleIncreaseFir"
           >
             <UIcon name="i-mdi-plus" class="h-4 w-4" />
           </button>
@@ -59,9 +71,15 @@
       <div class="flex items-center gap-2">
         <div class="bg-surface-700 flex items-center rounded-lg border border-white/20">
           <button
-            class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-8 w-8 items-center justify-center rounded-l-lg transition-colors hover:text-white"
+            :disabled="isNonFirDecreaseDisabled"
+            :class="[
+              'text-surface-200 flex h-8 w-8 items-center justify-center rounded-l-lg transition-colors',
+              isNonFirDecreaseDisabled
+                ? 'opacity-40'
+                : 'hover:bg-surface-600 active:bg-surface-500 hover:text-white',
+            ]"
             :aria-label="$t('needed_items.aria.decrease_non_fir')"
-            @click="decreaseNonFir"
+            @click="handleDecreaseNonFir"
           >
             <UIcon name="i-mdi-minus" class="h-4 w-4" />
           </button>
@@ -90,9 +108,15 @@
             </button>
           </div>
           <button
-            class="text-surface-200 hover:bg-surface-600 active:bg-surface-500 flex h-8 w-8 items-center justify-center rounded-r-lg transition-colors hover:text-white"
+            :disabled="isNonFirIncreaseDisabled"
+            :class="[
+              'text-surface-200 flex h-8 w-8 items-center justify-center rounded-r-lg transition-colors',
+              isNonFirIncreaseDisabled
+                ? 'opacity-40'
+                : 'hover:bg-surface-600 active:bg-surface-500 hover:text-white',
+            ]"
             :aria-label="$t('needed_items.aria.increase_non_fir')"
-            @click="increaseNonFir"
+            @click="handleIncreaseNonFir"
           >
             <UIcon name="i-mdi-plus" class="h-4 w-4" />
           </button>
@@ -156,6 +180,26 @@
     onUpdate: (value) => emit('update:nonFir', value),
     onExternalChange: handleExternalChange,
   });
+  const isFirDecreaseDisabled = computed(() => props.firCurrent <= 0);
+  const isFirIncreaseDisabled = computed(() => props.firCurrent >= props.firNeeded);
+  const isNonFirDecreaseDisabled = computed(() => props.nonFirCurrent <= 0);
+  const isNonFirIncreaseDisabled = computed(() => props.nonFirCurrent >= props.nonFirNeeded);
+  const handleDecreaseFir = () => {
+    if (isFirDecreaseDisabled.value) return;
+    decreaseFir();
+  };
+  const handleIncreaseFir = () => {
+    if (isFirIncreaseDisabled.value) return;
+    increaseFir();
+  };
+  const handleDecreaseNonFir = () => {
+    if (isNonFirDecreaseDisabled.value) return;
+    decreaseNonFir();
+  };
+  const handleIncreaseNonFir = () => {
+    if (isNonFirIncreaseDisabled.value) return;
+    increaseNonFir();
+  };
   const startFirEdit = () => {
     startFirEditBase();
     nextTick(() => firInputRef.value?.focus());

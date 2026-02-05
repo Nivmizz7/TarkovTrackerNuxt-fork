@@ -19,20 +19,22 @@
   const hasCustomDefault = computed(() => !!slots.default);
   const valueKey = computed(() => props.valueKey || 'value');
   const labelKey = computed(() => props.labelKey || 'label');
+  const asRecord = (value: SelectMenuValue | undefined) =>
+    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+  const getProp = (value: SelectMenuValue | undefined, key: string) => {
+    const record = asRecord(value);
+    return record ? record[key] : value;
+  };
   const getCurrentLabel = () => {
     if (!props.items?.length) return '';
     const currentItem = props.items.find((item) => {
-      const itemValue = typeof item === 'object' && item !== null ? item[valueKey.value] : item;
-      const compareValue =
-        typeof props.modelValue === 'object' && props.modelValue !== null
-          ? props.modelValue[valueKey.value]
-          : props.modelValue;
+      const itemValue = getProp(item, valueKey.value);
+      const compareValue = getProp(props.modelValue, valueKey.value);
       return itemValue === compareValue;
     });
     if (!currentItem) return '';
-    return typeof currentItem === 'object' && currentItem !== null
-      ? currentItem[labelKey.value]
-      : currentItem;
+    const currentRecord = asRecord(currentItem);
+    return currentRecord ? currentRecord[labelKey.value] : currentItem;
   };
   const getLongestLabel = () => {
     if (!props.items?.length) return '';

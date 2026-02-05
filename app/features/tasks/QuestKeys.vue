@@ -30,14 +30,13 @@
           </span>
         </template>
         <template #map>
-          {{ keyMap.map.name }}
+          {{ keyMap.map?.name ?? '' }}
         </template>
       </i18n-t>
     </div>
   </div>
 </template>
-<script setup>
-  defineProps({
-    neededKeys: { type: Array, required: true },
-  });
+<script setup lang="ts">
+  import type { NeededKey } from '@/types/tarkov';
+  const { neededKeys } = defineProps<{ neededKeys: NeededKey[] }>();
 </script>

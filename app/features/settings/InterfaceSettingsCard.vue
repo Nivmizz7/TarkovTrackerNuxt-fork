@@ -137,12 +137,17 @@
   import { useI18n } from 'vue-i18n';
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
+  import type { SupabaseUser } from '@/types/supabase-plugin';
   const preferencesStore = usePreferencesStore();
   const { t } = useI18n({ useScope: 'global' });
   const { $supabase } = useNuxtApp();
+  const typedUser = computed<SupabaseUser | null>(() => {
+    const supabase = $supabase as { user?: SupabaseUser } | undefined;
+    return supabase?.user ?? null;
+  });
   const streamerModeCooldown = ref(false);
   let streamerModeTimeoutId: ReturnType<typeof setTimeout> | null = null;
-  const isLoggedIn = computed(() => Boolean($supabase?.user?.loggedIn));
+  const isLoggedIn = computed(() => Boolean(typedUser.value?.loggedIn));
   const streamerMode = computed({
     get() {
       return preferencesStore.getStreamerMode;
