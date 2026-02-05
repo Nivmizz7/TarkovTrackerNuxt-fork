@@ -116,6 +116,9 @@ describe('needed items page', () => {
       global: { stubs: defaultGlobalStubs },
     });
     expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
+    const items = wrapper.findAll('[data-testid="needed-item"]');
+    expect(items.length).toBeGreaterThan(0);
+    expect(wrapper.find('[data-testid="grouped-item"]').exists()).toBe(false);
   });
   it('renders needed items grid view', async () => {
     const NeededItemsPage = await setup({ viewMode: 'grid' });
@@ -123,6 +126,9 @@ describe('needed items page', () => {
       global: { stubs: defaultGlobalStubs },
     });
     expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
+    const items = wrapper.findAll('[data-testid="needed-item"]');
+    expect(items.length).toBeGreaterThan(0);
+    expect(wrapper.find('[data-testid="grouped-item"]').exists()).toBe(false);
   });
   it('renders grouped view when groupByItem is enabled', async () => {
     const NeededItemsPage = await setup({ groupByItem: true });
@@ -130,6 +136,8 @@ describe('needed items page', () => {
       global: { stubs: defaultGlobalStubs },
     });
     expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
+    const groupedItems = wrapper.findAll('[data-testid="grouped-item"]');
+    expect(groupedItems.length).toBeGreaterThan(0);
   });
   describe('empty and loading states', () => {
     it('renders empty state when no items', async () => {
@@ -156,6 +164,11 @@ describe('needed items page', () => {
         global: { stubs: defaultGlobalStubs },
       });
       expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
+      const items = wrapper.findAll('[data-testid="needed-item"]');
+      expect(items.length).toBeGreaterThan(0);
+      items.forEach((item) => {
+        expect(item.attributes('data-style')).toBe('list');
+      });
     });
     it('renders card style items in grid view mode', async () => {
       const NeededItemsPage = await setup({ viewMode: 'grid' });
@@ -163,6 +176,11 @@ describe('needed items page', () => {
         global: { stubs: defaultGlobalStubs },
       });
       expect(wrapper.find('[data-testid="filter-bar"]').exists()).toBe(true);
+      const items = wrapper.findAll('[data-testid="needed-item"]');
+      expect(items.length).toBeGreaterThan(0);
+      items.forEach((item) => {
+        expect(item.attributes('data-style')).toBe('card');
+      });
     });
   });
 });

@@ -90,13 +90,13 @@ vi.mock('@/utils/mapCoordinates', () => ({
   isValidMapTileConfig: vi.fn((config) => !!config?.tilePath),
   normalizeTileConfig: vi.fn((config) => config),
 }));
-const waitFor = async (predicate: () => boolean) => {
-  for (let index = 0; index < 10; index++) {
+const waitFor = async (predicate: () => boolean, maxIterations = 10) => {
+  for (let index = 0; index < maxIterations; index++) {
     if (predicate()) return;
     await vi.runAllTimersAsync();
     await nextTick();
   }
-  throw new Error('Condition not met in time');
+  throw new Error(`Condition not met after ${maxIterations} iterations`);
 };
 describe('useLeafletMap', () => {
   let useLeafletMap: typeof import('../useLeafletMap').useLeafletMap;
