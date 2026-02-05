@@ -25,14 +25,12 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n';
   import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   const { t } = useI18n({ useScope: 'global' });
   const metaTitle = computed(() => t('page.team.meta.title'));
   const metaDescription = computed(() => t('page.team.meta.description'));
   definePageMeta({
     title: 'Team',
-    meta: [{ name: 'robots', content: 'noindex, nofollow' }],
   });
   useSeoMeta({
     title: metaTitle,

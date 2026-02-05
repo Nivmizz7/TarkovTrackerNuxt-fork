@@ -1,4 +1,5 @@
 import { defineStore, type Store } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
 import { useSupabaseListener } from '@/composables/supabase/useSupabaseListener';
 import { actions, defaultState, getters, type UserState } from '@/stores/progressState';
@@ -487,6 +488,7 @@ export function useTeammateStores() {
     }
   }
   const toast = useToast();
+  const { t } = useI18n({ useScope: 'global' });
   const { $supabase } = useNuxtApp();
   function getTeammatesFromState(state: TeamState): string[] {
     const currentUID = $supabase.user?.id;
@@ -501,14 +503,24 @@ export function useTeammateStores() {
       logger.error(
         `[TeammateStore] Max retries (${MAX_RETRIES}) reached, giving up on teammate stores`
       );
-      toast.add({ title: 'Could not load teammate data after multiple attempts', color: 'error' });
+      toast.add({
+        title: t('toast.teammates.failed', 'Could not load teammate data after multiple attempts'),
+        color: 'error',
+      });
       pendingRetryAttempts.value = 0;
       return;
     }
     const delay = BASE_RETRY_DELAY_MS * Math.pow(2, pendingRetryAttempts.value);
     pendingRetryAttempts.value++;
     toast.add({
-      title: `Failed to load teammate data. Retry ${pendingRetryAttempts.value}/${MAX_RETRIES}…`,
+      title: t(
+        'toast.teammates.retrying',
+        {
+          attempt: pendingRetryAttempts.value,
+          max: MAX_RETRIES,
+        },
+        `Failed to load teammate data. Retry ${pendingRetryAttempts.value}/${MAX_RETRIES}…`
+      ),
       color: 'warning',
     });
     pendingRetryTimeout.value = setTimeout(() => {
@@ -524,7 +536,10 @@ export function useTeammateStores() {
           }
         }
         if (failedTeammates.length === 0) {
-          toast.add({ title: 'Teammate data loaded on retry', color: 'primary' });
+          toast.add({
+            title: t('toast.teammates.loaded', 'Teammate data loaded on retry'),
+            color: 'primary',
+          });
           pendingRetryAttempts.value = 0;
           return;
         }

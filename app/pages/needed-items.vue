@@ -127,10 +127,14 @@
   definePageMeta({
     usesWindowScroll: true,
   });
+  const { t } = useI18n({ useScope: 'global' });
   useSeoMeta({
-    title: 'Needed Items',
-    description:
-      'View all items needed for your active quests and hideout upgrades. Filter by quest, craft, and find-in-raid requirements.',
+    title: () => t('page.needed_items.title'),
+    description: () =>
+      t(
+        'page.needed_items.meta_description',
+        'View all items needed for your active quests and hideout upgrades. Filter by quest, craft, and find-in-raid requirements.'
+      ),
   });
   const props = defineProps({
     baseRenderCount: {
@@ -140,7 +144,6 @@
     },
   });
   const search = ref('');
-  const { t } = useI18n({ useScope: 'global' });
   const { belowMd, xs } = useSharedBreakpoints();
   const {
     activeFilter,

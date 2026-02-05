@@ -62,6 +62,11 @@
       title: 'Fortschritt konnte nicht geladen werden',
       description: 'Beim Laden deiner Kontodaten ist ein Problem aufgetreten. Bitte aktualisiere die Seite oder kontaktiere den Support, wenn das Problem weiterhin besteht.',
     },
+    teammates: {
+      retrying: 'Teamdaten konnten nicht geladen werden. Wiederholung {attempt}/{max}…',
+      loaded: 'Teamdaten beim erneuten Versuch geladen',
+      failed: 'Teamdaten konnten nach mehreren Versuchen nicht geladen werden',
+    },
   },
   common: {
     cancel: 'Abbrechen',
@@ -438,6 +443,7 @@
     },
     needed_items: {
       title: 'Benötigte Gegenstände',
+      meta_description: 'Zeige alle Gegenstände, die du für aktive Aufgaben und Versteck-Upgrades brauchst. Filtere nach Aufgabe, Crafting und Im-Raid-gefunden-Anforderungen.',
       loading: 'Lade Aufgaben- und Versteckdaten',
       search_placeholder: 'Suche Gegenstände, Aufgaben oder Versteck-Stationen...',
       clear_search: 'Suche löschen',

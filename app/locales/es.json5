@@ -51,6 +51,11 @@
       title: 'Error al cargar',
       description: 'No se pudo cargar la información. Intenta de nuevo más tarde.',
     },
+    teammates: {
+      retrying: 'No se pudieron cargar los datos del equipo. Reintento {attempt}/{max}…',
+      loaded: 'Datos del equipo cargados en el reintento',
+      failed: 'No se pudieron cargar los datos del equipo tras varios intentos',
+    },
   },
   import_confirm: {
     title: 'Confirmar importación de datos',
@@ -126,6 +131,7 @@
       },
       changelog: {
         title: 'Novedades',
+        view_all: 'Ver todo',
         show: 'Mostrar actualizaciones',
         hide: 'Ocultar actualizaciones',
         loading: 'Cargando actualizaciones...',
@@ -359,6 +365,7 @@
     },
     needed_items: {
       title: 'Objetos Necesarios',
+      meta_description: 'Consulta todos los objetos que necesitas para tus misiones activas y mejoras del escondite. Filtra por misión, fabricación y requisitos de encontrado en incursión.',
       loading: 'Cargando datos de misiones y escondite',
       search_placeholder: 'Buscar objetos...',
       clear_search: 'Limpiar búsqueda',

@@ -60,6 +60,11 @@
       title: 'Unable to load progress',
       description: 'We detected an issue loading your account data. Please refresh the page or contact support if this persists.',
     },
+    teammates: {
+      retrying: 'Failed to load teammate data. Retry {attempt}/{max}…',
+      loaded: 'Teammate data loaded on retry',
+      failed: 'Could not load teammate data after multiple attempts',
+    },
     count_edit_updated: {
       title: 'Draft updated',
       description: 'Your in-progress value was updated to {value}.',
@@ -532,6 +537,7 @@
     },
     needed_items: {
       title: 'Needed Items',
+      meta_description: 'View all items needed for your active quests and hideout upgrades. Filter by quest, craft, and find-in-raid requirements.',
       loading: 'Loading task and hideout data',
       search_placeholder: 'Search items, tasks, or hideout stations...',
       clear_search: 'Clear search',

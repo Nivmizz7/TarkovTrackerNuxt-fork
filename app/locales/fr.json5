@@ -50,6 +50,11 @@
       title: 'Impossible de charger la progression',
       description: 'Un problème a été détecté lors du chargement de vos données de compte. Veuillez actualiser la page ou contacter le support si le problème persiste.',
     },
+    teammates: {
+      retrying: "Impossible de charger les données d'équipe. Nouvelle tentative {attempt}/{max}…",
+      loaded: "Données d'équipe chargées après nouvelle tentative",
+      failed: "Impossible de charger les données d'équipe après plusieurs tentatives",
+    },
   },
   import_confirm: {
     title: "Confirmer l'importation des données",
@@ -382,6 +387,7 @@
     },
     needed_items: {
       title: 'Objets Nécessaires',
+      meta_description: 'Consultez tous les objets nécessaires pour vos quêtes actives et améliorations de planque. Filtrez par quête, fabrication et exigences trouvé en raid.',
       loading: 'Chargement des données des items requis',
       search_placeholder: 'Rechercher des items...',
       clear_search: 'Effacer la recherche',
