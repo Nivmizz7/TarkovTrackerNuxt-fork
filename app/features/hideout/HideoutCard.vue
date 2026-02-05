@@ -16,13 +16,7 @@
       <div class="flex items-center justify-between pb-2 text-xl">
         <div class="flex items-center gap-3">
           <span :class="highlightClasses" class="inline-block rounded-br-lg px-3 py-1 shadow-lg">
-            <img
-              :src="stationAvatar"
-              :alt="station.name"
-              :height="50"
-              :style="{ height: '50px' }"
-              class="block pt-0"
-            />
+            <img :src="stationAvatar" :alt="station.name" class="block h-12 pt-0" />
           </span>
           <div class="flex items-center gap-2">
             <span class="inline-block text-left leading-6">

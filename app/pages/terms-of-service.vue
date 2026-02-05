@@ -84,7 +84,7 @@
       </aside>
       <main class="w-full min-w-0 xl:flex-1">
         <UCard
-          class="prose prose-lg prose-invert prose-headings:text-primary-100 prose-a:text-link prose-strong:text-primary-200 dark:prose-invert max-w-none"
+          class="prose prose-lg prose-invert prose-headings:text-primary-100 prose-a:text-link prose-strong:text-primary-200 max-w-none"
         >
           <div class="terms-content space-y-12 [&>section]:scroll-mt-28">
             <div

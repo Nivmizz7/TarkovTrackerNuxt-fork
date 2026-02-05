@@ -56,6 +56,12 @@
     });
   };
   const handleMenuKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      closeMenu();
+      return;
+    }
     const items = getMenuItems();
     if (!items.length) return;
     const currentIndex = items.findIndex((item) => item === document.activeElement);
