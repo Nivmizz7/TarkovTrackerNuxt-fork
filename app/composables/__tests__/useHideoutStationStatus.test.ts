@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { reactive } from 'vue';
 import { useHideoutStationStatus } from '@/composables/useHideoutStationStatus';
 import type {
   HideoutLevel,
@@ -7,14 +8,14 @@ import type {
   StationLevelRequirement,
   TraderRequirement,
 } from '@/types/tarkov';
-const mockState = {
+const mockState = reactive({
   requireStationLevels: true,
   requireSkillLevels: true,
   requireTraderLoyalty: true,
   hideoutLevels: {} as Record<string, { self: number }>,
   skills: {} as Record<string, number>,
   traderLevels: {} as Record<string, number>,
-};
+});
 vi.mock('@/stores/usePreferences', () => ({
   usePreferencesStore: () => ({
     get getHideoutRequireStationLevels() {
@@ -176,7 +177,6 @@ describe('useHideoutStationStatus', () => {
     const { isStationReqMet } = useHideoutStationStatus();
     expect(isStationReqMet(stationRequirement)).toBe(false);
     mockState.requireStationLevels = false;
-    const { isStationReqMet: isStationReqMetUnlocked } = useHideoutStationStatus();
-    expect(isStationReqMetUnlocked(stationRequirement)).toBe(true);
+    expect(isStationReqMet(stationRequirement)).toBe(true);
   });
 });

@@ -31,7 +31,7 @@ export const useHideoutStationStatus = (): UseHideoutStationStatusReturn => {
   };
   const isStationReqMet = (requirement: StationLevelRequirement): boolean => {
     if (!requireStationLevels.value) return true;
-    const currentStationLevel = progressStore.hideoutLevels?.[requirement.station.id]?.self || 0;
+    const currentStationLevel = progressStore.hideoutLevels?.[requirement.station.id]?.self ?? 0;
     return currentStationLevel >= requirement.level;
   };
   const isSkillReqMet = (requirement: SkillRequirement): boolean => {
@@ -40,6 +40,7 @@ export const useHideoutStationStatus = (): UseHideoutStationStatusReturn => {
     const currentSkills = (tarkovStore.getCurrentProgressData?.() || {}).skills || {};
     const currentLevel =
       currentSkills?.[requirement.name] ?? tarkovStore.getSkillLevel(requirement.name);
+    if (typeof currentLevel !== 'number') return false;
     return currentLevel >= requirement.level;
   };
   const isTraderReqMet = (requirement: TraderRequirement): boolean => {
