@@ -1,6 +1,7 @@
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import { useTarkovStore } from '@/stores/useTarkov';
+import { logger } from '@/utils/logger';
 import type {
   HideoutLevel,
   HideoutStation,
@@ -36,7 +37,14 @@ export const useHideoutStationStatus = (): UseHideoutStationStatusReturn => {
   };
   const isSkillReqMet = (requirement: SkillRequirement): boolean => {
     if (!requireSkillLevels.value) return true;
-    if (!requirement?.name || typeof requirement?.level !== 'number') return true;
+    if (!requirement?.name || typeof requirement?.level !== 'number') {
+      const warn = logger?.warn ?? console.warn;
+      warn('[useHideoutStationStatus] Invalid skill requirement; treating as satisfied', {
+        context: 'useHideoutStationStatus.isSkillReqMet',
+        requirement,
+      });
+      return true;
+    }
     const currentSkills = (tarkovStore.getCurrentProgressData?.() || {}).skills || {};
     const currentLevel =
       currentSkills?.[requirement.name] ?? tarkovStore.getSkillLevel(requirement.name);

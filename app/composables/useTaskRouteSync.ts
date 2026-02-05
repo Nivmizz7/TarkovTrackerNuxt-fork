@@ -145,9 +145,10 @@ export function useTaskRouteSync({
   );
   watch(
     [getTaskPrimaryView, getTaskMapView, getTaskTraderView],
-    ([primaryView, mapView, traderView], [prevPrimaryView]) => {
+    ([primaryView, mapView, traderView], prevValues) => {
       if (isSyncingFromRoute.value) return;
       const normalizedPrimary = isValidPrimaryView(primaryView) ? primaryView : 'all';
+      const prevPrimaryView = prevValues[0];
       const shouldReplace = normalizedPrimary === prevPrimaryView;
       syncRoute(buildViewQuery(route.query, normalizedPrimary, mapView, traderView), shouldReplace);
     }

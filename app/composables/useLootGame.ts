@@ -9,6 +9,7 @@ export interface LootItem {
   rarity: string;
   colorClass: string;
   textClass: string;
+  animationClass?: string;
   isRealItem: boolean;
   link: string;
   wikiLink?: string;
@@ -260,8 +261,9 @@ export function useLootGame() {
       link: buildItemPageUrl(ITEM_IDS.RED_KEYCARD),
       wikiLink: buildItemPageUrl(ITEM_IDS.RED_KEYCARD),
       rarity: 'Legendary',
-      colorClass: 'text-error-600 animate-pulse',
+      colorClass: 'text-error-600',
       textClass: 'text-error-200',
+      animationClass: 'animate-pulse',
       isRealItem: true,
     };
     // Override with real item data if available
