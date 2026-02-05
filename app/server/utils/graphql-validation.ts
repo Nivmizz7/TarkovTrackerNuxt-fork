@@ -1,4 +1,4 @@
-import type { createLogger } from '~/server/utils/logger';
+import type { createLogger } from '@/server/utils/logger';
 export type Logger = ReturnType<typeof createLogger>;
 export type TarkovGraphqlResponse<T> = {
   data?: T;

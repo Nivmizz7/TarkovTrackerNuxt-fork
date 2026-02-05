@@ -35,7 +35,9 @@ export default defineEventHandler(async (event) => {
   url.searchParams.set('order', 'created_at.desc');
   url.searchParams.set('limit', '10');
   let response: Response;
+  const requestTimeoutMs = 2500;
   try {
+    const timeoutSignal = AbortSignal.timeout(requestTimeoutMs);
     response = await fetch(url.toString(), {
       headers: {
         apikey: supabaseServiceKeyValue,
@@ -43,8 +45,13 @@ export default defineEventHandler(async (event) => {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
+      signal: timeoutSignal,
     });
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      logger.warn(`[CacheMeta] Cache meta request timed out after ${requestTimeoutMs}ms.`, error);
+      return { error: `Cache meta request timed out after ${requestTimeoutMs}ms.` };
+    }
     logger.error('[CacheMeta] Network error fetching cache meta.', {
       url: url.toString(),
       error: error instanceof Error ? error.message : String(error),
