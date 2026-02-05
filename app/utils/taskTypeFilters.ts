@@ -52,9 +52,7 @@ export function buildTaskTypeFilterOptions(
   return {
     showKappa: !preferencesStore.getHideNonKappaTasks,
     showLightkeeper: preferencesStore.getShowLightkeeperTasks,
-    showNonSpecial: preferencesStore.getHideNonKappaTasks
-      ? false
-      : preferencesStore.getShowNonSpecialTasks,
+    showNonSpecial: preferencesStore.getShowNonSpecialTasks,
     userPrestigeLevel: tarkovStore.getPrestigeLevel(),
     prestigeTaskMap: metadataStore.prestigeTaskMap,
     excludedTaskIds: metadataStore.getExcludedTaskIdsForEdition(tarkovStore.getGameEdition()),

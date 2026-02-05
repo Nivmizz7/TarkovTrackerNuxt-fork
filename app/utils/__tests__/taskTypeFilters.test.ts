@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { filterTasksByTypeSettings, type TaskTypeFilterOptions } from '@/utils/taskTypeFilters';
+import {
+  buildTaskTypeFilterOptions,
+  filterTasksByTypeSettings,
+  type TaskTypeFilterOptions,
+} from '@/utils/taskTypeFilters';
 import type { Task } from '@/types/tarkov';
 const createBaseTask = (overrides: Partial<Task> = {}): Task => ({
   id: 'task-1',
@@ -163,5 +167,100 @@ describe('filterTasksByTypeSettings', () => {
       const result = filterTasksByTypeSettings(tasks, options);
       expect(result.map((t) => t.id)).toEqual(['both']);
     });
+  });
+});
+describe('buildTaskTypeFilterOptions', () => {
+  const createPreferencesStore = (overrides = {}) => ({
+    getHideNonKappaTasks: false,
+    getShowLightkeeperTasks: true,
+    getShowNonSpecialTasks: true,
+    ...overrides,
+  });
+  const createTarkovStore = (overrides = {}) => ({
+    getPrestigeLevel: () => 0,
+    getGameEdition: () => 1,
+    ...overrides,
+  });
+  const createMetadataStore = (overrides = {}) => ({
+    prestigeTaskMap: new Map<string, number>(),
+    getExcludedTaskIdsForEdition: () => new Set<string>(),
+    ...overrides,
+  });
+  it('respects getShowNonSpecialTasks independently of hideNonKappaTasks', () => {
+    const preferencesStore = createPreferencesStore({
+      getHideNonKappaTasks: true,
+      getShowLightkeeperTasks: false,
+      getShowNonSpecialTasks: true,
+    });
+    const result = buildTaskTypeFilterOptions(
+      preferencesStore,
+      createTarkovStore(),
+      createMetadataStore()
+    );
+    expect(result.showKappa).toBe(false);
+    expect(result.showLightkeeper).toBe(false);
+    expect(result.showNonSpecial).toBe(true);
+  });
+  it('returns showNonSpecial as true when showKappa is true', () => {
+    const preferencesStore = createPreferencesStore({
+      getHideNonKappaTasks: false,
+      getShowLightkeeperTasks: false,
+      getShowNonSpecialTasks: true,
+    });
+    const result = buildTaskTypeFilterOptions(
+      preferencesStore,
+      createTarkovStore(),
+      createMetadataStore()
+    );
+    expect(result.showKappa).toBe(true);
+    expect(result.showNonSpecial).toBe(true);
+  });
+  it('forwards userPrestigeLevel from tarkovStore', () => {
+    const tarkovStore = createTarkovStore({
+      getPrestigeLevel: () => 2,
+    });
+    const result = buildTaskTypeFilterOptions(
+      createPreferencesStore(),
+      tarkovStore,
+      createMetadataStore()
+    );
+    expect(result.userPrestigeLevel).toBe(2);
+  });
+  it('forwards prestigeTaskMap from metadataStore', () => {
+    const prestigeMap = new Map([['task-1', 1]]);
+    const metadataStore = createMetadataStore({
+      prestigeTaskMap: prestigeMap,
+    });
+    const result = buildTaskTypeFilterOptions(
+      createPreferencesStore(),
+      createTarkovStore(),
+      metadataStore
+    );
+    expect(result.prestigeTaskMap).toBe(prestigeMap);
+  });
+  it('includes excludedTaskIds in the returned object', () => {
+    const excludedIds = new Set(['excluded-1', 'excluded-2']);
+    const metadataStore = createMetadataStore({
+      getExcludedTaskIdsForEdition: () => excludedIds,
+    });
+    const result = buildTaskTypeFilterOptions(
+      createPreferencesStore(),
+      createTarkovStore(),
+      metadataStore
+    );
+    expect(result.excludedTaskIds).toBe(excludedIds);
+  });
+  it('handles default/empty state', () => {
+    const result = buildTaskTypeFilterOptions(
+      createPreferencesStore(),
+      createTarkovStore(),
+      createMetadataStore()
+    );
+    expect(result).toHaveProperty('showKappa');
+    expect(result).toHaveProperty('showLightkeeper');
+    expect(result).toHaveProperty('showNonSpecial');
+    expect(result).toHaveProperty('userPrestigeLevel');
+    expect(result).toHaveProperty('prestigeTaskMap');
+    expect(result).toHaveProperty('excludedTaskIds');
   });
 });
