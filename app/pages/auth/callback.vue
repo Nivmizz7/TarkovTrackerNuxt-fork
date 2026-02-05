@@ -15,6 +15,10 @@
 <script setup lang="ts">
   import { logger } from '@/utils/logger';
   const route = useRoute();
+  useSeoMeta({
+    title: 'Authenticating',
+    robots: 'noindex, nofollow',
+  });
   onMounted(async () => {
     // Check if this is a popup window (has opener)
     const isPopup = window.opener && !window.opener.closed;

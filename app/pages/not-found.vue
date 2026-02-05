@@ -8,3 +8,10 @@
     </UCard>
   </div>
 </template>
+<script setup lang="ts">
+  const { t } = useI18n({ useScope: 'global' });
+  useSeoMeta({
+    title: t('page.not_found.title', 'Not Found'),
+    robots: 'noindex, nofollow',
+  });
+</script>
