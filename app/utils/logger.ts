@@ -8,14 +8,22 @@ const levelPriority: Record<LogLevel, number> = {
 function isLogLevel(value: unknown): value is LogLevel {
   return typeof value === 'string' && value in levelPriority;
 }
-const fallbackLogLevel: LogLevel = import.meta.env.DEV ? 'info' : 'warn';
+const FALLBACK_LOG_LEVEL: LogLevel =
+  import.meta.env.MODE === 'test' ? 'warn' : import.meta.env.DEV ? 'info' : 'warn';
+let cachedLogLevel: LogLevel | null = null;
 const resolveLogLevel = (): LogLevel => {
+  if (cachedLogLevel !== null) return cachedLogLevel;
   const nuxtApp = tryUseNuxtApp();
   const runtimeLevel = nuxtApp?.$config?.public?.VITE_LOG_LEVEL;
   const envLevel = import.meta.env.VITE_LOG_LEVEL;
-  const rawLevel = typeof runtimeLevel === 'string' ? runtimeLevel : envLevel;
+  const runtimeLevelString = typeof runtimeLevel === 'string' ? runtimeLevel.trim() : undefined;
+  const rawLevel = runtimeLevelString ? runtimeLevelString : envLevel;
   const normalizedLevel = typeof rawLevel === 'string' ? rawLevel.toLowerCase() : undefined;
-  return isLogLevel(normalizedLevel) ? normalizedLevel : fallbackLogLevel;
+  cachedLogLevel = isLogLevel(normalizedLevel) ? normalizedLevel : FALLBACK_LOG_LEVEL;
+  return cachedLogLevel;
+};
+export const resetCachedLogLevel = (): void => {
+  cachedLogLevel = null;
 };
 const shouldLog = (level: LogLevel) => levelPriority[level] >= levelPriority[resolveLogLevel()];
 export const logger = {
