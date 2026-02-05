@@ -400,6 +400,7 @@
   };
   const decreaseObjective = (obj: NeededItemTaskObjective) => {
     const current = getObjectiveCount(obj);
+    if (current <= 0) return;
     const newCount = Math.max(current - 1, 0);
     const isComplete = newCount >= obj.count;
     tarkovStore.setTaskObjectiveCountWithStatus(obj.id, newCount, isComplete);

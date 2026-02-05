@@ -1,5 +1,5 @@
-import 'pinia-plugin-persistedstate';
 import { defineStore } from 'pinia';
+import 'pinia-plugin-persistedstate';
 import { useSupabaseSync } from '@/composables/supabase/useSupabaseSync';
 import { pinia as pluginPinia } from '@/plugins/01.pinia.client';
 import { logger } from '@/utils/logger';
@@ -787,6 +787,8 @@ if (shouldInitPreferencesWatchers) {
                       show_map_extracts: preferencesState.showMapExtracts,
                       neededitems_style: preferencesState.neededitemsStyle,
                       hideout_primary_view: preferencesState.hideoutPrimaryView,
+                      hideout_collapse_completed: preferencesState.hideoutCollapseCompleted,
+                      hideout_sort_ready_first: preferencesState.hideoutSortReadyFirst,
                       hideout_require_station_levels: preferencesState.hideoutRequireStationLevels,
                       hideout_require_skill_levels: preferencesState.hideoutRequireSkillLevels,
                       hideout_require_trader_loyalty: preferencesState.hideoutRequireTraderLoyalty,

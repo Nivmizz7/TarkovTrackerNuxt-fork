@@ -151,7 +151,7 @@
           :key="hIndex"
           :station="hStation"
           :collapsed="
-            getStationStatus(hStation.id) === 'maxed' && preferencesStore.hideoutCollapseCompleted
+            getStationStatus(hStation) === 'maxed' && preferencesStore.hideoutCollapseCompleted
           "
           :highlighted="highlightedStationId === hStation.id"
           :highlight-module-id="
@@ -187,7 +187,7 @@
   const { hideoutStations } = storeToRefs(metadataStore);
   const preferencesStore = usePreferencesStore();
   const tarkovStore = useTarkovStore();
-  const { getStationStatus: getStationStatusForStation } = useHideoutStationStatus();
+  const { getStationStatus } = useHideoutStationStatus();
   const highlightedStationId = ref<string | null>(null);
   const highlightedModuleId = ref<string | null>(null);
   const prereqPreferenceSetters = {
@@ -288,11 +288,6 @@
     { immediate: true }
   );
   // Handle deep linking to a specific station via ?station=stationId query param
-  const getStationStatus = (stationId: string): 'available' | 'maxed' | 'locked' => {
-    const station = hideoutStations.value?.find((s) => s.id === stationId);
-    if (!station) return 'locked';
-    return getStationStatusForStation(station);
-  };
   const scrollToStation = async (stationId: string) => {
     await nextTick();
     setTimeout(() => {
@@ -309,7 +304,8 @@
     const moduleId = Array.isArray(moduleQuery) ? moduleQuery[0] : moduleQuery;
     if (!stationId || isStoreLoading.value) return;
     // Determine station status and set appropriate filter
-    const status = getStationStatus(stationId);
+    const station = hideoutStations.value?.find((s) => s.id === stationId);
+    const status = station ? getStationStatus(station) : 'locked';
     if (activePrimaryView.value !== status) {
       activePrimaryView.value = status;
     }
