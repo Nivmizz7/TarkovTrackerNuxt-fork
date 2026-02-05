@@ -411,11 +411,14 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
 /**
  * Composable for managing teammate stores dynamically
  */
+const MAX_RETRIES = 3;
+const BASE_RETRY_DELAY_MS = 1000;
 export function useTeammateStores() {
   const { teamStore } = useTeamStoreWithSupabase();
   const teammateStores = ref<Record<string, Store<string, UserState>>>({});
   const teammateUnsubscribes = ref<Record<string, () => void>>({});
   const pendingRetryTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRetryAttempts = ref(0);
   function createTeammateStore(teammateId: string) {
     try {
       const storeDefinition = defineStore(`teammate-${teammateId}`, {
@@ -487,6 +490,41 @@ export function useTeammateStores() {
     const currentUID = $supabase.user?.id;
     return state.members?.filter((member: string) => member !== currentUID) || [];
   }
+  function scheduleRetry(teammatesArray: string[]) {
+    if (pendingRetryTimeout.value) {
+      clearTimeout(pendingRetryTimeout.value);
+      pendingRetryTimeout.value = null;
+    }
+    if (pendingRetryAttempts.value >= MAX_RETRIES) {
+      logger.error(
+        `[TeammateStore] Max retries (${MAX_RETRIES}) reached, giving up on teammate stores`
+      );
+      toast.add({ title: 'Could not load teammate data after multiple attempts', color: 'error' });
+      pendingRetryAttempts.value = 0;
+      return;
+    }
+    const delay = BASE_RETRY_DELAY_MS * Math.pow(2, pendingRetryAttempts.value);
+    pendingRetryAttempts.value++;
+    toast.add({
+      title: `Failed to load teammate data. Retry ${pendingRetryAttempts.value}/${MAX_RETRIES}…`,
+      color: 'warning',
+    });
+    pendingRetryTimeout.value = setTimeout(() => {
+      pendingRetryTimeout.value = null;
+      try {
+        for (const teammate of teammatesArray) {
+          if (!teammateStores.value[teammate]) {
+            createTeammateStore(teammate);
+          }
+        }
+        toast.add({ title: 'Teammate data loaded on retry', color: 'primary' });
+        pendingRetryAttempts.value = 0;
+      } catch (e) {
+        logger.error('Retry failed for teammate stores:', e);
+        scheduleRetry(teammatesArray);
+      }
+    }, delay);
+  }
   watch(
     () => teamStore.$state,
     async (newState, _oldState) => {
@@ -509,27 +547,10 @@ export function useTeammateStores() {
             createTeammateStore(teammate);
           }
         }
+        pendingRetryAttempts.value = 0;
       } catch (error) {
         logger.error('Error managing teammate stores:', error);
-        toast.add({ title: 'Failed to load teammate data. Retrying…', color: 'warning' });
-        if (pendingRetryTimeout.value) {
-          clearTimeout(pendingRetryTimeout.value);
-        }
-        const newTeammatesArray = getTeammatesFromState(newState);
-        pendingRetryTimeout.value = setTimeout(() => {
-          pendingRetryTimeout.value = null;
-          try {
-            for (const teammate of newTeammatesArray) {
-              if (!teammateStores.value[teammate]) {
-                createTeammateStore(teammate);
-              }
-            }
-            toast.add({ title: 'Teammate data loaded on retry', color: 'primary' });
-          } catch (e) {
-            logger.error('Retry failed for teammate stores:', e);
-            toast.add({ title: 'Could not load teammate data', color: 'error' });
-          }
-        }, 1500);
+        scheduleRetry(getTeammatesFromState(newState));
       }
     },
     {
@@ -538,11 +559,11 @@ export function useTeammateStores() {
     }
   );
   const cleanup = () => {
-    // Clear any pending retry timeout
     if (pendingRetryTimeout.value) {
       clearTimeout(pendingRetryTimeout.value);
       pendingRetryTimeout.value = null;
     }
+    pendingRetryAttempts.value = 0;
     Object.values(teammateUnsubscribes.value).forEach((unsubscribe) => {
       if (unsubscribe) unsubscribe();
     });
