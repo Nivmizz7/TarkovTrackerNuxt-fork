@@ -43,6 +43,8 @@ export default defineNuxtConfig({
       teamGatewayUrl: process.env.NUXT_PUBLIC_TEAM_GATEWAY_URL || '',
       tokenGatewayUrl: process.env.NUXT_PUBLIC_TOKEN_GATEWAY_URL || '',
       adminWatchTimeoutMs: Number(process.env.ADMIN_WATCH_TIMEOUT_MS || '5000') || 5000,
+      githubOwner: process.env.GITHUB_OWNER || 'tarkovtracker-org',
+      githubRepo: process.env.GITHUB_REPO || 'TarkovTracker',
     },
   },
   devtools: {
@@ -147,7 +149,23 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@nuxt/image',
     '@nuxtjs/i18n',
+    process.env.NODE_ENV === 'test' ? undefined : '@nuxtjs/sitemap',
   ].filter(Boolean) as string[],
+  site: {
+    url: 'https://tarkovtracker.org',
+    name: 'TarkovTracker',
+  },
+  sitemap: {
+    xslColumns: [
+      { label: 'URL', width: '65%' },
+      { label: 'Last Modified', select: 'sitemap:lastmod', width: '25%' },
+    ],
+    exclude: ['/admin', '/auth/**', '/login', '/not-found', '/oauth/**', '/settings', '/team'],
+    defaults: {
+      changefreq: 'weekly',
+      priority: 0.8,
+    },
+  },
   i18n: {
     bundle: {
       compositionOnly: true,

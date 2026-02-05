@@ -7,6 +7,11 @@ export default defineProject(async () => {
   return defu(
     {
       define: SHARED_DEFINE,
+      server: {
+        watch: {
+          ignored: ['**/.nuxt/**', '**/.output/**', '**/dist/**'],
+        },
+      },
       test: {
         name: 'happy-dom',
         environment: 'happy-dom',
@@ -31,7 +36,6 @@ export default defineProject(async () => {
             singleThread: false,
           },
         },
-        watchExclude: ['**/.nuxt/**', '**/.output/**', '**/dist/**'],
       },
     },
     nuxtConfig

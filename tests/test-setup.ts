@@ -110,9 +110,37 @@ const cleanupNuxtApp = (): void => {
 beforeAll(() => {
   const originalWarn = console.warn.bind(console);
   vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
-    const first = args[0];
-    if (typeof first === 'string' && first.startsWith('[Icon]')) return;
+    const hasIconWarning = args.some((arg) => typeof arg === 'string' && arg.startsWith('[Icon]'));
+    if (hasIconWarning) return;
+    const hasColorSchemeWarning = args.some(
+      (arg) => typeof arg === 'string' && arg.includes('Overriding ColorScheme component.')
+    );
+    if (hasColorSchemeWarning) return;
     originalWarn(...args);
+  });
+  const originalInfo = console.info.bind(console);
+  vi.spyOn(console, 'info').mockImplementation((...args: unknown[]) => {
+    const hasSitemapInfo = args.some(
+      (arg) => typeof arg === 'string' && arg.includes('[@nuxtjs/sitemap]')
+    );
+    if (hasSitemapInfo) return;
+    const hasStorageInfo = args.some(
+      (arg) => typeof arg === 'string' && arg.startsWith('[Storage]')
+    );
+    if (hasStorageInfo) return;
+    originalInfo(...args);
+  });
+  const originalLog = console.log.bind(console);
+  vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+    const hasSitemapInfo = args.some(
+      (arg) => typeof arg === 'string' && arg.includes('[@nuxtjs/sitemap]')
+    );
+    if (hasSitemapInfo) return;
+    const hasStorageInfo = args.some(
+      (arg) => typeof arg === 'string' && arg.startsWith('[Storage]')
+    );
+    if (hasStorageInfo) return;
+    originalLog(...args);
   });
 });
 afterAll(() => {
