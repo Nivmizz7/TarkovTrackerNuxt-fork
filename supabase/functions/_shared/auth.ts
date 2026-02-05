@@ -3,9 +3,8 @@ import { corsHeadersFor } from './cors.ts';
 
 const supabaseUrl =
   Deno.env.get('SUPABASE_URL') ||
-  Deno.env.get('VITE_SUPABASE_URL') ||
   (() => {
-    throw new Error('Missing VITE_SUPABASE_URL/SUPABASE_URL env');
+    throw new Error('Missing SUPABASE_URL env');
   })();
 
 const supabaseServiceKey =

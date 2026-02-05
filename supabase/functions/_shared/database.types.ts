@@ -1,3 +1,5 @@
+import type { TaskFilterPreset } from './user-preferences.types.ts';
+
 export type Json =
   | string
   | number
@@ -322,7 +324,7 @@ export type Database = {
           needed_items_view_mode: string | null
           needed_type_view: string | null
           neededitems_style: string | null
-          pinned_task_ids: Json | null
+          pinned_task_ids: string[] | null
           show_experience_rewards: boolean | null
           show_lightkeeper_tasks: boolean | null
           show_map_extracts: boolean | null
@@ -335,7 +337,7 @@ export type Database = {
           skill_sort_mode: string | null
           streamer_mode: boolean | null
           task_card_density: string | null
-          task_filter_presets: Json | null
+          task_filter_presets: TaskFilterPreset[] | null
           task_map_view: string | null
           task_primary_view: string | null
           task_secondary_view: string | null
@@ -382,7 +384,7 @@ export type Database = {
           needed_items_view_mode?: string | null
           needed_type_view?: string | null
           neededitems_style?: string | null
-          pinned_task_ids?: Json | null
+          pinned_task_ids?: string[] | null
           show_experience_rewards?: boolean | null
           show_lightkeeper_tasks?: boolean | null
           show_map_extracts?: boolean | null
@@ -395,7 +397,7 @@ export type Database = {
           skill_sort_mode?: string | null
           streamer_mode?: boolean | null
           task_card_density?: string | null
-          task_filter_presets?: Json | null
+          task_filter_presets?: TaskFilterPreset[] | null
           task_map_view?: string | null
           task_primary_view?: string | null
           task_secondary_view?: string | null
@@ -442,7 +444,7 @@ export type Database = {
           needed_items_view_mode?: string | null
           needed_type_view?: string | null
           neededitems_style?: string | null
-          pinned_task_ids?: Json | null
+          pinned_task_ids?: string[] | null
           show_experience_rewards?: boolean | null
           show_lightkeeper_tasks?: boolean | null
           show_map_extracts?: boolean | null
@@ -455,7 +457,7 @@ export type Database = {
           skill_sort_mode?: string | null
           streamer_mode?: boolean | null
           task_card_density?: string | null
-          task_filter_presets?: Json | null
+          task_filter_presets?: TaskFilterPreset[] | null
           task_map_view?: string | null
           task_primary_view?: string | null
           task_secondary_view?: string | null
