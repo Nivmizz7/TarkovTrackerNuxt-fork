@@ -11,11 +11,11 @@
           {{ t('page.changelog.back') }}
         </NuxtLink>
       </header>
-      <div v-if="pending" class="text-surface-400 py-12 text-center">
+      <div v-if="showInitialLoading" class="text-surface-400 py-12 text-center">
         <UIcon name="i-mdi-loading" class="mb-2 h-8 w-8 animate-spin" />
         <p>{{ t('page.changelog.loading') }}</p>
       </div>
-      <div v-else-if="error" class="py-12 text-center">
+      <div v-else-if="error && !groupedEntries.length" class="py-12 text-center">
         <UIcon name="i-mdi-alert-circle" class="text-error-400 mb-2 h-8 w-8" />
         <p class="text-surface-400 mb-4">{{ t('page.changelog.error') }}</p>
         <UButton color="primary" variant="soft" @click="loadChangelog">
@@ -86,17 +86,22 @@
             </article>
           </div>
         </section>
-        <div v-if="hasMore" class="flex justify-center pt-4">
-          <UButton
-            color="neutral"
-            variant="soft"
-            :loading="loadingMore"
-            :disabled="loadingMore"
-            @click="loadMore"
-          >
-            <UIcon name="i-mdi-plus" class="mr-1 h-4 w-4" />
-            {{ t('page.changelog.load_more') }}
-          </UButton>
+        <div v-if="hasMore" class="space-y-2 pt-4">
+          <div class="flex justify-center">
+            <UButton
+              color="neutral"
+              variant="soft"
+              :loading="loadingMore"
+              :disabled="loadingMore"
+              @click="loadMore"
+            >
+              <UIcon name="i-mdi-plus" class="mr-1 h-4 w-4" />
+              {{ t('page.changelog.load_more') }}
+            </UButton>
+          </div>
+          <p v-if="loadMoreError" class="text-error-400 text-center text-xs">
+            {{ t('page.changelog.error') }}
+          </p>
         </div>
       </div>
     </div>
@@ -121,6 +126,7 @@
   });
   const entries = ref<ChangelogItem[]>([]);
   const error = ref(false);
+  const loadMoreError = ref(false);
   const loadingMore = ref(false);
   const currentLimit = ref(20);
   const hasMore = ref(false);
@@ -138,8 +144,10 @@
     if (fetchError.value) {
       logger.error('Failed to fetch changelog entries', fetchError.value);
       error.value = true;
-      entries.value = [];
-      hasMore.value = false;
+      if (!entries.value.length || !loadingMore.value) {
+        entries.value = [];
+        hasMore.value = false;
+      }
       return;
     }
     if (changelogData.value?.error) {
@@ -147,8 +155,10 @@
         error: changelogData.value.error,
       });
       error.value = true;
-      entries.value = [];
-      hasMore.value = false;
+      if (!entries.value.length || !loadingMore.value) {
+        entries.value = [];
+        hasMore.value = false;
+      }
       return;
     }
     error.value = false;
@@ -174,6 +184,7 @@
       entries: items,
     }));
   });
+  const showInitialLoading = computed(() => pending.value && entries.value.length === 0);
   const formatDate = (date: string): string => {
     if (!date) return '';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
@@ -218,26 +229,32 @@
   const cleanBulletText = (text: string): string => {
     return text.replace(/^(added|fixed|improved|updated)\s+/i, '').replace(/\.$/, '');
   };
-  const loadChangelog = async () => {
+  const loadChangelog = async (): Promise<boolean> => {
     error.value = false;
     try {
       await refresh();
+      if (fetchError.value || changelogData.value?.error) {
+        return false;
+      }
+      return true;
     } catch (err) {
       error.value = true;
       logger.error('Failed to load changelog', err);
+      return false;
     }
   };
   const loadMore = async () => {
     loadingMore.value = true;
+    loadMoreError.value = false;
     const previousLimit = currentLimit.value;
+    const previousEntries = [...entries.value];
     currentLimit.value += 20;
-    try {
-      await loadChangelog();
-    } catch (err) {
+    const loaded = await loadChangelog();
+    if (!loaded) {
       currentLimit.value = previousLimit;
-      logger.error('Failed to load more changelog entries', err);
-    } finally {
-      loadingMore.value = false;
+      entries.value = previousEntries;
+      loadMoreError.value = true;
     }
+    loadingMore.value = false;
   };
 </script>

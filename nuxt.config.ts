@@ -18,7 +18,7 @@ export default defineNuxtConfig({
     supabaseUrl: process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '',
     supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '',
-    githubToken: process.env.GITHUB_TOKEN || '',
+    githubToken: process.env.GITHUB_TOKEN || process.env.GITHUB_PAT || '',
     githubTimeoutMs: Number(process.env.GITHUB_TIMEOUT_MS || '8000') || 8000,
     // API protection configuration (server-only)
     apiProtection: {

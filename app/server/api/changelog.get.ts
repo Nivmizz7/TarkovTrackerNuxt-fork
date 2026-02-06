@@ -54,11 +54,14 @@ type GitHubCompareResponse = {
   }>;
 };
 type StatsCacheEntry = { stats: ChangelogStats; timestamp: number };
+type ResponseCacheEntry = { response: ChangelogResponse; timestamp: number };
 type GitHubConfig = { owner: string; repo: string; baseUrl: string; timeoutMs: number };
 const logger = createLogger('Changelog');
 const changelogConfig = (() => {
-  const MAX_CACHE_ENTRIES = 1000; // Local in-memory only; cross-instance persistence needs useStorage() + external KV/Redis.
-  const CACHE_TTL_MS = 30 * 60 * 1000; // Best-effort per-instance TTL; cold starts clear this cache.
+  const MAX_STATS_CACHE_ENTRIES = 1000;
+  const MAX_RESPONSE_CACHE_ENTRIES = 100;
+  const STATS_CACHE_TTL_MS = 30 * 60 * 1000;
+  const RESPONSE_CACHE_TTL_MS = 5 * 60 * 1000;
   return {
     DEFAULT_OWNER: 'tarkovtracker-org',
     DEFAULT_REPO: 'TarkovTracker',
@@ -66,23 +69,25 @@ const changelogConfig = (() => {
     MAX_LIMIT: 50,
     RELEASE_LIMIT: 3,
     MAX_BULLETS_PER_GROUP: 5,
-    MAX_STATS_FETCHES: 20,
+    COMMIT_PAGE_SIZE: 100,
+    MAX_COMMIT_PAGES: 15,
     DEFAULT_GITHUB_TIMEOUT_MS: 8000,
     MIN_GITHUB_TIMEOUT_MS: 1000,
     MAX_GITHUB_TIMEOUT_MS: 20000,
-    CACHE_TTL_MS,
-    MAX_CACHE_ENTRIES,
-    SHARED_CACHE_PREFIX: 'changelog-stats', // Cache API secondary layer key prefix; cache misses always fall back to GitHub API.
+    STATS_CACHE_TTL_MS,
+    RESPONSE_CACHE_TTL_MS,
+    MAX_STATS_CACHE_ENTRIES,
+    MAX_RESPONSE_CACHE_ENTRIES,
+    SHARED_STATS_CACHE_PREFIX: 'changelog-stats',
+    SHARED_RESPONSE_CACHE_PREFIX: 'changelog-response',
     MAX_KEY_LENGTH: 200, // Defensive bound for local/Cache API cache keys.
-    EVICTION_BATCH_SIZE: Math.ceil(MAX_CACHE_ENTRIES * 0.1), // Local in-memory eviction batch size.
+    STATS_EVICTION_BATCH_SIZE: Math.ceil(MAX_STATS_CACHE_ENTRIES * 0.1),
+    RESPONSE_EVICTION_BATCH_SIZE: Math.ceil(MAX_RESPONSE_CACHE_ENTRIES * 0.1),
     FULL_EVICTION_INTERVAL_MS: 5 * 60 * 1000, // Local in-memory eviction cadence; not shared across instances.
     cache: {
-      // TTL is NOT set on LRUCache itself; TTL is managed manually via
-      // getLocalCacheEntry() (active validation) and maybeRunFullEviction()
-      // (periodic sweep). This avoids double-handling and gives explicit
-      // control over eviction behaviour and memory trade-offs.
-      statsCache: new LRUCache<string, StatsCacheEntry>({ max: MAX_CACHE_ENTRIES }),
-      lastFullEviction: 0, // Non-persistent local timestamp; Cache API + GitHub fallback handle cross-instance misses.
+      statsCache: new LRUCache<string, StatsCacheEntry>({ max: MAX_STATS_CACHE_ENTRIES }),
+      responseCache: new LRUCache<string, ResponseCacheEntry>({ max: MAX_RESPONSE_CACHE_ENTRIES }),
+      lastFullEviction: 0,
     },
   };
 })();
@@ -90,18 +95,24 @@ const evictStaleEntries = (): number => {
   const now = Date.now();
   let evicted = 0;
   for (const [key, entry] of changelogConfig.cache.statsCache) {
-    if (now - entry.timestamp >= changelogConfig.CACHE_TTL_MS) {
+    if (now - entry.timestamp >= changelogConfig.STATS_CACHE_TTL_MS) {
       changelogConfig.cache.statsCache.delete(key);
+      evicted++;
+    }
+  }
+  for (const [key, entry] of changelogConfig.cache.responseCache) {
+    if (now - entry.timestamp >= changelogConfig.RESPONSE_CACHE_TTL_MS) {
+      changelogConfig.cache.responseCache.delete(key);
       evicted++;
     }
   }
   return evicted;
 };
-const evictLRU = (count: number): void => {
+const evictLRU = <T>(cache: LRUCache<string, T>, count: number): void => {
   if (count <= 0) return;
   let evicted = 0;
   while (evicted < count) {
-    const removed = changelogConfig.cache.statsCache.pop();
+    const removed = cache.pop();
     if (!removed) break;
     evicted++;
   }
@@ -113,11 +124,20 @@ const maybeRunFullEviction = (): void => {
   }
   changelogConfig.cache.lastFullEviction = now;
   evictStaleEntries();
-  if (changelogConfig.cache.statsCache.size > changelogConfig.MAX_CACHE_ENTRIES) {
+  if (changelogConfig.cache.statsCache.size > changelogConfig.MAX_STATS_CACHE_ENTRIES) {
     evictLRU(
+      changelogConfig.cache.statsCache,
       changelogConfig.cache.statsCache.size -
-        changelogConfig.MAX_CACHE_ENTRIES +
-        changelogConfig.EVICTION_BATCH_SIZE
+        changelogConfig.MAX_STATS_CACHE_ENTRIES +
+        changelogConfig.STATS_EVICTION_BATCH_SIZE
+    );
+  }
+  if (changelogConfig.cache.responseCache.size > changelogConfig.MAX_RESPONSE_CACHE_ENTRIES) {
+    evictLRU(
+      changelogConfig.cache.responseCache,
+      changelogConfig.cache.responseCache.size -
+        changelogConfig.MAX_RESPONSE_CACHE_ENTRIES +
+        changelogConfig.RESPONSE_EVICTION_BATCH_SIZE
     );
   }
 };
@@ -128,7 +148,7 @@ const getLocalCacheEntry = (key: string): StatsCacheEntry | null => {
   const cached = changelogConfig.cache.statsCache.get(key);
   if (!cached) return null;
   const now = Date.now();
-  if (now - cached.timestamp >= changelogConfig.CACHE_TTL_MS) {
+  if (now - cached.timestamp >= changelogConfig.STATS_CACHE_TTL_MS) {
     changelogConfig.cache.statsCache.delete(key);
     return null;
   }
@@ -138,12 +158,33 @@ const setLocalCacheEntry = (key: string, entry: StatsCacheEntry): void => {
   if (!isValidCacheKey(key)) return;
   maybeRunFullEviction();
   if (
-    changelogConfig.cache.statsCache.size >= changelogConfig.MAX_CACHE_ENTRIES &&
+    changelogConfig.cache.statsCache.size >= changelogConfig.MAX_STATS_CACHE_ENTRIES &&
     !changelogConfig.cache.statsCache.has(key)
   ) {
-    evictLRU(changelogConfig.EVICTION_BATCH_SIZE);
+    evictLRU(changelogConfig.cache.statsCache, changelogConfig.STATS_EVICTION_BATCH_SIZE);
   }
   changelogConfig.cache.statsCache.set(key, entry);
+};
+const getLocalResponseCacheEntry = (key: string): ResponseCacheEntry | null => {
+  const cached = changelogConfig.cache.responseCache.get(key);
+  if (!cached) return null;
+  const now = Date.now();
+  if (now - cached.timestamp >= changelogConfig.RESPONSE_CACHE_TTL_MS) {
+    changelogConfig.cache.responseCache.delete(key);
+    return null;
+  }
+  return cached;
+};
+const setLocalResponseCacheEntry = (key: string, entry: ResponseCacheEntry): void => {
+  if (!isValidCacheKey(key)) return;
+  maybeRunFullEviction();
+  if (
+    changelogConfig.cache.responseCache.size >= changelogConfig.MAX_RESPONSE_CACHE_ENTRIES &&
+    !changelogConfig.cache.responseCache.has(key)
+  ) {
+    evictLRU(changelogConfig.cache.responseCache, changelogConfig.RESPONSE_EVICTION_BATCH_SIZE);
+  }
+  changelogConfig.cache.responseCache.set(key, entry);
 };
 const getSharedCache = (): Cache | null => {
   const cacheStorage = (
@@ -177,7 +218,7 @@ const buildSharedCacheRequest = (key: string): Request => {
   const { host, protocol } = getSharedCacheOrigin();
   const encodedKey = encodeURIComponent(key);
   const cacheUrl = new URL(
-    `${protocol}//${host}/__edge-cache/${changelogConfig.SHARED_CACHE_PREFIX}/${encodedKey}`
+    `${protocol}//${host}/__edge-cache/${changelogConfig.SHARED_STATS_CACHE_PREFIX}/${encodedKey}`
   );
   return new Request(cacheUrl.toString());
 };
@@ -189,7 +230,7 @@ const getSharedCacheEntry = async (key: string): Promise<StatsCacheEntry | null>
     if (!cachedResponse) return null;
     const payload = (await cachedResponse.json()) as StatsCacheEntry | null;
     if (!payload?.stats || typeof payload.timestamp !== 'number') return null;
-    if (Date.now() - payload.timestamp >= changelogConfig.CACHE_TTL_MS) return null;
+    if (Date.now() - payload.timestamp >= changelogConfig.STATS_CACHE_TTL_MS) return null;
     return payload;
   } catch (error) {
     logger.warn('[Changelog] Failed to read shared cache.', {
@@ -202,7 +243,7 @@ const getSharedCacheEntry = async (key: string): Promise<StatsCacheEntry | null>
 const setSharedCacheEntry = async (key: string, entry: StatsCacheEntry): Promise<void> => {
   const cache = getSharedCache();
   if (!cache) return;
-  const ttlSeconds = Math.max(1, Math.floor(changelogConfig.CACHE_TTL_MS / 1000));
+  const ttlSeconds = Math.max(1, Math.floor(changelogConfig.STATS_CACHE_TTL_MS / 1000));
   try {
     const response = new Response(JSON.stringify(entry), {
       headers: {
@@ -213,6 +254,54 @@ const setSharedCacheEntry = async (key: string, entry: StatsCacheEntry): Promise
     await cache.put(buildSharedCacheRequest(key), response);
   } catch (error) {
     logger.warn('[Changelog] Failed to write shared cache.', {
+      key,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+const buildSharedResponseCacheRequest = (key: string): Request => {
+  const { host, protocol } = getSharedCacheOrigin();
+  const encodedKey = encodeURIComponent(key);
+  const cacheUrl = new URL(
+    `${protocol}//${host}/__edge-cache/${changelogConfig.SHARED_RESPONSE_CACHE_PREFIX}/${encodedKey}`
+  );
+  return new Request(cacheUrl.toString());
+};
+const getSharedResponseCacheEntry = async (key: string): Promise<ResponseCacheEntry | null> => {
+  const cache = getSharedCache();
+  if (!cache) return null;
+  try {
+    const cachedResponse = await cache.match(buildSharedResponseCacheRequest(key));
+    if (!cachedResponse) return null;
+    const payload = (await cachedResponse.json()) as ResponseCacheEntry | null;
+    if (!payload?.response || typeof payload.timestamp !== 'number') return null;
+    if (Date.now() - payload.timestamp >= changelogConfig.RESPONSE_CACHE_TTL_MS) return null;
+    return payload;
+  } catch (error) {
+    logger.warn('[Changelog] Failed to read shared response cache.', {
+      key,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+};
+const setSharedResponseCacheEntry = async (
+  key: string,
+  entry: ResponseCacheEntry
+): Promise<void> => {
+  const cache = getSharedCache();
+  if (!cache) return;
+  const ttlSeconds = Math.max(1, Math.floor(changelogConfig.RESPONSE_CACHE_TTL_MS / 1000));
+  try {
+    const response = new Response(JSON.stringify(entry), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds}`,
+      },
+    });
+    await cache.put(buildSharedResponseCacheRequest(key), response);
+  } catch (error) {
+    logger.warn('[Changelog] Failed to write shared response cache.', {
       key,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -431,25 +520,66 @@ type ProcessedCommit = {
   date: string;
   bullet: string;
 };
+type CommitBullet = {
+  sha: string;
+  text: string;
+};
+type GroupedCommitItem = {
+  date: string;
+  bullets: CommitBullet[];
+};
+const toProcessedCommit = (commit: GitHubCommitListItem): ProcessedCommit | null => {
+  const bullet = normalizeCommitMessage(commit.commit?.message ?? '');
+  if (!bullet) return null;
+  const date = commit.commit?.author?.date || commit.commit?.committer?.date || '';
+  const day = date.slice(0, 10);
+  const sha = commit.sha;
+  if (!day || !sha) return null;
+  return { sha, date: day, bullet };
+};
+const fetchCommitCandidates = async (
+  dayLimit: number,
+  baseUrl: string,
+  githubToken?: string,
+  timeoutMs: number = changelogConfig.DEFAULT_GITHUB_TIMEOUT_MS
+): Promise<ProcessedCommit[]> => {
+  const processed: ProcessedCommit[] = [];
+  const uniqueDays = new Set<string>();
+  for (let page = 1; page <= changelogConfig.MAX_COMMIT_PAGES; page++) {
+    if (uniqueDays.size > dayLimit) break;
+    const commitUrl = `${baseUrl}/commits?per_page=${changelogConfig.COMMIT_PAGE_SIZE}&page=${page}`;
+    const commits = await fetchGithub<GitHubCommitListItem[]>(commitUrl, githubToken, timeoutMs);
+    if (!Array.isArray(commits) || !commits.length) break;
+    for (const commit of commits) {
+      const processedCommit = toProcessedCommit(commit);
+      if (!processedCommit) continue;
+      processed.push(processedCommit);
+      uniqueDays.add(processedCommit.date);
+      if (uniqueDays.size > dayLimit) break;
+    }
+    if (commits.length < changelogConfig.COMMIT_PAGE_SIZE) break;
+  }
+  return processed;
+};
 const buildCommitItems = async (
-  commits: GitHubCommitListItem[],
-  limit: number,
+  commits: ProcessedCommit[],
+  dayLimit: number,
   baseUrl: string,
   githubToken?: string,
   timeoutMs: number = changelogConfig.DEFAULT_GITHUB_TIMEOUT_MS
 ): Promise<ChangelogItem[]> => {
-  const processed: ProcessedCommit[] = [];
-  for (const commit of commits) {
-    if (processed.length >= limit) break;
-    const bullet = normalizeCommitMessage(commit.commit?.message ?? '');
-    if (!bullet) continue;
-    const date = commit.commit?.author?.date || commit.commit?.committer?.date || '';
-    const day = date.slice(0, 10);
-    const sha = commit.sha;
-    if (!day || !sha) continue;
-    processed.push({ sha, date: day, bullet });
+  const grouped = new Map<string, GroupedCommitItem>();
+  for (const { sha, date, bullet } of commits) {
+    let existing = grouped.get(date);
+    if (!existing) {
+      if (grouped.size >= dayLimit) break;
+      existing = { date, bullets: [] };
+      grouped.set(date, existing);
+    }
+    if (existing.bullets.length >= changelogConfig.MAX_BULLETS_PER_GROUP) continue;
+    existing.bullets.push({ sha, text: bullet });
   }
-  const statsToFetch = processed.slice(0, changelogConfig.MAX_STATS_FETCHES);
+  const statsToFetch = Array.from(grouped.values()).flatMap((item) => item.bullets);
   const statsMap = new Map<string, ChangelogStats>();
   const settledResults = await Promise.allSettled(
     statsToFetch.map(async ({ sha }) => {
@@ -462,30 +592,26 @@ const buildCommitItems = async (
       statsMap.set(result.value.sha, result.value.stats);
     }
   }
-  const grouped = new Map<string, ChangelogItem>();
-  for (const { sha, date, bullet } of processed) {
-    const existing = grouped.get(date) ?? {
-      date,
-      bullets: [],
-      stats: { additions: 0, deletions: 0 },
-    };
-    if (existing.bullets.length < changelogConfig.MAX_BULLETS_PER_GROUP) {
-      const commitStats = statsMap.get(sha);
-      existing.bullets.push({
-        text: bullet,
-        stats: commitStats,
-      });
-      if (commitStats && existing.stats) {
-        existing.stats.additions += commitStats.additions;
-        existing.stats.deletions += commitStats.deletions;
+  return Array.from(grouped.values()).map((item) => {
+    let additions = 0;
+    let deletions = 0;
+    const bullets = item.bullets.map((bullet) => {
+      const commitStats = statsMap.get(bullet.sha);
+      if (commitStats) {
+        additions += commitStats.additions;
+        deletions += commitStats.deletions;
       }
-      grouped.set(date, existing);
-    }
-  }
-  return Array.from(grouped.values()).map((item) => ({
-    ...item,
-    stats: item.stats?.additions || item.stats?.deletions ? item.stats : undefined,
-  }));
+      return {
+        text: bullet.text,
+        stats: commitStats,
+      };
+    });
+    return {
+      date: item.date,
+      bullets,
+      stats: additions || deletions ? { additions, deletions } : undefined,
+    };
+  });
 };
 export default defineEventHandler(async (event): Promise<ChangelogResponse> => {
   setResponseHeaders(event, { 'Cache-Control': 'public, max-age=300, s-maxage=300' });
@@ -500,24 +626,52 @@ export default defineEventHandler(async (event): Promise<ChangelogResponse> => {
       changelogConfig.MAX_LIMIT
     );
     const releaseLimit = clamp(parseNumber(query.releases, changelogConfig.RELEASE_LIMIT), 1, 10);
+    const responseCacheKey = `${baseUrl}:limit=${limit}:releases=${releaseLimit}`;
+    const localCachedResponse = getLocalResponseCacheEntry(responseCacheKey);
+    if (localCachedResponse) {
+      return localCachedResponse.response;
+    }
+    const sharedCachedResponse = await getSharedResponseCacheEntry(responseCacheKey);
+    if (sharedCachedResponse) {
+      setLocalResponseCacheEntry(responseCacheKey, sharedCachedResponse);
+      return sharedCachedResponse.response;
+    }
     const releaseUrl = `${baseUrl}/releases?per_page=${releaseLimit}`;
     const releases = await fetchGithub<GitHubRelease[]>(releaseUrl, githubToken, timeoutMs);
+    const releaseFetchFailed = !Array.isArray(releases);
     const releaseItems = Array.isArray(releases)
       ? await buildReleaseItems(releases, releaseLimit, baseUrl, githubToken, timeoutMs)
       : [];
     if (releaseItems.length) {
-      return { source: 'releases', items: releaseItems, hasMore: false };
+      const response: ChangelogResponse = {
+        source: 'releases',
+        items: releaseItems,
+        hasMore: false,
+      };
+      const entry = { response, timestamp: Date.now() };
+      setLocalResponseCacheEntry(responseCacheKey, entry);
+      await setSharedResponseCacheEntry(responseCacheKey, entry);
+      return response;
     }
     const fetchLimit = limit + 1;
-    const commitFetchCount = Math.min(fetchLimit * 4, 100);
-    const commitUrl = `${baseUrl}/commits?per_page=${commitFetchCount}`;
-    const commits = await fetchGithub<GitHubCommitListItem[]>(commitUrl, githubToken, timeoutMs);
-    const commitItems = Array.isArray(commits)
-      ? await buildCommitItems(commits, fetchLimit, baseUrl, githubToken, timeoutMs)
-      : [];
-    const hasMore = commitItems.length > limit;
+    const commits = await fetchCommitCandidates(fetchLimit, baseUrl, githubToken, timeoutMs);
+    if (releaseFetchFailed && !commits.length) {
+      return { source: 'commits', items: [], hasMore: false, error: 'Failed to fetch changelog' };
+    }
+    const commitItems = await buildCommitItems(
+      commits,
+      fetchLimit,
+      baseUrl,
+      githubToken,
+      timeoutMs
+    );
+    const hasMore = limit < changelogConfig.MAX_LIMIT && commitItems.length > limit;
     const items = hasMore ? commitItems.slice(0, limit) : commitItems;
-    return { source: 'commits', items, hasMore };
+    const response: ChangelogResponse = { source: 'commits', items, hasMore };
+    const entry = { response, timestamp: Date.now() };
+    setLocalResponseCacheEntry(responseCacheKey, entry);
+    await setSharedResponseCacheEntry(responseCacheKey, entry);
+    return response;
   } catch (error) {
     logger.error('[Changelog] Failed to build changelog.', {
       error: error instanceof Error ? error.message : String(error),
