@@ -1,6 +1,53 @@
-import Graph from 'graphology';
 import { logger } from '@/utils/logger';
-export function getPredecessors(graph: Graph, nodeId: string): string[] {
+type NodeId = string;
+export interface TaskGraph {
+  clear: () => void;
+  hasNode: (nodeId: NodeId) => boolean;
+  inNeighbors: (nodeId: NodeId) => NodeId[];
+  mergeEdge: (sourceId: NodeId, targetId: NodeId) => void;
+  mergeNode: (nodeId: NodeId) => void;
+  nodes: () => NodeId[];
+  outNeighbors: (nodeId: NodeId) => NodeId[];
+}
+class DirectedTaskGraph implements TaskGraph {
+  private incoming = new Map<NodeId, Set<NodeId>>();
+  private outgoing = new Map<NodeId, Set<NodeId>>();
+  clear(): void {
+    this.incoming.clear();
+    this.outgoing.clear();
+  }
+  hasNode(nodeId: NodeId): boolean {
+    return this.outgoing.has(nodeId);
+  }
+  inNeighbors(nodeId: NodeId): NodeId[] {
+    const neighbors = this.incoming.get(nodeId);
+    if (!neighbors) throw new Error(`Node "${nodeId}" does not exist`);
+    return Array.from(neighbors);
+  }
+  mergeEdge(sourceId: NodeId, targetId: NodeId): void {
+    this.mergeNode(sourceId);
+    this.mergeNode(targetId);
+    this.outgoing.get(sourceId)!.add(targetId);
+    this.incoming.get(targetId)!.add(sourceId);
+  }
+  mergeNode(nodeId: NodeId): void {
+    if (!this.outgoing.has(nodeId)) {
+      this.outgoing.set(nodeId, new Set());
+    }
+    if (!this.incoming.has(nodeId)) {
+      this.incoming.set(nodeId, new Set());
+    }
+  }
+  nodes(): NodeId[] {
+    return Array.from(this.outgoing.keys());
+  }
+  outNeighbors(nodeId: NodeId): NodeId[] {
+    const neighbors = this.outgoing.get(nodeId);
+    if (!neighbors) throw new Error(`Node "${nodeId}" does not exist`);
+    return Array.from(neighbors);
+  }
+}
+export function getPredecessors(graph: TaskGraph, nodeId: string): string[] {
   const allPredecessors = new Set<string>();
   const visited = new Set<string>();
   function traverse(id: string): void {
@@ -19,7 +66,7 @@ export function getPredecessors(graph: Graph, nodeId: string): string[] {
   traverse(nodeId);
   return Array.from(allPredecessors);
 }
-export function getSuccessors(graph: Graph, nodeId: string): string[] {
+export function getSuccessors(graph: TaskGraph, nodeId: string): string[] {
   const allSuccessors = new Set<string>();
   const visited = new Set<string>();
   function traverse(id: string): void {
@@ -38,7 +85,7 @@ export function getSuccessors(graph: Graph, nodeId: string): string[] {
   traverse(nodeId);
   return Array.from(allSuccessors);
 }
-export function getParents(graph: Graph, nodeId: string): string[] {
+export function getParents(graph: TaskGraph, nodeId: string): string[] {
   try {
     return graph.inNeighbors(nodeId);
   } catch (error) {
@@ -46,7 +93,7 @@ export function getParents(graph: Graph, nodeId: string): string[] {
     return [];
   }
 }
-export function getChildren(graph: Graph, nodeId: string): string[] {
+export function getChildren(graph: TaskGraph, nodeId: string): string[] {
   try {
     return graph.outNeighbors(nodeId);
   } catch (error) {
@@ -54,7 +101,7 @@ export function getChildren(graph: Graph, nodeId: string): string[] {
     return [];
   }
 }
-export function safeAddNode(graph: Graph, nodeId: string): void {
+export function safeAddNode(graph: TaskGraph, nodeId: string): void {
   try {
     graph.mergeNode(nodeId);
   } catch (error) {
@@ -65,13 +112,13 @@ export function safeAddNode(graph: Graph, nodeId: string): void {
  * Check if adding an edge would create a cycle in the graph.
  * Returns true if adding sourceId -> targetId would create a cycle.
  */
-export function wouldCreateCycle(graph: Graph, sourceId: string, targetId: string): boolean {
+export function wouldCreateCycle(graph: TaskGraph, sourceId: string, targetId: string): boolean {
   if (sourceId === targetId) return true;
   // If targetId can already reach sourceId, adding sourceId -> targetId creates a cycle
   const successorsOfTarget = getSuccessors(graph, targetId);
   return successorsOfTarget.includes(sourceId);
 }
-export function safeAddEdge(graph: Graph, sourceId: string, targetId: string): void {
+export function safeAddEdge(graph: TaskGraph, sourceId: string, targetId: string): void {
   try {
     if (!graph.hasNode(sourceId) || !graph.hasNode(targetId)) {
       logger.warn(`Cannot add edge from ${sourceId} to ${targetId}: one or both nodes don't exist`);
@@ -89,10 +136,10 @@ export function safeAddEdge(graph: Graph, sourceId: string, targetId: string): v
     logger.error(`Error adding edge from ${sourceId} to ${targetId}:`, error);
   }
 }
-export function createGraph(): Graph {
-  return new Graph();
+export function createGraph(): TaskGraph {
+  return new DirectedTaskGraph();
 }
-export function hasNode(graph: Graph, nodeId: string): boolean {
+export function hasNode(graph: TaskGraph, nodeId: string): boolean {
   try {
     return graph.hasNode(nodeId);
   } catch (error) {
@@ -100,7 +147,7 @@ export function hasNode(graph: Graph, nodeId: string): boolean {
     return false;
   }
 }
-export function getAllNodes(graph: Graph): string[] {
+export function getAllNodes(graph: TaskGraph): string[] {
   try {
     return graph.nodes();
   } catch (error) {
@@ -108,7 +155,7 @@ export function getAllNodes(graph: Graph): string[] {
     return [];
   }
 }
-export function clearGraph(graph: Graph): void {
+export function clearGraph(graph: TaskGraph): void {
   try {
     graph.clear();
   } catch (error) {

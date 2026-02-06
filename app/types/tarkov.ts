@@ -1,5 +1,5 @@
 import type { UserState } from '@/stores/progressState';
-import type Graph from 'graphology';
+import type { TaskGraph } from '@/utils/graphHelpers';
 import type { _GettersTree, StateTree, Store } from 'pinia';
 /**
  * Type definitions for Tarkov data structures
@@ -509,9 +509,9 @@ export interface TarkovDataComposable {
   lastHideoutQueryTime: Ref<number | null>;
   hideoutStations: Ref<HideoutStation[]>;
   hideoutModules: Ref<HideoutModule[]>;
-  hideoutGraph: Ref<Graph>;
+  hideoutGraph: Ref<TaskGraph>;
   tasks: Ref<Task[]>;
-  taskGraph: Ref<Graph>;
+  taskGraph: Ref<TaskGraph>;
   objectiveMaps: Ref<{ [taskId: string]: ObjectiveMapInfo[] }>;
   alternativeTasks: Ref<{ [taskId: string]: string[] }>;
   objectiveGPS: Ref<{ [taskId: string]: ObjectiveGPSInfo[] }>;

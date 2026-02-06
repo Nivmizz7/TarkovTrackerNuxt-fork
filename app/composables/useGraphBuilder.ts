@@ -1,4 +1,3 @@
-import type { AbstractGraph } from 'graphology-types';
 import type {
   HideoutModule,
   HideoutStation,
@@ -12,6 +11,7 @@ import type {
 } from '@/types/tarkov';
 import {
   createGraph,
+  type TaskGraph,
   getChildren,
   getParents,
   getPredecessors,
@@ -56,7 +56,7 @@ export function useGraphBuilder() {
   /**
    * Builds the task graph from task requirements
    */
-  function buildTaskGraph(taskList: Task[]): AbstractGraph {
+  function buildTaskGraph(taskList: Task[]): TaskGraph {
     const newGraph = createGraph();
     const activeRequirements: { task: Task; requirement: TaskRequirement }[] = [];
     // Add all tasks as nodes and process non-active requirements
@@ -204,7 +204,7 @@ export function useGraphBuilder() {
    */
   function enhanceTasksWithRelationships(
     taskList: Task[],
-    graph: AbstractGraph,
+    graph: TaskGraph,
     alternativeTasks: Record<string, string[]>
   ): Task[] {
     return taskList.map((task) => ({
@@ -220,7 +220,7 @@ export function useGraphBuilder() {
   /**
    * Builds the hideout dependency graph from station level requirements
    */
-  function buildHideoutGraph(stations: HideoutStation[]): AbstractGraph {
+  function buildHideoutGraph(stations: HideoutStation[]): TaskGraph {
     const newGraph = createGraph();
     stations.forEach((station) => {
       station.levels.forEach((level) => {
@@ -250,7 +250,7 @@ export function useGraphBuilder() {
   /**
    * Converts hideout levels to modules with relationship data
    */
-  function createHideoutModules(stations: HideoutStation[], graph: AbstractGraph): HideoutModule[] {
+  function createHideoutModules(stations: HideoutStation[], graph: TaskGraph): HideoutModule[] {
     const modules: HideoutModule[] = [];
     stations.forEach((station) => {
       station.levels.forEach((level) => {

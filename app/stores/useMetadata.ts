@@ -1,4 +1,3 @@
-import type { AbstractGraph } from 'graphology-types';
 import { defineStore } from 'pinia';
 import { extractLanguageCode, useSafeLocale } from '@/composables/i18nHelpers';
 import { useGraphBuilder } from '@/composables/useGraphBuilder';
@@ -45,7 +44,7 @@ import {
   getExclusiveEditionsForTask as getTaskExclusiveEditions,
   isTaskAvailableForEdition as checkTaskEdition,
 } from '@/utils/editionHelpers';
-import { createGraph } from '@/utils/graphHelpers';
+import { createGraph, type TaskGraph } from '@/utils/graphHelpers';
 import { logger } from '@/utils/logger';
 import { perfEnd, perfStart } from '@/utils/perf';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
@@ -272,9 +271,9 @@ interface MetadataState {
   prestigeLevels: PrestigeLevel[];
   staticMapData: StaticMapData | null;
   // Processed data
-  taskGraph: AbstractGraph;
+  taskGraph: TaskGraph;
   taskById: Map<string, Task>;
-  hideoutGraph: AbstractGraph;
+  hideoutGraph: TaskGraph;
   hideoutModules: HideoutModule[];
   craftSourcesByItemId: Map<string, CraftSource[]>;
   // Derived data structures
