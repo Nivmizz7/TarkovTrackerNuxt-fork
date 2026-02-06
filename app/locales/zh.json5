@@ -419,6 +419,7 @@
         undo_uncomplete: '已撤销 {name} 的未完成标记',
         undo_failed: '已撤销 {name} 的失败标记',
         undo_reset_failed: '已恢复 {name} 的失败标记',
+        undo_unknown: '无法撤销 {name} 的操作',
         mark_failed_confirm: '是否要将此任务标记为失败? 此操作仅用于解决数据问题，不建议使用并可能会导致任务线阻塞',
         failed_because: '失败原因',
         failed_because_unknown: '手动标记为失败或数据丢失',

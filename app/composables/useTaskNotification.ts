@@ -23,7 +23,7 @@ export function useTaskNotification(): TaskNotificationReturn {
   const undoData = ref<{
     taskId: string;
     taskName: string;
-    action: string;
+    action: TaskActionPayload['action'];
   } | null>(null);
   const showUndoButton = ref(false);
   const notificationTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
@@ -53,8 +53,6 @@ export function useTaskNotification(): TaskNotificationReturn {
       taskName: event.taskName,
       action: event.action,
     };
-    // Precedence: undoKey takes priority over statusKey for undo operations.
-    // If both are present, we use undoKey (for undo) and ignore statusKey.
     if (event.undoKey) {
       updateTaskStatus(event.undoKey, event.taskName, false);
     } else if (event.statusKey) {
@@ -153,11 +151,12 @@ export function useTaskNotification(): TaskNotificationReturn {
       }
       updateTaskStatus('page.tasks.questcard.undo_failed', taskName);
     } else {
-      logger.warn('[TaskNotification] Unknown undo action received.', {
-        action: undoData.value.action,
-        taskId: undoData.value.taskId,
-        taskName: undoData.value.taskName,
+      logger.error('[TaskNotification] Unknown undo action received.', {
+        action,
+        taskId,
+        taskName,
       });
+      updateTaskStatus('page.tasks.questcard.undo_unknown', taskName);
     }
     showUndoButton.value = false;
     undoData.value = null;

@@ -280,6 +280,7 @@
         undo_uncomplete: 'Deshecha la marcación de no completado de {name}',
         undo_failed: 'Deshecho el fallo de {name}',
         undo_reset_failed: 'Restaurado el estado de fallo de {name}',
+        undo_unknown: 'No se pudo deshacer la acción de {name}',
         mark_failed_confirm: '¿Marcar esta misión como fallida? Esto es solo para problemas de datos, no se recomienda y puede bloquear cadenas de misiones.',
         failed_because: 'Falló porque',
         failed_because_unknown: 'Marcado como fallido manualmente o faltan datos',

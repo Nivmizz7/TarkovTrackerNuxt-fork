@@ -341,6 +341,7 @@
         undo_uncomplete: 'Unvollständigkeit von {name} rückgängig gemacht',
         undo_failed: 'Fehlschlagen von {name} rückgängig gemacht',
         undo_reset_failed: 'Fehlgeschlagen-Status für {name} wiederhergestellt',
+        undo_unknown: 'Aktion für {name} konnte nicht rückgängig gemacht werden',
         mark_failed_confirm: 'Diese Aufgabe als fehlgeschlagen markieren? Dies ist nur für Datenprobleme gedacht, wird nicht empfohlen und kann Aufgabenketten blockieren.',
         failed_because: 'Fehlgeschlagen wegen',
         failed_because_unknown: 'Manuell fehlgeschlagen oder Daten fehlen',

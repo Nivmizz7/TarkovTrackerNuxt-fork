@@ -60,7 +60,8 @@ export function useMapResize(options: UseMapResizeOptions = {}): UseMapResizeRet
   const isResizing = computed(() => resizeState.value !== null);
   const onResizeMove = (event: PointerEvent) => {
     const state = resizeState.value;
-    if (!state || state.pointerId !== event.pointerId) return;
+    if (!state) return;
+    if (state.pointerId !== event.pointerId) return;
     const delta = event.clientY - state.startY;
     mapHeight.value = Math.round(state.startHeight + delta);
   };
@@ -82,7 +83,7 @@ export function useMapResize(options: UseMapResizeOptions = {}): UseMapResizeRet
     handle?.removeEventListener('lostpointercapture', stopResize);
   };
   const startResize = (event: PointerEvent) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || resizeState.value) return;
     const handle = resizeHandleRef.value;
     if (!handle) return;
     event.preventDefault();
