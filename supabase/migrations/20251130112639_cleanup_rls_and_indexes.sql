@@ -3,7 +3,6 @@
 -- Drop duplicate/legacy indexes
 DROP INDEX IF EXISTS public.team_events_team_id_idx;
 DROP INDEX IF EXISTS public.teams_join_code_unique_idx;
-
 -- Recreate consolidated RLS policies with (select auth.uid()) to avoid per-row re-evaluation
 
 -- api_tokens
@@ -28,7 +27,6 @@ BEGIN
       FOR DELETE USING ((select auth.uid()) = user_id);
   END IF;
 END $$;
-
 -- teams
 DO $$
 DECLARE pol record;
@@ -56,7 +54,6 @@ BEGIN
       FOR INSERT WITH CHECK ((select auth.uid()) = owner_id);
   END IF;
 END $$;
-
 -- team_memberships
 DO $$
 DECLARE pol record;
@@ -95,7 +92,6 @@ BEGIN
       );
   END IF;
 END $$;
-
 -- team_events
 DO $$
 DECLARE pol record;
@@ -125,7 +121,6 @@ BEGIN
       );
   END IF;
 END $$;
-
 -- user_system
 DO $$
 DECLARE pol record;

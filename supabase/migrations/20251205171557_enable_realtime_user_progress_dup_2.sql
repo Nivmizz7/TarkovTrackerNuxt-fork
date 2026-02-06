@@ -1,5 +1,7 @@
--- Duplicate migration recorded in production: keep repo in sync.
 -- Enable Realtime on user_progress table for team sync
+-- This allows teammates to receive real-time updates when other team members update their progress
+
+-- Add user_progress table to the realtime publication (idempotent)
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -8,4 +10,4 @@ BEGIN
   ) THEN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.user_progress;
   END IF;
-END $$;
+END $$;;

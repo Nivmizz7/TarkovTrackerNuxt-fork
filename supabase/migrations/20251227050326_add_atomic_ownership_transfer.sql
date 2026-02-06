@@ -49,12 +49,10 @@ BEGIN
     AND user_id = p_old_owner_id;
 END;
 $$;
-
 -- Grant execute permission to authenticated users
 -- This allows Edge Functions using service role to call this function
 GRANT EXECUTE ON FUNCTION transfer_team_ownership(UUID, UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION transfer_team_ownership(UUID, UUID, UUID) TO service_role;
-
 -- Add comment for documentation
 COMMENT ON FUNCTION transfer_team_ownership(UUID, UUID, UUID) IS
   'Atomically transfers team ownership from old owner to new owner. Validates that new owner is a team member and prevents race conditions.';

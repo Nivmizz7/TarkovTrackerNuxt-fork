@@ -21,7 +21,6 @@ BEGIN
     );
   END LOOP;
 END $$;
-
 -- Optimize RLS policies on user_progress
 DO $$
 BEGIN
@@ -36,7 +35,6 @@ BEGIN
     EXECUTE 'CREATE POLICY "Users can insert own progress" ON public.user_progress FOR INSERT WITH CHECK ((select auth.uid()) = user_id)';
   END IF;
 END $$;
-
 -- Optimize RLS policies on teams
 DO $$
 BEGIN
@@ -50,7 +48,6 @@ BEGIN
     EXECUTE 'CREATE POLICY "Users can insert teams" ON public.teams FOR INSERT WITH CHECK ((select auth.uid()) = owner_id)';
   END IF;
 END $$;
-
 -- Optimize RLS policies on user_system
 DO $$
 BEGIN

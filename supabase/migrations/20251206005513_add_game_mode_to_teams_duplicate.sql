@@ -1,4 +1,3 @@
--- Duplicate migration recorded in production: keep repo in sync.
 -- Migration to add game_mode support for teams
 -- This allows users to have separate teams for PvP and PvE modes
 
@@ -13,8 +12,10 @@ ADD COLUMN IF NOT EXISTS game_mode TEXT NOT NULL DEFAULT 'pvp'
 CHECK (game_mode IN ('pvp', 'pve'));
 
 -- Step 3: Modify user_system to have separate team IDs per game mode
+-- First, rename existing team_id to pvp_team_id (preserving existing data as PvP)
 DO $$
 BEGIN
+  -- Check if team_id column exists and pvp_team_id doesn't
   IF EXISTS (
     SELECT 1 FROM information_schema.columns 
     WHERE table_schema = 'public' 
@@ -26,10 +27,12 @@ BEGIN
     AND table_name = 'user_system' 
     AND column_name = 'pvp_team_id'
   ) THEN
+    -- Rename team_id to pvp_team_id
     ALTER TABLE public.user_system RENAME COLUMN team_id TO pvp_team_id;
   END IF;
 END $$;
 
+-- Add pve_team_id column if it doesn't exist
 ALTER TABLE public.user_system
 ADD COLUMN IF NOT EXISTS pve_team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL;
 
@@ -50,6 +53,7 @@ AND tm.game_mode != t.game_mode;
 CREATE OR REPLACE FUNCTION sync_membership_game_mode()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Get the game_mode from the team
   SELECT game_mode INTO NEW.game_mode
   FROM public.teams
   WHERE id = NEW.team_id;
@@ -62,4 +66,4 @@ DROP TRIGGER IF EXISTS set_membership_game_mode ON public.team_memberships;
 CREATE TRIGGER set_membership_game_mode
   BEFORE INSERT ON public.team_memberships
   FOR EACH ROW
-  EXECUTE FUNCTION sync_membership_game_mode();
+  EXECUTE FUNCTION sync_membership_game_mode();;

@@ -292,18 +292,19 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string | null
-          dashboard_notice_dismissed: boolean | null
+          dashboard_notice_dismissed: boolean
           enable_holiday_effects: boolean | null
           enable_manual_task_fail: boolean | null
           hide_completed_map_objectives: boolean | null
+          hide_completed_task_objectives: boolean | null
           hide_global_tasks: boolean | null
           hide_non_kappa_tasks: boolean | null
-          hideout_collapse_completed: boolean | null
+          hideout_collapse_completed: boolean
           hideout_primary_view: string | null
-          hideout_require_skill_levels: boolean | null
-          hideout_require_station_levels: boolean | null
-          hideout_require_trader_loyalty: boolean | null
-          hideout_sort_ready_first: boolean | null
+          hideout_require_skill_levels: boolean
+          hideout_require_station_levels: boolean
+          hideout_require_trader_loyalty: boolean
+          hideout_sort_ready_first: boolean
           items_hide_non_fir: boolean | null
           items_team_hide_all: boolean | null
           items_team_hide_hideout: boolean | null
@@ -315,16 +316,21 @@ export type Database = {
           needed_items_fir_filter: string | null
           needed_items_group_by_item: boolean | null
           needed_items_hide_non_fir_special_equipment: boolean | null
-          needed_items_hide_owned: boolean | null
+          needed_items_hide_owned: boolean
           needed_items_kappa_only: boolean | null
           needed_items_sort_by: string | null
           needed_items_sort_direction: string | null
           needed_items_view_mode: string | null
           needed_type_view: string | null
           neededitems_style: string | null
-          pinned_task_ids: string[] | null
+          pinned_task_ids: Json | null
+          show_all_filter: boolean | null
+          show_available_filter: boolean | null
+          show_completed_filter: boolean | null
           show_experience_rewards: boolean | null
+          show_failed_filter: boolean | null
           show_lightkeeper_tasks: boolean | null
+          show_locked_filter: boolean | null
           show_map_extracts: boolean | null
           show_next_quests: boolean | null
           show_non_special_tasks: boolean | null
@@ -352,18 +358,19 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          dashboard_notice_dismissed?: boolean | null
+          dashboard_notice_dismissed?: boolean
           enable_holiday_effects?: boolean | null
           enable_manual_task_fail?: boolean | null
           hide_completed_map_objectives?: boolean | null
+          hide_completed_task_objectives?: boolean | null
           hide_global_tasks?: boolean | null
           hide_non_kappa_tasks?: boolean | null
-          hideout_collapse_completed?: boolean | null
+          hideout_collapse_completed?: boolean
           hideout_primary_view?: string | null
-          hideout_require_skill_levels?: boolean | null
-          hideout_require_station_levels?: boolean | null
-          hideout_require_trader_loyalty?: boolean | null
-          hideout_sort_ready_first?: boolean | null
+          hideout_require_skill_levels?: boolean
+          hideout_require_station_levels?: boolean
+          hideout_require_trader_loyalty?: boolean
+          hideout_sort_ready_first?: boolean
           items_hide_non_fir?: boolean | null
           items_team_hide_all?: boolean | null
           items_team_hide_hideout?: boolean | null
@@ -375,16 +382,21 @@ export type Database = {
           needed_items_fir_filter?: string | null
           needed_items_group_by_item?: boolean | null
           needed_items_hide_non_fir_special_equipment?: boolean | null
-          needed_items_hide_owned?: boolean | null
+          needed_items_hide_owned?: boolean
           needed_items_kappa_only?: boolean | null
           needed_items_sort_by?: string | null
           needed_items_sort_direction?: string | null
           needed_items_view_mode?: string | null
           needed_type_view?: string | null
           neededitems_style?: string | null
-          pinned_task_ids?: string[] | null
+          pinned_task_ids?: Json | null
+          show_all_filter?: boolean | null
+          show_available_filter?: boolean | null
+          show_completed_filter?: boolean | null
           show_experience_rewards?: boolean | null
+          show_failed_filter?: boolean | null
           show_lightkeeper_tasks?: boolean | null
+          show_locked_filter?: boolean | null
           show_map_extracts?: boolean | null
           show_next_quests?: boolean | null
           show_non_special_tasks?: boolean | null
@@ -412,18 +424,19 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          dashboard_notice_dismissed?: boolean | null
+          dashboard_notice_dismissed?: boolean
           enable_holiday_effects?: boolean | null
           enable_manual_task_fail?: boolean | null
           hide_completed_map_objectives?: boolean | null
+          hide_completed_task_objectives?: boolean | null
           hide_global_tasks?: boolean | null
           hide_non_kappa_tasks?: boolean | null
-          hideout_collapse_completed?: boolean | null
+          hideout_collapse_completed?: boolean
           hideout_primary_view?: string | null
-          hideout_require_skill_levels?: boolean | null
-          hideout_require_station_levels?: boolean | null
-          hideout_require_trader_loyalty?: boolean | null
-          hideout_sort_ready_first?: boolean | null
+          hideout_require_skill_levels?: boolean
+          hideout_require_station_levels?: boolean
+          hideout_require_trader_loyalty?: boolean
+          hideout_sort_ready_first?: boolean
           items_hide_non_fir?: boolean | null
           items_team_hide_all?: boolean | null
           items_team_hide_hideout?: boolean | null
@@ -435,16 +448,21 @@ export type Database = {
           needed_items_fir_filter?: string | null
           needed_items_group_by_item?: boolean | null
           needed_items_hide_non_fir_special_equipment?: boolean | null
-          needed_items_hide_owned?: boolean | null
+          needed_items_hide_owned?: boolean
           needed_items_kappa_only?: boolean | null
           needed_items_sort_by?: string | null
           needed_items_sort_direction?: string | null
           needed_items_view_mode?: string | null
           needed_type_view?: string | null
           neededitems_style?: string | null
-          pinned_task_ids?: string[] | null
+          pinned_task_ids?: Json | null
+          show_all_filter?: boolean | null
+          show_available_filter?: boolean | null
+          show_completed_filter?: boolean | null
           show_experience_rewards?: boolean | null
+          show_failed_filter?: boolean | null
           show_lightkeeper_tasks?: boolean | null
+          show_locked_filter?: boolean | null
           show_map_extracts?: boolean | null
           show_next_quests?: boolean | null
           show_non_special_tasks?: boolean | null
