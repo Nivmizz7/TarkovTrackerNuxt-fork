@@ -7,6 +7,13 @@ import { logger } from '@/utils/logger';
  */
 export default defineNuxtPlugin(() => {
   const metadataStore = useMetadataStore();
+  if (process.env.NODE_ENV === 'test') {
+    return {
+      provide: {
+        metadata: metadataStore,
+      },
+    };
+  }
   const toast = useToast();
   // Initialize the metadata store and fetch data (non-blocking)
   // This allows the app to render immediately while data loads in the background
@@ -38,7 +45,14 @@ export default defineNuxtPlugin(() => {
       });
     }
   }
-  initializeWithRetry();
+  const startInitialization = () => {
+    void initializeWithRetry();
+  };
+  if (import.meta.client && 'requestIdleCallback' in window) {
+    window.requestIdleCallback(startInitialization, { timeout: 1500 });
+  } else {
+    window.setTimeout(startInitialization, 0);
+  }
   return {
     provide: {
       metadata: metadataStore,

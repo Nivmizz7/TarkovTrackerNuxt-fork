@@ -23,23 +23,17 @@ CREATE TABLE IF NOT EXISTS public.user_preferences (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Ensure RLS is enabled
 ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
-
 -- Policies: only owner can view/insert/update/delete
 CREATE POLICY "Users can view own preferences" ON public.user_preferences
   FOR SELECT USING ((select auth.uid()) = user_id);
-
 CREATE POLICY "Users can insert own preferences" ON public.user_preferences
   FOR INSERT WITH CHECK ((select auth.uid()) = user_id);
-
 CREATE POLICY "Users can update own preferences" ON public.user_preferences
   FOR UPDATE USING ((select auth.uid()) = user_id);
-
 CREATE POLICY "Users can delete own preferences" ON public.user_preferences
   FOR DELETE USING ((select auth.uid()) = user_id);
-
 -- Optional updated_at trigger for automatic timestamps
 CREATE OR REPLACE FUNCTION public.set_updated_at()
 RETURNS TRIGGER AS $$
@@ -48,7 +42,6 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS set_user_preferences_updated_at ON public.user_preferences;
 CREATE TRIGGER set_user_preferences_updated_at
 BEFORE UPDATE ON public.user_preferences

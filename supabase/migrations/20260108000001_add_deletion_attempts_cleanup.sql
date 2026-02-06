@@ -28,11 +28,9 @@ BEGIN
   RETURN QUERY SELECT v_deleted_count, v_oldest_remaining;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Grant execute permission to service_role only
 REVOKE ALL ON FUNCTION public.cleanup_old_deletion_attempts(INTEGER) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.cleanup_old_deletion_attempts(INTEGER) TO service_role;
-
 -- Add comment for documentation
 COMMENT ON FUNCTION public.cleanup_old_deletion_attempts(INTEGER) IS
   'Deletes account deletion attempts older than the specified retention period (default 90 days). Returns the count of deleted records and the oldest remaining timestamp. Should be called periodically via a scheduled job or edge function.';

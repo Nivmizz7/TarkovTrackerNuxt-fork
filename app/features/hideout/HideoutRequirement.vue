@@ -5,7 +5,7 @@
     :class="[
       isComplete
         ? 'border-success-500/50 bg-success-900/20'
-        : 'border-gray-700 bg-gray-800/80 hover:border-gray-600 hover:bg-gray-800',
+        : 'border-surface-700 bg-surface-800/80 hover:border-surface-600 hover:bg-surface-800',
     ]"
     @click="toggleComplete"
     @contextmenu.prevent="openContextMenu"
@@ -29,36 +29,44 @@
         <UIcon name="i-mdi-check-circle" class="text-success-300 h-8 w-8" />
       </div>
       <!-- FiR Badge -->
-      <AppTooltip v-if="isFoundInRaid" text="Found in Raid required">
-        <div class="absolute -top-1 -right-1 rounded bg-yellow-500/90 p-0.5">
-          <UIcon name="i-mdi-checkbox-marked-circle-outline" class="h-3 w-3 text-yellow-900" />
-        </div>
+      <AppTooltip
+        v-if="isFoundInRaid"
+        :text="$t('page.hideout.stationcard.requirement.found_in_raid')"
+      >
+        <UIcon
+          name="i-mdi-checkbox-marked-circle-outline"
+          class="text-warning-400 absolute -top-1 -right-1 h-3 w-3"
+        />
       </AppTooltip>
       <!-- Count Badge for multi-count items -->
       <div v-if="requiredCount > 1" class="absolute right-0 -bottom-1 left-0 flex justify-center">
         <div
-          class="rounded border border-gray-700 bg-gray-900/90 px-1.5 py-0.5 text-[10px] font-bold"
-          :class="isComplete ? 'text-success-400' : 'text-gray-300'"
+          class="border-surface-700 bg-surface-900/90 rounded border px-1.5 py-0.5 text-[10px] font-bold"
+          :class="isComplete ? 'text-success-400' : 'text-surface-300'"
         >
           {{ formatNumber(currentCount) }}/{{ formatNumber(requiredCount) }}
         </div>
       </div>
     </div>
     <!-- Item Name -->
-    <div class="line-clamp-2 w-full text-center text-xs leading-tight font-medium text-gray-200">
+    <div class="text-surface-200 line-clamp-2 w-full text-center text-xs leading-tight font-medium">
       {{ requirement.item.name }}
     </div>
   </div>
   <!-- Context Menu for Manual Count Adjustment -->
   <ContextMenu ref="contextMenu">
     <template #default="{ close }">
-      <div class="border-b border-gray-700 px-2 py-1 text-xs font-medium text-gray-400">
+      <div class="border-surface-700 text-surface-400 border-b px-2 py-1 text-xs font-medium">
         {{ requirement.item.name }}
       </div>
       <ContextMenuItem
         v-if="!isComplete"
         icon="i-mdi-check-circle"
-        :label="`Mark Complete (${formatNumber(requiredCount)})`"
+        :label="
+          $t('page.hideout.stationcard.requirement.mark_complete', {
+            count: formatNumber(requiredCount),
+          })
+        "
         @click="
           markComplete();
           close();
@@ -67,16 +75,18 @@
       <ContextMenuItem
         v-if="isComplete"
         icon="i-mdi-close-circle"
-        label="Mark Incomplete"
+        :label="$t('page.hideout.stationcard.requirement.mark_incomplete')"
         @click="
           markIncomplete();
           close();
         "
       />
-      <div v-if="requiredCount > 1" class="my-1 border-t border-gray-700" />
+      <div v-if="requiredCount > 1" class="border-surface-700 my-1 border-t" />
       <template v-if="requiredCount > 1">
         <div class="space-y-2 px-3 py-2">
-          <div class="text-xs text-gray-400">Set Custom Amount:</div>
+          <div class="text-surface-400 text-xs">
+            {{ $t('page.hideout.stationcard.requirement.set_custom_amount') }}
+          </div>
           <div class="flex items-center gap-2">
             <UButton
               size="xs"
@@ -92,8 +102,8 @@
               type="number"
               :min="0"
               :max="requirement.count"
-              class="border-primary-500 focus:ring-primary-500 w-20 rounded border bg-gray-700 px-2 py-1 text-center text-sm font-bold focus:ring-1 focus:outline-none"
-              :class="isComplete ? 'text-success-400' : 'text-gray-300'"
+              class="border-surface-600 focus:ring-primary-500/30 bg-surface-700 w-20 rounded border px-2 py-1 text-center text-sm font-bold focus:ring-1 focus:outline-none"
+              :class="isComplete ? 'text-success-400' : 'text-surface-300'"
               @input="handleInput"
               @click.stop
             />
@@ -116,15 +126,15 @@
               close();
             "
           >
-            Apply
+            {{ $t('page.hideout.stationcard.requirement.apply') }}
           </UButton>
         </div>
       </template>
-      <div class="my-1 border-t border-gray-700" />
+      <div class="border-surface-700 my-1 border-t" />
       <ContextMenuItem
         v-if="requirement.item.link"
         icon="/img/logos/tarkovdevlogo.webp"
-        label="View on tarkov.dev"
+        :label="$t('page.hideout.stationcard.requirement.view_tarkov_dev')"
         @click="
           openTarkovDev();
           close();
@@ -133,7 +143,7 @@
       <ContextMenuItem
         v-if="requirement.item.wikiLink"
         icon="/img/logos/wikilogo.webp"
-        label="View on Wiki"
+        :label="$t('page.hideout.stationcard.requirement.view_wiki')"
         @click="
           openWiki();
           close();
@@ -143,7 +153,6 @@
   </ContextMenu>
 </template>
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
   import ContextMenu from '@/components/ui/ContextMenu.vue';
   import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
   import GameItem from '@/components/ui/GameItem.vue';
@@ -175,7 +184,6 @@
   const requiredCount = computed(() => props.requirement.count);
   // Context menu
   const contextMenu = ref<InstanceType<typeof ContextMenu>>();
-  const inputRef = ref<HTMLInputElement | null>(null);
   const editValue = ref(0);
   // Check if item requires Found in Raid status
   const isFoundInRaid = computed(() => {

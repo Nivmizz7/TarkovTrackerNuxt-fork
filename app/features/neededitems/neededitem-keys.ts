@@ -1,4 +1,4 @@
-import { computed, type ComputedRef, type InjectionKey } from 'vue';
+import type { ComputedRef, InjectionKey } from '#imports';
 import type { HideoutStation, Task, TarkovItem } from '@/types/tarkov';
 export type NeededItemTeamNeed = { user: string; count: number };
 export type NeededItemImageItem = {
@@ -14,6 +14,7 @@ export type NeededItemContext = {
   imageItem: ComputedRef<NeededItemImageItem>;
   isCraftable: ComputedRef<boolean>;
   isKappaRequired: ComputedRef<boolean>;
+  isLightkeeperRequired: ComputedRef<boolean>;
   isParentCompleted: ComputedRef<boolean>;
   item: ComputedRef<TarkovItem | null>;
   levelRequired: ComputedRef<number>;
@@ -23,6 +24,7 @@ export type NeededItemContext = {
   relatedTask: ComputedRef<Task | null>;
   selfCompletedNeed: ComputedRef<boolean>;
   teamNeeds: ComputedRef<NeededItemTeamNeed[]>;
+  cardStyle: ComputedRef<'compact' | 'expanded'>;
 };
 export const neededItemKey: InjectionKey<NeededItemContext> = Symbol('neededitem');
 export const createDefaultNeededItemContext = (): NeededItemContext => {
@@ -35,6 +37,7 @@ export const createDefaultNeededItemContext = (): NeededItemContext => {
     imageItem: asComputed(null),
     isCraftable: asComputed(false),
     isKappaRequired: asComputed(false),
+    isLightkeeperRequired: asComputed(false),
     isParentCompleted: asComputed(false),
     item: asComputed(null),
     levelRequired: asComputed(0),
@@ -44,5 +47,6 @@ export const createDefaultNeededItemContext = (): NeededItemContext => {
     relatedTask: asComputed(null),
     selfCompletedNeed: asComputed(false),
     teamNeeds: asComputed([]),
+    cardStyle: asComputed('expanded'),
   };
 };

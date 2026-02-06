@@ -9,18 +9,14 @@ CREATE TABLE IF NOT EXISTS public.account_deletion_attempts (
   ip_address VARCHAR,
   user_agent TEXT
 );
-
 -- Index for efficient rate limit queries
 CREATE INDEX IF NOT EXISTS idx_account_deletion_attempts_user_time
   ON public.account_deletion_attempts(user_id, attempted_at DESC);
-
 -- Enable RLS
 ALTER TABLE public.account_deletion_attempts ENABLE ROW LEVEL SECURITY;
-
 -- Only service role can insert/update/delete (Edge Functions)
 REVOKE ALL ON public.account_deletion_attempts FROM anon, authenticated;
 GRANT SELECT, INSERT ON public.account_deletion_attempts TO service_role;
-
 -- Admins can view attempts for monitoring
 DROP POLICY IF EXISTS "Admins can view deletion attempts" ON public.account_deletion_attempts;
 CREATE POLICY "Admins can view deletion attempts"
@@ -34,7 +30,6 @@ CREATE POLICY "Admins can view deletion attempts"
         AND user_system.is_admin = true
     )
   );
-
 -- Add comment for documentation
 COMMENT ON TABLE public.account_deletion_attempts IS
   'Tracks individual account deletion attempts for rate limiting purposes. Each user-initiated deletion request creates a new record.';

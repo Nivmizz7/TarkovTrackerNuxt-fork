@@ -8,7 +8,8 @@
  */
 import { mockNuxtImport } from '@nuxt/test-utils/runtime';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { H3Event } from 'h3';
+import type { H3Event, H3EventContext } from 'h3';
+import type { SiteConfigInput } from 'site-config-stack';
 const { mockGetQuery, mockGetRequestHeader, mockFetch } = vi.hoisted(() => ({
   mockGetQuery: vi.fn(),
   mockGetRequestHeader: vi.fn(),
@@ -31,6 +32,14 @@ global.fetch = mockFetch as typeof fetch;
 mockNuxtImport('useRuntimeConfig', () => () => runtimeConfig);
 describe('Team Members API', () => {
   let mockEvent: Partial<H3Event>;
+  const BASE_SITE_CONTEXT: Pick<H3EventContext, 'siteConfig' | 'siteConfigNitroOrigin'> = {
+    siteConfig: {
+      stack: [] as Partial<SiteConfigInput>[],
+      push: vi.fn(() => () => {}),
+      get: vi.fn(() => ({})),
+    },
+    siteConfigNitroOrigin: '',
+  };
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset runtime config to default state
@@ -44,6 +53,7 @@ describe('Team Members API', () => {
             id: 'user-123',
           },
         },
+        ...BASE_SITE_CONTEXT,
       },
     };
   });
@@ -169,49 +179,58 @@ describe('Team Members API', () => {
   });
   describe('Profile fallback handling', () => {
     it('should fall back to individual fetches if bulk fetch fails', async () => {
-      mockGetQuery.mockReturnValue({ teamId: 'team-456' });
-      mockFetch
-        // Mock successful membership check
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => [{ user_id: 'user-123' }],
-        })
-        // Mock fetch all members
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => [{ user_id: 'user-123' }],
-        })
-        // Mock profiles bulk fetch FAILS
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          text: async () => 'Internal server error',
-        })
-        // Mock individual profile fetch succeeds
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => [
-            {
-              user_id: 'user-123',
-              current_game_mode: 'pvp',
-              pvp_display_name: 'Player1',
-              pvp_level: 10,
-              pvp_tasks_completed: 5,
-            },
-          ],
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        mockGetQuery.mockReturnValue({ teamId: 'team-456' });
+        mockFetch
+          // Mock successful membership check
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => [{ user_id: 'user-123' }],
+          })
+          // Mock fetch all members
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => [{ user_id: 'user-123' }],
+          })
+          // Mock profiles bulk fetch FAILS
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            text: async () => 'Internal server error',
+          })
+          // Mock individual profile fetch succeeds
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => [
+              {
+                user_id: 'user-123',
+                current_game_mode: 'pvp',
+                pvp_display_name: 'Player1',
+                pvp_level: 10,
+                pvp_tasks_completed: 5,
+              },
+            ],
+          });
+        const { default: handler } = await import('../members');
+        const result = await handler(mockEvent as H3Event);
+        expect(result.profiles['user-123']).toEqual({
+          displayName: 'Player1',
+          level: 10,
+          tasksCompleted: 5,
         });
-      const { default: handler } = await import('../members');
-      const result = await handler(mockEvent as H3Event);
-      expect(result.profiles['user-123']).toEqual({
-        displayName: 'Player1',
-        level: 10,
-        tasksCompleted: 5,
-      });
+        expect(errorSpy).toHaveBeenCalledWith(
+          '[team/members] Profiles fetch error (500):',
+          'Internal server error'
+        );
+      } finally {
+        errorSpy.mockRestore();
+      }
     });
   });
   describe('Authentication fallback', () => {
     it('should validate auth token when context.auth is missing', async () => {
-      mockEvent.context = {}; // No auth context
+      mockEvent.context = { ...BASE_SITE_CONTEXT };
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockImplementation((_, header: string) => {
         if (header === 'authorization') return 'Bearer valid-token';
@@ -243,14 +262,14 @@ describe('Team Members API', () => {
       expect(result.members).toEqual(['user-123']);
     });
     it('should reject requests without auth token or context', async () => {
-      mockEvent.context = {}; // No auth context
+      mockEvent.context = { ...BASE_SITE_CONTEXT };
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockReturnValue(undefined); // No auth header
       const { default: handler } = await import('../members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing auth token');
     });
     it('should reject requests with invalid auth token format', async () => {
-      mockEvent.context = {}; // No auth context
+      mockEvent.context = { ...BASE_SITE_CONTEXT };
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockImplementation((_, header: string) => {
         if (header === 'authorization') return 'InvalidFormat token123';
@@ -260,7 +279,7 @@ describe('Team Members API', () => {
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing auth token');
     });
     it('should reject requests when token validation fails', async () => {
-      mockEvent.context = {}; // No auth context
+      mockEvent.context = { ...BASE_SITE_CONTEXT };
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockImplementation((_, header: string) => {
         if (header === 'authorization') return 'Bearer invalid-token';

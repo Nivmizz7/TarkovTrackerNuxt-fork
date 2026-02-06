@@ -6,21 +6,29 @@
     <template #content>
       <div class="space-y-4 p-4">
         <div class="flex items-center justify-between">
-          <div class="text-sm font-medium">{{ $t(taskHideAllLabel) }}</div>
+          <div class="text-sm font-medium" data-testid="task-toggle">
+            {{ $t(taskHideAllLabel) }}
+          </div>
           <label class="relative inline-flex cursor-pointer items-center">
-            <input v-model="taskHideAll" type="checkbox" class="peer sr-only" />
-            <div
-              class="peer h-6 w-11 rounded-full bg-gray-700 peer-checked:bg-red-600 peer-focus:ring-2 peer-focus:ring-red-300 peer-focus:outline-none after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"
-            ></div>
+            <input
+              v-model="taskHideAll"
+              type="checkbox"
+              class="peer sr-only"
+              data-testid="task-checkbox"
+            />
+            <div :class="TOGGLE_CLASSES"></div>
           </label>
         </div>
         <div class="flex items-center justify-between">
           <div class="text-sm font-medium">{{ $t(itemsHideAllLabel) }}</div>
           <label class="relative inline-flex cursor-pointer items-center">
-            <input v-model="itemsHideAll" type="checkbox" class="peer sr-only" />
-            <div
-              class="peer h-6 w-11 rounded-full bg-gray-700 peer-checked:bg-red-600 peer-focus:ring-2 peer-focus:ring-red-300 peer-focus:outline-none after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"
-            ></div>
+            <input
+              v-model="itemsHideAll"
+              type="checkbox"
+              class="peer sr-only"
+              data-testid="items-checkbox"
+            />
+            <div :class="TOGGLE_CLASSES"></div>
           </label>
         </div>
         <div class="flex items-center justify-between">
@@ -33,10 +41,9 @@
               type="checkbox"
               :disabled="itemsHideAll"
               class="peer sr-only"
+              data-testid="nonfir-checkbox"
             />
-            <div
-              class="peer h-6 w-11 rounded-full bg-gray-700 peer-checked:bg-red-600 peer-focus:ring-2 peer-focus:ring-red-300 peer-focus:outline-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50 after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"
-            ></div>
+            <div :class="TOGGLE_CLASSES_DISABLED"></div>
           </label>
         </div>
         <div class="flex items-center justify-between">
@@ -49,29 +56,33 @@
               type="checkbox"
               :disabled="itemsHideAll"
               class="peer sr-only"
+              data-testid="hideout-checkbox"
             />
-            <div
-              class="peer h-6 w-11 rounded-full bg-gray-700 peer-checked:bg-red-600 peer-focus:ring-2 peer-focus:ring-red-300 peer-focus:outline-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50 after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"
-            ></div>
+            <div :class="TOGGLE_CLASSES_DISABLED"></div>
           </label>
         </div>
         <div class="flex items-center justify-between">
           <div class="text-sm font-medium">{{ $t(mapHideAllLabel) }}</div>
           <label class="relative inline-flex cursor-pointer items-center">
-            <input v-model="mapHideAll" type="checkbox" class="peer sr-only" />
-            <div
-              class="peer h-6 w-11 rounded-full bg-gray-700 peer-checked:bg-red-600 peer-focus:ring-2 peer-focus:ring-red-300 peer-focus:outline-none after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"
-            ></div>
+            <input
+              v-model="mapHideAll"
+              type="checkbox"
+              class="peer sr-only"
+              data-testid="map-checkbox"
+            />
+            <div :class="TOGGLE_CLASSES"></div>
           </label>
         </div>
       </div>
     </template>
   </GenericCard>
 </template>
-<script setup>
-  import { computed } from 'vue';
+<script setup lang="ts">
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
+  const TOGGLE_CLASSES =
+    "peer bg-surface-700 peer-checked:bg-error-600 peer-focus:ring-error-300 after:border-surface-300 h-6 w-11 rounded-full peer-focus:ring-2 peer-focus:outline-none after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:border after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white";
+  const TOGGLE_CLASSES_DISABLED = `${TOGGLE_CLASSES} peer-disabled:cursor-not-allowed peer-disabled:opacity-50`;
   const preferencesStore = usePreferencesStore();
   const taskHideAll = computed({
     get: () => preferencesStore.taskTeamAllHidden,

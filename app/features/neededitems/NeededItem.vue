@@ -1,5 +1,5 @@
 <template>
-  <template v-if="props.itemStyle == 'card'">
+  <template v-if="props.itemStyle === 'card'">
     <div class="h-full">
       <LazyNeededItemSmallCard
         :need="props.need"
@@ -10,7 +10,7 @@
       />
     </div>
   </template>
-  <template v-else-if="props.itemStyle == 'row'">
+  <template v-else-if="props.itemStyle === 'row'">
     <div class="w-full pt-1">
       <LazyNeededItemRow
         :need="props.need"
@@ -24,26 +24,25 @@
   </template>
 </template>
 <script setup lang="ts">
-  import { computed, provide } from 'vue';
   import { neededItemKey, type NeededItemTeamNeed } from '@/features/neededitems/neededitem-keys';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
-  const props = defineProps({
-    need: {
-      type: Object,
-      required: true,
-    },
-    itemStyle: {
-      type: String,
-      default: 'mediumCard',
-    },
-    initiallyVisible: {
-      type: Boolean,
-      default: false,
-    },
-  });
+  import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/tarkov';
+  const props = withDefaults(
+    defineProps<{
+      need: NeededItemTaskObjective | NeededItemHideoutModule;
+      itemStyle?: 'card' | 'row';
+      initiallyVisible?: boolean;
+      cardStyle?: 'compact' | 'expanded';
+    }>(),
+    {
+      itemStyle: 'card',
+      initiallyVisible: false,
+      cardStyle: 'expanded',
+    }
+  );
   const progressStore = useProgressStore();
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
@@ -202,7 +201,7 @@
     return closest[0]?.stationId ?? craftSources.value[0]?.stationId ?? '';
   });
   const craftableIconClass = computed(() => {
-    return isCraftableAvailable.value ? 'text-success-400' : 'text-red-500';
+    return isCraftableAvailable.value ? 'text-success-400' : 'text-error-500';
   });
   const goToCraftStation = async () => {
     if (!craftStationTargetId.value) {
@@ -251,17 +250,23 @@
     }
   });
   const relatedTask = computed(() => {
-    if (props.need.needType == 'taskObjective') {
-      return tasks.value.find((t) => t.id == props.need.taskId) ?? null;
-    } else {
-      return null;
+    const need = props.need;
+    if (need.needType === 'taskObjective') {
+      return tasks.value.find((t) => t.id === need.taskId) ?? null;
     }
+    return null;
   });
   const isKappaRequired = computed(() => {
     if (props.need.needType !== 'taskObjective') {
       return false;
     }
     return relatedTask.value?.kappaRequired === true;
+  });
+  const isLightkeeperRequired = computed(() => {
+    if (props.need.needType !== 'taskObjective') {
+      return false;
+    }
+    return relatedTask.value?.lightkeeperRequired === true;
   });
   const isTaskSuccessful = (taskId: string) =>
     tarkovStore.isTaskComplete(taskId) && !tarkovStore.isTaskFailed(taskId);
@@ -312,15 +317,14 @@
     }
   });
   const relatedStation = computed(() => {
-    if (props.need.needType == 'hideoutModule') {
+    const need = props.need;
+    if (need.needType === 'hideoutModule') {
       return (
-        Object.values(hideoutStations.value).find(
-          (s) => s.id == props.need.hideoutModule.stationId
-        ) ?? null
+        Object.values(hideoutStations.value).find((s) => s.id === need.hideoutModule.stationId) ??
+        null
       );
-    } else {
-      return null;
     }
+    return null;
   });
   const levelRequired = computed(() => {
     if (props.need.needType == 'taskObjective') {
@@ -405,6 +409,7 @@
     selfCompletedNeed,
     isParentCompleted,
     isKappaRequired,
+    isLightkeeperRequired,
     lockedBefore,
     currentCount,
     neededCount,
@@ -415,5 +420,6 @@
     craftableTitle,
     isCraftable,
     goToCraftStation,
+    cardStyle: computed(() => props.cardStyle),
   });
 </script>

@@ -2,7 +2,7 @@
   <div class="flex items-center justify-center px-3 py-2">
     <template v-if="isCollapsed">
       <div class="text-center">
-        <div class="mb-1 text-[0.7em] text-gray-400">
+        <div class="text-surface-400 mb-1 text-[0.7em]">
           {{ t('navigation_drawer.level') }}
         </div>
         <h1 class="text-center text-2xl leading-tight font-bold">
@@ -11,51 +11,51 @@
       </div>
     </template>
     <template v-else>
-      <!-- Card container for expanded state -->
-      <div
-        class="w-full overflow-hidden rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 backdrop-blur-sm"
-      >
-        <div class="flex min-w-0 items-center gap-1">
-          <span class="mr-1 shrink-0 leading-none">
-            <div class="group relative h-12 w-12 overflow-hidden">
+      <div class="w-full">
+        <div class="flex min-w-0 items-center gap-2.5 rounded-md bg-white/5 px-2.5 py-2">
+          <span class="shrink-0 leading-none">
+            <div class="relative h-11 w-11 overflow-hidden">
               <template v-if="isDataReady && groupIcon">
-                <NuxtImg
-                  v-if="!factionImageLoadFailed"
-                  :src="pmcFactionIcon"
-                  class="absolute top-0 left-0 z-20 mt-1 max-w-12 px-1 opacity-0 invert transition-opacity duration-1000 ease-in-out group-hover:opacity-100"
-                  width="48"
-                  height="48"
-                  @error="handleFactionImageError"
-                />
                 <NuxtImg
                   v-if="!groupImageLoadFailed"
                   :src="groupIcon"
-                  class="absolute top-0 left-0 z-10 max-w-12 opacity-100 transition-opacity duration-1000 ease-in-out group-hover:opacity-0"
-                  width="48"
-                  height="48"
+                  class="max-w-11"
+                  width="44"
+                  height="44"
                   @error="handleGroupImageError"
                 />
-                <!-- Final fallback if both fail -->
-                <div
-                  v-if="factionImageLoadFailed && groupImageLoadFailed"
-                  class="flex h-12 w-12 items-center justify-center rounded bg-white/5"
-                >
-                  <UIcon name="i-heroicons-photo" class="h-6 w-6 text-gray-600" />
+                <div v-else class="flex h-11 w-11 items-center justify-center rounded bg-white/5">
+                  <UIcon name="i-heroicons-photo" class="text-surface-600 h-5 w-5" />
                 </div>
               </template>
               <template v-else>
-                <!-- Loading placeholder -->
-                <div class="flex h-12 w-12 items-center justify-center rounded bg-white/5">
-                  <UIcon name="i-heroicons-arrow-path" class="h-6 w-6 animate-spin text-gray-500" />
+                <div class="flex h-11 w-11 items-center justify-center rounded bg-white/5">
+                  <UIcon
+                    name="i-heroicons-arrow-path"
+                    class="text-surface-500 h-5 w-5 animate-spin"
+                  />
                 </div>
               </template>
             </div>
           </span>
-          <span class="mx-0.5 min-w-0 flex-1">
-            <div class="mb-0.5 text-center text-[0.65rem] text-gray-300">
-              {{ t('navigation_drawer.level') }}
+          <span class="min-w-0 flex-1">
+            <div
+              class="text-surface-400 mb-0.5 flex items-center justify-center gap-1 text-[0.6rem]"
+            >
+              <span>{{ t('navigation_drawer.level') }}</span>
+              <span class="text-surface-500 text-[0.5rem]">·</span>
+              <span
+                class="text-[0.55rem]"
+                :class="useAutomaticLevel ? 'text-accent-400' : 'text-surface-500'"
+              >
+                {{
+                  useAutomaticLevel
+                    ? t('navigation_drawer.mode_auto', 'Auto')
+                    : t('navigation_drawer.mode_manual', 'Manual')
+                }}
+              </span>
             </div>
-            <div class="text-center">
+            <div class="flex h-8 items-center justify-center text-center">
               <AppTooltip
                 v-if="!editingLevel || useAutomaticLevel"
                 :text="
@@ -70,8 +70,8 @@
                 <h1
                   :class="
                     useAutomaticLevel
-                      ? 'mx-auto w-11 text-[2rem] leading-[0.85]'
-                      : 'hover:text-primary mx-auto w-11 text-[2rem] leading-[0.85] transition-colors'
+                      ? 'mx-auto block h-8 w-12 text-center text-3xl leading-8 font-bold'
+                      : 'hover:text-primary mx-auto block h-8 w-12 cursor-pointer text-center text-3xl leading-8 font-bold transition-colors'
                   "
                   :tabindex="useAutomaticLevel ? '-1' : '0'"
                   :role="useAutomaticLevel ? undefined : 'button'"
@@ -80,13 +80,13 @@
                     useAutomaticLevel
                       ? t(
                           'navigation_drawer.level_display_auto',
-                          'Level {level} (automatic calculation enabled)',
-                          { level: displayedLevel }
+                          { level: displayedLevel },
+                          'Level {level} (automatic calculation enabled)'
                         )
                       : t(
                           'navigation_drawer.level_display_editable',
-                          'Level {level}, click or press Enter to edit',
-                          { level: displayedLevel }
+                          { level: displayedLevel },
+                          'Level {level}, click or press Enter to edit'
                         )
                   "
                   @click="!useAutomaticLevel && startEditingLevel()"
@@ -103,66 +103,49 @@
                 type="number"
                 :min="minPlayerLevel"
                 :max="maxPlayerLevel"
-                class="mx-auto w-11 appearance-none border-0 bg-transparent p-0 text-center text-[2rem] leading-[0.85] outline-none focus:ring-0 focus:outline-none"
+                class="no-spinner mx-auto block h-8 w-12 border-0 bg-transparent p-0 text-center text-3xl leading-8 font-bold outline-none focus:ring-0"
                 @input="enforceMaxLevel"
                 @blur="saveLevel"
                 @keyup.enter="saveLevel"
               />
             </div>
           </span>
-          <span class="ml-0.5 flex shrink-0 flex-col items-center gap-0.5">
-            <AppTooltip
-              :text="
-                useAutomaticLevel
-                  ? t(
-                      'navigation_drawer.manual_disabled',
-                      'Manual level editing is disabled when automatic calculation is enabled'
-                    )
-                  : ''
-              "
+          <span
+            v-if="!useAutomaticLevel"
+            class="flex shrink-0 flex-col overflow-hidden rounded-md border border-white/10 bg-white/5"
+          >
+            <button
+              :class="[STEPPER_BUTTON_CLASS, 'border-b border-white/10']"
+              :disabled="displayedLevel >= maxPlayerLevel"
+              :aria-label="t('navigation_drawer.increment_level', 'Increase level')"
+              @click="incrementLevel"
             >
-              <button
-                class="flex h-6 w-6 items-center justify-center p-0 text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                :disabled="useAutomaticLevel || displayedLevel >= maxPlayerLevel"
-                @click="incrementLevel"
-              >
-                <UIcon name="i-mdi-chevron-up" class="h-5 w-5" />
-              </button>
-            </AppTooltip>
-            <AppTooltip
-              :text="
-                useAutomaticLevel
-                  ? t(
-                      'navigation_drawer.manual_disabled',
-                      'Manual level editing is disabled when automatic calculation is enabled'
-                    )
-                  : ''
-              "
+              <UIcon name="i-heroicons-plus" class="h-3.5 w-3.5" />
+            </button>
+            <button
+              :class="STEPPER_BUTTON_CLASS"
+              :disabled="displayedLevel <= minPlayerLevel"
+              :aria-label="t('navigation_drawer.decrement_level', 'Decrease level')"
+              @click="decrementLevel"
             >
-              <button
-                class="flex h-6 w-6 items-center justify-center p-0 text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                :disabled="useAutomaticLevel || displayedLevel <= minPlayerLevel"
-                @click="decrementLevel"
-              >
-                <UIcon name="i-mdi-chevron-down" class="h-5 w-5" />
-              </button>
-            </AppTooltip>
+              <UIcon name="i-heroicons-minus" class="h-3.5 w-3.5" />
+            </button>
           </span>
         </div>
-        <!-- XP Progress Display -->
         <div
-          class="hover:border-primary/30 mt-1.5 rounded border border-white/5 bg-white/2 px-2 py-1 transition-all hover:bg-white/4"
+          v-if="useAutomaticLevel"
+          class="hover:border-surface-600 mt-1.5 cursor-pointer rounded border border-white/5 bg-white/2 px-2 py-1 transition-all hover:bg-white/4"
           @click="navigateToSettings"
         >
           <div class="mb-0.5 flex items-center justify-between text-[0.6rem]">
-            <span class="text-gray-400">{{ formatNumber(xpCalculation.totalXP.value) }} XP</span>
-            <span class="text-gray-500">
+            <span class="text-surface-400">{{ formatNumber(xpCalculation.totalXP.value) }} XP</span>
+            <span class="text-surface-500">
               {{ formatNumber(xpCalculation.xpToNextLevel.value) }} needed
             </span>
           </div>
-          <div class="h-1 overflow-hidden rounded-full bg-gray-800">
+          <div class="bg-surface-800/35 h-2 overflow-hidden rounded-full">
             <div
-              class="bg-primary-500 h-full transition-all duration-300"
+              class="bg-primary-500/60 h-full rounded-full transition-[width] duration-300 ease-out"
               :style="{ width: `${xpCalculation.xpProgress.value}%` }"
             ></div>
           </div>
@@ -171,121 +154,87 @@
     </template>
   </div>
 </template>
-<script setup>
-  import { computed, nextTick, ref, watch } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useRouter } from 'vue-router';
+<script setup lang="ts">
   import { useXpCalculation } from '@/composables/useXpCalculation';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
+  import { logger } from '@/utils/logger';
+  import type { PlayerLevel } from '@/types/tarkov';
   const { t } = useI18n({ useScope: 'global' });
   const router = useRouter();
-  // Create formatter that uses current locale
   const formatNumber = useLocaleNumberFormatter();
-  defineProps({
-    isCollapsed: {
-      type: Boolean,
-      required: true,
-    },
-  });
+  interface DrawerLevelProps {
+    isCollapsed: boolean;
+  }
+  defineProps<DrawerLevelProps>();
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
   const xpCalculation = useXpCalculation();
-  const minPlayerLevel = computed(() => metadataStore.minPlayerLevel);
-  const maxPlayerLevel = computed(() => metadataStore.maxPlayerLevel);
-  const playerLevels = computed(() => metadataStore.playerLevels);
-  // Check if automatic level calculation is enabled
-  const useAutomaticLevel = computed(() => preferencesStore.getUseAutomaticLevelCalculation);
-  // Computed level that respects the automatic calculation preference
-  const displayedLevel = computed(() => {
+  const minPlayerLevel = computed<number>(() => metadataStore.minPlayerLevel);
+  const maxPlayerLevel = computed<number>(() => metadataStore.maxPlayerLevel);
+  const playerLevels = computed<PlayerLevel[]>(() => metadataStore.playerLevels);
+  const useAutomaticLevel = computed<boolean>(
+    () => preferencesStore.getUseAutomaticLevelCalculation
+  );
+  const STEPPER_BUTTON_CLASS =
+    'flex h-5.5 w-5.5 items-center justify-center p-0 text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40';
+  const displayedLevel = computed<number>(() => {
     return useAutomaticLevel.value ? xpCalculation.derivedLevel.value : tarkovStore.playerLevel();
   });
-  // Check if data is ready to prevent broken images
-  const isDataReady = computed(() => {
-    return (
-      !metadataStore.loading && metadataStore.playerLevels.length > 0 && tarkovStore.getPMCFaction()
-    );
+  const isDataReady = computed<boolean>(() => {
+    return !metadataStore.loading && metadataStore.playerLevels.length > 0;
   });
-  const pmcFactionIcon = computed(() => {
-    return `/img/factions/${tarkovStore.getPMCFaction()}.webp`;
-  });
-  const groupIcon = computed(() => {
+  const groupIcon = computed<string>(() => {
     const level = displayedLevel.value;
     const entry = playerLevels.value.find((pl) => pl.level === level);
     return entry?.levelBadgeImageLink ?? '';
   });
-  const factionImageLoadFailed = ref(false);
-  const groupImageLoadFailed = ref(false);
-  // Manual level editing logic
-  const editingLevel = ref(false);
-  const levelInputValue = ref(tarkovStore.playerLevel());
-  const levelInput = ref(null);
-  function startEditingLevel() {
+  const groupImageLoadFailed = ref<boolean>(false);
+  const editingLevel = ref<boolean>(false);
+  const levelInputValue = ref<number>(tarkovStore.playerLevel());
+  const levelInput = ref<HTMLInputElement | null>(null);
+  function startEditingLevel(): void {
     editingLevel.value = true;
     levelInputValue.value = tarkovStore.playerLevel();
-    nextTick(() => {
-      if (levelInput.value) levelInput.value.focus();
+    void nextTick(() => {
+      levelInput.value?.focus();
     });
   }
-  function enforceMaxLevel() {
-    const currentValue = parseInt(levelInputValue.value, 10);
-    if (!isNaN(currentValue) && currentValue > maxPlayerLevel.value) {
+  function enforceMaxLevel(): void {
+    const currentValue = Number(levelInputValue.value);
+    if (Number.isFinite(currentValue) && currentValue > maxPlayerLevel.value) {
       levelInputValue.value = maxPlayerLevel.value;
     }
   }
-  function saveLevel() {
-    let newLevel = parseInt(levelInputValue.value, 10);
-    if (isNaN(newLevel)) newLevel = minPlayerLevel.value;
+  function saveLevel(): void {
+    let newLevel = Number(levelInputValue.value);
+    if (!Number.isFinite(newLevel)) newLevel = minPlayerLevel.value;
     newLevel = Math.max(minPlayerLevel.value, Math.min(maxPlayerLevel.value, newLevel));
     tarkovStore.setLevel(newLevel);
     editingLevel.value = false;
   }
-  function incrementLevel() {
+  function incrementLevel(): void {
     if (tarkovStore.playerLevel() < maxPlayerLevel.value) {
       tarkovStore.setLevel(tarkovStore.playerLevel() + 1);
     }
   }
-  function decrementLevel() {
+  function decrementLevel(): void {
     if (tarkovStore.playerLevel() > minPlayerLevel.value) {
       tarkovStore.setLevel(tarkovStore.playerLevel() - 1);
     }
   }
-  // Navigate to settings page
-  function navigateToSettings() {
-    router.push('/settings');
+  function navigateToSettings(): void {
+    void router.push('/settings');
   }
-  // Reset failure flags if icons change (retry)
-  watch(pmcFactionIcon, () => {
-    factionImageLoadFailed.value = false;
-  });
   watch(groupIcon, () => {
     groupImageLoadFailed.value = false;
   });
-  /**
-   * Log image load failure and flip a flag to hide the specific failing image.
-   * This is a fallback in case an image file is missing from the server or assets.
-   */
-  function handleFactionImageError(event) {
-    console.warn('Failed to load faction image:', event.target?.src);
-    factionImageLoadFailed.value = true;
-  }
-  function handleGroupImageError(event) {
-    console.warn('Failed to load group image:', event.target?.src);
+  function handleGroupImageError(event: string | Event): void {
+    const src = typeof event === 'string' ? event : (event.target as HTMLImageElement | null)?.src;
+    logger.warn('Failed to load group image', { src });
     groupImageLoadFailed.value = true;
   }
 </script>
-<style>
-  /* Hide spin buttons for number input */
-  input[type='number']::-webkit-inner-spin-button,
-  input[type='number']::-webkit-outer-spin-button {
-    -webkit-appearance: none !important;
-    margin: 0;
-  }
-  input[type='number'] {
-    appearance: textfield !important;
-    -moz-appearance: textfield !important;
-  }
-</style>

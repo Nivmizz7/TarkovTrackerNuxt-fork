@@ -1,13 +1,40 @@
-import { computed } from 'vue';
 import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import { useTarkovStore } from '@/stores/useTarkov';
-import type { TaskObjective } from '@/types/tarkov';
 import { CURRENCY_ITEM_IDS } from '@/utils/constants';
 import { isTaskAvailableForEdition as checkTaskEdition } from '@/utils/editionHelpers';
-export function useDashboardStats() {
+import { buildTaskTypeFilterOptions, filterTasksByTypeSettings } from '@/utils/taskTypeFilters';
+import type { ComputedRef } from '#imports';
+import type { TaskObjective, Trader } from '@/types/tarkov';
+export type TraderStats = {
+  id: Trader['id'];
+  name: Trader['name'];
+  normalizedName: Trader['normalizedName'];
+  imageLink: Trader['imageLink'];
+  levels: Trader['levels'];
+  totalTasks: number;
+  completedTasks: number;
+  percentage: number;
+};
+export function useDashboardStats(): {
+  availableTasksCount: ComputedRef<number>;
+  failedTasksCount: ComputedRef<number>;
+  totalTasks: ComputedRef<number>;
+  totalObjectives: ComputedRef<number>;
+  completedObjectives: ComputedRef<number>;
+  completedTasks: ComputedRef<number>;
+  completedTaskItems: ComputedRef<number>;
+  totalTaskItems: ComputedRef<number>;
+  totalKappaTasks: ComputedRef<number>;
+  completedKappaTasks: ComputedRef<number>;
+  totalLightkeeperTasks: ComputedRef<number>;
+  completedLightkeeperTasks: ComputedRef<number>;
+  traderStats: ComputedRef<TraderStats[]>;
+} {
   const progressStore = useProgressStore();
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   const tarkovStore = useTarkovStore();
   const isTaskSuccessful = (taskId: string) =>
     tarkovStore.isTaskComplete(taskId) && !tarkovStore.isTaskFailed(taskId);
@@ -16,16 +43,14 @@ export function useDashboardStats() {
   // Check if a task is available for the user's edition (uses shared helper)
   const isTaskAvailableForEdition = (taskId: string): boolean =>
     checkTaskEdition(taskId, tarkovStore.getGameEdition(), metadataStore.editions);
-  // Memoize tasks filtered by faction and edition to avoid repeated filtering
   const relevantTasks = computed(() => {
     if (!metadataStore.tasks) return [];
     const currentFaction = tarkovStore.getPMCFaction();
-    return metadataStore.tasks.filter(
-      (task) =>
-        task &&
-        (task.factionName === 'Any' || task.factionName === currentFaction) &&
-        isTaskAvailableForEdition(task.id)
+    const factionFiltered = metadataStore.tasks.filter(
+      (task) => task && (task.factionName === 'Any' || task.factionName === currentFaction)
     );
+    const options = buildTaskTypeFilterOptions(preferencesStore, tarkovStore, metadataStore);
+    return filterTasksByTypeSettings(factionFiltered, options);
   });
   // Available tasks count
   const availableTasksCount = computed(() => {
@@ -225,10 +250,12 @@ export function useDashboardStats() {
         return {
           id: trader.id,
           name: trader.name,
+          normalizedName: trader.normalizedName,
           imageLink: trader.imageLink,
+          levels: trader.levels,
           totalTasks,
           completedTasks,
-          percentage: totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : '0.0',
+          percentage: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 1000) / 10 : 0,
         };
       })
       .filter((stats) => stats.totalTasks > 0); // Only show traders with at least 1 task

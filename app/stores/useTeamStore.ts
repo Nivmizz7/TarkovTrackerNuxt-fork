@@ -1,16 +1,15 @@
 import { defineStore } from 'pinia';
-import { computed, nextTick, ref, watch, type Ref } from 'vue';
+import { useToast } from '#imports';
 import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
 import { useSupabaseListener } from '@/composables/supabase/useSupabaseListener';
-import type { UserState } from '@/stores/progressState';
+import { actions, defaultState, getters, type UserState } from '@/stores/progressState';
 import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
 import { useTarkovStore } from '@/stores/useTarkov';
-import type { MemberProfile, TeamGetters, TeamState } from '@/types/tarkov';
 import { GAME_MODES } from '@/utils/constants';
 import { logger } from '@/utils/logger';
+import type { MemberProfile, TeamGetters, TeamState } from '@/types/tarkov';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Store } from 'pinia';
-import { useToast } from '#imports';
 /**
  * Helper to get current game mode
  */
@@ -444,7 +443,7 @@ export function useTeammateStores() {
       try {
         for (const teammate of newTeammatesArray) {
           if (!teammateStores.value[teammate]) {
-            await createTeammateStore(teammate);
+            createTeammateStore(teammate);
           }
         }
       } catch (error) {
@@ -456,12 +455,12 @@ export function useTeammateStores() {
           clearTimeout(pendingRetryTimeout.value);
         }
         // Basic retry once after a short delay for transient issues
-        pendingRetryTimeout.value = setTimeout(async () => {
+        pendingRetryTimeout.value = setTimeout(() => {
           pendingRetryTimeout.value = null;
           try {
             for (const teammate of newTeammatesArray) {
               if (!teammateStores.value[teammate]) {
-                await createTeammateStore(teammate);
+                createTeammateStore(teammate);
               }
             }
             toast.add({ title: 'Teammate data loaded on retry', color: 'primary' });
@@ -478,11 +477,8 @@ export function useTeammateStores() {
     }
   );
   // Create a store for a specific teammate
-  const createTeammateStore = async (teammateId: string) => {
+  const createTeammateStore = (teammateId: string) => {
     try {
-      // Import required dependencies
-      const { defineStore } = await import('pinia');
-      const { getters, actions, defaultState } = await import('@/stores/progressState');
       // Define the teammate store
       const storeDefinition = defineStore(`teammate-${teammateId}`, {
         state: () => JSON.parse(JSON.stringify(defaultState)),

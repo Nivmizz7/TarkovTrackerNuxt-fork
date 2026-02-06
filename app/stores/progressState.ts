@@ -320,6 +320,21 @@ export const actions = {
       count: Math.max(0, count),
     });
   },
+  setTaskObjectiveCountWithStatus(
+    this: UserState,
+    objectiveId: string,
+    count: number,
+    isComplete: boolean
+  ) {
+    const updates: Record<string, unknown> = {
+      count: Math.max(0, count),
+      complete: isComplete,
+    };
+    if (isComplete) {
+      updates.timestamp = Date.now();
+    }
+    updateObjective(this, 'taskObjectives', objectiveId, updates);
+  },
   setHideoutPartCount(this: UserState, objectiveId: string, count: number) {
     updateObjective(this, 'hideoutParts', objectiveId, {
       count: Math.max(0, count),

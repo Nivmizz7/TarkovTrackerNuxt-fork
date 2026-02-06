@@ -1,5 +1,3 @@
-import type { UserProgressData } from '@/stores/progressState';
-import type { GameMode } from '@/utils/constants';
 import {
   DEFAULT_GAME_EDITION,
   DEFAULT_PMC_FACTION,
@@ -9,7 +7,8 @@ import {
 } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
-// import { defaultState, migrateToGameModeStructure } from "@/stores/progressState";
+import type { UserProgressData } from '@/stores/progressState';
+import type { GameMode } from '@/utils/constants';
 // Compute default edition index once at module scope (constant value)
 const DEFAULT_EDITION_INDEX = Math.max(
   0,
@@ -402,6 +401,9 @@ export default class DataMigrationService {
    * @param {ProgressData} importedData The imported data to save
    * @returns {Promise<boolean>} True if import was successful
    */
+  // TODO: _targetGameMode is reserved for future game-mode-specific import logic.
+  // When multi-mode import is implemented, this parameter will determine which
+  // game mode's data store receives the imported data.
   static async importDataToUser(
     uid: string,
     importedData: ProgressData,

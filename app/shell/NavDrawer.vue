@@ -1,5 +1,4 @@
 <template>
-  <!-- Backdrop overlay for mobile expanded state -->
   <Transition
     enter-active-class="transition-opacity duration-300 ease-out"
     leave-active-class="transition-opacity duration-300 ease-in"
@@ -8,164 +7,103 @@
   >
     <div
       v-if="belowMd && mobileExpanded"
-      class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+      role="button"
+      tabindex="-1"
+      :aria-label="t('navigation_drawer.close_menu', 'Close navigation menu')"
+      class="fixed inset-0 z-40 bg-black/60"
       @click="closeMobileDrawer"
     />
   </Transition>
-  <!-- Unified Sidebar - works as rail on mobile, rail/expanded on desktop -->
-  <aside
-    class="border-primary-800/60 fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-[linear-gradient(180deg,rgba(18,18,20,0.96)_0%,rgba(14,14,15,0.96)_45%,rgba(12,12,13,0.97)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),inset_0_-1px_0_rgba(0,0,0,0.6),1px_0_0_rgba(0,0,0,0.55)] backdrop-blur-sm transition-all duration-300"
+  <nav
+    :aria-label="t('navigation_drawer.main_navigation', 'Main navigation')"
+    class="bg-sidebar border-surface-700/50 shadow-nav-drawer fixed inset-y-0 left-0 z-50 flex flex-col border-r transition-all duration-300"
     :class="[sidebarWidth]"
   >
     <div
-      class="nav-drawer-scroll relative z-10 flex h-full flex-col overflow-x-hidden overflow-y-auto"
+      class="scrollbar-thin relative z-10 flex h-full flex-col overflow-x-hidden overflow-y-auto"
     >
       <NuxtLink
         to="/"
-        class="group mt-1 flex flex-col items-center px-3 py-1.5 transition-opacity hover:opacity-90"
+        :aria-label="t('navigation_drawer.home', 'Dashboard')"
+        class="group mt-1 flex shrink-0 flex-col items-center px-3 py-1.5 transition-opacity hover:opacity-90"
       >
         <div
           :class="isCollapsed ? 'w-8' : 'w-32.5'"
           class="relative mx-auto transition-all duration-200"
         >
+          <div
+            v-if="isCollapsed"
+            class="bg-primary-500/15 ring-primary-400/30 mx-auto flex h-8 w-8 items-center justify-center rounded-md ring-1"
+          >
+            <UIcon name="i-mdi-target-account" class="text-primary-300 h-5 w-5" />
+          </div>
           <NuxtImg
-            :src="
-              isCollapsed
-                ? '/img/logos/tarkovtrackerlogo-mini.webp'
-                : '/img/logos/tarkovtrackerlogo-light.webp'
-            "
+            v-else
+            src="/img/logos/tarkovtrackerlogo-light.webp"
+            :alt="t('navigation_drawer.brand_name')"
             class="h-auto w-full"
             preload
           />
         </div>
         <div v-if="!isCollapsed" class="mt-1 text-center">
-          <div class="text-base leading-tight font-medium text-white">TarkovTracker.org</div>
+          <div class="text-base leading-tight font-medium text-white">
+            {{ t('navigation_drawer.brand_name') }}
+          </div>
         </div>
       </NuxtLink>
-      <div class="bg-primary-800/40 mx-3 my-0.5 h-px" />
-      <ul class="flex flex-col gap-1 px-1">
-        <template v-if="isLoggedIn">
-          <UDropdownMenu :items="accountItems" :content="{ side: 'right', align: 'start' }">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              :padded="!isCollapsed"
-              class="w-full justify-between rounded-md px-2 py-2"
-              :class="[isCollapsed ? 'justify-center px-0' : '']"
-            >
-              <div class="flex min-w-0 items-center gap-3">
-                <UAvatar :src="avatarSrc" size="md" alt="User avatar" class="shrink-0" />
-                <span v-if="!isCollapsed" class="truncate">{{ userDisplayName }}</span>
-              </div>
-              <template #trailing>
-                <UIcon
-                  v-if="!isCollapsed"
-                  name="i-heroicons-chevron-down-20-solid"
-                  class="h-5 w-5 transition-transform duration-200"
-                />
-              </template>
-            </UButton>
-          </UDropdownMenu>
-        </template>
-        <template v-else>
-          <UButton
-            to="/login"
-            icon="i-mdi-fingerprint"
-            color="neutral"
-            variant="ghost"
-            block
-            :padded="!isCollapsed"
-            class="h-12 justify-center rounded-md px-3 py-3"
-          >
-            <span v-if="!isCollapsed" class="truncate text-base font-medium">
-              {{ t('navigation_drawer.login') }}
-            </span>
-          </UButton>
-        </template>
-      </ul>
-      <div class="bg-primary-800/40 mx-3 my-0.5 h-px" />
-      <DrawerLevel :is-collapsed="isCollapsed" />
-      <div v-if="!isCollapsed" class="my-2 flex flex-col items-center gap-1.5 px-4">
-        <button
-          class="border-primary-800/50 hover:border-primary-600 w-full rounded border px-2 py-1 text-center text-xs font-medium text-white/80 transition-colors hover:text-white"
-          @click="navigateToSettings"
-        >
-          {{ currentEditionName }}
-        </button>
-        <div class="border-primary-800/50 flex w-full overflow-hidden rounded-md border">
-          <button
-            v-for="faction in factions"
-            :key="faction"
-            class="flex-1 px-2 py-1 text-xs font-semibold uppercase transition-colors"
-            :class="
-              faction === currentFaction
-                ? 'bg-primary-700 text-white'
-                : 'bg-transparent text-white/65 hover:bg-white/5 hover:text-white'
-            "
-            @click="setFaction(faction)"
-          >
-            {{ faction }}
-          </button>
-        </div>
-      </div>
-      <div class="bg-primary-800/40 mx-3 my-0.5 h-px" />
+      <template v-if="!isCollapsed">
+        <DrawerLevel :is-collapsed="false" />
+        <DrawerGameSettings />
+      </template>
+      <template v-else>
+        <DrawerLevel :is-collapsed="true" />
+      </template>
+      <div class="bg-surface-800 mx-3 my-2 h-px shrink-0" />
       <DrawerLinks :is-collapsed="isCollapsed" />
-      <div class="bg-primary-800/40 mx-3 my-0.5 h-px" />
-      <div class="flex flex-col gap-1">
-        <div v-if="!isCollapsed" class="px-4 py-0.5">
-          <h3 class="text-xs font-semibold tracking-wider text-gray-500 uppercase">External</h3>
+      <div class="bg-surface-800 mx-3 my-2 h-px shrink-0" />
+      <div class="flex flex-col gap-0.5">
+        <div v-if="!isCollapsed" class="px-4 py-2">
+          <h3 class="text-surface-400 text-xs font-semibold tracking-wider uppercase">
+            {{ t('navigation_drawer.section_external', 'External') }}
+          </h3>
         </div>
-        <ul class="flex flex-col gap-1 px-1">
+        <ul class="flex flex-col gap-0.5 px-1">
           <DrawerItem
-            avatar="/img/logos/tarkovdevlogo.webp"
+            icon="i-mdi-earth"
             locale-key="tarkovdev"
             href="https://tarkov.dev/"
-            ext-link
             :is-collapsed="isCollapsed"
           />
           <DrawerItem
-            avatar="/img/logos/tarkovmonitorlogo.avif"
+            icon="i-mdi-radar"
             locale-key="tarkovmonitor"
             href="https://github.com/the-hideout/TarkovMonitor"
-            ext-link
             :is-collapsed="isCollapsed"
           />
           <DrawerItem
-            avatar="/img/logos/ratscannerlogo.webp"
+            icon="i-mdi-crosshairs-gps"
             locale-key="ratscanner"
             href="https://github.com/RatScanner/RatScanner"
-            ext-link
             :is-collapsed="isCollapsed"
           />
           <DrawerItem
-            avatar="/img/logos/tarkovchangeslogo.svg"
+            icon="i-mdi-chart-line"
             locale-key="tarkovchanges"
             href="https://tarkov-changes.com/"
-            ext-link
             :is-collapsed="isCollapsed"
           />
         </ul>
       </div>
     </div>
-  </aside>
+  </nav>
 </template>
 <script setup lang="ts">
-  import { computed, defineAsyncComponent, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useRouter } from 'vue-router';
-  import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useAppStore } from '@/stores/useApp';
-  import { useMetadataStore } from '@/stores/useMetadata';
-  import { usePreferencesStore } from '@/stores/usePreferences';
-  import { useTarkovStore } from '@/stores/useTarkov';
-  import { PMC_FACTIONS, type PMCFaction } from '@/utils/constants';
-  // Use shared breakpoints to avoid duplicate listeners
+  const { t } = useI18n({ useScope: 'global' });
   const { belowMd } = useSharedBreakpoints();
   const appStore = useAppStore();
-  const metadataStore = useMetadataStore();
-  // Mobile expanded state from store
   const mobileExpanded = computed(() => appStore.mobileDrawerExpanded);
-  // Close mobile expanded when switching to desktop
   watch(belowMd, (isMobile) => {
     if (!isMobile) {
       appStore.setMobileDrawerExpanded(false);
@@ -174,77 +112,22 @@
   const closeMobileDrawer = () => {
     appStore.setMobileDrawerExpanded(false);
   };
-  // Determine if sidebar should be collapsed (rail mode)
   const isCollapsed = computed(() => {
     if (belowMd.value) {
-      // On mobile: collapsed unless expanded
       return !mobileExpanded.value;
     }
-    // On desktop: based on rail setting
     return appStore.drawerRail;
   });
-  // Determine sidebar width class
   const sidebarWidth = computed(() => {
     if (belowMd.value) {
-      // Mobile: rail by default, expanded when open
-      return mobileExpanded.value ? 'w-56' : 'w-14';
+      return mobileExpanded.value ? 'w-56' : 'w-16';
     }
-    // Desktop: based on rail setting
-    return appStore.drawerRail ? 'w-14' : 'w-56';
+    return appStore.drawerRail ? 'w-16' : 'w-56';
   });
   const DrawerLinks = defineAsyncComponent(() => import('@/features/drawer/DrawerLinks.vue'));
   const DrawerLevel = defineAsyncComponent(() => import('@/features/drawer/DrawerLevel.vue'));
+  const DrawerGameSettings = defineAsyncComponent(
+    () => import('@/features/drawer/DrawerGameSettings.vue')
+  );
   const DrawerItem = defineAsyncComponent(() => import('@/features/drawer/DrawerItem.vue'));
-  const preferencesStore = usePreferencesStore();
-  const tarkovStore = useTarkovStore();
-  const router = useRouter();
-  const factions = PMC_FACTIONS;
-  const { t } = useI18n({ useScope: 'global' });
-  const { $supabase } = useNuxtApp();
-  const isLoggedIn = computed(() => $supabase.user?.loggedIn ?? false);
-  const avatarSrc = computed(() => {
-    return preferencesStore.getStreamerMode || !$supabase.user.photoURL
-      ? '/img/default-avatar.svg'
-      : $supabase.user.photoURL;
-  });
-  const currentFaction = computed<PMCFaction>(() => tarkovStore.getPMCFaction());
-  const currentEditionName = computed(() => metadataStore.getEditionName(tarkovStore.gameEdition));
-  function setFaction(faction: PMCFaction) {
-    if (faction !== currentFaction.value) {
-      tarkovStore.setPMCFaction(faction);
-    }
-  }
-  function navigateToSettings() {
-    router.push('/settings');
-  }
-  const userDisplayName = computed(() => {
-    if (preferencesStore.getStreamerMode) return 'User';
-    // Prefer Display Name from tarkov store (current game mode)
-    const displayName = tarkovStore.getDisplayName();
-    if (displayName && displayName.trim() !== '') {
-      return displayName;
-    }
-    // Fallback to auth username or'User'
-    return $supabase.user.displayName || 'User';
-  });
-  function logout() {
-    $supabase.signOut();
-  }
-  const accountItems = computed(() => [
-    {
-      label: t('navigation_drawer.logout'),
-      icon: 'i-mdi-lock',
-      onSelect: logout,
-    },
-  ]);
 </script>
-<style scoped>
-  /* Hide scrollbar but keep scroll functionality */
-  .nav-drawer-scroll {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
-  }
-  .nav-drawer-scroll::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
-  }
-</style>

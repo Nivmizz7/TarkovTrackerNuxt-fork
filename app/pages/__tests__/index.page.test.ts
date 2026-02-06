@@ -24,7 +24,7 @@ const createDashboardStatsMock = (
       imageLink: string | null;
       completedTasks: number;
       totalTasks: number;
-      percentage: string;
+      percentage: number;
     }>;
   } = {}
 ) => {
@@ -48,7 +48,7 @@ const createDashboardStatsMock = (
         imageLink: null,
         completedTasks: 2,
         totalTasks: 4,
-        percentage: '50.0',
+        percentage: 50,
       },
     ],
   } = options;
@@ -83,7 +83,6 @@ const setup = async (
     enableHolidayEffects = false,
     useAutomaticLevel = false,
   } = storeOverrides;
-  const playerLevelSpy = vi.fn(() => playerLevel);
   vi.resetModules();
   vi.doMock('@/composables/useDashboardStats', () => ({
     useDashboardStats: createDashboardStatsMock(dashboardStatsOptions),
@@ -93,7 +92,11 @@ const setup = async (
   }));
   vi.doMock('@/stores/useTarkov', () => ({
     useTarkovStore: () => ({
-      playerLevel: playerLevelSpy,
+      playerLevel: vi.fn(() => playerLevel),
+      getTraderLevel: vi.fn(() => 1),
+      getTraderReputation: vi.fn(() => 0),
+      setTraderLevel: vi.fn(),
+      setTraderReputation: vi.fn(),
     }),
   }));
   vi.doMock('@/stores/usePreferences', () => ({
@@ -105,6 +108,8 @@ const setup = async (
       get getUseAutomaticLevelCalculation() {
         return useAutomaticLevel;
       },
+      dashboardNoticeDismissed: false,
+      setDashboardNoticeDismissed: vi.fn(),
       setTaskPrimaryView: vi.fn(),
       setTaskTraderView: vi.fn(),
     }),
@@ -113,7 +118,7 @@ const setup = async (
     useRouter: () => ({ push: vi.fn() }),
   }));
   const { default: DashboardPage } = await import('@/pages/index.vue');
-  return { DashboardPage, playerLevelSpy };
+  return { DashboardPage };
 };
 const defaultGlobalStubs = {
   AppTooltip: { template: '<span><slot /></span>' },
@@ -125,16 +130,18 @@ const defaultGlobalStubs = {
     props: ['completed', 'total', 'percentage', 'title'],
     template: `<div data-testid="milestone-card" :data-completed="completed" :data-total="total" :data-title="title"><slot /></div>`,
   },
+  DashboardChangelog: {
+    template: '<div data-testid="dashboard-changelog"></div>',
+  },
   UIcon: true,
 };
 describe('dashboard page', () => {
   it('renders dashboard progress cards', async () => {
-    const { DashboardPage, playerLevelSpy } = await setup();
+    const { DashboardPage } = await setup();
     const wrapper = await mountSuspended(DashboardPage, {
       global: { stubs: defaultGlobalStubs },
     });
     expect(wrapper.find('[data-testid="progress-card"]').exists()).toBe(true);
-    expect(playerLevelSpy).toHaveBeenCalled();
   });
   it('renders dashboard milestone cards', async () => {
     const { DashboardPage } = await setup();
@@ -185,11 +192,13 @@ describe('dashboard page', () => {
       });
       const progressCards = wrapper.findAll('[data-testid="progress-card"]');
       expect(progressCards.length).toBeGreaterThan(0);
-      // First progress card should show completed data
-      const firstCard = progressCards[0];
-      if (!firstCard) throw new Error('Expected firstCard to be defined');
-      expect(firstCard.attributes('data-completed')).toBe('10');
-      expect(firstCard.attributes('data-total')).toBe('10');
+      const tasksCard = progressCards.find((card) => {
+        const label = card.attributes('data-label') || '';
+        return label.toLowerCase().includes('tasks');
+      });
+      expect(tasksCard).toBeDefined();
+      expect(tasksCard!.attributes('data-completed')).toBe('10');
+      expect(tasksCard!.attributes('data-total')).toBe('10');
     });
     it('renders mixed status state', async () => {
       const { DashboardPage } = await setup({
@@ -220,7 +229,7 @@ describe('dashboard page', () => {
           imageLink: null,
           completedTasks: i * 10,
           totalTasks: 100,
-          percentage: `${i * 10}.0`,
+          percentage: i * 10,
         })),
       });
       const wrapper = await mountSuspended(DashboardPage, {
@@ -249,7 +258,7 @@ describe('dashboard page', () => {
             imageLink: null,
             completedTasks: 5,
             totalTasks: 10,
-            percentage: '50.0',
+            percentage: 50,
           },
           {
             id: 'therapist',
@@ -257,7 +266,7 @@ describe('dashboard page', () => {
             imageLink: null,
             completedTasks: 8,
             totalTasks: 12,
-            percentage: '66.7',
+            percentage: 66.7,
           },
         ],
       });

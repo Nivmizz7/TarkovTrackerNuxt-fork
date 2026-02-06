@@ -1,7 +1,7 @@
 <template>
   <router-link
     :to="stationHref"
-    class="text-blue-400 no-underline hover:text-blue-300"
+    class="text-link hover:text-link-hover no-underline"
     :aria-label="`Go to ${props.station.name} card`"
   >
     <div class="flex max-w-full min-w-0 items-center overflow-hidden">
@@ -22,12 +22,18 @@
   </router-link>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
   import type { HideoutStation } from '@/types/tarkov';
   const props = defineProps<{
     station: Pick<HideoutStation, 'id' | 'name' | 'imageLink'>;
     compact?: boolean;
+    moduleId?: string | null;
   }>();
   const stationIcon = computed(() => props.station.imageLink);
-  const stationHref = computed(() => `/hideout?station=${props.station.id}`);
+  const stationHref = computed(() => ({
+    path: '/hideout',
+    query: {
+      station: props.station.id,
+      ...(props.moduleId ? { module: props.moduleId } : {}),
+    },
+  }));
 </script>

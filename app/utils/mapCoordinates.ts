@@ -20,10 +20,22 @@ export interface MapSvgConfig {
   svgBounds?: number[][];
   /** Whether lower floors should remain visible when a higher floor is selected */
   stackFloors?: boolean;
+  minZoom?: number;
+  maxZoom?: number;
 }
+export interface MapTileConfig {
+  tilePath: string;
+  tileFallbacks?: string[];
+  coordinateRotation: number;
+  transform?: [number, number, number, number];
+  bounds: number[][];
+  minZoom?: number;
+  maxZoom?: number;
+}
+export type MapRenderConfig = MapSvgConfig | MapTileConfig;
 /**
  * Applies coordinate rotation using trigonometric functions.
- * This matches tarkov.dev's rotation implementation.
+ * Matches tarkov.dev's rotation: treats (lng, lat) as (x, y) for rotation.
  * @param latLng LatLng object with lat and lng properties
  * @param rotation Rotation in degrees
  * @returns Rotated LatLng object
@@ -38,30 +50,31 @@ export function applyRotation(
   const angleInRadians = (rotation * Math.PI) / 180;
   const cos = Math.cos(angleInRadians);
   const sin = Math.sin(angleInRadians);
+  const { lng: x, lat: y } = latLng;
   return {
-    lat: latLng.lat * cos - latLng.lng * sin,
-    lng: latLng.lat * sin + latLng.lng * cos,
+    lat: x * sin + y * cos,
+    lng: x * cos - y * sin,
   };
 }
 /**
  * Creates a custom CRS for the map using tarkov.dev's approach.
  * Uses L.Transformation with the map's transform array.
  * @param L Leaflet instance
- * @param svgConfig Map SVG configuration with transform and rotation
+ * @param config Map render configuration with transform and rotation
  * @returns Custom CRS for the map
  */
-export function createMapCRS(L: typeof import('leaflet'), svgConfig: MapSvgConfig): L.CRS {
+export function createMapCRS(L: typeof import('leaflet'), config: MapRenderConfig): L.CRS {
   let scaleX = 1;
   let scaleY = 1;
   let marginX = 0;
   let marginY = 0;
-  if (svgConfig.transform) {
-    scaleX = svgConfig.transform[0];
-    scaleY = svgConfig.transform[2] * -1; // Negate Y scale like tarkov.dev
-    marginX = svgConfig.transform[1];
-    marginY = svgConfig.transform[3];
+  if (config.transform) {
+    scaleX = config.transform[0];
+    scaleY = config.transform[2] * -1; // Negate Y scale like tarkov.dev
+    marginX = config.transform[1];
+    marginY = config.transform[3];
   }
-  const rotation = svgConfig.coordinateRotation || 0;
+  const rotation = config.coordinateRotation || 0;
   // Create custom CRS extending L.CRS.Simple
   return L.Util.extend({}, L.CRS.Simple, {
     transformation: new L.Transformation(scaleX, marginX, scaleY, marginY),
@@ -110,13 +123,13 @@ export function outlineToLatLngArray(
   return outline.map((point) => gameToLatLng(point.x, point.z));
 }
 /**
- * Calculates Leaflet bounds from map SVG configuration.
+ * Calculates Leaflet bounds from map render configuration.
  * Uses tarkov.dev's approach: swap coordinates in bounds.
- * @param svgConfig Map SVG configuration
+ * @param config Map render configuration
  * @returns Leaflet bounds as [[lat1, lng1], [lat2, lng2]]
  */
-export function getLeafletBounds(svgConfig?: MapSvgConfig): [[number, number], [number, number]] {
-  if (!svgConfig?.bounds || svgConfig.bounds.length < 2) {
+export function getLeafletBounds(config?: MapRenderConfig): [[number, number], [number, number]] {
+  if (!config?.bounds || config.bounds.length < 2) {
     // Fallback to default bounds
     return [
       [0, 0],
@@ -126,8 +139,8 @@ export function getLeafletBounds(svgConfig?: MapSvgConfig): [[number, number], [
   // tarkov.dev swaps coordinates: [z, x] format
   // bounds[0] = [x1, z1], bounds[1] = [x2, z2]
   // Convert to [[z1, x1], [z2, x2]]
-  const b0 = svgConfig.bounds[0];
-  const b1 = svgConfig.bounds[1];
+  const b0 = config.bounds[0];
+  const b1 = config.bounds[1];
   if (!b0 || !b1 || b0.length < 2 || b1.length < 2) {
     return [
       [0, 0],
@@ -180,26 +193,26 @@ export function getSvgOverlayBounds(
  * Creates Leaflet map options suitable for game maps.
  * Uses custom CRS with transformation for proper coordinate mapping.
  * @param L Leaflet instance
- * @param svgConfig Map SVG configuration
+ * @param config Map render configuration
  * @returns Map initialization options
  */
 export function getLeafletMapOptions(
   L: typeof import('leaflet'),
-  svgConfig?: MapSvgConfig
+  config?: MapRenderConfig
 ): L.MapOptions {
   // Create custom CRS if we have config, otherwise use Simple
-  const crs = svgConfig ? createMapCRS(L, svgConfig) : L.CRS.Simple;
+  const crs = config ? createMapCRS(L, config) : L.CRS.Simple;
   return {
     crs,
-    minZoom: 1,
-    maxZoom: 6,
+    minZoom: config?.minZoom ?? 1,
+    maxZoom: config?.maxZoom ?? 6,
     zoomSnap: 0.25,
     zoomDelta: 0.35,
     // Smoother than default, but faster than ultra-fine
     wheelPxPerZoomLevel: 120,
     wheelDebounceTime: 15,
     attributionControl: false,
-    zoomControl: true,
+    zoomControl: false,
     zoomAnimation: true,
     zoomAnimationThreshold: 8,
     // Touch support for mobile
@@ -225,6 +238,53 @@ export function isValidMapSvgConfig(svg: unknown): svg is MapSvgConfig {
     Array.isArray(config.bounds) &&
     config.bounds.length >= 2
   );
+}
+export function isValidMapTileConfig(tile: unknown): tile is MapTileConfig {
+  if (!tile || typeof tile !== 'object') return false;
+  const config = tile as Record<string, unknown>;
+  const fallbackValue = config.tileFallbacks;
+  const hasValidFallbacks =
+    fallbackValue === undefined ||
+    (Array.isArray(fallbackValue) && fallbackValue.every((value) => typeof value === 'string'));
+  return (
+    typeof config.tilePath === 'string' &&
+    typeof config.coordinateRotation === 'number' &&
+    Array.isArray(config.bounds) &&
+    config.bounds.length >= 2 &&
+    hasValidFallbacks
+  );
+}
+export function normalizeTileConfig(tileConfig: MapTileConfig): MapTileConfig {
+  if (!Array.isArray(tileConfig.transform) || tileConfig.transform.length < 4) return tileConfig;
+  const [scaleX, marginX, scaleYRaw, marginY] = tileConfig.transform;
+  const scaleY = scaleYRaw * -1;
+  const bounds = tileConfig.bounds;
+  if (!bounds || bounds.length < 2) return tileConfig;
+  const cornerPairs: Array<[number, number]> = [
+    [bounds[0]?.[0] ?? 0, bounds[0]?.[1] ?? 0],
+    [bounds[0]?.[0] ?? 0, bounds[1]?.[1] ?? 0],
+    [bounds[1]?.[0] ?? 0, bounds[0]?.[1] ?? 0],
+    [bounds[1]?.[0] ?? 0, bounds[1]?.[1] ?? 0],
+  ];
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  cornerPairs.forEach(([x, z]) => {
+    const rotated = applyRotation({ lat: z, lng: x }, tileConfig.coordinateRotation);
+    const pixelX = rotated.lng * scaleX + marginX;
+    const pixelY = rotated.lat * scaleY + marginY;
+    minX = Math.min(minX, pixelX);
+    minY = Math.min(minY, pixelY);
+  });
+  if (minX >= 0 && minY >= 0) return tileConfig;
+  return {
+    ...tileConfig,
+    transform: [
+      scaleX,
+      marginX + (minX < 0 ? -minX : 0),
+      scaleYRaw,
+      marginY + (minY < 0 ? -minY : 0),
+    ],
+  };
 }
 /**
  * Gets the CDN URL for a map SVG file.

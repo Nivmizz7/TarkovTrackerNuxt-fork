@@ -8,17 +8,14 @@ CREATE TABLE IF NOT EXISTS public.team_events (
   event_data JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Create indexes for common queries
 CREATE INDEX idx_team_events_team_id ON public.team_events(team_id);
 CREATE INDEX idx_team_events_type_created ON public.team_events(event_type, created_at);
 CREATE INDEX idx_team_events_initiated_by ON public.team_events(initiated_by, created_at);
 CREATE INDEX idx_team_events_cooldown ON public.team_events(team_id, event_type, initiated_by, created_at) 
   WHERE event_type IN ('member_kicked', 'member_left');
-
 -- Row Level Security Policies
 ALTER TABLE public.team_events ENABLE ROW LEVEL SECURITY;
-
 -- Team members can view events for their own teams
 CREATE POLICY "Team members can view team events" ON public.team_events
   FOR SELECT USING (
@@ -27,7 +24,6 @@ CREATE POLICY "Team members can view team events" ON public.team_events
       WHERE user_id = auth.uid()
     )
   );
-
 -- Only system or team owners can create events
 CREATE POLICY "System can create team events" ON public.team_events
   FOR INSERT WITH CHECK (

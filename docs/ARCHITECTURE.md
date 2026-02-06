@@ -214,6 +214,58 @@ sequenceDiagram
 3. **Max Value Preservation**: For counts and levels, keep the higher value
 4. **Self-Origin Filtering**: Ignore echoed updates from own device (< 3s threshold)
 
+## Authentication
+
+### OAuth Popup Flow (Login)
+
+- Initial conditions:
+  - `loading.value[provider]` is set to `true` before popup open.
+  - `popupConfirmedOpen` starts as `false`.
+  - `pollTimer`, `fallbackTimer`, and `abandonedTimer` are created.
+- `pollTimer` runs every 500ms; if the popup closes, it clears `loading.value[provider]` and runs
+  `cleanup()`, otherwise it sets `popupConfirmedOpen`.
+- `fallbackTimer` runs at 3s; if `didCleanup` is false, loading is still active, the popup was never
+  confirmed open, and the popup is missing or closed, it runs `cleanup()` and then
+  `fallbackToRedirect(url, provider)`.
+- `abandonedTimer` runs at 90s; if `didCleanup` is still false, it clears `loading.value[provider]` and
+  runs `cleanup()` to abort the flow.
+- Success path: on `OAUTH_SUCCESS` message from the popup, it clears `loading.value[provider]`, runs
+  `cleanup()`, and navigates to the safe redirect.
+- `popupConfirmedOpen` tracks whether the popup has been detected as open at least once to avoid
+  triggering the redirect fallback unnecessarily.
+- `loading.value[provider]` acts as the gate for the fallback timer; if loading is cleared, fallback exits.
+- `cleanup()` clears timers, removes the message listener, and attempts to close the popup safely.
+
+```mermaid
+sequenceDiagram
+    participant Login as login.vue
+    participant Popup as OAuth Popup
+    participant Callback as /auth/callback
+
+    Login->>Login: loading.value[provider] = true
+    Login->>Popup: window.open(url)
+    Login->>Login: start pollTimer + fallbackTimer + abandonedTimer
+    Popup->>Callback: OAuth provider redirects back
+    Callback-->>Popup: postMessage('OAUTH_SUCCESS')
+    Popup-->>Login: message event
+    Login->>Login: loading.value[provider] = false
+    Login->>Login: cleanup()
+    Login->>Login: navigateTo(redirect)
+
+    alt popup blocked or closed early
+        Login->>Login: fallbackTimer + !popupConfirmedOpen
+        Login->>Login: cleanup()
+        Login->>Login: fallbackToRedirect(url, provider)
+    end
+```
+
+### Supabase Authentication
+
+1. User authenticates via Supabase (OAuth/email)
+2. JWT stored in session
+3. Protected routes validate token
+4. Team API validates membership
+
 ## API Architecture
 
 ### Tarkov Data API
@@ -284,13 +336,6 @@ runtimeConfig: {
 }
 ```
 
-### Authentication Flow
-
-1. User authenticates via Supabase (OAuth/email)
-2. JWT stored in session
-3. Protected routes validate token
-4. Team API validates membership
-
 ## Performance Optimizations
 
 1. **IndexedDB Caching**: Reduce network requests
@@ -327,7 +372,7 @@ npm run test:api-gateway
 
 ```yaml
 Build command: npm run build
-Build output: .output/public
+Build output: dist
 Root directory: /
 Node.js version: 24.x
 ```
@@ -336,23 +381,25 @@ Node.js version: 24.x
 
 **Client-side (browser):**
 
-| Variable                 | Description          | Required    |
-| ------------------------ | -------------------- | ----------- |
-| `VITE_SUPABASE_URL`      | Supabase project URL | For auth    |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anon key    | For auth    |
+| Variable                 | Description                            | Required |
+| ------------------------ | -------------------------------------- | -------- |
+| `VITE_SUPABASE_URL`      | Supabase project URL for auth and sync | Yes¹     |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key for auth and sync    | Yes¹     |
+
+> **¹ Yes:** Required in production; optional for local development. Without `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, authentication, multi-device sync, real-time collaboration, and team features will be unavailable. The app will function in offline mode with localStorage persistence only.
 
 **Server-side (Nuxt/Workers):**
 
 | Variable                    | Description          | Required    |
 | --------------------------- | -------------------- | ----------- |
-| `SUPABASE_URL`              | Supabase project URL | Production  |
-| `SUPABASE_ANON_KEY`         | Supabase anon key    | Production  |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key     | Production  |
-| `NUXT_PUBLIC_APP_URL`       | Application URL      | Production  |
+| `SUPABASE_URL`              | Supabase project URL | Yes (prod)² |
+| `SUPABASE_ANON_KEY`         | Supabase anon key    | Yes (prod)² |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key     | Yes (prod)² |
+| `NUXT_PUBLIC_APP_URL`       | Application URL      | Yes (prod)² |
 | `API_ALLOWED_HOSTS`         | Allowed origin hosts | No          |
 | `API_TRUST_PROXY`           | Trust proxy headers  | No          |
 
-> **Note:** Most features work without Supabase configuration in local development. Auth and sync will be disabled.
+> **² Yes (prod):** Required in production deployments; optional in local/dev where auth and sync will be disabled.
 
 ## Code Conventions
 

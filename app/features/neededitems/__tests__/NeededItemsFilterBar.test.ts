@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
+import { createI18n } from 'vue-i18n';
 const UButtonStub = {
   props: ['icon'],
   emits: ['click'],
@@ -11,6 +12,22 @@ const UInputStub = {
   template:
     '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 };
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false,
+  silentTranslationWarn: true,
+  messages: {
+    en: {},
+    de: {},
+    es: {},
+    fr: {},
+    ru: {},
+    uk: {},
+    zh: {},
+  },
+});
 const setup = async () => {
   vi.resetModules();
   const { default: NeededItemsFilterBar } =
@@ -31,11 +48,13 @@ const createDefaultProps = () => ({
   hideTeamItems: false,
   hideNonFirSpecialEquipment: false,
   kappaOnly: false,
+  sortBy: 'priority' as const,
+  sortDirection: 'desc' as const,
+  hideOwned: false,
+  cardStyle: 'expanded' as const,
 });
 const createDefaultGlobal = () => ({
-  mocks: {
-    $t: (key: string, fallback?: string) => fallback ?? key,
-  },
+  plugins: [i18n],
   stubs: {
     AppTooltip: { template: '<span><slot /></span>' },
     UBadge: true,

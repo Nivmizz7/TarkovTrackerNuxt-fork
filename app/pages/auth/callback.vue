@@ -13,12 +13,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { onMounted } from 'vue';
-  const route = useRoute();
-  const redirectPath = computed(() => {
-    const value = route.query.redirect;
-    return typeof value === 'string' && value.startsWith('/') ? value : '';
-  });
+  import { sanitizeInternalRedirect } from '@/utils/redirect';
   onMounted(async () => {
     // Check if this is a popup window (has opener)
     const isPopup = window.opener && !window.opener.closed;
@@ -34,11 +29,12 @@
         window.close();
       }, 200);
     } else {
-      // This is a full redirect (not popup) - redirect to dashboard
+      // This is a full redirect (not popup) - redirect to original page or dashboard
       // Wait a moment for the session to be established
       await new Promise((resolve) => setTimeout(resolve, 500));
-      // Navigate to dashboard
-      await navigateTo(redirectPath.value || '/', { replace: true });
+      const route = useRoute();
+      const redirect = sanitizeInternalRedirect(route.query.redirect);
+      await navigateTo(redirect, { replace: true });
     }
   });
 </script>

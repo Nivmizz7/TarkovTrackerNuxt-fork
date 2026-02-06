@@ -43,14 +43,56 @@ vi.mock('@/composables/useHideoutFiltering', () => ({
     stationCounts: ref({ available: 1, maxed: 0, locked: 0, all: 1 }),
   }),
 }));
+vi.mock('@/composables/useHideoutStationStatus', () => ({
+  useHideoutStationStatus: () => ({
+    getStationStatus: () => 'available',
+  }),
+}));
 vi.mock('@/stores/useMetadata', () => ({
   useMetadataStore: () => ({
-    hideoutStations: [station],
+    hideoutStations: ref([station]),
+  }),
+}));
+vi.mock('pinia', async () => {
+  const actualPinia = await vi.importActual('pinia');
+  const { isRef, ref, computed } = await import('vue');
+  return {
+    ...actualPinia,
+    storeToRefs: vi.fn((store: Record<string, unknown>) => {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(store)) {
+        if (isRef(value)) {
+          result[key] = value;
+        } else if (typeof value === 'function') {
+          result[key] = computed(value as () => unknown);
+        } else {
+          result[key] = ref(value);
+        }
+      }
+      return result;
+    }),
+  };
+});
+vi.mock('@/stores/usePreferences', () => ({
+  usePreferencesStore: () => ({
+    hideoutCollapseCompleted: false,
+    hideoutSortReadyFirst: false,
+    hideoutRequireStationLevels: false,
+    hideoutRequireSkillLevels: false,
+    hideoutRequireTraderLoyalty: false,
+    setHideoutRequireStationLevels: vi.fn(),
+    setHideoutRequireSkillLevels: vi.fn(),
+    setHideoutRequireTraderLoyalty: vi.fn(),
   }),
 }));
 vi.mock('@/stores/useProgress', () => ({
   useProgressStore: () => ({
     hideoutLevels: { 'station-1': { self: 1 } },
+  }),
+}));
+vi.mock('@/stores/useTarkov', () => ({
+  useTarkovStore: () => ({
+    enforceHideoutPrereqsNow: vi.fn(),
   }),
 }));
 vi.mock('vue-router', () => ({
@@ -59,7 +101,8 @@ vi.mock('vue-router', () => ({
 }));
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (_key: string, fallback?: string) => fallback ?? _key,
+    t: (key: string, fallback?: string | Record<string, unknown>) =>
+      typeof fallback === 'string' ? fallback : key,
   }),
 }));
 describe('hideout page', () => {
@@ -72,6 +115,7 @@ describe('hideout page', () => {
           UAlert: true,
           UButton: true,
           UIcon: true,
+          UModal: true,
         },
       },
     });

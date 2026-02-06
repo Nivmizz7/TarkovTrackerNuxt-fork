@@ -4,7 +4,13 @@
       icon="i-mdi-clipboard-search"
       color="primary"
       variant="soft"
-      :title="t('page.tasks.notasksfound')"
+      :title="t('page.tasks.no_tasks_found')"
+      :description="
+        t(
+          'page.tasks.no_tasks_found_description',
+          'Try adjusting your filters, selecting a different map, or checking other task categories.'
+        )
+      "
     />
   </div>
 </template>
