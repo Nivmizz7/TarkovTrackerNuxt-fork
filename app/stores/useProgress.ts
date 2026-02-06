@@ -1,15 +1,27 @@
 import { defineStore } from 'pinia';
-import { computed } from 'vue';
-import type { UserProgressData, UserState } from '@/stores/progressState';
 import { useMetadataStore } from '@/stores/useMetadata';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { useTarkovStore } from '@/stores/useTarkov';
 import { useTeammateStores, useTeamStore } from '@/stores/useTeamStore';
-import type { GameEdition, Task, TaskRequirement } from '@/types/tarkov';
-import { GAME_MODES, SPECIAL_STATIONS } from '@/utils/constants';
+import {
+  GAME_MODES,
+  SPECIAL_STATIONS,
+  TASK_STATE,
+  TRADER_UNLOCK_TASKS,
+  type TaskState,
+} from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { perfEnd, perfStart } from '@/utils/perf';
 import { computeInvalidProgress } from '@/utils/progressInvalidation';
+import {
+  getCompletionFlags,
+  getTaskStatusFromFlags,
+  isTaskActive,
+  isTaskComplete,
+  isTaskFailed,
+} from '@/utils/taskStatus';
+import type { UserProgressData, UserState } from '@/stores/progressState';
+import type { GameEdition, Task, TaskRequirement } from '@/types/tarkov';
 import type { Store } from 'pinia';
 function getGameModeData(store: Store<string, UserState> | undefined): UserProgressData {
   if (!store) return {} as UserProgressData;
@@ -17,16 +29,6 @@ function getGameModeData(store: Store<string, UserState> | undefined): UserProgr
   const gameModeState = store.$state[currentGameMode as keyof UserState];
   return (gameModeState || store.$state) as UserProgressData;
 }
-type RawTaskCompletion = { complete?: boolean; failed?: boolean } | boolean | null | undefined;
-const getCompletionFlags = (completion: RawTaskCompletion) => {
-  if (typeof completion === 'boolean') {
-    return { complete: completion, failed: false };
-  }
-  return {
-    complete: completion?.complete === true,
-    failed: completion?.failed === true,
-  };
-};
 type TeamStoresMap = Record<string, Store<string, UserState>>;
 type CompletionsMap = Record<string, Record<string, boolean>>;
 type FailedTasksMap = Record<string, Record<string, boolean>>;
@@ -89,48 +91,37 @@ export const useProgressStore = defineStore('progress', () => {
     logger.debug('[ProgressStore] Visible team stores:', Object.keys(visibleStores));
     return visibleStores;
   });
-  const tasksCompletions = computed(() => {
-    const perfTimer = perfStart('[Progress] tasksCompletions', {
+  const taskStatusFlags = computed(() => {
+    const perfTimer = perfStart('[Progress] taskStatusFlags', {
       tasks: metadataStore.tasks.length,
     });
     const completions: CompletionsMap = {};
+    const failures: FailedTasksMap = {};
     if (!metadataStore.tasks.length || !visibleTeamStores.value) {
       perfEnd(perfTimer, { skipped: true });
-      return {};
+      return { completions: {}, failures: {} };
     }
-    const teamCount = Object.keys(visibleTeamStores.value).length;
+    const teamIds = Object.keys(visibleTeamStores.value);
+    const teamDataCache = new Map<string, UserProgressData>();
+    for (const teamId of teamIds) {
+      const store = visibleTeamStores.value[teamId];
+      teamDataCache.set(teamId, getGameModeData(store));
+    }
     for (const task of metadataStore.tasks as Task[]) {
       completions[task.id] = {};
-      for (const teamId of Object.keys(visibleTeamStores.value)) {
-        const store = visibleTeamStores.value[teamId];
-        const currentData = getGameModeData(store);
+      failures[task.id] = {};
+      for (const teamId of teamIds) {
+        const currentData = teamDataCache.get(teamId)!;
         const completionFlags = getCompletionFlags(currentData?.taskCompletions?.[task.id]);
         completions[task.id]![teamId] = completionFlags.complete;
-      }
-    }
-    perfEnd(perfTimer, { tasks: metadataStore.tasks.length, teams: teamCount });
-    return completions;
-  });
-  const tasksFailed = computed(() => {
-    const perfTimer = perfStart('[Progress] tasksFailed', { tasks: metadataStore.tasks.length });
-    const failures: FailedTasksMap = {};
-    if (!metadataStore.tasks.length || Object.keys(visibleTeamStores.value).length === 0) {
-      perfEnd(perfTimer, { skipped: true });
-      return {};
-    }
-    const teamCount = Object.keys(visibleTeamStores.value).length;
-    for (const task of metadataStore.tasks as Task[]) {
-      failures[task.id] = {};
-      for (const teamId of Object.keys(visibleTeamStores.value)) {
-        const store = visibleTeamStores.value[teamId];
-        const currentData = getGameModeData(store);
-        const completionFlags = getCompletionFlags(currentData?.taskCompletions?.[task.id]);
         failures[task.id]![teamId] = completionFlags.failed;
       }
     }
-    perfEnd(perfTimer, { tasks: metadataStore.tasks.length, teams: teamCount });
-    return failures;
+    perfEnd(perfTimer, { tasks: metadataStore.tasks.length, teams: teamIds.length });
+    return { completions, failures };
   });
+  const tasksCompletions = computed(() => taskStatusFlags.value.completions);
+  const tasksFailed = computed(() => taskStatusFlags.value.failures);
   const gameEditionData = computed<GameEdition[]>(() => metadataStore.editions);
   const traderLevelsAchieved = computed(() => {
     const perfTimer = perfStart('[Progress] traderLevelsAchieved', {
@@ -191,6 +182,7 @@ export const useProgressStore = defineStore('progress', () => {
         level: number;
         faction: string;
         completions: Record<string, { complete?: boolean; failed?: boolean }>;
+        traders: Record<string, { level?: number; reputation?: number }>;
       }
     >();
     for (const teamId of teamIds) {
@@ -200,6 +192,7 @@ export const useProgressStore = defineStore('progress', () => {
         level: getLevel(teamId),
         faction: currentData?.pmcFaction ?? 'USEC',
         completions: currentData?.taskCompletions ?? {},
+        traders: currentData?.traders ?? {},
       });
     }
     const tasksById = new Map(tasks.map((task) => [task.id, task]));
@@ -207,17 +200,7 @@ export const useProgressStore = defineStore('progress', () => {
       (statuses ?? []).map((status) => status.toLowerCase());
     const hasAnyStatus = (statuses: string[], values: string[]) =>
       values.some((value) => statuses.includes(value));
-    const isTaskComplete = (completion?: RawTaskCompletion) => {
-      const flags = getCompletionFlags(completion);
-      return flags.complete && !flags.failed;
-    };
-    const isTaskFailed = (completion?: RawTaskCompletion) => {
-      return getCompletionFlags(completion).failed;
-    };
-    const isTaskActiveRecord = (completion?: RawTaskCompletion) => {
-      if (!completion) return false;
-      return !isTaskComplete(completion) && !isTaskFailed(completion);
-    };
+    const fenceTrader = metadataStore.traders.find((t) => t.normalizedName === 'fence');
     // Initialize availability map
     for (const task of tasks) {
       available[task.id] = {};
@@ -241,7 +224,7 @@ export const useProgressStore = defineStore('progress', () => {
         const completion = teamData.completions[reqTaskId];
         const isComplete = isTaskComplete(completion);
         const isFailed = isTaskFailed(completion);
-        const isActive = isTaskActiveRecord(completion);
+        const isActive = isTaskActive(completion);
         if (requiresComplete && isComplete) return true;
         if (requiresFailed && isFailed) return true;
         if (requiresActive) {
@@ -284,8 +267,29 @@ export const useProgressStore = defineStore('progress', () => {
           visiting.delete(taskId);
           return false;
         }
-        // Trader gating intentionally disabled until real trader level/rep is wired.
-        // TODO: Use trader level/rep from currentData.traders[traderId], not player level.
+        // Fence reputation check - only Fence trader requirements gate availability
+        // Other trader level/rep requirements are display-only, not gating
+        if (task.traderRequirements?.length && fenceTrader) {
+          const fenceReq = task.traderRequirements.find((req) => req.trader.id === fenceTrader.id);
+          if (fenceReq) {
+            const userFenceRep = teamData.traders?.[fenceTrader.id]?.reputation ?? 0;
+            // Positive requirement: user needs at least this much karma
+            // Negative requirement: user needs at most this much (or worse) karma
+            if (fenceReq.value >= 0) {
+              if (userFenceRep < fenceReq.value) {
+                memo.set(taskId, false);
+                visiting.delete(taskId);
+                return false;
+              }
+            } else {
+              if (userFenceRep > fenceReq.value) {
+                memo.set(taskId, false);
+                visiting.delete(taskId);
+                return false;
+              }
+            }
+          }
+        }
         // Prerequisites check
         if (task.taskRequirements) {
           for (const req of task.taskRequirements) {
@@ -305,6 +309,16 @@ export const useProgressStore = defineStore('progress', () => {
           memo.set(taskId, false);
           visiting.delete(taskId);
           return false;
+        }
+        // Trader unlock check - some traders require completing a specific task to unlock
+        const traderName = task.trader?.normalizedName || task.trader?.name?.toLowerCase();
+        if (traderName) {
+          const unlockTaskId = TRADER_UNLOCK_TASKS[traderName];
+          if (unlockTaskId && !isTaskComplete(teamData.completions[unlockTaskId])) {
+            memo.set(taskId, false);
+            visiting.delete(taskId);
+            return false;
+          }
         }
         memo.set(taskId, true);
         visiting.delete(taskId);
@@ -695,10 +709,7 @@ export const useProgressStore = defineStore('progress', () => {
     const store = teamStores.value[storeKey];
     const currentData = getGameModeData(store);
     const taskCompletion = currentData?.taskCompletions?.[taskId];
-    const flags = getCompletionFlags(taskCompletion);
-    if (flags.failed) return 'failed';
-    if (flags.complete) return 'completed';
-    return 'incomplete';
+    return getTaskStatusFromFlags(taskCompletion);
   };
   const getProgressPercentage = (teamId: string, category: string): number => {
     const storeKey = getTeamIndex(teamId);
@@ -726,6 +737,30 @@ export const useProgressStore = defineStore('progress', () => {
         return 0;
     }
   };
+  const tasksState = computed<Record<string, TaskState>>(() => {
+    const state: Record<string, TaskState> = {};
+    const tasks = metadataStore.tasks as Task[];
+    if (!tasks.length) return {};
+    const store = teamStores.value['self'];
+    const currentData = getGameModeData(store);
+    const completions = currentData?.taskCompletions ?? {};
+    for (const task of tasks) {
+      const taskId = task.id;
+      const completion = completions[taskId];
+      if (isTaskComplete(completion)) {
+        state[taskId] = TASK_STATE.COMPLETE;
+      } else if (isTaskFailed(completion)) {
+        state[taskId] = TASK_STATE.FAILED;
+      } else if (isTaskActive(completion)) {
+        state[taskId] = TASK_STATE.ACTIVE;
+      } else if (unlockedTasks.value[taskId]?.['self']) {
+        state[taskId] = TASK_STATE.AVAILABLE;
+      } else {
+        state[taskId] = TASK_STATE.LOCKED;
+      }
+    }
+    return state;
+  });
   const migrateDuplicateObjectiveProgress = (duplicateObjectiveIds: Map<string, string[]>) => {
     if (!duplicateObjectiveIds.size) return;
     const migrateObjectiveMap = (
@@ -765,6 +800,7 @@ export const useProgressStore = defineStore('progress', () => {
     visibleTeamStores,
     tasksCompletions,
     tasksFailed,
+    tasksState,
     gameEditionData,
     traderLevelsAchieved,
     playerFaction,

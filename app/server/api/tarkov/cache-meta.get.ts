@@ -7,29 +7,57 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
   const supabaseUrl = config.supabaseUrl;
   const supabaseServiceKey = config.supabaseServiceKey;
-  if (typeof supabaseUrl !== 'string' || typeof supabaseServiceKey !== 'string') {
-    logger.error('[CacheMeta] Missing Supabase configuration for cache meta lookup.', {
-      supabaseUrlPresent: Boolean(supabaseUrl),
-      supabaseServiceKeyPresent: Boolean(supabaseServiceKey),
+  if (
+    !supabaseUrl ||
+    typeof supabaseUrl !== 'string' ||
+    !supabaseUrl.trim() ||
+    !supabaseServiceKey ||
+    typeof supabaseServiceKey !== 'string' ||
+    !supabaseServiceKey.trim()
+  ) {
+    logger.warn('[CacheMeta] Supabase not configured - skipping cache meta lookup');
+    return { data: { lastPurgeAt: null } };
+  }
+  const supabaseUrlValue = supabaseUrl.trim();
+  const supabaseServiceKeyValue = supabaseServiceKey.trim();
+  let url: URL;
+  try {
+    url = new URL(`${supabaseUrlValue}/rest/v1/admin_audit_log`);
+  } catch (error) {
+    logger.error('[CacheMeta] Invalid Supabase URL for cache meta lookup.', {
+      supabaseUrl: supabaseUrlValue,
+      error: error instanceof Error ? error.message : String(error),
     });
     return { data: { lastPurgeAt: null } };
   }
-  const url = new URL(`${supabaseUrl}/rest/v1/admin_audit_log`);
   url.searchParams.set('select', 'created_at,details');
   url.searchParams.set('action', 'eq.cache_purge');
   url.searchParams.set('order', 'created_at.desc');
   url.searchParams.set('limit', '10');
   let response: Response;
+  const requestTimeoutMs = 2500;
   try {
+    const timeoutSignal = AbortSignal.timeout(requestTimeoutMs);
     response = await fetch(url.toString(), {
       headers: {
-        apikey: supabaseServiceKey,
-        Authorization: `Bearer ${supabaseServiceKey}`,
+        apikey: supabaseServiceKeyValue,
+        Authorization: `Bearer ${supabaseServiceKeyValue}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
+      signal: timeoutSignal,
     });
   } catch (error) {
+    if (
+      (error instanceof Error && error.name === 'AbortError') ||
+      (error instanceof DOMException && error.name === 'TimeoutError')
+    ) {
+      logger.warn(`[CacheMeta] Cache meta request timed out after ${requestTimeoutMs}ms.`, error);
+      return {
+        data: { lastPurgeAt: null },
+        error: `Cache meta request timed out after ${requestTimeoutMs}ms.`,
+      };
+    }
     logger.error('[CacheMeta] Network error fetching cache meta.', {
       url: url.toString(),
       error: error instanceof Error ? error.message : String(error),

@@ -18,6 +18,7 @@
       <img
         v-if="isVisible && computedImageSrc"
         :src="computedImageSrc"
+        :alt="props.itemName || 'Item'"
         :class="[
           fill ? 'max-h-full max-w-full object-contain' : 'h-full w-full object-contain',
           imageElementClasses,
@@ -32,7 +33,7 @@
           imageClasses,
         ]"
       >
-        <UIcon name="i-mdi-loading" class="h-6 w-6 animate-spin text-gray-400" />
+        <UIcon name="i-mdi-loading" class="text-surface-400 h-6 w-6 animate-spin" />
       </div>
     </div>
     <!-- Full item display mode (for TarkovItem compatibility) -->
@@ -42,9 +43,9 @@
           :width="imageSize"
           :height="imageSize"
           :src="computedImageSrc"
+          :alt="props.itemName || 'Item'"
           :class="imageClasses"
           class="rounded"
-          alt="Item Icon"
           @error="handleImgError"
         />
       </div>
@@ -59,7 +60,7 @@
         />
       </div>
       <!-- Simple count display for single items -->
-      <div v-else-if="props.count" class="mr-2 text-sm font-medium text-gray-300">
+      <div v-else-if="props.count" class="text-surface-300 mr-2 text-sm font-medium">
         {{ formatNumber(props.count) }}
       </div>
       <div
@@ -78,7 +79,7 @@
             :href="props.devLink"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            class="text-surface-200 inline-flex items-center justify-center rounded p-1.5 transition-colors hover:bg-white/20 hover:text-white"
             @click.stop
           >
             <img src="/img/logos/tarkovdevlogo.webp" alt="tarkov.dev" class="h-5 w-5" />
@@ -89,7 +90,7 @@
             :href="props.wikiLink"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            class="text-surface-200 inline-flex items-center justify-center rounded p-1.5 transition-colors hover:bg-white/20 hover:text-white"
             @click.stop
           >
             <img src="/img/logos/wikilogo.webp" alt="Wiki" class="h-5 w-5" />
@@ -98,7 +99,7 @@
         <AppTooltip v-if="props.itemName" text="Copy Name">
           <button
             type="button"
-            class="inline-flex cursor-pointer items-center justify-center rounded p-1.5 text-gray-200 transition-colors hover:bg-white/20 hover:text-white"
+            class="text-surface-200 inline-flex cursor-pointer items-center justify-center rounded p-1.5 transition-colors hover:bg-white/20 hover:text-white"
             @click.stop="copyItemName"
           >
             <UIcon name="i-mdi-content-copy" class="h-5 w-5" />
@@ -121,7 +122,7 @@
           />
           <div
             v-if="props.wikiLink || props.devLink || props.itemName"
-            class="my-1 border-t border-gray-700"
+            class="border-surface-700 my-1 border-t"
           />
         </template>
         <!-- Item Options -->
@@ -165,7 +166,7 @@
         </template>
         <div
           v-if="props.itemName && (props.wikiLink || props.devLink)"
-          class="my-1 border-t border-gray-700"
+          class="border-surface-700 my-1 border-t"
         />
         <ContextMenuItem
           v-if="props.itemName"
@@ -181,11 +182,9 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, defineAsyncComponent, ref } from 'vue';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
   import { logger } from '@/utils/logger';
-  import ContextMenu from './ContextMenu.vue';
-  import ContextMenuItem from './ContextMenuItem.vue';
+  import type ContextMenu from '@/components/ui/ContextMenu.vue';
   const ItemCountControls = defineAsyncComponent(
     () => import('@/features/neededitems/ItemCountControls.vue')
   );
@@ -258,28 +257,29 @@
     decrease: [];
     toggle: [];
   }>();
+  useI18n({ useScope: 'global' });
+  const { copyToClipboard } = useCopyToClipboard();
   const formatNumber = useLocaleNumberFormatter();
-  const backgroundClassMap = {
-    violet: 'bg-brand-900',
-    grey: 'bg-surface-900',
-    yellow: 'bg-warning-900',
-    orange: 'bg-warning-950',
-    green: 'bg-success-950',
-    red: 'bg-error-900',
-    black: 'bg-surface-950',
-    blue: 'bg-secondary-900',
-    default: 'bg-transparent',
+  const BACKGROUND_CLASS_MAP = {
+    violet: 'bg-rarity-violet',
+    grey: 'bg-rarity-grey',
+    yellow: 'bg-rarity-yellow',
+    orange: 'bg-rarity-orange',
+    green: 'bg-rarity-green',
+    red: 'bg-rarity-red',
+    black: 'bg-rarity-black',
+    blue: 'bg-rarity-blue',
+    default: 'bg-rarity-default',
   } as const;
-  type BackgroundKey = keyof typeof backgroundClassMap;
+  type BackgroundKey = keyof typeof BACKGROUND_CLASS_MAP;
   const contextMenu = ref<InstanceType<typeof ContextMenu>>();
   // Compute image source based on available props
   const computedImageSrc = computed(() => {
-    // Priority order: explicit src > iconLink > imageItem.iconLink > generated from itemId
     if (props.src) return props.src;
     if (props.iconLink) return props.iconLink;
     if (props.imageItem?.iconLink) return props.imageItem.iconLink;
-    if (props.imageItem?.image512pxLink && props.size === 'large')
-      return props.imageItem.image512pxLink;
+    if (props.image512pxLink) return props.image512pxLink;
+    if (props.imageItem?.image512pxLink) return props.imageItem.image512pxLink;
     if (props.itemId) return `https://assets.tarkov.dev/${props.itemId}-icon.webp`;
     return '';
   });
@@ -332,11 +332,11 @@
       props.imageItem?.backgroundColor ||
       'default'
     ).toLowerCase() as BackgroundKey;
-    const backgroundClass: string = backgroundClassMap[bgColor] ?? backgroundClassMap.default;
+    const backgroundClass: string = BACKGROUND_CLASS_MAP[bgColor] ?? BACKGROUND_CLASS_MAP.default;
     // In `fill` mode, treat a transparent/default background as grey to preserve visible contrast when
     // the tile is expanded/filled. This is an intentional visual design decision to avoid invisible fills.
-    if (backgroundClass === backgroundClassMap.default && props.fill) {
-      return backgroundClassMap.grey;
+    if (backgroundClass === BACKGROUND_CLASS_MAP.default && props.fill) {
+      return BACKGROUND_CLASS_MAP.grey;
     }
     return backgroundClass;
   });
@@ -344,7 +344,7 @@
     const baseImageClasses = imageClasses.value;
     const backgroundClass = resolvedBackgroundClass.value;
     const classes: string[] = baseImageClasses.slice();
-    if (backgroundClass !== backgroundClassMap.default) {
+    if (backgroundClass !== BACKGROUND_CLASS_MAP.default) {
       classes.push('ring-1', 'ring-white/5', 'shadow-inner');
     }
     return classes;
@@ -366,10 +366,10 @@
       window.open(props.wikiLink, '_blank');
     }
   };
-  const copyItemName = () => {
+  const copyItemName = async () => {
     const textToCopy = props.copyValue || props.itemName;
     if (textToCopy) {
-      navigator.clipboard.writeText(textToCopy);
+      await copyToClipboard(textToCopy);
     }
   };
   const handleClick = (event: MouseEvent) => {

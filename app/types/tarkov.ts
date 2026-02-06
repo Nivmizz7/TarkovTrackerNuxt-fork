@@ -1,7 +1,6 @@
 import type { UserState } from '@/stores/progressState';
-import type Graph from 'graphology';
+import type { TaskGraph } from '@/utils/graphHelpers';
 import type { _GettersTree, StateTree, Store } from 'pinia';
-import type { ComputedRef, Ref } from 'vue';
 /**
  * Type definitions for Tarkov data structures
  * This file defines the structure for:
@@ -100,6 +99,9 @@ export interface TaskTraderLevelRequirement {
   trader: { id: string; name: string };
   level: number;
 }
+export interface TraderLevelRequirementWithMet extends TaskTraderLevelRequirement {
+  met: boolean;
+}
 export interface Craft {
   id: string;
   duration: number;
@@ -136,6 +138,15 @@ export interface TaskObjective {
   description?: string;
   location?: { id: string; name?: string };
   maps?: { id: string; name?: string }[];
+  zones?: Array<{
+    map?: { id: string };
+    outline?: Array<{ x: number; y: number; z: number }>;
+    position?: { x: number; y: number; z: number };
+  }>;
+  possibleLocations?: Array<{
+    map?: { id: string };
+    positions?: Array<{ x: number; y: number; z: number }>;
+  }>;
   /** The primary item this objective refers to */
   item?: TarkovItem;
   /** All accepted items for this objective (TaskObjectiveItem.items) */
@@ -218,12 +229,13 @@ export interface Task {
   experience?: number;
   map?: { id: string; name?: string };
   locations?: string[];
-  trader?: { id: string; name?: string; imageLink?: string };
+  trader?: { id: string; name?: string; normalizedName?: string; imageLink?: string };
   objectives?: TaskObjective[];
   taskRequirements?: TaskRequirement[];
   minPlayerLevel?: number;
   failedRequirements?: TaskRequirement[];
   traderLevelRequirements?: TaskTraderLevelRequirement[];
+  traderRequirements?: TraderRequirement[];
   factionName?: string;
   startRewards?: FinishRewards;
   finishRewards?: FinishRewards;
@@ -265,6 +277,27 @@ export interface MapExtract {
   /** Bottom boundary for multi-floor extracts */
   bottom?: number;
 }
+export interface MapSvgConfig {
+  file: string;
+  floors: string[];
+  defaultFloor: string;
+  coordinateRotation: number;
+  transform?: [number, number, number, number];
+  bounds: [[number, number], [number, number]];
+  svgBounds?: [[number, number], [number, number]];
+  stackFloors?: boolean;
+  minZoom?: number;
+  maxZoom?: number;
+}
+export interface MapTileConfig {
+  tilePath: string;
+  tileFallbacks?: string[];
+  coordinateRotation: number;
+  transform?: [number, number, number, number];
+  bounds: [[number, number], [number, number]];
+  minZoom?: number;
+  maxZoom?: number;
+}
 export interface TarkovMap {
   id: string;
   name: string;
@@ -273,26 +306,23 @@ export interface TarkovMap {
   extracts?: MapExtract[];
   /** Whether the map is unavailable for display */
   unavailable?: boolean;
-  svg?:
-    | string
-    | {
-        file: string;
-        floors: string[];
-        defaultFloor: string;
-        coordinateRotation: number;
-        transform?: [number, number, number, number];
-        bounds: number[][];
-        /** Separate bounds for SVG overlay (if different from marker bounds) */
-        svgBounds?: number[][];
-        /** Whether lower floors should remain visible when a higher floor is selected */
-        stackFloors?: boolean;
-      };
+  svg?: string | MapSvgConfig;
+  tile?: MapTileConfig;
+}
+export interface TraderLoyaltyLevel {
+  id: string;
+  level: number;
+  requiredPlayerLevel: number;
+  requiredReputation: number;
+  requiredCommerce: number;
+  payRate?: number;
 }
 export interface Trader {
   id: string;
   name: string;
   normalizedName?: string;
   imageLink?: string;
+  levels?: TraderLoyaltyLevel[];
 }
 /**
  * Player level data with XP thresholds
@@ -365,6 +395,7 @@ export interface NeededItemBase {
 export interface NeededItemTaskObjective extends NeededItemBase {
   needType: 'taskObjective';
   taskId: string;
+  teamId?: string | null;
   type?: string;
   markerItem?: TarkovItem;
 }
@@ -372,6 +403,7 @@ export interface NeededItemHideoutModule extends NeededItemBase {
   needType: 'hideoutModule';
   hideoutModule: HideoutModule;
 }
+export type Need = NeededItemTaskObjective | NeededItemHideoutModule;
 export type GroupedItemInfo = Pick<
   TarkovItem,
   'id' | 'iconLink' | 'image512pxLink' | 'wikiLink' | 'link'
@@ -424,28 +456,10 @@ export interface ObjectiveGPSInfo {
 }
 export interface StaticMapData {
   [key: string]: {
-    id: number;
-    tdevId: string;
-    locale: {
-      en: string;
-      ru?: string;
-    };
-    wiki?: string;
-    description?: string;
-    enemies?: string[];
-    raidDuration?: {
-      day: number;
-      night: number;
-    };
     /** Whether the map is unavailable for display (e.g., unreleased maps) */
     unavailable?: boolean;
-    svg?: {
-      file: string;
-      floors: string[];
-      defaultFloor: string;
-      coordinateRotation: number;
-      bounds: number[][];
-    };
+    svg?: MapSvgConfig;
+    tile?: MapTileConfig;
   };
 }
 // Store Types
@@ -495,9 +509,9 @@ export interface TarkovDataComposable {
   lastHideoutQueryTime: Ref<number | null>;
   hideoutStations: Ref<HideoutStation[]>;
   hideoutModules: Ref<HideoutModule[]>;
-  hideoutGraph: Ref<Graph>;
+  hideoutGraph: Ref<TaskGraph>;
   tasks: Ref<Task[]>;
-  taskGraph: Ref<Graph>;
+  taskGraph: Ref<TaskGraph>;
   objectiveMaps: Ref<{ [taskId: string]: ObjectiveMapInfo[] }>;
   alternativeTasks: Ref<{ [taskId: string]: string[] }>;
   objectiveGPS: Ref<{ [taskId: string]: ObjectiveGPSInfo[] }>;
@@ -507,7 +521,6 @@ export interface TarkovDataComposable {
   traders: ComputedRef<Trader[]>;
   neededItemTaskObjectives: Ref<NeededItemTaskObjective[]>;
   neededItemHideoutModules: Ref<NeededItemHideoutModule[]>;
-  disabledTasks: string[];
   playerLevels: ComputedRef<PlayerLevel[]>;
   minPlayerLevel: ComputedRef<number>;
   maxPlayerLevel: ComputedRef<number>;

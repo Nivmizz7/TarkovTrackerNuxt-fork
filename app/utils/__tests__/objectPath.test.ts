@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { logger } from '@/utils/logger';
 import { get, set, MAX_ARRAY_INDEX } from '@/utils/objectPath';
 describe('objectPath', () => {
   describe('get', () => {
@@ -148,8 +149,11 @@ describe('objectPath', () => {
     });
     it('allows overriding maxArrayIndex via options', () => {
       const obj: Record<string, unknown> = {};
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
       set(obj, 'items[50000]', 'value', { maxArrayIndex: 100_000 });
       expect((obj.items as unknown[])[50000]).toBe('value');
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
     });
     it('creates sparse array up to MAX_ARRAY_INDEX', () => {
       const obj: Record<string, unknown> = {};
@@ -197,19 +201,29 @@ describe('objectPath', () => {
     });
     it('does not pollute Object.prototype via __proto__', () => {
       const obj = {} as Record<string, unknown>;
+      let err: unknown;
       try {
         set(obj, '__proto__.polluted', 'yes');
-      } catch {
-        // Expected to throw
+      } catch (error) {
+        err = error;
+      }
+      expect(err).toBeInstanceOf(Error);
+      if (err instanceof Error) {
+        expect(err.message).toMatch(/Dangerous key/);
       }
       expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
     });
     it('does not pollute Object.prototype via constructor', () => {
       const obj = {} as Record<string, unknown>;
+      let err: unknown;
       try {
         set(obj, 'constructor.prototype.polluted', 'yes');
-      } catch {
-        // Expected to throw
+      } catch (error) {
+        err = error;
+      }
+      expect(err).toBeInstanceOf(Error);
+      if (err instanceof Error) {
+        expect(err.message).toMatch(/Dangerous key/);
       }
       expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
     });

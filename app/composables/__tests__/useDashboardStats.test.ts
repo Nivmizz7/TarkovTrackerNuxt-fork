@@ -92,15 +92,23 @@ const createTarkovStore = (
       ((objectiveId: string) => completedObjectives.has(objectiveId)),
     getPMCFaction: () => 'USEC',
     getGameEdition: () => 1,
+    getPrestigeLevel: () => 0,
     getObjectiveCount: () => 0,
   };
 };
+const createPreferencesStore = () => ({
+  getHideNonKappaTasks: false,
+  getShowLightkeeperTasks: true,
+  getShowNonSpecialTasks: true,
+});
+type PreferencesStoreMock = ReturnType<typeof createPreferencesStore>;
 interface SetupOverrides {
   tasks?: Task[];
   objectives?: TaskObjective[];
   traders?: Trader[];
   progressStore?: ReturnType<typeof createProgressStore>;
   tarkovStore?: ReturnType<typeof createTarkovStore>;
+  preferencesStore?: PreferencesStoreMock;
 }
 const setup = async (overrides: SetupOverrides = {}) => {
   const tasks = overrides.tasks ?? createTasks();
@@ -115,9 +123,12 @@ const setup = async (overrides: SetupOverrides = {}) => {
     traders,
     sortedTraders: traders,
     editions: [],
+    prestigeTaskMap: new Map<string, number>(),
+    getExcludedTaskIdsForEdition: () => new Set<string>(),
   };
   const progressStore = overrides.progressStore ?? createProgressStore();
   const tarkovStore = overrides.tarkovStore ?? createTarkovStore();
+  const preferencesStore = overrides.preferencesStore ?? createPreferencesStore();
   vi.resetModules();
   vi.doMock('@/stores/useMetadata', () => ({
     useMetadataStore: () => metadataStore,
@@ -127,6 +138,9 @@ const setup = async (overrides: SetupOverrides = {}) => {
   }));
   vi.doMock('@/stores/useTarkov', () => ({
     useTarkovStore: () => tarkovStore,
+  }));
+  vi.doMock('@/stores/usePreferences', () => ({
+    usePreferencesStore: () => preferencesStore,
   }));
   const { useDashboardStats } = await import('@/composables/useDashboardStats');
   return {
@@ -156,7 +170,7 @@ describe('useDashboardStats', () => {
         imageLink: undefined,
         totalTasks: 1,
         completedTasks: 1,
-        percentage: '100.0',
+        percentage: 100,
       },
       {
         id: 'trader-2',
@@ -164,7 +178,7 @@ describe('useDashboardStats', () => {
         imageLink: undefined,
         totalTasks: 1,
         completedTasks: 1,
-        percentage: '100.0',
+        percentage: 100,
       },
     ]);
   });

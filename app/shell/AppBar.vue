@@ -1,99 +1,123 @@
 <template>
   <header
-    class="from-surface-800/95 to-surface-950/95 border-primary-800/60 fixed top-0 right-0 z-40 h-16 border-b bg-linear-to-tr shadow-[0_1px_0_rgba(0,0,0,0.4)] backdrop-blur-sm"
+    class="border-surface-700/50 bg-surface-900 fixed top-0 right-0 z-40 h-11 border-b shadow-[0_1px_0_rgba(0,0,0,0.4)]"
   >
-    <div class="flex h-full items-center gap-1 px-2 sm:gap-3 sm:px-3">
+    <div class="flex h-full items-center gap-1 px-2 sm:gap-2 sm:px-3">
       <!-- Left: Toggle Button -->
-      <AppTooltip text="Toggle Menu Drawer">
+      <AppTooltip :text="t('navigation_drawer.toggle', 'Toggle Menu Drawer')">
         <UButton
-          :icon="navBarIcon"
+          :icon="NAV_BAR_ICON"
           variant="ghost"
           color="neutral"
-          size="xl"
-          aria-label="Toggle Menu Drawer"
+          size="md"
+          :aria-label="t('navigation_drawer.toggle', 'Toggle Menu Drawer')"
+          :class="{ 'rotate-180': isDrawerCollapsed }"
+          class="transition-transform duration-200"
           @click.stop="changeNavigationDrawer"
         />
       </AppTooltip>
       <!-- Center: Page Title -->
-      <span class="min-w-0 flex-1 truncate text-xl font-bold text-white">
+      <span class="min-w-0 flex-1 truncate text-base font-semibold text-white">
         {{ pageTitle }}
       </span>
       <!-- Right: Status Icons & Settings -->
       <div class="ml-auto flex items-center gap-1 sm:gap-2">
-        <AppTooltip v-if="dataError" text="Error Loading Tarkov Data">
+        <AppTooltip
+          v-if="dataError"
+          :text="t('app_bar.error_loading', 'Error Loading Tarkov Data')"
+        >
           <span class="inline-flex rounded">
-            <UIcon name="i-mdi-database-alert" class="text-error-500 h-6 w-6" />
+            <UIcon name="i-mdi-database-alert" class="text-error-500 h-5 w-5" />
           </span>
         </AppTooltip>
-        <AppTooltip v-if="dataLoading || hideoutLoading" text="Loading Tarkov Data">
+        <AppTooltip
+          v-if="dataLoading || hideoutLoading"
+          :text="t('app_bar.loading', 'Loading Tarkov Data')"
+        >
           <span class="inline-flex rounded">
-            <UIcon name="i-heroicons-arrow-path" class="text-primary-500 h-6 w-6 animate-spin" />
+            <UIcon name="i-heroicons-arrow-path" class="text-primary-500 h-5 w-5 animate-spin" />
           </span>
         </AppTooltip>
-        <!-- Game mode quick toggle -->
-        <div
-          class="bg-surface-900/90 flex items-center overflow-hidden rounded-md border border-white/15 ring-1 ring-white/10"
-          role="group"
-          aria-label="Toggle game mode"
+        <!-- Community Links -->
+        <AppTooltip :text="t('footer.call_to_action.discord')">
+          <a
+            href="https://discord.gg/M8nBgA2sT6"
+            target="_blank"
+            rel="noopener noreferrer"
+            :aria-label="t('footer.call_to_action.discord', 'Discord')"
+            class="hover:bg-surface-700 flex h-7 w-7 items-center justify-center rounded transition-colors"
+          >
+            <DiscordIcon class="text-discord hover:text-white" />
+          </a>
+        </AppTooltip>
+        <AppTooltip :text="t('footer.call_to_action.github')">
+          <a
+            href="https://github.com/tarkovtracker-org/TarkovTracker"
+            target="_blank"
+            rel="noopener noreferrer"
+            :aria-label="t('footer.call_to_action.github', 'GitHub')"
+            class="hover:bg-surface-700 flex h-7 w-7 items-center justify-center rounded transition-colors"
+          >
+            <UIcon name="i-mdi-github" class="text-surface-300 h-4.5 w-4.5 hover:text-white" />
+          </a>
+        </AppTooltip>
+        <label
+          class="bg-surface-800/60 border-surface-700 flex items-center gap-1 rounded border px-2"
         >
+          <UIcon name="i-mdi-translate" class="text-surface-300 h-4 w-4" />
+          <span class="sr-only">{{ t('settings.locale') }}</span>
+          <select
+            v-model="selectedLocale"
+            :aria-label="t('settings.locale')"
+            class="text-surface-200 bg-transparent py-1 text-xs font-medium outline-none"
+          >
+            <option
+              v-for="item in localeItems"
+              :key="item.value"
+              :value="item.value"
+              class="bg-surface-900 text-surface-100"
+            >
+              {{ item.label }}
+            </option>
+          </select>
+        </label>
+        <!-- Account section -->
+        <template v-if="isLoggedIn">
+          <div class="bg-surface-700/50 mx-1 h-5 w-px" />
           <button
             type="button"
-            class="focus:ring-pvp-400 inline-flex items-center gap-0.5 px-1.5 py-1 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
-            :class="pvpClasses"
-            :disabled="dataLoading"
-            @click="switchMode(GAME_MODES.PVP)"
+            class="bg-surface-800/50 border-surface-600 hover:bg-surface-800 flex items-center gap-2 rounded-md border px-2.5 py-1.5 transition-colors"
+            :aria-label="t('navigation_drawer.logout', 'Logout')"
+            @click="logout"
           >
-            <UIcon name="i-mdi-sword-cross" class="hidden h-4 w-4 sm:block md:h-5 md:w-5" />
-            PvP
+            <img
+              :src="avatarSrc"
+              :alt="t('app_bar.user_avatar_alt', 'User avatar')"
+              class="h-4 w-4 rounded-full"
+              loading="lazy"
+            />
+            <span class="text-surface-200 hidden text-sm font-medium sm:inline">
+              {{ userDisplayName }}
+            </span>
+            <UIcon name="i-mdi-logout" class="text-surface-400 h-3.5 w-3.5" />
           </button>
-          <div class="h-6 w-px bg-white/15 sm:h-8" aria-hidden="true" />
-          <button
-            type="button"
-            class="focus:ring-pve-400 inline-flex items-center gap-0.5 px-1.5 py-1 text-[10px] font-semibold tracking-wide uppercase transition-colors focus:z-10 focus:ring-2 focus:outline-none sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs md:px-3.5 md:text-sm lg:px-4 lg:text-[15px]"
-            :class="pveClasses"
-            :disabled="dataLoading"
-            @click="switchMode(GAME_MODES.PVE)"
+        </template>
+        <template v-else>
+          <div class="bg-surface-700/50 mx-1 h-5 w-px" />
+          <NuxtLink
+            to="/login"
+            class="hover:bg-surface-700 hidden rounded px-2 py-1 text-sm text-white sm:inline-flex"
           >
-            <UIcon name="i-mdi-account-group" class="hidden h-4 w-4 sm:block md:h-5 md:w-5" />
-            PvE
-          </button>
-        </div>
-        <!-- Language selector -->
-        <USelectMenu
-          v-model="selectedLocale"
-          :items="localeItems"
-          value-key="value"
-          :popper="{ placement: 'bottom-end', strategy: 'fixed' }"
-          :ui="{
-            base: 'bg-surface-900/90 border border-white/15 ring-1 ring-white/10 rounded-md px-2 py-1.5 cursor-pointer',
-          }"
-          :ui-menu="{
-            container: 'z-[9999]',
-            width: 'w-auto min-w-32',
-            background: 'bg-surface-900',
-            shadow: 'shadow-xl',
-            rounded: 'rounded-lg',
-            ring: 'ring-1 ring-white/10',
-            padding: 'p-1',
-            option: {
-              base: 'px-3 py-2 text-sm cursor-pointer transition-colors rounded',
-              inactive: 'text-surface-200 hover:bg-surface-800 hover:text-white',
-              active: 'bg-surface-800 text-white',
-              selected: 'bg-primary-500/10 text-primary-100 ring-1 ring-primary-500',
-            },
-          }"
-          class="h-auto min-w-0"
-        >
-          <template #leading>
-            <UIcon name="i-mdi-translate" class="text-surface-300 h-4 w-4" />
-          </template>
-          <template #default>
-            <span class="text-xs font-medium text-white/80 uppercase">{{ locale }}</span>
-          </template>
-          <template #trailing>
-            <UIcon name="i-mdi-chevron-down" class="text-surface-400 h-3 w-3" />
-          </template>
-        </USelectMenu>
+            {{ t('navigation_drawer.login', 'Login') }}
+          </NuxtLink>
+          <NuxtLink
+            to="/login"
+            class="hover:bg-surface-700 rounded p-1 text-white sm:hidden"
+            :aria-label="t('navigation_drawer.login', 'Login')"
+          >
+            <UIcon name="i-mdi-fingerprint" class="h-4 w-4" />
+          </NuxtLink>
+        </template>
       </div>
     </div>
   </header>
@@ -101,63 +125,65 @@
 <script setup lang="ts">
   import { useWindowSize } from '@vueuse/core';
   import { storeToRefs } from 'pinia';
-  import { computed, onMounted, onUnmounted, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useRoute } from 'vue-router';
   import { useAppStore } from '@/stores/useApp';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
-  import { GAME_MODES, type GameMode } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   const { t } = useI18n({ useScope: 'global' });
   const appStore = useAppStore();
-  const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
+  const tarkovStore = useTarkovStore();
   const route = useRoute();
-  const { width } = useWindowSize();
-  const mdAndDown = computed(() => width.value < 960); // md breakpoint at 960px
-  const navBarIcon = computed(() => {
-    if (mdAndDown.value) {
-      return appStore.mobileDrawerExpanded ? 'i-mdi-menu-open' : 'i-mdi-menu';
+  const { $supabase } = useNuxtApp();
+  const toast = useToast();
+  const isLoggedIn = computed(() => $supabase.user?.loggedIn ?? false);
+  const avatarSrc = computed(() => {
+    return preferencesStore.getStreamerMode || !$supabase.user.photoURL
+      ? '/img/default-avatar.svg'
+      : $supabase.user.photoURL;
+  });
+  const userDisplayName = computed(() => {
+    const fallbackLabel = t('app_bar.user_label', 'User');
+    if (preferencesStore.getStreamerMode) return fallbackLabel;
+    const displayName = tarkovStore.getDisplayName();
+    if (displayName && displayName.trim() !== '') {
+      return displayName;
     }
-    return appStore.drawerRail ? 'i-mdi-menu' : 'i-mdi-menu-open';
+    return $supabase.user.displayName || $supabase.user.username || fallbackLabel;
   });
-  const currentGameMode = computed(() => {
-    return tarkovStore.getCurrentGameMode();
-  });
-  const pveClasses = computed(() =>
-    currentGameMode.value === GAME_MODES.PVE
-      ? 'bg-pve-500 hover:bg-pve-600 text-white shadow-[0_0_0_4px_rgba(0,0,0,0.45)] ring-2 ring-white/60 ring-inset outline outline-2 outline-white/40'
-      : 'bg-pve-950/80 text-pve-400 hover:bg-pve-900/90'
-  );
-  const pvpClasses = computed(() =>
-    currentGameMode.value === GAME_MODES.PVP
-      ? 'bg-pvp-800 hover:bg-pvp-700 text-pvp-100 shadow-[0_0_0_4px_rgba(0,0,0,0.45)] ring-2 ring-white/60 ring-inset outline outline-2 outline-white/40'
-      : 'bg-pvp-950/80 text-pvp-400 hover:bg-pvp-900/90'
-  );
-  async function switchMode(mode: GameMode) {
-    if (mode !== currentGameMode.value && !dataLoading.value) {
-      dataLoading.value = true;
-      try {
-        await tarkovStore.switchGameMode(mode);
-        metadataStore.updateLanguageAndGameMode();
-        await metadataStore.fetchAllData();
-        dataError.value = false;
-      } catch (err) {
-        logger.error('[AppBar] Error switching mode:', err);
-        dataError.value = true;
-      } finally {
-        dataLoading.value = false;
-      }
+  async function logout() {
+    try {
+      await $supabase.signOut();
+    } catch (error) {
+      logger.error('[AppBar] Sign out failed:', error);
+      toast.add({
+        title: t('app_bar.logout_failed'),
+        color: 'error',
+      });
     }
   }
+  const { width } = useWindowSize();
+  const mdAndDown = computed(() => width.value < 960);
+  const isDrawerCollapsed = computed(() => {
+    if (mdAndDown.value) {
+      return !appStore.mobileDrawerExpanded;
+    }
+    return appStore.drawerRail;
+  });
+  const NAV_BAR_ICON = 'i-mdi-menu-open';
   const { loading: dataLoading, hideoutLoading } = storeToRefs(metadataStore);
   const dataError = ref(false);
-  const pageTitle = computed(() =>
-    t(`page.${String(route.name || 'index').replace('-', '_')}.title`)
-  );
+  const pageTitleKey = computed(() => {
+    const name = String(route.name || 'index');
+    if (name === 'needed-items' || name === 'neededitems') {
+      return 'page.needed_items.title';
+    }
+    return `page.${name.replaceAll('-', '_')}.title`;
+  });
+  const pageTitle = computed(() => t(pageTitleKey.value));
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape' && appStore.mobileDrawerExpanded && mdAndDown.value) {
       event.preventDefault();
@@ -178,31 +204,26 @@
     }
   }
   const { locale, availableLocales } = useI18n({ useScope: 'global' });
+  const isAvailableLocale = (value: string): value is typeof locale.value =>
+    (availableLocales as readonly string[]).includes(value);
   const localeItems = computed(() => {
-    const languageNames = new Intl.DisplayNames([locale.value], { type: 'language' });
     return availableLocales.map((localeCode) => ({
-      label: languageNames.of(localeCode) || localeCode.toUpperCase(),
+      label: localeCode.toUpperCase(),
       value: localeCode,
     }));
   });
   const selectedLocale = computed({
     get() {
-      // Return the current locale string directly
       return locale.value;
     },
-    set(newValue: string | { value: string }) {
+    set(newValue: string) {
       if (!newValue) return;
-      // Handle both string and object values
-      const newLocale = typeof newValue === 'string' ? newValue : newValue.value;
-      if (newLocale === locale.value) return;
-      // Set the i18n locale (this updates the UI translations)
+      const newLocale = newValue;
+      if (!isAvailableLocale(newLocale) || newLocale === locale.value) return;
       locale.value = newLocale;
-      // Persist in preferences
       preferencesStore.localeOverride = newLocale;
       logger.debug('[AppBar] Setting locale to:', newLocale);
-      // Update metadata store and refetch data with new language
       metadataStore.updateLanguageAndGameMode(newLocale);
-      // Use cached data if available (forceRefresh = false)
       metadataStore
         .fetchAllData(false)
         .then(() => {

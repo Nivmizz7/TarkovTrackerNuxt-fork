@@ -9,11 +9,12 @@
  *
  * @module composables/useSkillCalculation
  */
-import { computed } from 'vue';
 import { useMetadataStore } from '@/stores/useMetadata';
+import { usePreferencesStore } from '@/stores/usePreferences';
 import { useTarkovStore } from '@/stores/useTarkov';
-import type { Skill, SkillRequirement, TaskObjective } from '@/types/tarkov';
+import { MAX_SKILL_LEVEL, sortSkillsByGameOrder } from '@/utils/constants';
 import { logger } from '@/utils/logger';
+import type { Skill, SkillRequirement, TaskObjective } from '@/types/tarkov';
 /**
  * Extended TaskObjective with GraphQL __typename discriminator
  */
@@ -38,6 +39,7 @@ function isTaskObjectiveSkill(
   return objective.__typename === 'TaskObjectiveSkill';
 }
 export interface SkillMetadata {
+  id?: string;
   name: string;
   requiredByTasks: string[];
   requiredLevels: number[];
@@ -47,6 +49,7 @@ export interface SkillMetadata {
 export function useSkillCalculation() {
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
+  const preferencesStore = usePreferencesStore();
   const isTaskSuccessful = (taskId: string) =>
     tarkovStore.isTaskComplete(taskId) && !tarkovStore.isTaskFailed(taskId);
   // Computed: Skills from completed quest rewards
@@ -99,19 +102,19 @@ export function useSkillCalculation() {
   };
   // Action: Set total skill level (calculates and stores offset)
   // This mirrors the XP pattern - user enters their actual game value
-  const setTotalSkillLevel = (skillName: string, totalLevel: number) => {
+  const setTotalSkillLevel = (skillName: string, totalLevel: number): boolean => {
     // Validation: Ensure totalLevel is a finite number and >= 0
-    if (typeof totalLevel !== 'number' || !Number.isFinite(totalLevel) || totalLevel < 0) {
-      logger.warn(
+    if (typeof totalLevel !== 'number' || !Number.isFinite(totalLevel)) {
+      logger.error(
         `[useSkillCalculation] Invalid totalLevel "${totalLevel}" for skill "${skillName}"`
       );
-      return;
+      return false;
     }
-    // Coerce to integer as skill levels in Tarkov are whole numbers (0-51)
-    const validatedLevel = Math.floor(totalLevel);
+    const validatedLevel = Math.min(MAX_SKILL_LEVEL, Math.max(0, Math.floor(totalLevel)));
     const questLevel = calculatedQuestSkills.value[skillName] || 0;
     const offset = validatedLevel - questLevel;
     tarkovStore.setSkillOffset(skillName, offset);
+    return true;
   };
   // Action: Reset skill offset to 0
   const resetSkillOffset = (skillName: string) => {
@@ -128,10 +131,12 @@ export function useSkillCalculation() {
         const objectiveWithType = objective as TaskObjectiveWithTypename;
         if (isTaskObjectiveSkill(objectiveWithType) && objectiveWithType.skillLevel?.name) {
           const skillName = objectiveWithType.skillLevel.name;
+          const skillId = objectiveWithType.skillLevel.skill?.id;
           const requiredLevel = objectiveWithType.skillLevel.level || 0;
           const imageLink = objectiveWithType.skillLevel?.skill?.imageLink;
           if (!skillsMap.has(skillName)) {
             skillsMap.set(skillName, {
+              id: skillId,
               name: skillName,
               requiredByTasks: [],
               requiredLevels: [],
@@ -139,11 +144,12 @@ export function useSkillCalculation() {
               imageLink,
             });
           } else if (imageLink && !skillsMap.get(skillName)!.imageLink) {
-            // Update imageLink if we didn't have it before
             skillsMap.get(skillName)!.imageLink = imageLink;
           }
+          if (!skillsMap.get(skillName)!.id && skillId) {
+            skillsMap.get(skillName)!.id = skillId;
+          }
           skillsMap.get(skillName)!.requiredByTasks.push(taskName);
-          // Track unique required levels
           if (
             requiredLevel > 0 &&
             !skillsMap.get(skillName)!.requiredLevels.includes(requiredLevel)
@@ -152,14 +158,14 @@ export function useSkillCalculation() {
           }
         }
       });
-      // Extract skills from finish rewards
       task.finishRewards?.skillLevelReward?.forEach((reward) => {
-        // Skip null/undefined rewards (sparse array data from API)
         if (reward?.name) {
           const skillName = reward.name;
+          const skillId = reward.skill?.id;
           const imageLink = reward.skill?.imageLink;
           if (!skillsMap.has(skillName)) {
             skillsMap.set(skillName, {
+              id: skillId,
               name: skillName,
               requiredByTasks: [],
               requiredLevels: [],
@@ -167,8 +173,10 @@ export function useSkillCalculation() {
               imageLink,
             });
           } else if (imageLink && !skillsMap.get(skillName)!.imageLink) {
-            // Update imageLink if we didn't have it before
             skillsMap.get(skillName)!.imageLink = imageLink;
+          }
+          if (!skillsMap.get(skillName)!.id && skillId) {
+            skillsMap.get(skillName)!.id = skillId;
           }
           skillsMap.get(skillName)!.rewardedByTasks.push(taskName);
         }
@@ -178,8 +186,12 @@ export function useSkillCalculation() {
     skillsMap.forEach((skill) => {
       skill.requiredLevels.sort((a, b) => a - b);
     });
-    // Sort: required skills first, then alphabetically within each group
-    return Array.from(skillsMap.values()).sort((a, b) => {
+    const skills = Array.from(skillsMap.values());
+    const sortMode = preferencesStore.getSkillSortMode;
+    if (sortMode === 'ingame') {
+      return sortSkillsByGameOrder(skills);
+    }
+    return skills.sort((a, b) => {
       const aRequired = a.requiredByTasks.length > 0;
       const bRequired = b.requiredByTasks.length > 0;
       if (aRequired !== bRequired) return bRequired ? 1 : -1;

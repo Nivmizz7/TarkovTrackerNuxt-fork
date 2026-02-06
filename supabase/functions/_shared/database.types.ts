@@ -292,22 +292,62 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string | null
+          dashboard_notice_dismissed: boolean
+          enable_holiday_effects: boolean | null
           enable_manual_task_fail: boolean | null
+          hide_completed_map_objectives: boolean | null
+          hide_completed_task_objectives: boolean | null
           hide_global_tasks: boolean | null
           hide_non_kappa_tasks: boolean | null
+          hideout_collapse_completed: boolean
           hideout_primary_view: string | null
+          hideout_require_skill_levels: boolean
+          hideout_require_station_levels: boolean
+          hideout_require_trader_loyalty: boolean
+          hideout_sort_ready_first: boolean
           items_hide_non_fir: boolean | null
           items_team_hide_all: boolean | null
           items_team_hide_hideout: boolean | null
           items_team_hide_non_fir: boolean | null
           locale_override: string | null
           map_team_hide_all: boolean | null
+          map_zoom_speed: number | null
+          needed_items_card_style: string | null
+          needed_items_fir_filter: string | null
+          needed_items_group_by_item: boolean | null
+          needed_items_hide_non_fir_special_equipment: boolean | null
+          needed_items_hide_owned: boolean
+          needed_items_kappa_only: boolean | null
+          needed_items_sort_by: string | null
+          needed_items_sort_direction: string | null
+          needed_items_view_mode: string | null
           needed_type_view: string | null
           neededitems_style: string | null
+          pinned_task_ids: Json | null
+          show_all_filter: boolean | null
+          show_available_filter: boolean | null
+          show_completed_filter: boolean | null
+          show_experience_rewards: boolean | null
+          show_failed_filter: boolean | null
+          show_lightkeeper_tasks: boolean | null
+          show_locked_filter: boolean | null
+          show_map_extracts: boolean | null
+          show_next_quests: boolean | null
+          show_non_special_tasks: boolean | null
+          show_not_required_labels: boolean | null
+          show_previous_quests: boolean | null
+          show_required_labels: boolean | null
+          show_task_ids: boolean | null
+          skill_sort_mode: string | null
           streamer_mode: boolean | null
+          task_card_density: string | null
+          task_filter_presets: Json | null
           task_map_view: string | null
           task_primary_view: string | null
           task_secondary_view: string | null
+          task_shared_by_all_only: boolean | null
+          task_sort_direction: string | null
+          task_sort_mode: string | null
           task_team_hide_all: boolean | null
           task_trader_view: string | null
           task_user_view: string | null
@@ -318,22 +358,62 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          dashboard_notice_dismissed?: boolean
+          enable_holiday_effects?: boolean | null
           enable_manual_task_fail?: boolean | null
+          hide_completed_map_objectives?: boolean | null
+          hide_completed_task_objectives?: boolean | null
           hide_global_tasks?: boolean | null
           hide_non_kappa_tasks?: boolean | null
+          hideout_collapse_completed?: boolean
           hideout_primary_view?: string | null
+          hideout_require_skill_levels?: boolean
+          hideout_require_station_levels?: boolean
+          hideout_require_trader_loyalty?: boolean
+          hideout_sort_ready_first?: boolean
           items_hide_non_fir?: boolean | null
           items_team_hide_all?: boolean | null
           items_team_hide_hideout?: boolean | null
           items_team_hide_non_fir?: boolean | null
           locale_override?: string | null
           map_team_hide_all?: boolean | null
+          map_zoom_speed?: number | null
+          needed_items_card_style?: string | null
+          needed_items_fir_filter?: string | null
+          needed_items_group_by_item?: boolean | null
+          needed_items_hide_non_fir_special_equipment?: boolean | null
+          needed_items_hide_owned?: boolean
+          needed_items_kappa_only?: boolean | null
+          needed_items_sort_by?: string | null
+          needed_items_sort_direction?: string | null
+          needed_items_view_mode?: string | null
           needed_type_view?: string | null
           neededitems_style?: string | null
+          pinned_task_ids?: Json | null
+          show_all_filter?: boolean | null
+          show_available_filter?: boolean | null
+          show_completed_filter?: boolean | null
+          show_experience_rewards?: boolean | null
+          show_failed_filter?: boolean | null
+          show_lightkeeper_tasks?: boolean | null
+          show_locked_filter?: boolean | null
+          show_map_extracts?: boolean | null
+          show_next_quests?: boolean | null
+          show_non_special_tasks?: boolean | null
+          show_not_required_labels?: boolean | null
+          show_previous_quests?: boolean | null
+          show_required_labels?: boolean | null
+          show_task_ids?: boolean | null
+          skill_sort_mode?: string | null
           streamer_mode?: boolean | null
+          task_card_density?: string | null
+          task_filter_presets?: Json | null
           task_map_view?: string | null
           task_primary_view?: string | null
           task_secondary_view?: string | null
+          task_shared_by_all_only?: boolean | null
+          task_sort_direction?: string | null
+          task_sort_mode?: string | null
           task_team_hide_all?: boolean | null
           task_trader_view?: string | null
           task_user_view?: string | null
@@ -344,22 +424,62 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          dashboard_notice_dismissed?: boolean
+          enable_holiday_effects?: boolean | null
           enable_manual_task_fail?: boolean | null
+          hide_completed_map_objectives?: boolean | null
+          hide_completed_task_objectives?: boolean | null
           hide_global_tasks?: boolean | null
           hide_non_kappa_tasks?: boolean | null
+          hideout_collapse_completed?: boolean
           hideout_primary_view?: string | null
+          hideout_require_skill_levels?: boolean
+          hideout_require_station_levels?: boolean
+          hideout_require_trader_loyalty?: boolean
+          hideout_sort_ready_first?: boolean
           items_hide_non_fir?: boolean | null
           items_team_hide_all?: boolean | null
           items_team_hide_hideout?: boolean | null
           items_team_hide_non_fir?: boolean | null
           locale_override?: string | null
           map_team_hide_all?: boolean | null
+          map_zoom_speed?: number | null
+          needed_items_card_style?: string | null
+          needed_items_fir_filter?: string | null
+          needed_items_group_by_item?: boolean | null
+          needed_items_hide_non_fir_special_equipment?: boolean | null
+          needed_items_hide_owned?: boolean
+          needed_items_kappa_only?: boolean | null
+          needed_items_sort_by?: string | null
+          needed_items_sort_direction?: string | null
+          needed_items_view_mode?: string | null
           needed_type_view?: string | null
           neededitems_style?: string | null
+          pinned_task_ids?: Json | null
+          show_all_filter?: boolean | null
+          show_available_filter?: boolean | null
+          show_completed_filter?: boolean | null
+          show_experience_rewards?: boolean | null
+          show_failed_filter?: boolean | null
+          show_lightkeeper_tasks?: boolean | null
+          show_locked_filter?: boolean | null
+          show_map_extracts?: boolean | null
+          show_next_quests?: boolean | null
+          show_non_special_tasks?: boolean | null
+          show_not_required_labels?: boolean | null
+          show_previous_quests?: boolean | null
+          show_required_labels?: boolean | null
+          show_task_ids?: boolean | null
+          skill_sort_mode?: string | null
           streamer_mode?: boolean | null
+          task_card_density?: string | null
+          task_filter_presets?: Json | null
           task_map_view?: string | null
           task_primary_view?: string | null
           task_secondary_view?: string | null
+          task_shared_by_all_only?: boolean | null
+          task_sort_direction?: string | null
+          task_sort_mode?: string | null
           task_team_hide_all?: boolean | null
           task_trader_view?: string | null
           task_user_view?: string | null
@@ -447,14 +567,68 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      team_member_summary: {
+        Row: {
+          current_game_mode: string | null
+          pve_display_name: string | null
+          pve_level: number | null
+          pve_tasks_completed: number | null
+          pvp_display_name: string | null
+          pvp_level: number | null
+          pvp_tasks_completed: number | null
+          user_id: string | null
+        }
+        Insert: {
+          current_game_mode?: string | null
+          pve_display_name?: never
+          pve_level?: never
+          pve_tasks_completed?: never
+          pvp_display_name?: never
+          pvp_level?: never
+          pvp_tasks_completed?: never
+          user_id?: string | null
+        }
+        Update: {
+          current_game_mode?: string | null
+          pve_display_name?: never
+          pve_level?: never
+          pve_tasks_completed?: never
+          pvp_display_name?: never
+          pvp_level?: never
+          pvp_tasks_completed?: never
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      cleanup_old_deletion_attempts: {
+        Args: { retention_days?: number }
+        Returns: {
+          deleted_count: number
+          oldest_remaining: string
+        }[]
+      }
+      increment_token_usage: {
+        Args: { p_token_id: string }
+        Returns: undefined
+      }
       transfer_team_ownership: {
         Args: {
           p_new_owner_id: string
           p_old_owner_id: string
           p_team_id: string
+        }
+        Returns: undefined
+      }
+      update_task_completion: {
+        Args: {
+          p_complete: boolean
+          p_failed: boolean
+          p_game_mode: string
+          p_task_id: string
+          p_timestamp: number
+          p_user_id: string
         }
         Returns: undefined
       }

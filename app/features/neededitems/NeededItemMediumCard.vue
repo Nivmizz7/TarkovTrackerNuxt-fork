@@ -18,14 +18,31 @@
     <div v-if="item" class="flex h-12 shrink-0 items-center justify-center px-2 pt-2">
       <div class="line-clamp-2 text-center text-sm leading-tight">
         {{ item.name }}
-        <AppTooltip v-if="props.need.foundInRaid" text="Found in Raid required">
+        <AppTooltip
+          v-if="props.need.foundInRaid"
+          :text="$t('needed_items.fir_required', 'Found in Raid required')"
+        >
           <UIcon
             name="i-mdi-checkbox-marked-circle-outline"
             class="ml-0.5 inline-block h-3.5 w-3.5"
           />
         </AppTooltip>
-        <AppTooltip v-if="isKappaRequired" :text="$t('task.kappa_req', 'Required for Kappa quest')">
-          <UIcon name="i-mdi-trophy" class="text-warning-400 ml-0.5 inline-block h-3.5 w-3.5" />
+        <AppTooltip
+          v-if="isKappaRequired"
+          :text="$t('needed_items.task_kappa_req', 'Required for Kappa quest')"
+        >
+          <UIcon name="i-mdi-trophy" class="text-kappa ml-0.5 inline-block h-3.5 w-3.5" />
+        </AppTooltip>
+        <AppTooltip
+          v-if="isLightkeeperRequired"
+          :text="
+            $t(
+              'page.tasks.questcard.lightkeeper_tooltip',
+              'This quest is required to unlock the Lightkeeper trader'
+            )
+          "
+        >
+          <UIcon name="i-mdi-lighthouse" class="text-lightkeeper ml-0.5 inline-block h-3.5 w-3.5" />
         </AppTooltip>
         <AppTooltip v-if="isCraftable" :text="craftableTitle">
           <button
@@ -49,13 +66,22 @@
       <template v-if="props.need.needType == 'taskObjective'">
         <div class="line-clamp-2 text-center">
           <task-link v-if="relatedTask" :task="relatedTask" />
-          <span v-else class="text-sm text-gray-300">Unknown task</span>
+          <span v-else class="text-surface-300 text-sm">
+            {{ $t('needed_items.unknown_task', 'Unknown Task') }}
+          </span>
         </div>
       </template>
       <template v-else-if="props.need.needType == 'hideoutModule'">
         <div class="flex items-center justify-center text-center">
-          <station-link v-if="relatedStation" :station="relatedStation" class="justify-center" />
-          <span v-else class="text-sm text-gray-300">Unknown station</span>
+          <station-link
+            v-if="relatedStation"
+            :station="relatedStation"
+            :module-id="props.need.hideoutModule.id"
+            class="justify-center"
+          />
+          <span v-else class="text-surface-300 text-sm">
+            {{ $t('needed_items.unknown_station', 'Unknown Station') }}
+          </span>
           <span class="ml-1 text-sm">{{ props.need.hideoutModule.level }}</span>
         </div>
       </template>
@@ -94,24 +120,21 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, defineAsyncComponent, inject } from 'vue';
+  import ItemCountControls from '@/features/neededitems/ItemCountControls.vue';
   import {
     createDefaultNeededItemContext,
     neededItemKey,
   } from '@/features/neededitems/neededitem-keys';
+  import RequirementInfo from '@/features/neededitems/RequirementInfo.vue';
+  import TeamNeedsDisplay from '@/features/neededitems/TeamNeedsDisplay.vue';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
-  import ItemCountControls from './ItemCountControls.vue';
-  import RequirementInfo from './RequirementInfo.vue';
-  import TeamNeedsDisplay from './TeamNeedsDisplay.vue';
+  import type { Need } from '@/types/tarkov';
   const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink.vue'));
   const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink.vue'));
-  const props = defineProps({
-    need: {
-      type: Object,
-      required: true,
-    },
-  });
+  const props = defineProps<{
+    need: Need;
+  }>();
   defineEmits(['increaseCount', 'decreaseCount', 'toggleCount', 'setCount']);
   const tarkovStore = useTarkovStore();
   const formatNumber = useLocaleNumberFormatter();
@@ -127,6 +150,7 @@
     currentCount,
     isCraftable,
     isKappaRequired,
+    isLightkeeperRequired,
     levelRequired,
     item,
     teamNeeds,
@@ -136,7 +160,7 @@
     return {
       'bg-gradient-to-t from-complete to-surface':
         selfCompletedNeed.value || currentCount.value >= neededCount.value,
-      'bg-gray-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
+      'bg-surface-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
       'shadow-md': true,
     };
   });

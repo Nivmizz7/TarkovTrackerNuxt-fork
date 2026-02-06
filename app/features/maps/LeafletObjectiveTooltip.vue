@@ -8,8 +8,8 @@
         <button
           type="button"
           class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-200 hover:bg-white/10"
-          :aria-label="t('maps.tooltip.goToInTaskList')"
-          :title="t('maps.tooltip.goTo')"
+          :aria-label="translate('maps.tooltip.go_to_in_task_list')"
+          :title="translate('maps.tooltip.go_to')"
           @click.stop="scrollToObjective"
         >
           <UIcon name="i-mdi-arrow-down-circle-outline" class="h-4 w-4" />
@@ -19,7 +19,9 @@
           type="button"
           class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-200"
           :class="isToggleDisabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-white/10'"
-          :aria-label="isComplete ? t('maps.tooltip.uncomplete') : t('maps.tooltip.complete')"
+          :aria-label="
+            isComplete ? translate('maps.tooltip.uncomplete') : translate('maps.tooltip.complete')
+          "
           :aria-pressed="isComplete"
           :disabled="isToggleDisabled"
           @click.stop="toggleObjective"
@@ -32,7 +34,7 @@
         <button
           type="button"
           class="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-300 hover:bg-white/10"
-          :aria-label="t('generic.close_button')"
+          :aria-label="translate('generic.close_button')"
           @click.stop="emitClose"
         >
           <UIcon name="i-mdi-close" class="h-4 w-4" />
@@ -41,7 +43,7 @@
     </div>
     <div class="mt-1">
       <div v-if="!objective" class="text-xs text-gray-400">
-        {{ t('maps.tooltip.objectiveUnavailable') }}
+        {{ translate('maps.tooltip.objective_unavailable') }}
       </div>
       <div v-else class="text-sm text-gray-200">
         <div class="text-gray-300">{{ objective.description }}</div>
@@ -53,8 +55,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, inject } from 'vue';
-  import { useI18n } from 'vue-i18n';
+  import { useI18n, type Composer } from 'vue-i18n';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { logger } from '@/utils/logger';
@@ -64,15 +65,25 @@
       objectiveId: string;
       readOnly?: boolean;
       onClose?: () => void;
+      t?: Composer['t'];
     }>(),
     {
       readOnly: false,
       onClose: undefined,
+      t: undefined,
     }
   );
   const emit = defineEmits<{
     (e: 'close'): void;
   }>();
+  function getI18nT(): Composer['t'] | undefined {
+    try {
+      return useI18n({ useScope: 'global' }).t;
+    } catch {
+      return undefined;
+    }
+  }
+  const i18nT = getI18nT();
   // Inject clearPinnedTask to dismiss the pinned task when tooltip closes
   const clearPinnedTask = inject<(() => void) | null>('clearPinnedTask', null);
   const emitClose = () => {
@@ -81,7 +92,20 @@
     // Clear the pinned task when user closes the tooltip
     clearPinnedTask?.();
   };
-  const { t } = useI18n();
+  const translate: Composer['t'] = ((...args: Parameters<Composer['t']>) => {
+    if (props.t) {
+      return props.t(...args);
+    }
+    if (i18nT) {
+      return i18nT(...args);
+    }
+    const [key] = args;
+    if (typeof key === 'string') {
+      return key;
+    }
+    logger.warn('LeafletObjectiveTooltip: invalid translation key', { key });
+    return '';
+  }) as Composer['t'];
   const router = inject<Router>('router');
   const metadataStore = useMetadataStore();
   const tarkovStore = useTarkovStore();
@@ -93,7 +117,7 @@
     if (!taskId) return null;
     return metadataStore.tasks.find((t) => t.id === taskId) ?? null;
   });
-  const taskName = computed(() => task.value?.name ?? t('maps.tooltip.taskFallback'));
+  const taskName = computed(() => task.value?.name ?? translate('maps.tooltip.task_fallback'));
   const isComplete = computed(() => tarkovStore.isTaskObjectiveComplete(props.objectiveId));
   const requiredCount = computed(() => objective.value?.count ?? 1);
   const currentCount = computed(() => tarkovStore.getObjectiveCount(props.objectiveId));
@@ -101,7 +125,7 @@
   const isParentTaskLocked = computed(() => {
     const taskId = objective.value?.taskId;
     if (!taskId) return false;
-    const isTaskComplete = tarkovStore.isTaskComplete(taskId) && !tarkovStore.isTaskFailed(taskId);
+    const isTaskComplete = tarkovStore.isTaskComplete(taskId);
     const isTaskFailed = tarkovStore.isTaskFailed(taskId);
     return isTaskComplete || isTaskFailed;
   });

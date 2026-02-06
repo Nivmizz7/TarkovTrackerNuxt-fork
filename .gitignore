@@ -19,3 +19,4 @@ logs
 .dev.vars
 graphql.config.js
 schema.graphql
+.lighthouseci*

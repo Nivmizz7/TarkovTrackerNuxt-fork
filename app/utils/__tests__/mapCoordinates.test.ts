@@ -9,9 +9,12 @@ import {
 } from '@/utils/mapCoordinates';
 describe('mapCoordinates', () => {
   it('rotates coordinates when rotation is applied', () => {
+    // Matches tarkov.dev formula: treats (lng, lat) as (x, y)
+    // At 90°: lat = x*sin(90) + y*cos(90) = 0*1 + 10*0 = 0
+    //         lng = x*cos(90) - y*sin(90) = 0*0 - 10*1 = -10
     const rotated = applyRotation({ lat: 10, lng: 0 }, 90);
     expect(rotated.lat).toBeCloseTo(0, 4);
-    expect(rotated.lng).toBeCloseTo(10, 4);
+    expect(rotated.lng).toBeCloseTo(-10, 4);
   });
   describe('getLeafletBounds', () => {
     // Note: getLeafletBounds transforms bounds coordinates from [x, z] input format

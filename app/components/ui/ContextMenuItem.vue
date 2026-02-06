@@ -14,7 +14,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
   interface Props {
     label: string;
     icon?: string;
@@ -37,10 +36,10 @@
     );
   });
   const itemClasses = computed(() => [
-    'flex items-center gap-2 px-4 py-2.5 text-sm text-gray-200 transition-colors duration-150',
+    'flex items-center gap-2 px-4 py-2.5 text-sm text-surface-200 transition-colors duration-150',
     props.disabled
       ? 'cursor-not-allowed opacity-60'
-      : 'cursor-pointer hover:bg-gray-800 focus-visible:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900',
+      : 'cursor-pointer hover:bg-surface-800 focus-visible:bg-surface-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900',
   ]);
   const handleClick = () => {
     if (props.disabled) return;

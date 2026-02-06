@@ -38,7 +38,7 @@ vi.mock('@/composables/useTaskFiltering', () => ({
   useTaskFiltering: () => ({
     visibleTasks: ref([defaultTask]),
     reloadingTasks: ref(false),
-    updateVisibleTasks: vi.fn(() => Promise.resolve()),
+    updateVisibleTasks: vi.fn(),
   }),
 }));
 vi.mock('@/composables/useInfiniteScroll', () => ({
@@ -77,6 +77,8 @@ vi.mock('@/stores/usePreferences', () => ({
     getHideNonKappaTasks: false,
     getShowNonSpecialTasks: true,
     getShowLightkeeperTasks: true,
+    getPinnedTaskIds: [],
+    togglePinnedTask: vi.fn(),
   }),
 }));
 vi.mock('@/stores/useProgress', () => ({

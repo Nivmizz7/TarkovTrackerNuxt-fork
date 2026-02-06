@@ -8,17 +8,24 @@ const levelPriority: Record<LogLevel, number> = {
 function isLogLevel(value: unknown): value is LogLevel {
   return typeof value === 'string' && value in levelPriority;
 }
-type ViteEnv = { VITE_LOG_LEVEL?: string; DEV?: boolean };
-const env: ViteEnv = (import.meta as { env?: ViteEnv }).env ?? {};
-const rawEnvLevel = env.VITE_LOG_LEVEL;
-const normalizedLevel = typeof rawEnvLevel === 'string' ? rawEnvLevel.toLowerCase() : undefined;
-const configuredLevel: LogLevel | undefined = isLogLevel(normalizedLevel)
-  ? normalizedLevel
-  : undefined;
-const isDev =
-  env.DEV === true || (typeof process !== 'undefined' && process.env.NODE_ENV === 'development');
-const LOG_LEVEL: LogLevel = configuredLevel ?? (isDev ? 'info' : 'warn');
-const shouldLog = (level: LogLevel) => levelPriority[level] >= levelPriority[LOG_LEVEL];
+const FALLBACK_LOG_LEVEL: LogLevel =
+  import.meta.env.MODE === 'test' ? 'warn' : import.meta.env.DEV ? 'info' : 'warn';
+let cachedLogLevel: LogLevel | null = null;
+const resolveLogLevel = (): LogLevel => {
+  if (cachedLogLevel !== null) return cachedLogLevel;
+  const nuxtApp = tryUseNuxtApp();
+  const runtimeLevel = nuxtApp?.$config?.public?.VITE_LOG_LEVEL;
+  const envLevel = import.meta.env.VITE_LOG_LEVEL;
+  const runtimeLevelString = typeof runtimeLevel === 'string' ? runtimeLevel.trim() : undefined;
+  const rawLevel = runtimeLevelString ? runtimeLevelString : envLevel;
+  const normalizedLevel = typeof rawLevel === 'string' ? rawLevel.toLowerCase() : undefined;
+  cachedLogLevel = isLogLevel(normalizedLevel) ? normalizedLevel : FALLBACK_LOG_LEVEL;
+  return cachedLogLevel;
+};
+export const resetCachedLogLevel = (): void => {
+  cachedLogLevel = null;
+};
+const shouldLog = (level: LogLevel) => levelPriority[level] >= levelPriority[resolveLogLevel()];
 export const logger = {
   debug: (...args: unknown[]) => {
     if (shouldLog('debug')) console.debug(...args);
@@ -31,14 +38,9 @@ export const logger = {
   },
   error: (...args: unknown[]) => console.error(...args),
 };
-/**
- * Creates a development-only logger function for a specific console method.
- * These always emit when import.meta.env.DEV is true, bypassing LOG_LEVEL.
- * Use these for debugging information that should never appear in production.
- */
 function createDevLogger(method: 'debug' | 'warn' | 'error') {
   return (message: string, ...args: unknown[]): void => {
-    if (isDev) {
+    if (import.meta.env.DEV) {
       console[method](`[DEV] ${message}`, ...args);
     }
   };

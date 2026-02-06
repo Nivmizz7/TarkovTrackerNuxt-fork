@@ -1,4 +1,4 @@
-import type { createLogger } from '~/server/utils/logger';
+import type { createLogger } from '@/server/utils/logger';
 export type Logger = ReturnType<typeof createLogger>;
 export type TarkovGraphqlResponse<T> = {
   data?: T;
@@ -19,6 +19,9 @@ export class GraphQLResponseError extends Error {
     }
     Object.setPrototypeOf(this, GraphQLResponseError.prototype);
   }
+}
+function formatGraphQLErrorMessages(errors: Array<{ message: string }>): string {
+  return errors.map((e) => e.message).join('; ');
 }
 /**
  * Type guard to validate GraphQL response structure
@@ -48,14 +51,20 @@ export function validateGraphQLResponse<T>(
   }
   // Check for missing or invalid data field (covers both missing property and null/undefined value)
   if (response.data === null || response.data === undefined) {
-    throw new GraphQLResponseError('GraphQL response missing or invalid data field');
+    const errors = Array.isArray(response.errors) ? response.errors : [];
+    if (errors.length > 0) {
+      throw new GraphQLResponseError(
+        `GraphQL API error: ${formatGraphQLErrorMessages(errors)}`,
+        errors
+      );
+    }
+    throw new GraphQLResponseError('GraphQL response missing data field');
   }
   const errors = Array.isArray(response.errors) ? response.errors : [];
   const hasErrors = errors.length > 0;
   // Check for GraphQL errors (only throw if not allowing partial data)
   if (!allowPartialData && hasErrors) {
-    const errorMessages = errors.map((e) => e.message).join('; ');
-    throw new GraphQLResponseError(`GraphQL errors: ${errorMessages}`, errors);
+    throw new GraphQLResponseError(`GraphQL errors: ${formatGraphQLErrorMessages(errors)}`, errors);
   }
   // If we have partial data and errors, log them but don't throw
   if (allowPartialData && hasErrors) {

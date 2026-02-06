@@ -3,9 +3,9 @@
   <div class="w-full">
     <div class="flex justify-center">
       <div class="w-full">
-        <USelectMenu
+        <SelectMenuFixed
           v-model="selectedGameMode"
-          :items="gameModeOptions as any"
+          :items="gameModeOptions"
           option-attribute="label"
           value-attribute="value"
           class="w-full"
@@ -25,13 +25,12 @@
               <span>{{ item.label }}</span>
             </div>
           </template>
-        </USelectMenu>
+        </SelectMenuFixed>
       </div>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { GAME_MODE_OPTIONS, type GameMode } from '@/utils/constants';
   const store = useTarkovStore();

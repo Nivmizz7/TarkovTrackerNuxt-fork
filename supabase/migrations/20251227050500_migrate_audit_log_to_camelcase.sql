@@ -21,6 +21,5 @@ WHERE action = 'cache_purge'
     details ? 'purge_type' OR
     details ? 'cloudflare_result_id'
   );
-
 -- Add a comment to track the migration
 COMMENT ON TABLE admin_audit_log IS 'Admin action audit log. Details column uses camelCase naming (migrated 2025-12-27).';

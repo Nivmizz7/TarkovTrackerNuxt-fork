@@ -1,22 +1,14 @@
 <template>
   <div class="space-y-4">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <p class="text-surface-400 max-w-3xl text-sm">
-          <i18n-t keypath="page.settings.card.apitokens.description" tag="span">
-            <template #openAPI_documentation>
-              <a
-                href="https://api.tarkovtracker.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-primary-400 hover:text-primary-300 underline"
-              >
-                {{ t('page.settings.card.apitokens.openAPI_documentation') }}
-              </a>
-            </template>
-          </i18n-t>
-        </p>
-      </div>
+    <div class="flex items-center justify-between gap-3">
+      <a
+        href="https://api.tarkovtracker.org"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-primary-400 hover:text-primary-300 text-sm underline"
+      >
+        {{ t('page.settings.card.apitokens.open_api_documentation') }}
+      </a>
       <UButton
         color="primary"
         variant="soft"
@@ -68,16 +60,12 @@
                   {{ token.note || t('page.settings.card.apitokens.default_note') }}
                 </span>
               </div>
-              <div class="flex flex-wrap gap-2 text-xs">
+              <div class="flex flex-wrap gap-1.5 text-xs">
                 <UBadge
                   :color="token.gameMode === 'pve' ? 'info' : 'warning'"
                   variant="solid"
                   size="xs"
                 >
-                  <UIcon
-                    :name="token.gameMode === 'pve' ? 'i-mdi-account-group' : 'i-mdi-sword-cross'"
-                    class="mr-1 h-3 w-3"
-                  />
                   {{ formatGameMode(token.gameMode) }}
                 </UBadge>
                 <UBadge
@@ -122,6 +110,11 @@
                     size="xs"
                     :padded="false"
                     :disabled="!token.tokenValue"
+                    :aria-label="
+                      visibleTokens.has(token.id)
+                        ? t('page.settings.card.apitokens.hide_token', 'Hide token')
+                        : t('page.settings.card.apitokens.show_token', 'Show token')
+                    "
                     @click="toggleTokenVisibility(token.id)"
                   />
                   <UButton
@@ -131,22 +124,15 @@
                     size="xs"
                     :padded="false"
                     :disabled="!token.tokenValue"
+                    :aria-label="t('page.settings.card.apitokens.copy_token', 'Copy token')"
                     @click="copyTokenValue(token.tokenValue)"
                   />
                 </div>
               </div>
-              <div class="text-surface-400 flex flex-wrap gap-3 text-xs">
+              <div class="text-surface-400 flex items-center gap-2 text-xs">
                 <span>
                   {{ t('page.settings.card.apitokens.list.created') }}:
                   {{ formatDate(token.createdAt) }}
-                </span>
-                <span>
-                  {{ t('page.settings.card.apitokens.list.last_used') }}:
-                  {{
-                    token.lastUsedAt
-                      ? formatDate(token.lastUsedAt)
-                      : t('page.settings.card.apitokens.list.never')
-                  }}
                 </span>
                 <span>
                   {{
@@ -155,6 +141,15 @@
                     })
                   }}
                 </span>
+                <UTooltip :text="lastUsedTooltip(token.lastUsedAt)">
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center"
+                    :aria-label="lastUsedTooltip(token.lastUsedAt)"
+                  >
+                    <UIcon name="i-mdi-clock-outline" class="text-surface-500 h-3.5 w-3.5" />
+                  </button>
+                </UTooltip>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -187,10 +182,10 @@
       </template>
       <template #body>
         <div class="space-y-4">
-          <div class="space-y-3">
+          <div class="space-y-2">
             <p class="text-surface-200 text-sm font-semibold">
               {{ t('page.settings.card.apitokens.form.gamemode_title') }}
-              <span class="text-red-400">*</span>
+              <span class="text-error-400">*</span>
             </p>
             <div class="flex gap-3">
               <div
@@ -200,28 +195,25 @@
                 :class="
                   selectedGameMode === mode.value
                     ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+                    : 'border-surface-700 bg-surface-800/50 hover:border-surface-600'
                 "
                 @click="selectedGameMode = mode.value"
               >
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
                   <div
-                    class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2"
+                    class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2"
                     :class="
                       selectedGameMode === mode.value
                         ? 'border-primary-500 bg-primary-500'
-                        : 'border-gray-600'
+                        : 'border-surface-600'
                     "
                   >
                     <div
                       v-if="selectedGameMode === mode.value"
-                      class="h-2 w-2 rounded-full bg-white"
+                      class="h-1.5 w-1.5 rounded-full bg-white"
                     />
                   </div>
-                  <div class="flex-1">
-                    <div class="font-medium text-white">{{ mode.label }}</div>
-                    <div class="text-xs text-gray-400">{{ mode.description }}</div>
-                  </div>
+                  <div class="text-sm font-medium text-white">{{ mode.label }}</div>
                 </div>
               </div>
             </div>
@@ -230,20 +222,18 @@
             <p class="text-surface-200 text-sm font-semibold">
               {{ t('page.settings.card.apitokens.form.permissions_title') }}
             </p>
-            <UCheckbox
-              v-for="permission in permissionOptions"
-              :key="permission.value"
-              :model-value="selectedPermissions.includes(permission.value)"
-              :label="permission.label"
-              name="permissions"
-              @update:model-value="
-                (checked) => togglePermission(permission.value, checked as boolean)
-              "
-            >
-              <template #description>
-                <span class="text-surface-400 text-xs">{{ permission.description }}</span>
-              </template>
-            </UCheckbox>
+            <div class="grid gap-2 md:grid-cols-2">
+              <UCheckbox
+                v-for="permission in permissionOptions"
+                :key="permission.value"
+                :model-value="selectedPermissions.includes(permission.value)"
+                :label="permission.label"
+                name="permissions"
+                @update:model-value="
+                  (checked) => togglePermission(permission.value, checked as boolean)
+                "
+              />
+            </div>
           </div>
           <div class="space-y-2">
             <p class="text-surface-200 text-sm font-semibold">
@@ -254,12 +244,6 @@
               :placeholder="t('page.settings.card.apitokens.form.note_placeholder')"
             />
           </div>
-          <UAlert
-            icon="i-mdi-alert-circle"
-            color="warning"
-            variant="soft"
-            :title="t('page.settings.card.apitokens.form.warning')"
-          />
         </div>
       </template>
       <template #footer="{ close }">
@@ -282,7 +266,7 @@
     <UModal v-model:open="showTokenCreatedDialog">
       <template #header>
         <div class="flex items-center gap-2">
-          <UIcon name="i-mdi-check-circle" class="h-5 w-5 text-green-400" />
+          <UIcon name="i-mdi-check-circle" class="text-success-400 h-5 w-5" />
           <h3 class="text-lg font-semibold">
             {{ t('page.settings.card.apitokens.token_created') }}
           </h3>
@@ -300,6 +284,7 @@
                 variant="ghost"
                 icon="i-mdi-clipboard-multiple-outline"
                 :padded="false"
+                :aria-label="t('page.settings.card.apitokens.copy_token', 'Copy token')"
                 @click="copyToken"
               />
             </template>
@@ -317,12 +302,10 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, onMounted, ref, watch } from 'vue';
-  import { useI18n } from 'vue-i18n';
   import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-  import type { RawTokenRow, TokenPermission, TokenRow } from '@/types/api';
   import { API_PERMISSIONS, GAME_MODE_OPTIONS, GAME_MODES, type GameMode } from '@/utils/constants';
   import { logger } from '@/utils/logger';
+  import type { RawTokenRow, TokenPermission, TokenRow } from '@/types/api';
   interface SupabaseTable {
     select: (query: string) => SupabaseTable;
     insert: (data: Record<string, unknown>) => SupabaseTable;
@@ -334,7 +317,7 @@
       onfulfilled?: ((value: { data: unknown; error: unknown }) => unknown) | null
     ) => Promise<unknown>;
   }
-  const { t } = useI18n();
+  const { t } = useI18n({ useScope: 'global' });
   const toast = useToast();
   const { $supabase } = useNuxtApp();
   const edgeFunctions = useEdgeFunctions();
@@ -355,14 +338,12 @@
     Object.entries(API_PERMISSIONS).map(([key, value]) => ({
       value: key as TokenPermission,
       label: value.title,
-      description: value.description,
     }))
   );
   const gameModes = computed(() =>
     GAME_MODE_OPTIONS.map((mode) => ({
       label: mode.label,
       value: mode.value as GameMode,
-      description: mode.description,
     }))
   );
   const canSubmit = computed(
@@ -371,6 +352,12 @@
   const formatDate = (date: string | null) => {
     if (!date) return '';
     return new Date(date).toLocaleString();
+  };
+  const lastUsedTooltip = (lastUsedAt: string | null) => {
+    const value = lastUsedAt
+      ? formatDate(lastUsedAt)
+      : t('page.settings.card.apitokens.list.never');
+    return t('page.settings.card.apitokens.list.last_used_tooltip', { value });
   };
   const formatGameMode = (mode: GameMode) => {
     return mode === GAME_MODES.PVE ? 'PvE' : 'PvP';
@@ -403,7 +390,6 @@
         .eq('user_id', $supabase.user.id)
         .order('created_at', { ascending: false });
       if (error) {
-        // If the column does not exist on the remote database, fall back gracefully
         if ((error as { code?: string })?.code === '42703' && supportsRawTokens.value) {
           supportsRawTokens.value = false;
           await loadTokens();
@@ -491,7 +477,6 @@
     };
     try {
       const rawToken = generateToken(selectedGameMode.value);
-      // Prefer gateway (Cloudflare Worker) for rate limiting & auth hardening
       try {
         const response = await edgeFunctions.createToken({
           permissions: selectedPermissions.value,

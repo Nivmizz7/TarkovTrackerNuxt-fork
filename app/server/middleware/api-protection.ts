@@ -20,7 +20,7 @@ import {
 import ipaddr from 'ipaddr.js';
 import { useRuntimeConfig } from '#imports';
 import { createLogger } from '@/server/utils/logger';
-const logger = createLogger('API Protection');
+const logger = createLogger('ApiProtection');
 // Type for runtime config API protection settings
 interface ApiProtectionConfig {
   allowedHosts: string;
@@ -70,11 +70,11 @@ function ipInRange(clientIp: string, range: string): boolean {
     if (!rangeIp) {
       return false;
     }
-    if (parts.length === 1) {
+    if (!cidrStr) {
       const rangeAddr = ipaddr.process(rangeIp);
       return addr.toString() === rangeAddr.toString();
     }
-    if (!cidrStr || !/^\d+$/.test(cidrStr)) {
+    if (!/^\d+$/.test(cidrStr)) {
       return false;
     }
     const rangeAddr = ipaddr.parse(rangeIp);
@@ -90,12 +90,8 @@ function ipInRange(clientIp: string, range: string): boolean {
       return (addr as ipaddr.IPv4).match(rangeAddr as ipaddr.IPv4, cidr);
     }
     return (addr as ipaddr.IPv6).match(rangeAddr as ipaddr.IPv6, cidr);
-  } catch (error) {
-    logger.warn('IP range parse error', {
-      clientIp,
-      range,
-      error: error instanceof Error ? error.message : String(error),
-    });
+  } catch (err) {
+    logger.error('Failed to parse IP', { err, clientIp, range });
     return false;
   }
 }
@@ -166,7 +162,6 @@ function isHostAllowed(
     // No Host header - fail closed
     return false;
   }
-  // Extract hostname (remove port if present)
   const host = (hostHeader.split(':')[0] ?? '').toLowerCase();
   return allowedHosts.some((allowed) => {
     const allowedLower = allowed.toLowerCase();
@@ -208,12 +203,9 @@ async function validateAuthToken(
     return user?.id ? user : null;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      logger.warn('Auth validation timed out', { timeoutMs: 5000 });
+      logger.warn('Auth validation timed out after 5000ms');
     } else {
-      logger.error('Auth validation error', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+      logger.error('Auth validation error', { error });
     }
     return null;
   } finally {
@@ -330,9 +322,11 @@ export default defineEventHandler(async (event) => {
         setResponseHeader(event, 'Access-Control-Max-Age', 86400); // 24 hours
       }
     } catch (error) {
-      logger.warn('Invalid origin URL, skipping CORS headers', {
+      logSecurityEvent('warn', 'Invalid CORS origin header', {
+        pathname,
         origin,
-        error: error instanceof Error ? error.message : String(error),
+        clientIp: clientIp || 'unknown',
+        errorMessage: error instanceof Error ? error.message : String(error),
       });
     }
   }

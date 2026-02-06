@@ -4,13 +4,10 @@ CREATE TABLE IF NOT EXISTS public.user_system (
   team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Helpful index for reverse lookups by team
 CREATE INDEX IF NOT EXISTS idx_user_system_team_id ON public.user_system(team_id);
-
 -- Enable Row Level Security
 ALTER TABLE public.user_system ENABLE ROW LEVEL SECURITY;
-
 -- RLS policies (idempotent guards to avoid duplicate errors on re-run)
 DO $$
 BEGIN

@@ -5,43 +5,45 @@
     </div>
     <div class="relative mx-auto max-w-6xl">
       <div class="space-y-6">
-        <!-- Team Management Section -->
+        <UAlert
+          icon="i-mdi-alert"
+          color="warning"
+          variant="soft"
+          :title="t('page.team.warning.title')"
+        >
+          <template #description>
+            {{ t('page.team.warning.description') }}
+          </template>
+        </UAlert>
         <div class="grid gap-4 lg:grid-cols-2">
           <MyTeam />
           <TeamOptions />
         </div>
-        <!-- Team Members Section -->
         <TeamMembers v-if="userHasTeam" />
       </div>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, defineAsyncComponent, watch } from 'vue';
-  import { useRoute } from 'vue-router';
   import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
-  import { logger } from '@/utils/logger';
-  // Page metadata
-  useSeoMeta({
+  const { t } = useI18n({ useScope: 'global' });
+  const metaTitle = computed(() => t('page.team.meta.title', 'Team'));
+  const metaDescription = computed(() =>
+    t('page.team.meta.description', 'Collaborate with teammates on Escape from Tarkov progress.')
+  );
+  definePageMeta({
     title: 'Team',
-    description:
-      'Collaborate with teammates on Escape from Tarkov progress. Share quest completions, hideout status, and coordinate item gathering.',
+  });
+  useSeoMeta({
+    title: metaTitle,
+    description: metaDescription,
+    robots: 'noindex, nofollow',
   });
   const TeamMembers = defineAsyncComponent(() => import('@/features/team/TeamMembers.vue'));
   const TeamOptions = defineAsyncComponent(() => import('@/features/team/TeamOptions.vue'));
   const MyTeam = defineAsyncComponent(() => import('@/features/team/MyTeam.vue'));
   const TeamInvite = defineAsyncComponent(() => import('@/features/team/TeamInvite.vue'));
-  const { systemStore, hasTeam, getTeamId } = useSystemStoreWithSupabase();
+  const { hasTeam } = useSystemStoreWithSupabase();
   const route = useRoute();
-  logger.debug('[TeamPage] Initial systemStore state:', systemStore.$state);
-  logger.debug('[TeamPage] systemStore.userTeam:', systemStore.userTeam);
-  // Use helper function for properly typed team access
   const userHasTeam = computed(() => hasTeam());
-  watch(
-    () => userHasTeam.value,
-    (hasTeamNow, hadTeam) => {
-      logger.debug('[TeamPage] userHasTeam changed:', { hadTeam, hasTeam: hasTeamNow });
-      logger.debug('[TeamPage] Current team ID:', getTeamId());
-    }
-  );
 </script>

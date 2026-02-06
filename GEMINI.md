@@ -65,7 +65,7 @@
   - **NO parent-relative imports** (`../`). Use `@/` alias (e.g., `@/utils/logger`).
   - **Sort alphabetically** (case-insensitive).
   - **NO blank lines** between import groups.
-  - Group order: Builtin -> External -> Internal -> Parent -> Sibling -> Index -> Object -> Type.
+  - Group order: builtin → external → internal → parent → sibling → index → object → type.
 - **Naming:**
   - Components: `PascalCase.vue`
   - Composables/Functions: `camelCase.ts` (`useFoo`)

@@ -12,6 +12,7 @@
     scope?: string;
     authorization_id: string;
     redirect_url?: string;
+    redirect_uri?: string;
     client?: { id: string; name: string; uri?: string; logo_uri?: string };
   } | null>(null);
   onMounted(async () => {
@@ -38,12 +39,15 @@
         }
         return;
       }
-      if (data?.redirect_url) {
-        console.log('[OAuth] Auto-redirecting to:', data.redirect_url);
-        window.location.href = data.redirect_url;
+      if (data && 'redirect_url' in data) {
+        const redirectData = data as { redirect_url: string };
+        console.log('[OAuth] Auto-redirecting to:', redirectData.redirect_url);
+        window.location.href = redirectData.redirect_url;
         return;
       }
-      details.value = data;
+      if (data && 'authorization_id' in data) {
+        details.value = data;
+      }
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch authorization details';
     } finally {
@@ -100,7 +104,7 @@
         <div
           class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-(--color-accent-primary)"
         ></div>
-        <p class="mt-4 text-(--color-text-secondary)">Loading...</p>
+        <p class="text-text-secondary mt-4">Loading...</p>
       </div>
       <div
         v-else-if="error"
@@ -110,7 +114,7 @@
       </div>
       <div v-else-if="details">
         <div class="mb-6">
-          <p class="mb-4 text-(--color-text-secondary)">
+          <p class="text-text-secondary mb-4">
             <strong class="text-(--color-text-primary)">
               {{ details.client?.name || 'Unknown Application' }}
             </strong>
@@ -122,7 +126,7 @@
               <li
                 v-for="scope in details.scope?.split(' ') || []"
                 :key="scope"
-                class="text-sm text-(--color-text-secondary)"
+                class="text-text-secondary text-sm"
               >
                 {{ scope }}
               </li>

@@ -34,6 +34,20 @@ const runtimeConfig = {
   supabaseUrl: 'https://test.supabase.co',
   supabaseAnonKey: 'test-anon-key',
 };
+vi.mock('@/server/utils/logger', () => ({
+  createLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 vi.mock('h3', async () => {
   const actual = await vi.importActual('h3');
   return {
@@ -64,7 +78,10 @@ describe('API Protection Middleware', () => {
     mockEvent = {
       node: createNodeContext('127.0.0.1'),
       method: 'GET',
-      context: {},
+      context: {
+        siteConfig: { stack: [], push: vi.fn(), get: vi.fn() },
+        siteConfigNitroOrigin: '',
+      },
     };
   });
   describe('Route filtering', () => {

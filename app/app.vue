@@ -11,22 +11,62 @@
   </UApp>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { useAppInitialization } from '@/composables/useAppInitialization';
-  // Initialize app (auth, locale, migrations)
   useAppInitialization();
-  const config = useRuntimeConfig();
   const route = useRoute();
-  // Dynamically set canonical and social URLs based on current route
-  useHead({
+  const { locale } = useI18n();
+  const { public: publicConfig } = useRuntimeConfig();
+  const siteUrl = (publicConfig.appUrl || 'https://tarkovtracker.org').replace(/\/$/, '');
+  const webApplicationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'TarkovTracker',
+    url: siteUrl,
+    applicationCategory: 'GameApplication',
+    operatingSystem: 'Web',
+    description:
+      'Complete Escape from Tarkov progress tracker for patch 1.0+. Track quests, storyline, hideout, and needed items.',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    author: {
+      '@type': 'Organization',
+      name: 'TarkovTracker',
+      url: siteUrl,
+    },
+    sameAs: ['https://github.com/tarkovtracker-org/TarkovTracker'],
+  };
+  useHeadSafe(() => ({
+    htmlAttrs: {
+      lang: locale.value,
+    },
     link: [
       {
+        rel: 'preconnect',
+        href: 'https://api.iconify.design',
+        crossorigin: 'anonymous',
+      },
+      {
+        rel: 'dns-prefetch',
+        href: 'https://api.iconify.design',
+      },
+      {
         rel: 'canonical',
-        href: computed(() => `${config.public.appUrl}${route.path}`),
+        href: `${siteUrl}${route.path}`,
       },
     ],
-  });
+    script: [
+      {
+        type: 'application/ld+json',
+        textContent: JSON.stringify(webApplicationSchema),
+      },
+    ],
+  }));
   useSeoMeta({
-    ogUrl: computed(() => `${config.public.appUrl}${route.path}`),
+    ogUrl: computed(() => `${siteUrl}${route.path}`),
+    ogLocale: computed(() => locale.value),
   });
 </script>
