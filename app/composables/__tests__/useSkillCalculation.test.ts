@@ -5,6 +5,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useSkillCalculation } from '@/composables/useSkillCalculation';
 import { useMetadataStore } from '@/stores/useMetadata';
+import { MAX_SKILL_LEVEL } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 // Mock logger
 vi.mock('@/utils/logger', () => ({
@@ -25,35 +26,32 @@ describe('useSkillCalculation', () => {
   it('sets total skill level correctly', () => {
     const { setTotalSkillLevel, totalSkills } = useSkillCalculation();
     const skillName = 'Strength';
-    setTotalSkillLevel(skillName, 10);
+    expect(setTotalSkillLevel(skillName, 10)).toBe(true);
     expect(totalSkills.value[skillName]).toBe(10);
   });
-  it('validates totalLevel input', () => {
+  it('validates and clamps totalLevel input', () => {
     const { setTotalSkillLevel, totalSkills } = useSkillCalculation();
     const skillName = 'Strength';
-    // Test negative value
-    setTotalSkillLevel(skillName, -5);
+    expect(setTotalSkillLevel(skillName, -5)).toBe(true);
     expect(totalSkills.value[skillName] || 0).toBe(0);
-    expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid totalLevel "-5" for skill "Strength"')
-    );
-    // Test NaN
-    setTotalSkillLevel(skillName, NaN);
-    expect(totalSkills.value[skillName] || 0).toBe(0);
-    expect(logger.warn).toHaveBeenCalledWith(
+    expect(setTotalSkillLevel(skillName, 100)).toBe(true);
+    expect(totalSkills.value[skillName]).toBe(MAX_SKILL_LEVEL);
+    expect(setTotalSkillLevel(skillName, NaN)).toBe(false);
+    expect(totalSkills.value[skillName]).toBe(MAX_SKILL_LEVEL);
+    expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Invalid totalLevel "NaN" for skill "Strength"')
     );
-    // Test Infinity
-    setTotalSkillLevel(skillName, Infinity);
-    expect(totalSkills.value[skillName] || 0).toBe(0);
-    expect(logger.warn).toHaveBeenCalledWith(
+    const previousValue = totalSkills.value[skillName];
+    expect(setTotalSkillLevel(skillName, Infinity)).toBe(false);
+    expect(totalSkills.value[skillName]).toBe(previousValue);
+    expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Invalid totalLevel "Infinity" for skill "Strength"')
     );
   });
   it('coerces totalLevel to integer', () => {
     const { setTotalSkillLevel, totalSkills } = useSkillCalculation();
     const skillName = 'Strength';
-    setTotalSkillLevel(skillName, 10.7);
+    expect(setTotalSkillLevel(skillName, 10.7)).toBe(true);
     expect(totalSkills.value[skillName]).toBe(10);
   });
 });

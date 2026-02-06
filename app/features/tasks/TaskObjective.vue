@@ -1,47 +1,58 @@
 <template>
   <div
     :id="`objective-${props.objective.id}`"
-    class="group focus-within:ring-primary-500 focus-within:ring-offset-surface-900 flex w-full items-center gap-4 rounded-md px-2 py-2 transition-colors focus-within:ring-2 focus-within:ring-offset-2"
+    role="button"
+    :tabindex="isParentTaskLocked ? -1 : 0"
+    :aria-label="objectiveAriaLabel"
+    :aria-disabled="isParentTaskLocked"
+    class="group focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 flex w-full items-start gap-4 rounded-md px-2 py-2 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2"
     :class="[
       isComplete ? 'bg-success-500/10' : 'hover:bg-white/5',
       isParentTaskLocked ? 'cursor-not-allowed opacity-80' : 'cursor-pointer',
     ]"
     @click="handleRowClick"
+    @keydown.enter.self="handleRowClick"
+    @keydown.space.prevent.self="handleRowClick"
     @mouseenter="objectiveMouseEnter()"
     @mouseleave="objectiveMouseLeave()"
   >
     <UIcon
       :name="objectiveIcon.startsWith('mdi-') ? `i-${objectiveIcon}` : objectiveIcon"
       aria-hidden="true"
-      class="h-4 w-4 shrink-0"
-      :class="isComplete ? 'text-success-300' : 'text-gray-400 group-hover:text-gray-300'"
+      class="mt-1.5 h-4 w-4 shrink-0"
+      :class="
+        isComplete
+          ? 'text-success-300'
+          : isParentTaskLocked
+            ? 'text-surface-400'
+            : 'text-surface-300 group-hover:text-surface-200'
+      "
     />
     <div class="flex flex-1 flex-wrap items-center gap-2">
       <div class="min-w-0">
-        <div class="text-sm leading-5 text-gray-100">
+        <div class="text-surface-100 text-sm leading-5">
           {{ props.objective?.description }}
         </div>
         <AppTooltip
           v-if="userHasTeam && activeUserView === 'all' && userNeeds.length > 0"
           :text="userNeedsTitle"
         >
-          <div class="mt-1 inline-flex items-center gap-1 text-[11px] text-gray-500">
+          <div class="text-surface-500 mt-1 inline-flex items-center gap-1 text-[11px]">
             <UIcon name="i-mdi-account-multiple-outline" aria-hidden="true" class="h-3.5 w-3.5" />
             <span>{{ userNeeds.length }}</span>
           </div>
         </AppTooltip>
       </div>
       <div class="flex items-center gap-2" @click.stop>
-        <!-- Jump To Map button (only shown when in maps view and objective has actionable coordinates) -->
         <AppTooltip
           v-if="hasMapLocation"
-          :text="t('page.tasks.questcard.jumpToMap', 'Jump To Map')"
+          :text="t('page.tasks.questcard.jump_to_map', 'Jump To Map')"
         >
           <button
             type="button"
-            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-gray-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 text-surface-300 flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             :class="isJumpToMapDisabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-white/10'"
-            :aria-label="t('page.tasks.questcard.jumpToMap', 'Jump To Map')"
+            :aria-label="t('page.tasks.questcard.jump_to_map', 'Jump To Map')"
             :disabled="isJumpToMapDisabled"
             @click.stop="onJumpToMapClick"
           >
@@ -75,7 +86,7 @@
             :class="
               isComplete
                 ? 'bg-success-600 border-success-500 hover:bg-success-500 text-white disabled:opacity-60'
-                : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 disabled:opacity-60'
+                : 'text-surface-300 border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-60'
             "
             @click="toggleObjectiveCompletion()"
           >
@@ -91,7 +102,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, inject, ref, watch, type ComputedRef } from 'vue';
   import { useI18n } from 'vue-i18n';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
   import { OBJECTIVE_ICON_MAP } from '@/features/tasks/task-objective-constants';
@@ -102,10 +112,10 @@
   import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   import { useTarkovStore } from '@/stores/useTarkov';
   import type { TaskObjective } from '@/types/tarkov';
+  const FALLBACK_IS_MAP_VIEW_REF = ref(false);
   const { t } = useI18n({ useScope: 'global' });
-  // Inject functions from tasks.vue
   const jumpToMapObjective = inject<((id: string) => void) | null>('jumpToMapObjective', null);
-  const isMapView = inject<ComputedRef<boolean> | null>('isMapView', null);
+  const isMapView = inject<Ref<boolean>>('isMapView', FALLBACK_IS_MAP_VIEW_REF);
   const { systemStore } = useSystemStoreWithSupabase();
   // Define the props for the component
   const props = defineProps<{
@@ -132,6 +142,15 @@
       ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
       : t('page.tasks.questcard.complete', 'Complete');
     return `${actionLabel}: ${objectiveLabel.value}`;
+  });
+  const objectiveAriaLabel = computed(() => {
+    const status = isComplete.value
+      ? t('page.tasks.questcard.completed', 'Completed')
+      : t('page.tasks.questcard.not_completed', 'Not completed');
+    const toggleAction = isComplete.value
+      ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
+      : t('page.tasks.questcard.complete', 'Complete');
+    return `${objectiveLabel.value}. ${status}. ${toggleAction}.`;
   });
   const fullObjective = computed(() => {
     return objectives.value.find((o) => o.id == props.objective.id);
@@ -196,25 +215,18 @@
     return 'mdi-help-circle';
   });
   const neededCount = computed(() => fullObjective.value?.count ?? props.objective.count ?? 1);
-  // Check if this objective has map location data (on any map)
   const hasMapLocation = computed(() => {
-    if (!isMapView?.value) return false;
+    if (!isMapView.value) return false;
     return objectiveHasMapLocation(props.objective, fullObjective.value);
   });
-  // Disable "Jump to map" when objective is complete and current view doesn't show completed markers
   const shouldShowCompletedOnMap = computed(() =>
     ['completed', 'all'].includes(preferencesStore.getTaskSecondaryView)
   );
   const isJumpToMapDisabled = computed(() => isComplete.value && !shouldShowCompletedOnMap.value);
-  const handleJumpToMap = () => {
-    if (jumpToMapObjective) {
-      jumpToMapObjective(props.objective.id);
-    }
-  };
   const onJumpToMapClick = (event: MouseEvent) => {
     if (isJumpToMapDisabled.value) return;
-    (event.currentTarget as HTMLElement)?.blur();
-    handleJumpToMap();
+    (event.currentTarget as HTMLElement | null)?.blur();
+    jumpToMapObjective?.(props.objective.id);
   };
   const handleRowClick = () => {
     if (isParentTaskLocked.value) return;

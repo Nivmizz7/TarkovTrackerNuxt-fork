@@ -1,8 +1,7 @@
-import { ref, computed, onUnmounted } from 'vue';
 import { useMetadataStore } from '@/stores/useMetadata';
-import type { TarkovItem } from '@/types/tarkov';
 import { logger } from '@/utils/logger';
 import { buildItemImageUrl, buildItemPageUrl } from '@/utils/tarkovUrls';
+import type { TarkovItem } from '@/types/tarkov';
 export type LootState = 'idle' | 'searching' | 'found';
 export interface LootItem {
   name: string;
@@ -10,6 +9,7 @@ export interface LootItem {
   rarity: string;
   colorClass: string;
   textClass: string;
+  animationClass?: string;
   isRealItem: boolean;
   link: string;
   wikiLink?: string;
@@ -19,8 +19,8 @@ const FALLBACK_LOOT_TABLE: LootItem[] = [
     name: 'Tushonka',
     icon: 'i-mdi-food-steak',
     rarity: 'Common',
-    colorClass: 'text-orange-400',
-    textClass: 'text-orange-100',
+    colorClass: 'text-rarity-common-400',
+    textClass: 'text-rarity-common-200',
     isRealItem: false,
     link: '#',
   },
@@ -28,17 +28,17 @@ const FALLBACK_LOOT_TABLE: LootItem[] = [
     name: 'Bolts',
     icon: 'i-mdi-screw-machine-flat',
     rarity: 'Common',
-    colorClass: 'text-gray-400',
-    textClass: 'text-gray-200',
+    colorClass: 'text-rarity-common-400',
+    textClass: 'text-rarity-common-200',
     isRealItem: false,
     link: '#',
   },
   {
     name: 'Duct Tape',
     icon: 'i-mdi-tape-drive',
-    rarity: 'Common',
-    colorClass: 'text-blue-400',
-    textClass: 'text-blue-100',
+    rarity: 'Uncommon',
+    colorClass: 'text-rarity-uncommon-400',
+    textClass: 'text-rarity-uncommon-100',
     isRealItem: false,
     link: '#',
   },
@@ -46,8 +46,8 @@ const FALLBACK_LOOT_TABLE: LootItem[] = [
     name: 'Graphics Card',
     icon: 'i-mdi-expansion-card',
     rarity: 'Rare',
-    colorClass: 'text-purple-400',
-    textClass: 'text-purple-100',
+    colorClass: 'text-rarity-rare-400',
+    textClass: 'text-rarity-rare-100',
     isRealItem: false,
     link: '#',
   },
@@ -55,17 +55,17 @@ const FALLBACK_LOOT_TABLE: LootItem[] = [
     name: 'Tetriz',
     icon: 'i-mdi-gamepad-variant',
     rarity: 'Rare',
-    colorClass: 'text-purple-400',
-    textClass: 'text-purple-100',
+    colorClass: 'text-rarity-rare-400',
+    textClass: 'text-rarity-rare-100',
     isRealItem: false,
     link: '#',
   },
   {
     name: 'Golden Rooster',
     icon: 'i-mdi-bird',
-    rarity: 'Rare',
-    colorClass: 'text-yellow-400',
-    textClass: 'text-yellow-100',
+    rarity: 'Legendary',
+    colorClass: 'text-rarity-legendary-400',
+    textClass: 'text-rarity-legendary-100',
     isRealItem: false,
     link: '#',
   },
@@ -73,8 +73,8 @@ const FALLBACK_LOOT_TABLE: LootItem[] = [
     name: 'LedX',
     icon: 'i-mdi-hospital-box',
     rarity: 'Super Rare',
-    colorClass: 'text-red-500',
-    textClass: 'text-red-100',
+    colorClass: 'text-error-500',
+    textClass: 'text-error-100',
     isRealItem: false,
     link: '#',
   },
@@ -82,8 +82,8 @@ const FALLBACK_LOOT_TABLE: LootItem[] = [
     name: 'Red Keycard',
     icon: 'i-mdi-card-account-details',
     rarity: 'Super Rare',
-    colorClass: 'text-red-600',
-    textClass: 'text-red-200',
+    colorClass: 'text-error-600',
+    textClass: 'text-error-200',
     isRealItem: false,
     link: '#',
   },
@@ -104,34 +104,42 @@ function getRarityFromColor(color?: string) {
   switch (color) {
     case 'yellow':
     case 'orange':
-      return { label: 'Legendary', color: 'text-yellow-400', text: 'text-yellow-100' };
+      return {
+        label: 'Legendary',
+        color: 'text-rarity-legendary-400',
+        text: 'text-rarity-legendary-100',
+      };
     case 'violet':
     case 'purple':
-      return { label: 'Rare', color: 'text-purple-400', text: 'text-purple-100' };
+      return { label: 'Rare', color: 'text-rarity-rare-400', text: 'text-rarity-rare-100' };
     case 'blue':
-      return { label: 'Uncommon', color: 'text-blue-400', text: 'text-blue-100' };
+      return {
+        label: 'Uncommon',
+        color: 'text-rarity-uncommon-400',
+        text: 'text-rarity-uncommon-100',
+      };
     case 'green':
-      return { label: 'Uncommon', color: 'text-green-400', text: 'text-green-100' };
+      return { label: 'Uncommon', color: 'text-success-400', text: 'text-success-100' };
     case 'red':
-      return { label: 'Ultra Rare', color: 'text-red-500', text: 'text-red-100' };
+      return { label: 'Ultra Rare', color: 'text-error-500', text: 'text-error-100' };
     default:
-      return { label: 'Common', color: 'text-gray-400', text: 'text-gray-200' };
+      return { label: 'Common', color: 'text-rarity-common-400', text: 'text-rarity-common-200' };
   }
 }
-export function getRarityBadgeClass(rarity: string) {
+export function getRarityBadgeClass(rarity: string): string {
   switch (rarity.toLowerCase()) {
     case 'legendary':
     case 'easter egg':
-      return 'text-yellow-400';
+      return 'text-rarity-legendary-400';
     case 'super rare':
     case 'ultra rare':
-      return 'text-red-400';
+      return 'text-error-400';
     case 'rare':
-      return 'text-purple-400';
+      return 'text-rarity-rare-400';
     case 'uncommon':
-      return 'text-blue-400';
+      return 'text-rarity-uncommon-400';
     default:
-      return 'text-surface-400';
+      return 'text-rarity-common-400';
   }
 }
 export function useLootGame() {
@@ -253,8 +261,9 @@ export function useLootGame() {
       link: buildItemPageUrl(ITEM_IDS.RED_KEYCARD),
       wikiLink: buildItemPageUrl(ITEM_IDS.RED_KEYCARD),
       rarity: 'Legendary',
-      colorClass: 'text-red-600 animate-pulse',
-      textClass: 'text-red-200',
+      colorClass: 'text-error-600',
+      textClass: 'text-error-200',
+      animationClass: 'animate-pulse',
       isRealItem: true,
     };
     // Override with real item data if available

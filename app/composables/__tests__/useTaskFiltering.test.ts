@@ -131,7 +131,6 @@ const createMetadataStore = (tasks: Task[]) => {
     tasks,
     traders,
     prestigeTaskMap: new Map<string, number>(),
-    prestigeTaskIds: [],
     getTraderByName: (name: string) => traders.find((trader) => trader.name === name),
     getExcludedTaskIdsForEdition: () => new Set<string>(),
   };

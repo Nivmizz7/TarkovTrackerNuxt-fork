@@ -1,1 +1,1 @@
-DROP INDEX IF EXISTS public.idx_user_system_team_id;
+drop index if exists public.idx_user_system_team_id;;

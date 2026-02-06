@@ -60,9 +60,7 @@
       <div class="hidden w-75 shrink-0 xl:block"></div>
       <!-- Fixed sidebar (stays in viewport, accounts for drawer + container) -->
       <aside class="fixed left-[calc(max(15rem,(100vw-100rem)/2+15rem))] hidden w-75 xl:block">
-        <UCard
-          class="border border-gray-700/50 bg-linear-to-b from-gray-900/80 to-gray-900/40 backdrop-blur"
-        >
+        <UCard class="border-surface-700/50 bg-surface-900/90 border backdrop-blur">
           <nav aria-label="Table of contents">
             <ol class="space-y-2 text-sm leading-relaxed">
               <li v-for="item in toc" :key="item.id">
@@ -86,15 +84,15 @@
       </aside>
       <main class="w-full min-w-0 xl:flex-1">
         <UCard
-          class="prose prose-lg prose-invert prose-headings:text-primary-100 prose-a:text-primary-400 prose-strong:text-primary-200 dark:prose-invert max-w-none"
+          class="prose prose-lg prose-invert prose-headings:text-primary-100 prose-a:text-link prose-strong:text-primary-200 max-w-none"
         >
           <div class="terms-content space-y-12 [&>section]:scroll-mt-28">
             <div
               id="top"
-              class="mb-8 flex items-center justify-between border-b border-gray-700/50 pb-4"
+              class="border-surface-700/50 mb-8 flex items-center justify-between border-b pb-4"
             >
               <p class="text-primary-400 mb-0 text-sm tracking-[0.2em] uppercase">Legal Document</p>
-              <p class="mb-0 text-sm text-gray-400">Last Updated: {{ lastUpdated }}</p>
+              <p class="text-surface-400 mb-0 text-sm">Last Updated: {{ lastUpdated }}</p>
             </div>
             <!-- 1. ACCEPTANCE OF TERMS -->
             <section id="acceptance">
@@ -765,7 +763,7 @@
                     href="https://github.com/tarkovtracker-org"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 underline"
+                    class="text-link hover:text-link-hover underline"
                   >
                     https://github.com/tarkovtracker-org
                   </a>

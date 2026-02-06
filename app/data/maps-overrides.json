@@ -1,0 +1,9 @@
+{
+  "$comment": "TarkovTracker-specific overrides merged into synced tarkov-dev map data",
+  "reserve": {
+    "svg": {
+      "floors": ["Bunkers", "Ground_Level"],
+      "stackFloors": false
+    }
+  }
+}

@@ -75,6 +75,14 @@ const setup = async () => {
       t: (key: string, fallback?: string) => fallback ?? key.split('.').pop() ?? key,
     }),
   }));
+  vi.doMock('@/composables/useTaskSettingsDrawer', () => ({
+    useTaskSettingsDrawer: () => ({
+      isOpen: { value: false },
+      open: vi.fn(),
+      close: vi.fn(),
+      toggle: vi.fn(),
+    }),
+  }));
   const { default: TaskFilterBar } = await import('@/features/tasks/TaskFilterBar.vue');
   return { TaskFilterBar, preferencesStore };
 };
@@ -83,7 +91,7 @@ const mountTaskFilterBar = (TaskFilterBar: Parameters<typeof mount>[0], searchQu
     props: { searchQuery },
     global: {
       stubs: {
-        TaskSettingsModal: true,
+        AppTooltip: { template: '<span><slot /></span>' },
         UBadge: true,
         UButton: UButtonStub,
         UIcon: true,

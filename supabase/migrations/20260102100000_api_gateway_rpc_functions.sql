@@ -1,3 +1,7 @@
+-- Add dual game mode support to api_tokens
+ALTER TABLE public.api_tokens DROP CONSTRAINT IF EXISTS api_tokens_game_mode_check;
+ALTER TABLE public.api_tokens ADD CONSTRAINT api_tokens_game_mode_check
+  CHECK (game_mode IN ('pvp', 'pve', 'dual'));
 -- Create RPC function to increment token usage count atomically
 CREATE OR REPLACE FUNCTION public.increment_token_usage(p_token_id UUID)
 RETURNS void
@@ -13,10 +17,8 @@ BEGIN
   WHERE token_id = p_token_id;
 END;
 $$;
-
 -- Grant execute permission to service role
 GRANT EXECUTE ON FUNCTION public.increment_token_usage(UUID) TO service_role;
-
 -- Create RPC function to update task completion in nested JSON
 CREATE OR REPLACE FUNCTION public.update_task_completion(
   p_user_id UUID,
@@ -75,6 +77,5 @@ BEGIN
   USING v_current_data, p_user_id;
 END;
 $$;
-
 -- Grant execute permission to service role
 GRANT EXECUTE ON FUNCTION public.update_task_completion(UUID, TEXT, TEXT, BOOLEAN, BOOLEAN, BIGINT) TO service_role;

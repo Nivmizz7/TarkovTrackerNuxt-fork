@@ -13,15 +13,11 @@ CREATE TABLE IF NOT EXISTS public.account_deletion_jobs (
   completed_at TIMESTAMPTZ,
   dead_lettered_at TIMESTAMPTZ
 );
-
 CREATE INDEX IF NOT EXISTS idx_account_deletion_jobs_status
   ON public.account_deletion_jobs(status);
-
 CREATE INDEX IF NOT EXISTS idx_account_deletion_jobs_next_run
   ON public.account_deletion_jobs(next_run_at);
-
 ALTER TABLE public.account_deletion_jobs ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Admins can read account deletion jobs" ON public.account_deletion_jobs;
 CREATE POLICY "Admins can read account deletion jobs"
   ON public.account_deletion_jobs
@@ -34,7 +30,6 @@ CREATE POLICY "Admins can read account deletion jobs"
         AND user_system.is_admin = true
     )
   );
-
 REVOKE INSERT, UPDATE, DELETE ON public.account_deletion_jobs FROM anon, authenticated;
 GRANT SELECT ON public.account_deletion_jobs TO authenticated;
 GRANT INSERT, UPDATE, DELETE ON public.account_deletion_jobs TO service_role;

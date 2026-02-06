@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS public.teams (
     owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 CREATE TABLE IF NOT EXISTS public.team_memberships (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     team_id UUID REFERENCES public.teams(id) ON DELETE CASCADE,

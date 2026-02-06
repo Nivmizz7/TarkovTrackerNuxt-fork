@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia';
-import { markRaw } from 'vue';
 import { extractLanguageCode, useSafeLocale } from '@/composables/i18nHelpers';
 import { useGraphBuilder } from '@/composables/useGraphBuilder';
 import mapsData from '@/data/maps.json';
@@ -34,7 +33,6 @@ import type {
 import {
   API_GAME_MODES,
   API_SUPPORTED_LANGUAGES,
-  EXCLUDED_SCAV_KARMA_TASKS,
   GAME_MODES,
   LOCALE_TO_API_MAPPING,
   MAP_NAME_MAPPING,
@@ -46,7 +44,7 @@ import {
   getExclusiveEditionsForTask as getTaskExclusiveEditions,
   isTaskAvailableForEdition as checkTaskEdition,
 } from '@/utils/editionHelpers';
-import { createGraph } from '@/utils/graphHelpers';
+import { createGraph, type TaskGraph } from '@/utils/graphHelpers';
 import { logger } from '@/utils/logger';
 import { perfEnd, perfStart } from '@/utils/perf';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
@@ -59,7 +57,6 @@ import {
   setCachedData,
 } from '@/utils/tarkovCache';
 import { normalizeTaskObjectives } from '@/utils/taskNormalization';
-import type { AbstractGraph } from 'graphology-types';
 type IdleCallback = (deadline: { didTimeout: boolean; timeRemaining: () => number }) => void;
 type IdleTask = {
   task: () => void | Promise<void>;
@@ -274,9 +271,9 @@ interface MetadataState {
   prestigeLevels: PrestigeLevel[];
   staticMapData: StaticMapData | null;
   // Processed data
-  taskGraph: AbstractGraph;
+  taskGraph: TaskGraph;
   taskById: Map<string, Task>;
-  hideoutGraph: AbstractGraph;
+  hideoutGraph: TaskGraph;
   hideoutModules: HideoutModule[];
   craftSourcesByItemId: Map<string, CraftSource[]>;
   // Derived data structures
@@ -350,9 +347,6 @@ export const useMetadataStore = defineStore('metadata', {
       });
       return allObjectives;
     },
-    enabledTasks: (state): Task[] => {
-      return state.tasks.filter((task) => !EXCLUDED_SCAV_KARMA_TASKS.includes(task.id));
-    },
     // Get edition name by value
     getEditionName:
       (state) =>
@@ -415,10 +409,11 @@ export const useMetadataStore = defineStore('metadata', {
           const mergedIds = maps.map((map) => map.id);
           // Check for unavailable before svg check (unavailable maps may not have svg)
           const unavailable = staticData?.unavailable;
-          if (staticData?.svg) {
+          if (staticData?.svg || staticData?.tile) {
             return {
               ...primaryMap,
-              svg: staticData.svg,
+              svg: staticData?.svg,
+              tile: staticData?.tile,
               unavailable,
               mergedIds,
             };
@@ -430,6 +425,7 @@ export const useMetadataStore = defineStore('metadata', {
           }
           return {
             ...primaryMap,
+            unavailable,
             mergedIds,
           };
         })
@@ -528,20 +524,6 @@ export const useMetadataStore = defineStore('metadata', {
       }
       return map;
     },
-    /**
-     * Get all "New Beginning" task IDs that are prestige-gated
-     */
-    prestigeTaskIds: (state): string[] => {
-      const ids: string[] = [];
-      for (const prestige of state.prestigeLevels) {
-        for (const condition of prestige.conditions || []) {
-          if (condition.task?.id && condition.task?.name === 'New Beginning') {
-            ids.push(condition.task.id);
-          }
-        }
-      }
-      return ids;
-    },
   },
   actions: {
     async initialize() {
@@ -602,6 +584,9 @@ export const useMetadataStore = defineStore('metadata', {
       }
       // Update game mode
       this.currentGameMode = store.getCurrentGameMode();
+    },
+    setLoading(isLoading: boolean) {
+      this.loading = isLoading;
     },
     /**
      * Load static map data from local source
@@ -922,7 +907,9 @@ export const useMetadataStore = defineStore('metadata', {
     ) {
       const { deferHeavy = false, cachedData = null } = options;
       const perfTimer = perfStart('[Metadata] fetchAllData', { forceRefresh, deferHeavy });
-      await this.checkCachePurge();
+      this.checkCachePurge().catch((err) =>
+        logger.warn('[MetadataStore] Background cache purge check failed:', err)
+      );
       // Run cleanup once per session
       if (typeof window !== 'undefined') {
         cleanupExpiredCache().catch((err) =>
@@ -932,8 +919,8 @@ export const useMetadataStore = defineStore('metadata', {
       await this.fetchBootstrapData(forceRefresh);
       // Use pre-loaded cache data if available, otherwise fetch
       let hideoutPromise: Promise<void>;
-      let prestigePromise: Promise<void>;
-      let editionsPromise: Promise<void>;
+      let prestigePromise: Promise<void> = Promise.resolve();
+      let editionsPromise: Promise<void> = Promise.resolve();
       let tasksCorePromise: Promise<void>;
       if (cachedData && !forceRefresh) {
         // Process pre-loaded cache data directly (skip redundant fetches)
@@ -941,15 +928,30 @@ export const useMetadataStore = defineStore('metadata', {
         this.hydrateHideoutItems();
         hideoutPromise = Promise.resolve();
         this.prestigeLevels = markRaw(cachedData.prestige.prestige || []);
-        prestigePromise = Promise.resolve();
         this.editions = markRaw(cachedData.editions.editions || []);
-        editionsPromise = Promise.resolve();
         this.processTasksCoreData(cachedData.tasksCore);
         tasksCorePromise = Promise.resolve();
       } else {
         hideoutPromise = this.fetchHideoutData(forceRefresh);
-        prestigePromise = this.fetchPrestigeData(forceRefresh);
-        editionsPromise = this.fetchEditionsData(forceRefresh);
+        if (deferHeavy) {
+          queueIdleTask(
+            () =>
+              this.fetchPrestigeData(forceRefresh).catch((err) =>
+                logger.error('[MetadataStore] Error fetching deferred prestige data:', err)
+              ),
+            { timeout: 3000, minTime: 8, priority: 'normal' }
+          );
+          queueIdleTask(
+            () =>
+              this.fetchEditionsData(forceRefresh).catch((err) =>
+                logger.error('[MetadataStore] Error fetching deferred editions data:', err)
+              ),
+            { timeout: 3500, minTime: 8, priority: 'normal' }
+          );
+        } else {
+          prestigePromise = this.fetchPrestigeData(forceRefresh);
+          editionsPromise = this.fetchEditionsData(forceRefresh);
+        }
         tasksCorePromise = this.fetchTasksCoreData(forceRefresh);
       }
       await tasksCorePromise;
@@ -959,7 +961,18 @@ export const useMetadataStore = defineStore('metadata', {
       }
       // Fetch critical data directly (not deferred) - needed for UI to render
       const itemsLitePromise = this.fetchItemsLiteData(forceRefresh);
-      const taskObjectivesPromise = this.fetchTaskObjectivesData(forceRefresh);
+      let taskObjectivesPromise: Promise<void> = Promise.resolve();
+      if (this.tasks.length && deferHeavy) {
+        queueIdleTask(
+          () =>
+            this.fetchTaskObjectivesData(forceRefresh).catch((err) =>
+              logger.error('[MetadataStore] Error fetching deferred task objectives data:', err)
+            ),
+          { timeout: 3000, minTime: 8, priority: 'normal' }
+        );
+      } else {
+        taskObjectivesPromise = this.fetchTaskObjectivesData(forceRefresh);
+      }
       // Only defer non-critical task rewards
       if (this.tasks.length && deferHeavy) {
         queueIdleTask(
@@ -973,8 +986,8 @@ export const useMetadataStore = defineStore('metadata', {
         await this.fetchTaskRewardsData(forceRefresh);
       }
       // Full items are heavy; load on-demand via ensureItemsFullLoaded.
-      await Promise.all([hideoutPromise, prestigePromise, editionsPromise]);
-      await Promise.all([itemsLitePromise, taskObjectivesPromise]);
+      await Promise.all([hideoutPromise, itemsLitePromise, taskObjectivesPromise]);
+      await Promise.all([prestigePromise, editionsPromise]);
       perfEnd(perfTimer, {
         tasks: this.tasks.length,
         items: this.items.length,
@@ -1576,8 +1589,6 @@ export const useMetadataStore = defineStore('metadata', {
         maps: data.maps?.length ?? 0,
         traders: data.traders?.length ?? 0,
       });
-      // Filter out scav karma tasks at the source
-      // These tasks require Scav Karma validation which isn't yet implemented
       const allTasks = data.tasks || [];
       const tradersById = new Map((data.traders || []).map((trader) => [trader.id, trader]));
       const normalizedTasks = allTasks
@@ -1595,10 +1606,7 @@ export const useMetadataStore = defineStore('metadata', {
             normalizeTaskObjectives<TaskObjective>(task.failConditions)
           ),
         }));
-      const filteredTasks = normalizedTasks.filter(
-        (task) => !EXCLUDED_SCAV_KARMA_TASKS.includes(task.id)
-      );
-      const deduped = this.dedupeObjectiveIds(filteredTasks);
+      const deduped = this.dedupeObjectiveIds(normalizedTasks);
       this.tasks = markRaw(deduped.tasks);
       // Note: Don't set tasksObjectivesHydrated here - it's managed by processTasksCoreData
       // and mergeTaskObjectives to properly track the two-phase loading

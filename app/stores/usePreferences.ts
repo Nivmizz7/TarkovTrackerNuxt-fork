@@ -1,15 +1,41 @@
-import 'pinia-plugin-persistedstate';
 import { defineStore } from 'pinia';
-import { watch } from 'vue';
+import 'pinia-plugin-persistedstate';
 import { useSupabaseSync } from '@/composables/supabase/useSupabaseSync';
+import { pinia as pluginPinia } from '@/plugins/01.pinia.client';
+import { logger } from '@/utils/logger';
+import { STORAGE_KEYS } from '@/utils/storageKeys';
+import { normalizeSecondaryView, normalizeSortMode } from '@/utils/taskFilterNormalization';
 import type {
   NeededItemsFirFilter,
   NeededItemsFilterType,
 } from '@/features/neededitems/neededitems-constants';
-import { pinia as pluginPinia } from '@/plugins/01.pinia.client';
+import type { TaskPrimaryView, TaskSecondaryView } from '@/types/taskFilter';
 import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
-import { logger } from '@/utils/logger';
-import { STORAGE_KEYS } from '@/utils/storageKeys';
+import type { SkillSortMode } from '@/utils/constants';
+export type TaskFilterSettings = {
+  taskPrimaryView: TaskPrimaryView | null;
+  taskMapView: string | null;
+  taskTraderView: string | null;
+  taskSecondaryView: TaskSecondaryView | null;
+  taskUserView: string | null;
+  taskSortMode: TaskSortMode | null;
+  taskSortDirection: TaskSortDirection | null;
+  taskSharedByAllOnly: boolean;
+  hideGlobalTasks: boolean;
+  hideNonKappaTasks: boolean;
+  showNonSpecialTasks: boolean;
+  showLightkeeperTasks: boolean;
+  showAllFilter: boolean;
+  showAvailableFilter: boolean;
+  showLockedFilter: boolean;
+  showCompletedFilter: boolean;
+  showFailedFilter: boolean;
+};
+export type TaskFilterPreset = {
+  id: string;
+  name: string;
+  settings: TaskFilterSettings;
+};
 // Define the state structure
 export interface PreferencesState {
   streamerMode: boolean;
@@ -33,31 +59,49 @@ export interface PreferencesState {
   neededItemsGroupByItem: boolean;
   neededItemsHideNonFirSpecialEquipment: boolean;
   neededItemsKappaOnly: boolean;
+  neededItemsSortBy: 'priority' | 'name' | 'category' | 'count' | null;
+  neededItemsSortDirection: 'asc' | 'desc' | null;
+  neededItemsHideOwned: boolean;
+  neededItemsCardStyle: 'compact' | 'expanded' | null;
   itemsHideNonFIR: boolean;
   hideGlobalTasks: boolean;
   hideNonKappaTasks: boolean;
   neededitemsStyle: string | null;
   hideoutPrimaryView?: string | null;
+  hideoutCollapseCompleted: boolean;
+  hideoutSortReadyFirst: boolean;
+  hideoutRequireStationLevels: boolean;
+  hideoutRequireSkillLevels: boolean;
+  hideoutRequireTraderLoyalty: boolean;
   localeOverride: string | null;
   // Task filter settings
   showNonSpecialTasks: boolean;
   showLightkeeperTasks: boolean;
   // Task appearance settings
   showRequiredLabels: boolean;
-  showNotRequiredLabels: boolean;
   showExperienceRewards: boolean;
-  showTaskIds: boolean;
   showNextQuests: boolean;
   showPreviousQuests: boolean;
   taskCardDensity: 'comfortable' | 'compact';
   enableManualTaskFail: boolean;
+  hideCompletedTaskObjectives: boolean;
+  showAllFilter: boolean;
+  showAvailableFilter: boolean;
+  showLockedFilter: boolean;
+  showCompletedFilter: boolean;
+  showFailedFilter: boolean;
   // XP and Level settings
   useAutomaticLevelCalculation: boolean;
   // Holiday effects
   enableHolidayEffects: boolean;
+  dashboardNoticeDismissed: boolean;
   // Map display settings
   showMapExtracts: boolean;
   mapZoomSpeed: number;
+  pinnedTaskIds: string[];
+  // Skills settings
+  skillSortMode: SkillSortMode | null;
+  taskFilterPresets: TaskFilterPreset[];
   saving?: {
     streamerMode: boolean;
     hideGlobalTasks: boolean;
@@ -88,31 +132,49 @@ export const preferencesDefaultState: PreferencesState = {
   neededItemsGroupByItem: false,
   neededItemsHideNonFirSpecialEquipment: false,
   neededItemsKappaOnly: false,
+  neededItemsSortBy: 'priority',
+  neededItemsSortDirection: 'desc',
+  neededItemsHideOwned: false,
+  neededItemsCardStyle: 'expanded',
   itemsHideNonFIR: false,
   hideGlobalTasks: false,
   hideNonKappaTasks: false,
   neededitemsStyle: null,
   hideoutPrimaryView: null,
+  hideoutCollapseCompleted: false,
+  hideoutSortReadyFirst: false,
+  hideoutRequireStationLevels: true,
+  hideoutRequireSkillLevels: true,
+  hideoutRequireTraderLoyalty: true,
   localeOverride: null,
   // Task filter settings (all shown by default)
   showNonSpecialTasks: true,
   showLightkeeperTasks: true,
   // Task appearance settings
   showRequiredLabels: true,
-  showNotRequiredLabels: true,
   showExperienceRewards: true,
-  showTaskIds: true,
   showNextQuests: true,
   showPreviousQuests: true,
   taskCardDensity: 'compact',
   enableManualTaskFail: false,
+  hideCompletedTaskObjectives: true,
+  showAllFilter: true,
+  showAvailableFilter: true,
+  showLockedFilter: true,
+  showCompletedFilter: true,
+  showFailedFilter: true,
   // XP and Level settings
   useAutomaticLevelCalculation: false,
   // Holiday effects (enabled by default during holiday season)
   enableHolidayEffects: true,
+  dashboardNoticeDismissed: false,
   // Map display settings
   showMapExtracts: true,
   mapZoomSpeed: 1,
+  pinnedTaskIds: [],
+  // Skills settings
+  skillSortMode: null,
+  taskFilterPresets: [],
   saving: {
     streamerMode: false,
     hideGlobalTasks: false,
@@ -182,13 +244,13 @@ export const usePreferencesStore = defineStore('preferences', {
       return state.taskTraderView ?? 'all';
     },
     getTaskSecondaryView: (state) => {
-      return state.taskSecondaryView ?? 'available';
+      return normalizeSecondaryView(state.taskSecondaryView ?? 'available');
     },
     getTaskUserView: (state) => {
       return state.taskUserView ?? 'self';
     },
     getTaskSortMode: (state) => {
-      return state.taskSortMode ?? 'impact';
+      return normalizeSortMode(state.taskSortMode ?? 'impact');
     },
     getTaskSortDirection: (state) => {
       const sortMode = state.taskSortMode ?? 'impact';
@@ -215,6 +277,18 @@ export const usePreferencesStore = defineStore('preferences', {
     getNeededItemsKappaOnly: (state) => {
       return state.neededItemsKappaOnly ?? false;
     },
+    getNeededItemsSortBy: (state) => {
+      return state.neededItemsSortBy ?? 'priority';
+    },
+    getNeededItemsSortDirection: (state) => {
+      return state.neededItemsSortDirection ?? 'desc';
+    },
+    getNeededItemsHideOwned: (state) => {
+      return state.neededItemsHideOwned ?? false;
+    },
+    getNeededItemsCardStyle: (state) => {
+      return state.neededItemsCardStyle ?? 'expanded';
+    },
     itemsNeededHideNonFIR: (state) => {
       return state.itemsHideNonFIR ?? false;
     },
@@ -229,6 +303,21 @@ export const usePreferencesStore = defineStore('preferences', {
     },
     getHideoutPrimaryView: (state) => {
       return state.hideoutPrimaryView ?? 'available';
+    },
+    getHideoutCollapseCompleted: (state) => {
+      return state.hideoutCollapseCompleted ?? false;
+    },
+    getHideoutSortReadyFirst: (state) => {
+      return state.hideoutSortReadyFirst ?? false;
+    },
+    getHideoutRequireStationLevels: (state) => {
+      return state.hideoutRequireStationLevels ?? true;
+    },
+    getHideoutRequireSkillLevels: (state) => {
+      return state.hideoutRequireSkillLevels ?? true;
+    },
+    getHideoutRequireTraderLoyalty: (state) => {
+      return state.hideoutRequireTraderLoyalty ?? true;
     },
     getMapZoomSpeed: (state) => {
       return state.mapZoomSpeed ?? 1;
@@ -247,14 +336,8 @@ export const usePreferencesStore = defineStore('preferences', {
     getShowRequiredLabels: (state) => {
       return state.showRequiredLabels ?? true;
     },
-    getShowNotRequiredLabels: (state) => {
-      return state.showNotRequiredLabels ?? true;
-    },
     getShowExperienceRewards: (state) => {
       return state.showExperienceRewards ?? true;
-    },
-    getShowTaskIds: (state) => {
-      return state.showTaskIds ?? true;
     },
     getShowNextQuests: (state) => {
       return state.showNextQuests ?? true;
@@ -268,15 +351,46 @@ export const usePreferencesStore = defineStore('preferences', {
     getEnableManualTaskFail: (state) => {
       return state.enableManualTaskFail ?? false;
     },
+    getHideCompletedTaskObjectives: (state) => {
+      return state.hideCompletedTaskObjectives ?? true;
+    },
+    getShowAllFilter: (state) => {
+      return state.showAllFilter ?? true;
+    },
+    getShowAvailableFilter: (state) => {
+      return state.showAvailableFilter ?? true;
+    },
+    getShowLockedFilter: (state) => {
+      return state.showLockedFilter ?? true;
+    },
+    getShowCompletedFilter: (state) => {
+      return state.showCompletedFilter ?? true;
+    },
+    getShowFailedFilter: (state) => {
+      return state.showFailedFilter ?? true;
+    },
     getUseAutomaticLevelCalculation: (state) => {
       return state.useAutomaticLevelCalculation ?? false;
     },
     getEnableHolidayEffects: (state) => {
       return state.enableHolidayEffects ?? true;
     },
+    getDashboardNoticeDismissed: (state) => {
+      return state.dashboardNoticeDismissed ?? false;
+    },
     // Map display getters
     getShowMapExtracts: (state) => {
       return state.showMapExtracts ?? true;
+    },
+    getPinnedTaskIds: (state) => {
+      return state.pinnedTaskIds ?? [];
+    },
+    getTaskFilterPresets: (state) => {
+      return state.taskFilterPresets ?? [];
+    },
+    // Skills getters
+    getSkillSortMode: (state) => {
+      return state.skillSortMode ?? 'priority';
     },
   },
   actions: {
@@ -322,13 +436,13 @@ export const usePreferencesStore = defineStore('preferences', {
       this.taskTraderView = view;
     },
     setTaskSecondaryView(view: string) {
-      this.taskSecondaryView = view;
+      this.taskSecondaryView = normalizeSecondaryView(view);
     },
     setTaskUserView(view: string) {
       this.taskUserView = view;
     },
     setTaskSortMode(mode: TaskSortMode) {
-      this.taskSortMode = mode;
+      this.taskSortMode = normalizeSortMode(mode);
     },
     setTaskSortDirection(direction: TaskSortDirection) {
       this.taskSortDirection = direction;
@@ -354,6 +468,18 @@ export const usePreferencesStore = defineStore('preferences', {
     setNeededItemsKappaOnly(kappaOnly: boolean) {
       this.neededItemsKappaOnly = kappaOnly;
     },
+    setNeededItemsSortBy(sortBy: 'priority' | 'name' | 'category' | 'count') {
+      this.neededItemsSortBy = sortBy;
+    },
+    setNeededItemsSortDirection(direction: 'asc' | 'desc') {
+      this.neededItemsSortDirection = direction;
+    },
+    setNeededItemsHideOwned(hide: boolean) {
+      this.neededItemsHideOwned = hide;
+    },
+    setNeededItemsCardStyle(style: 'compact' | 'expanded') {
+      this.neededItemsCardStyle = style;
+    },
     setItemsNeededHideNonFIR(hide: boolean) {
       this.itemsHideNonFIR = hide;
       // Persistence handled automatically by plugin
@@ -378,6 +504,21 @@ export const usePreferencesStore = defineStore('preferences', {
     setHideoutPrimaryView(view: string) {
       this.hideoutPrimaryView = view;
     },
+    setHideoutCollapseCompleted(enabled: boolean) {
+      this.hideoutCollapseCompleted = enabled;
+    },
+    setHideoutSortReadyFirst(enabled: boolean) {
+      this.hideoutSortReadyFirst = enabled;
+    },
+    setHideoutRequireStationLevels(enabled: boolean) {
+      this.hideoutRequireStationLevels = enabled;
+    },
+    setHideoutRequireSkillLevels(enabled: boolean) {
+      this.hideoutRequireSkillLevels = enabled;
+    },
+    setHideoutRequireTraderLoyalty(enabled: boolean) {
+      this.hideoutRequireTraderLoyalty = enabled;
+    },
     setLocaleOverride(locale: string | null) {
       this.localeOverride = locale;
     },
@@ -392,14 +533,8 @@ export const usePreferencesStore = defineStore('preferences', {
     setShowRequiredLabels(show: boolean) {
       this.showRequiredLabels = show;
     },
-    setShowNotRequiredLabels(show: boolean) {
-      this.showNotRequiredLabels = show;
-    },
     setShowExperienceRewards(show: boolean) {
       this.showExperienceRewards = show;
-    },
-    setShowTaskIds(show: boolean) {
-      this.showTaskIds = show;
     },
     setShowNextQuests(show: boolean) {
       this.showNextQuests = show;
@@ -413,15 +548,66 @@ export const usePreferencesStore = defineStore('preferences', {
     setEnableManualTaskFail(enable: boolean) {
       this.enableManualTaskFail = enable;
     },
+    setHideCompletedTaskObjectives(hide: boolean) {
+      this.hideCompletedTaskObjectives = hide;
+    },
+    setShowAllFilter(show: boolean) {
+      this.showAllFilter = show;
+    },
+    setShowAvailableFilter(show: boolean) {
+      this.showAvailableFilter = show;
+    },
+    setShowLockedFilter(show: boolean) {
+      this.showLockedFilter = show;
+    },
+    setShowCompletedFilter(show: boolean) {
+      this.showCompletedFilter = show;
+    },
+    setShowFailedFilter(show: boolean) {
+      this.showFailedFilter = show;
+    },
     setUseAutomaticLevelCalculation(use: boolean) {
       this.useAutomaticLevelCalculation = use;
     },
     setEnableHolidayEffects(enable: boolean) {
       this.enableHolidayEffects = enable;
     },
+    setDashboardNoticeDismissed(dismissed: boolean) {
+      this.dashboardNoticeDismissed = dismissed;
+    },
     // Map display actions
     setShowMapExtracts(show: boolean) {
       this.showMapExtracts = show;
+    },
+    togglePinnedTask(taskId: string) {
+      const current = this.pinnedTaskIds ?? [];
+      const index = current.indexOf(taskId);
+      if (index === -1) {
+        this.pinnedTaskIds = [...current, taskId];
+      } else {
+        this.pinnedTaskIds = current.filter((id) => id !== taskId);
+      }
+    },
+    addTaskFilterPreset(preset: TaskFilterPreset) {
+      this.taskFilterPresets ??= [];
+      const existingIndex = this.taskFilterPresets.findIndex(
+        (existing) => existing.id === preset.id
+      );
+      if (existingIndex !== -1) {
+        this.taskFilterPresets = this.taskFilterPresets.map((existing) =>
+          existing.id === preset.id ? preset : existing
+        );
+        return;
+      }
+      this.taskFilterPresets = [...this.taskFilterPresets, preset];
+    },
+    removeTaskFilterPreset(id: string) {
+      if (!this.taskFilterPresets) return;
+      this.taskFilterPresets = this.taskFilterPresets.filter((p) => p.id !== id);
+    },
+    // Skills actions
+    setSkillSortMode(mode: SkillSortMode) {
+      this.skillSortMode = mode;
     },
   },
   // Enable automatic localStorage persistence
@@ -456,6 +642,10 @@ export const usePreferencesStore = defineStore('preferences', {
       'neededItemsGroupByItem',
       'neededItemsHideNonFirSpecialEquipment',
       'neededItemsKappaOnly',
+      'neededItemsSortBy',
+      'neededItemsSortDirection',
+      'neededItemsHideOwned',
+      'neededItemsCardStyle',
       'itemsHideNonFIR',
       'hideGlobalTasks',
       'hideNonKappaTasks',
@@ -467,17 +657,30 @@ export const usePreferencesStore = defineStore('preferences', {
       'showLightkeeperTasks',
       // Task appearance settings
       'showRequiredLabels',
-      'showNotRequiredLabels',
       'showExperienceRewards',
-      'showTaskIds',
       'showNextQuests',
       'showPreviousQuests',
       'taskCardDensity',
       'enableManualTaskFail',
+      'hideCompletedTaskObjectives',
+      'showAllFilter',
+      'showAvailableFilter',
+      'showLockedFilter',
+      'showCompletedFilter',
+      'showFailedFilter',
       'useAutomaticLevelCalculation',
       'enableHolidayEffects',
+      'dashboardNoticeDismissed',
+      'hideoutCollapseCompleted',
+      'hideoutSortReadyFirst',
+      'hideoutRequireStationLevels',
+      'hideoutRequireSkillLevels',
+      'hideoutRequireTraderLoyalty',
       'showMapExtracts',
       'mapZoomSpeed',
+      'pinnedTaskIds',
+      'taskFilterPresets',
+      'skillSortMode',
     ],
   },
 });
@@ -576,20 +779,38 @@ if (shouldInitPreferencesWatchers) {
                       show_non_special_tasks: preferencesState.showNonSpecialTasks,
                       show_lightkeeper_tasks: preferencesState.showLightkeeperTasks,
                       show_required_labels: preferencesState.showRequiredLabels,
-                      show_not_required_labels: preferencesState.showNotRequiredLabels,
                       show_experience_rewards: preferencesState.showExperienceRewards,
-                      show_task_ids: preferencesState.showTaskIds,
                       show_next_quests: preferencesState.showNextQuests,
                       show_previous_quests: preferencesState.showPreviousQuests,
                       task_card_density: preferencesState.taskCardDensity,
                       enable_holiday_effects: preferencesState.enableHolidayEffects,
+                      dashboard_notice_dismissed: preferencesState.dashboardNoticeDismissed,
                       show_map_extracts: preferencesState.showMapExtracts,
                       neededitems_style: preferencesState.neededitemsStyle,
                       hideout_primary_view: preferencesState.hideoutPrimaryView,
+                      hideout_collapse_completed: preferencesState.hideoutCollapseCompleted,
+                      hideout_sort_ready_first: preferencesState.hideoutSortReadyFirst,
+                      hideout_require_station_levels: preferencesState.hideoutRequireStationLevels,
+                      hideout_require_skill_levels: preferencesState.hideoutRequireSkillLevels,
+                      hideout_require_trader_loyalty: preferencesState.hideoutRequireTraderLoyalty,
                       locale_override: preferencesState.localeOverride,
                       enable_manual_task_fail: preferencesState.enableManualTaskFail,
+                      hide_completed_task_objectives: preferencesState.hideCompletedTaskObjectives,
+                      show_all_filter: preferencesState.showAllFilter,
+                      show_available_filter: preferencesState.showAvailableFilter,
+                      show_locked_filter: preferencesState.showLockedFilter,
+                      show_completed_filter: preferencesState.showCompletedFilter,
+                      show_failed_filter: preferencesState.showFailedFilter,
                       use_automatic_level_calculation:
                         preferencesState.useAutomaticLevelCalculation,
+                      needed_items_sort_by: preferencesState.neededItemsSortBy,
+                      needed_items_sort_direction: preferencesState.neededItemsSortDirection,
+                      needed_items_hide_owned: preferencesState.neededItemsHideOwned,
+                      needed_items_card_style: preferencesState.neededItemsCardStyle,
+                      map_zoom_speed: preferencesState.mapZoomSpeed,
+                      pinned_task_ids: preferencesState.pinnedTaskIds,
+                      task_filter_presets: preferencesState.taskFilterPresets,
+                      skill_sort_mode: preferencesState.skillSortMode,
                     };
                   },
                 });

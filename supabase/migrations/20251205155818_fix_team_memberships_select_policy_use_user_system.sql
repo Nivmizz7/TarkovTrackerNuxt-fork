@@ -28,4 +28,4 @@ BEGIN
         )
     ';
   END IF;
-END $$;
+END $$;;

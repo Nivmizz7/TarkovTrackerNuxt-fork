@@ -2,6 +2,7 @@
  * Composable for calling Supabase Edge Functions
  * Provides typed methods for common edge function operations
  */
+import { logger } from '@/utils/logger';
 import type { PurgeCacheResponse } from '@/types/edge';
 import type {
   CreateTeamResponse,
@@ -9,7 +10,6 @@ import type {
   KickMemberResponse,
   LeaveTeamResponse,
 } from '@/types/team';
-import { logger } from '@/utils/logger';
 type GameMode = 'pvp' | 'pve';
 export const useEdgeFunctions = () => {
   const { $supabase } = useNuxtApp();

@@ -4,8 +4,8 @@
       :text="
         isSingleItem && !selfCompletedNeed
           ? currentCount >= neededCount
-            ? 'Click to uncollect'
-            : 'Click to collect'
+            ? t('needed_items.click_to_uncollect', 'Click to uncollect')
+            : t('needed_items.click_to_collect', 'Click to collect')
           : ''
       "
     >
@@ -14,14 +14,18 @@
         :class="[
           itemCardClasses,
           {
-            'hover:ring-primary-400 hover:ring-opacity-50 cursor-pointer transition-all hover:ring-2 active:scale-[0.98]':
+            'cursor-pointer transition-all active:scale-[0.98]':
               hasItem && isSingleItem && !selfCompletedNeed,
           },
         ]"
+        :role="hasItem && isSingleItem && !selfCompletedNeed ? 'button' : undefined"
+        :tabindex="hasItem && isSingleItem && !selfCompletedNeed ? 0 : undefined"
+        :aria-label="hasItem && isSingleItem && !selfCompletedNeed ? cardAriaLabel : undefined"
         @click="handleCardClick"
+        @keydown.enter="handleCardClick"
+        @keydown.space.prevent="handleCardClick"
       >
         <template v-if="hasItem">
-          <!-- Item image with count badge -->
           <div :class="imageContainerClasses">
             <div class="absolute top-0 left-0 z-10">
               <div
@@ -30,15 +34,23 @@
               >
                 {{ formatNumber(currentCount) }}/{{ formatNumber(neededCount) }}
                 <ItemIndicators
-                  :found-in-raid="props.need.foundInRaid"
+                  :found-in-raid="props.need.foundInRaid ?? false"
                   fir-icon-class="h-4 w-4"
                   :is-craftable="isCraftable"
                   :craftable-title="craftableTitle"
                   craftable-icon-base-class="h-4 w-4 opacity-90"
                   :craftable-icon-class="craftableIconClass"
                   :kappa-required="isKappaRequired"
-                  :kappa-title="$t('task.kappa_req', 'Required for Kappa quest')"
-                  kappa-icon-class="h-4 w-4 text-warning-400"
+                  :kappa-title="$t('needed_items.task_kappa_req', 'Required for Kappa quest')"
+                  kappa-icon-class="h-4 w-4 text-kappa"
+                  :lightkeeper-required="isLightkeeperRequired"
+                  :lightkeeper-title="
+                    $t(
+                      'page.tasks.questcard.lightkeeper_tooltip',
+                      'This quest is required to unlock the Lightkeeper trader'
+                    )
+                  "
+                  lightkeeper-icon-class="h-4 w-4 text-lightkeeper"
                   @craft="goToCraftStation"
                 />
               </div>
@@ -56,12 +68,39 @@
               size="small"
               simple-mode
               fill
-              class="h-full w-full"
+              :class="[
+                'h-full w-full',
+                isSingleItem && !selfCompletedNeed ? '!cursor-pointer' : '',
+              ]"
             />
+            <div
+              v-if="selfCompletedNeed || currentCount >= neededCount"
+              class="pointer-events-none absolute right-1 bottom-1 z-20"
+              aria-hidden="true"
+            >
+              <div
+                class="bg-success-600 flex h-6 w-6 items-center justify-center rounded-full shadow-md"
+              >
+                <UIcon name="i-mdi-check" class="h-4 w-4 text-white" />
+              </div>
+            </div>
+            <div
+              v-if="cardStyle === 'compact' && !isSingleItem && !selfCompletedNeed"
+              class="bg-surface-900/70 absolute inset-x-0 bottom-0 z-20 flex justify-center p-1"
+              @click.stop
+            >
+              <ItemCountControls
+                :current-count="currentCount"
+                :needed-count="neededCount"
+                size="xs"
+                @decrease="$emit('decreaseCount')"
+                @increase="$emit('increaseCount')"
+                @toggle="$emit('toggleCount')"
+                @set-count="(count) => $emit('setCount', count)"
+              />
+            </div>
           </div>
-          <!-- Card content -->
-          <div class="flex flex-1 flex-col p-2">
-            <!-- Item name -->
+          <div v-if="cardStyle === 'expanded'" class="flex flex-1 flex-col p-2">
             <div class="flex min-h-10 items-start justify-center">
               <span
                 class="line-clamp-2 text-center text-[clamp(0.7rem,2.5vw,0.875rem)] leading-snug font-medium"
@@ -69,7 +108,6 @@
                 {{ item?.name ?? '' }}
               </span>
             </div>
-            <!-- Task/Station link -->
             <div class="flex min-h-7 w-full items-center justify-center overflow-hidden">
               <template v-if="props.need.needType == 'taskObjective' && relatedTask">
                 <TaskLink
@@ -82,17 +120,17 @@
                 <StationLink
                   v-if="relatedStation"
                   :station="relatedStation"
+                  :module-id="props.need.hideoutModule.id"
                   compact
                   class="max-w-full text-[clamp(0.625rem,2vw,0.75rem)]"
                 />
-                <span class="ml-1 text-[clamp(0.625rem,2vw,0.75rem)] text-gray-400">
+                <span class="text-surface-400 ml-1 text-[clamp(0.625rem,2vw,0.75rem)]">
                   {{ props.need.hideoutModule.level }}
                 </span>
               </template>
             </div>
-            <!-- Requirements (Level & Tasks Before) -->
             <div
-              class="flex min-h-10 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[clamp(0.625rem,1.8vw,0.75rem)] text-gray-400"
+              class="text-surface-400 flex min-h-10 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[clamp(0.625rem,1.8vw,0.75rem)]"
             >
               <span
                 v-if="levelRequired > 0 && levelRequired > playerLevel"
@@ -106,7 +144,6 @@
                 {{ lockedBefore }} before
               </span>
             </div>
-            <!-- Controls - hide for single items since clicking image toggles -->
             <div v-if="!isSingleItem" class="mt-auto flex items-center justify-center pt-2">
               <template v-if="!selfCompletedNeed">
                 <ItemCountControls
@@ -149,23 +186,24 @@
   </KeepAlive>
 </template>
 <script setup lang="ts">
-  import { computed, defineAsyncComponent, inject } from 'vue';
+  import ItemCountControls from '@/features/neededitems/ItemCountControls.vue';
   import {
     createDefaultNeededItemContext,
     neededItemKey,
   } from '@/features/neededitems/neededitem-keys';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { useLocaleNumberFormatter } from '@/utils/formatters';
-  import ItemCountControls from './ItemCountControls.vue';
+  import type { NeededItemHideoutModule, NeededItemTaskObjective } from '@/types/tarkov';
   const TaskLink = defineAsyncComponent(() => import('@/features/tasks/TaskLink.vue'));
   const StationLink = defineAsyncComponent(() => import('@/features/hideout/StationLink.vue'));
-  const emit = defineEmits(['decreaseCount', 'increaseCount', 'toggleCount', 'setCount']);
-  const props = defineProps({
-    need: {
-      type: Object,
-      required: true,
-    },
-  });
+  const emit = defineEmits<{
+    (event: 'decreaseCount' | 'increaseCount' | 'toggleCount'): void;
+    (event: 'setCount', count: number): void;
+  }>();
+  const props = defineProps<{
+    need: NeededItemTaskObjective | NeededItemHideoutModule;
+  }>();
+  const { t } = useI18n({ useScope: 'global' });
   const formatNumber = useLocaleNumberFormatter();
   const tarkovStore = useTarkovStore();
   const playerLevel = computed(() => tarkovStore.playerLevel());
@@ -180,14 +218,27 @@
     currentCount,
     isCraftable,
     isKappaRequired,
+    isLightkeeperRequired,
     levelRequired,
     lockedBefore,
     item,
     imageItem,
+    cardStyle,
   } = inject(neededItemKey, createDefaultNeededItemContext());
   const hasItem = computed(() => Boolean(item.value));
-  // Simplified UI for single-quantity items
   const isSingleItem = computed(() => neededCount.value === 1);
+  const cardAriaLabel = computed(() => {
+    const itemName = item.value?.name || t('needed_items.item', 'Item');
+    const status =
+      currentCount.value >= neededCount.value
+        ? t('needed_items.collected', 'Collected')
+        : t('needed_items.not_collected', 'Not collected');
+    const action =
+      currentCount.value >= neededCount.value
+        ? t('needed_items.click_to_uncollect', 'Click to uncollect')
+        : t('needed_items.click_to_collect', 'Click to collect');
+    return `${itemName}. ${status}. ${action}`;
+  });
   const handleCardClick = () => {
     if (hasItem.value && isSingleItem.value && !selfCompletedNeed.value) {
       emit('toggleCount');
@@ -197,16 +248,15 @@
     return {
       'bg-gradient-to-t from-complete to-surface':
         selfCompletedNeed.value || currentCount.value >= neededCount.value,
-      'bg-gray-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
+      'bg-surface-800': !(selfCompletedNeed.value || currentCount.value >= neededCount.value),
     };
   });
   const imageContainerClasses = computed(() => {
     const baseLayoutClasses =
-      'relative z-0 aspect-[4/3] w-full shrink-0 origin-bottom overflow-hidden rounded-t-lg';
-    const transitionClasses = 'transition-transform duration-150 ease-out will-change-transform';
-    const hoverClasses =
-      'hover:z-20 hover:-translate-y-1 hover:scale-[1.08] hover:shadow-2xl hover:ring-1 hover:ring-white/10';
-    return [baseLayoutClasses, transitionClasses, hoverClasses];
+      'relative z-0 aspect-[4/3] w-full shrink-0 origin-bottom overflow-hidden';
+    const roundedClasses = cardStyle.value === 'compact' ? 'rounded-lg' : 'rounded-t-lg';
+    const cursorClass = isSingleItem.value && !selfCompletedNeed.value ? 'cursor-pointer' : '';
+    return [baseLayoutClasses, roundedClasses, cursorClass];
   });
   const itemCountTagClasses = computed(() => {
     return {

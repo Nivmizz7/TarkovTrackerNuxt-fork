@@ -4,14 +4,11 @@
 UPDATE public.user_system
 SET is_admin = false
 WHERE is_admin IS NULL;
-
 ALTER TABLE public.user_system
   ALTER COLUMN is_admin SET DEFAULT false,
   ALTER COLUMN is_admin SET NOT NULL;
-
 REVOKE INSERT (is_admin) ON public.user_system FROM anon, authenticated;
 REVOKE UPDATE (is_admin) ON public.user_system FROM anon, authenticated;
-
 CREATE OR REPLACE FUNCTION public.prevent_user_system_admin_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -43,7 +40,6 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS user_system_protect_is_admin ON public.user_system;
 CREATE TRIGGER user_system_protect_is_admin
   BEFORE INSERT OR UPDATE ON public.user_system

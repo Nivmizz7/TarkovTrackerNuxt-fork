@@ -8,7 +8,7 @@
           </div>
         </div>
         <AppTooltip v-if="task.minPlayerLevel != 0" text="Minimum level required to access task">
-          <InfoRow icon="mdi-menu-right" class="text-sm text-gray-400">
+          <InfoRow icon="mdi-menu-right" class="text-surface-400 text-sm">
             <i18n-t keypath="page.tasks.questcard.level" scope="global">
               <template #count>{{ task.minPlayerLevel }}</template>
             </i18n-t>
@@ -18,26 +18,26 @@
         <InfoRow
           v-if="preferencesStore.getShowPreviousQuests && task?.predecessors?.length"
           icon="mdi-lock-open-outline"
-          class="mb-1 text-sm text-gray-400"
+          class="text-surface-400 mb-1 text-sm"
         >
-          <i18n-t keypath="page.tasks.questcard.lockedbefore" scope="global">
+          <i18n-t keypath="page.tasks.questcard.locked_before" scope="global">
             <template #count>{{ lockedBefore }}</template>
           </i18n-t>
         </InfoRow>
         <!-- Previous Task(s) links (immediate parents only) -->
         <div v-if="preferencesStore.getShowPreviousQuests && parentTasks.length" class="mb-1">
-          <div class="flex items-start text-sm text-gray-400">
+          <div class="text-surface-400 flex items-start text-sm">
             <UIcon name="i-mdi-arrow-left" class="mt-0.5 mr-1 h-4 w-4 shrink-0" />
             <div>
-              <span class="text-gray-500">
-                {{ t('page.tasks.questcard.previoustasks', 'Previous Task(s):') }}
+              <span class="text-surface-500">
+                {{ t('page.tasks.questcard.previous_tasks', 'Previous Task(s):') }}
               </span>
               <div class="flex flex-col">
                 <router-link
                   v-for="parent in parentTasks"
                   :key="parent.id"
                   :to="`/tasks?task=${parent.id}`"
-                  class="text-primary-400 hover:text-primary-300"
+                  class="text-link hover:text-link-hover"
                   @contextmenu="(e: MouseEvent) => handleTaskContextMenu(e, parent)"
                 >
                   {{ parent.name }}
@@ -50,26 +50,26 @@
         <InfoRow
           v-if="preferencesStore.getShowNextQuests && task?.successors?.length"
           icon="mdi-lock"
-          class="mb-1 text-sm text-gray-400"
+          class="text-surface-400 mb-1 text-sm"
         >
-          <i18n-t keypath="page.tasks.questcard.lockedbehind" scope="global">
+          <i18n-t keypath="page.tasks.questcard.locked_behind" scope="global">
             <template #count>{{ lockedBehind }}</template>
           </i18n-t>
         </InfoRow>
         <!-- Next Quest(s) links (immediate children only) -->
         <div v-if="preferencesStore.getShowNextQuests && childTasks.length" class="mb-1">
-          <div class="flex items-start text-sm text-gray-400">
+          <div class="text-surface-400 flex items-start text-sm">
             <UIcon name="i-mdi-arrow-right" class="mt-0.5 mr-1 h-4 w-4 shrink-0" />
             <div>
-              <span class="text-gray-500">
-                {{ t('page.tasks.questcard.nexttasks', 'Next Task(s):') }}
+              <span class="text-surface-500">
+                {{ t('page.tasks.questcard.next_tasks', 'Next Task(s):') }}
               </span>
               <div class="flex flex-col">
                 <router-link
                   v-for="child in childTasks"
                   :key="child.id"
                   :to="`/tasks?task=${child.id}`"
-                  class="text-primary-400 hover:text-primary-300"
+                  class="text-link hover:text-link-hover"
                   @contextmenu="(e: MouseEvent) => handleTaskContextMenu(e, child)"
                 >
                   {{ child.name }}
@@ -78,7 +78,7 @@
             </div>
           </div>
         </div>
-        <InfoRow v-if="task?.factionName != 'Any'" class="mb-1 text-sm text-gray-400">
+        <InfoRow v-if="task?.factionName !== 'Any'" class="text-surface-400 mb-1 text-sm">
           <template #icon>
             <img :src="factionImage" class="mx-1 h-6 w-6 invert" />
           </template>
@@ -87,33 +87,21 @@
         <!-- Required labels (Kappa, Lightkeeper) -->
         <div v-if="preferencesStore.getShowRequiredLabels" class="mb-1 flex flex-wrap gap-1">
           <UBadge v-if="task.kappaRequired" size="xs" color="primary" variant="solid">
-            {{ t('page.tasks.questcard.kapparequired', 'KAPPA REQUIRED') }}
+            {{ t('page.tasks.questcard.kappa_required', 'KAPPA REQUIRED') }}
           </UBadge>
           <UBadge v-if="task.lightkeeperRequired" size="xs" color="info" variant="solid">
-            {{ t('page.tasks.questcard.lightkeeperrequired', 'LIGHTKEEPER REQUIRED') }}
+            {{ t('page.tasks.questcard.lightkeeper_required', 'LIGHTKEEPER REQUIRED') }}
           </UBadge>
-        </div>
-        <!-- Not Required label (Non-Kappa) -->
-        <div v-if="preferencesStore.getShowNotRequiredLabels && nonKappa" class="mb-1 flex">
-          <div class="mr-1">
-            <UBadge size="xs" color="error" variant="outline">
-              {{ t('page.tasks.questcard.nonkappa') }}
-            </UBadge>
-          </div>
         </div>
         <InfoRow
           v-if="activeUserView === 'all' && neededBy.length > 0"
           icon="mdi-account-multiple-outline"
-          class="mb-1 text-sm text-gray-400"
+          class="text-surface-400 mb-1 text-sm"
         >
-          <i18n-t keypath="page.tasks.questcard.neededby" scope="global">
+          <i18n-t keypath="page.tasks.questcard.needed_by" scope="global">
             <template #names>{{ neededBy.join(', ') }}</template>
           </i18n-t>
         </InfoRow>
-        <!-- Task ID -->
-        <div v-if="preferencesStore.getShowTaskIds" class="mt-2 text-xs text-gray-600">
-          ID: {{ task.id }}
-        </div>
       </div>
     </template>
     <template v-else>
@@ -144,16 +132,13 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useRouter } from 'vue-router';
-  import ContextMenu from '@/components/ui/ContextMenu.vue';
-  import ContextMenuItem from '@/components/ui/ContextMenuItem.vue';
+  import InfoRow from '@/features/tasks/InfoRow.vue';
+  import TaskLink from '@/features/tasks/TaskLink.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import type { Task } from '@/types/tarkov';
-  import InfoRow from './InfoRow.vue';
-  import TaskLink from './TaskLink.vue';
   const props = defineProps<{
     task: Task;
     xs: boolean;
@@ -196,7 +181,7 @@
   };
   const openTaskWiki = () => {
     if (selectedTask.value?.wikiLink) {
-      window.open(selectedTask.value.wikiLink, '_blank');
+      window.open(selectedTask.value.wikiLink, '_blank', 'noopener,noreferrer');
     }
   };
 </script>

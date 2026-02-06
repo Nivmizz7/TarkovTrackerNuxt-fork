@@ -1,5 +1,4 @@
 ALTER FUNCTION public.sync_user_system_team_memberships() SET search_path TO 'public';
-
 ALTER POLICY "Users can view own and teammates progress" ON public.user_progress
   USING (
     (user_progress.user_id = (select auth.uid()))
@@ -11,7 +10,6 @@ ALTER POLICY "Users can view own and teammates progress" ON public.user_progress
         AND tm2.user_id = user_progress.user_id
     )
   );
-
 ALTER POLICY "Admins can read audit logs" ON public.admin_audit_log
   USING (
     EXISTS (
@@ -21,7 +19,6 @@ ALTER POLICY "Admins can read audit logs" ON public.admin_audit_log
         AND user_system.is_admin = true
     )
   );
-
 ALTER POLICY "Users can view own and teammate memberships" ON public.team_memberships
   USING (
     user_id = (select auth.uid())
@@ -38,7 +35,6 @@ ALTER POLICY "Users can view own and teammate memberships" ON public.team_member
       LIMIT 1
     )
   );
-
 ALTER POLICY "Users can view teams they are members of" ON public.teams
   USING (
     owner_id = (select auth.uid())
@@ -55,20 +51,16 @@ ALTER POLICY "Users can view teams they are members of" ON public.teams
       LIMIT 1
     )
   );
-
 DROP TRIGGER IF EXISTS set_user_progress_updated_at ON public.user_progress;
 CREATE TRIGGER set_user_progress_updated_at
   BEFORE UPDATE ON public.user_progress
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
 DROP TRIGGER IF EXISTS set_user_system_updated_at ON public.user_system;
 CREATE TRIGGER set_user_system_updated_at
   BEFORE UPDATE ON public.user_system
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
 DROP TRIGGER IF EXISTS set_teams_updated_at ON public.teams;
 CREATE TRIGGER set_teams_updated_at
   BEFORE UPDATE ON public.teams
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
 DROP INDEX IF EXISTS public.idx_api_tokens_token_hash;

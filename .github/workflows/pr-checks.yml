@@ -126,9 +126,8 @@ jobs:
 
       - name: Start preview server
         run: |
-          setsid npx wrangler pages dev dist --port 3000 &
+          npx serve dist -s -l 3000 &
           echo $! > /tmp/server.pid
-          trap 'kill -TERM -"$(cat /tmp/server.pid)" 2>/dev/null || pkill -f wrangler || true' EXIT
           npx wait-on http://localhost:3000 --timeout 60000 --httpTimeout 20000
 
       - name: Lighthouse CI
@@ -146,8 +145,6 @@ jobs:
         if: always()
         run: |
           if [ -f /tmp/server.pid ]; then
-            kill -TERM -"$(cat /tmp/server.pid)" 2>/dev/null || pkill -f wrangler || true
+            kill "$(cat /tmp/server.pid)" 2>/dev/null || true
             rm -f /tmp/server.pid
-          else
-            pkill -f wrangler || true
           fi

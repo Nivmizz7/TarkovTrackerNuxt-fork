@@ -1,10 +1,7 @@
 <template>
-  <div class="bg-background text-surface-200 flex min-h-screen flex-col">
+  <div class="bg-military-background text-surface-200 flex min-h-screen flex-col">
     <!-- Holiday Effects -->
-    <template v-if="holidayEffectsEnabled">
-      <HolidayLights />
-      <HolidaySnow />
-    </template>
+    <HolidaySnow v-if="holidayEffectsEnabled" />
     <!-- Holiday Toggle (always visible) -->
     <HolidayToggle />
     <!-- Skip navigation link for accessibility -->
@@ -26,7 +23,7 @@
     <!-- Main content area -->
     <main
       id="main-content"
-      class="relative z-0 flex flex-1 flex-col pt-16 transition-all duration-300 ease-in-out"
+      class="relative z-0 flex flex-1 flex-col pt-11 transition-all duration-300 ease-in-out"
       :style="{
         marginLeft: mainMarginLeft,
       }"
@@ -46,11 +43,12 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { computed, defineAsyncComponent } from 'vue';
   import { useRoute } from 'vue-router';
   import { useSharedBreakpoints } from '@/composables/useSharedBreakpoints';
   import { useAppStore } from '@/stores/useApp';
   import { usePreferencesStore } from '@/stores/usePreferences';
+  const DRAWER_EXPANDED_WIDTH = '224px';
+  const DRAWER_COLLAPSED_WIDTH = '64px';
   const appStore = useAppStore();
   const route = useRoute();
   const preferencesStore = usePreferencesStore();
@@ -58,10 +56,11 @@
   const holidayEffectsEnabled = computed(() => preferencesStore.getEnableHolidayEffects);
   // Use shared breakpoints to avoid duplicate listeners
   const { belowMd } = useSharedBreakpoints();
-  // Calculate margin-left based on sidebar state
   const mainMarginLeft = computed(() => {
-    if (belowMd.value) return '56px'; // Rail width on mobile
-    return appStore.drawerRail ? '56px' : '224px';
+    if (belowMd.value) {
+      return appStore.mobileDrawerExpanded ? DRAWER_EXPANDED_WIDTH : DRAWER_COLLAPSED_WIDTH;
+    }
+    return appStore.drawerRail ? DRAWER_COLLAPSED_WIDTH : DRAWER_EXPANDED_WIDTH;
   });
   const usesWindowScroll = computed(() => {
     return Boolean(route.meta?.usesWindowScroll);
@@ -74,7 +73,7 @@
     }))
   );
   const contentWrapperClass = computed(() => [
-    'min-h-0 flex-1 p-2 pt-0',
+    'flex min-h-0 flex-1 flex-col p-0',
     usesWindowScroll.value ? 'overflow-visible' : 'overflow-y-auto',
   ]);
   // Lazy-load shell components

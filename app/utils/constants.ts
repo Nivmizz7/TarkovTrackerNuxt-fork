@@ -4,6 +4,7 @@ export const SPECIAL_STATIONS = {
   STASH: 'stash',
   CULTIST_CIRCLE: 'cultist-circle',
 } as const;
+export const OFFLINE_ENV_FILE = '.env.example';
 // PMC faction values
 export const PMC_FACTIONS = ['USEC', 'BEAR'] as const;
 export const DEFAULT_PMC_FACTION = 'USEC' as const;
@@ -36,7 +37,13 @@ export const API_GAME_MODES = {
   [GAME_MODES.PVP]: 'regular',
   [GAME_MODES.PVE]: 'pve',
 } as const;
-export const GAME_MODE_OPTIONS = [
+export interface GameModeOption {
+  label: string;
+  value: GameMode;
+  icon: string;
+  description: string;
+}
+export const GAME_MODE_OPTIONS: GameModeOption[] = [
   {
     label: 'PvP',
     value: GAME_MODES.PVP,
@@ -50,16 +57,14 @@ export const GAME_MODE_OPTIONS = [
     description: 'Player vs Environment (Co-op)',
   },
 ];
-// Scav Karma (Fence Rep) tasks excluded from tracking
-// These "Compensation for Damage" tasks require Scav Karma validation which isn't yet implemented
-// They would always show as incomplete without proper Fence reputation tracking
-export const EXCLUDED_SCAV_KARMA_TASKS = [
-  '61e6e5e0f5b9633f6719ed95', // Compensation for Damage - Trust (Scav Karma -1 Quest)
-  '61e6e60223374d168a4576a6', // Compensation for Damage - Wager (Scav Karma -1 Quest)
-  '61e6e621bfeab00251576265', // Compensation for Damage - Collection (Scav Karma -1 Quest)
-  '61e6e615eea2935bc018a2c5', // Compensation for Damage - Barkeep (Scav Karma -1 Quest)
-  '61e6e60c5ca3b3783662be27', // Compensation for Damage - Wergild (Scav Karma -3 Quest)
-];
+export const TASK_STATE = {
+  LOCKED: 'LOCKED',
+  AVAILABLE: 'AVAILABLE',
+  ACTIVE: 'ACTIVE',
+  COMPLETE: 'COMPLETE',
+  FAILED: 'FAILED',
+} as const;
+export type TaskState = (typeof TASK_STATE)[keyof typeof TASK_STATE];
 // Currency item IDs to exclude from quest item tracking
 // These represent in-game currencies that are always obtainable and don't need to be tracked
 export const CURRENCY_ITEM_IDS = [
@@ -97,8 +102,8 @@ export const MAP_NAME_MAPPING: Record<string, string> = {
   'the lab': 'lab',
   'ground zero 21+': 'groundzero',
   'ground zero tutorial': 'groundzero', // Tutorial uses same map as Ground Zero
-  'the labyrinth': 'labyrinth', // New map, no SVG available yet
-  terminal: 'terminal', // New map, no SVG available yet
+  'the labyrinth': 'labyrinth',
+  terminal: 'terminal',
 };
 // API Permissions
 export const API_PERMISSIONS: Record<string, { title: string; description: string }> = {
@@ -131,14 +136,48 @@ export const LIMITS = {
   TEAM_MAX_MEMBERS: 5,
   // Random name generation default length
   RANDOM_NAME_LENGTH: 6,
+  MAX_SKILL_LEVEL: 51,
   // Maximum player level in Tarkov
   GAME_MAX_LEVEL: 79,
 } as const;
+export const MAX_SKILL_LEVEL = LIMITS.MAX_SKILL_LEVEL;
 // Cache configuration (sync with tarkovCache.ts)
 export const CACHE_CONSTANTS = {
   // Cache TTL in hours
   DEFAULT_TTL_HOURS: 12,
   MAX_TTL_HOURS: 24,
+} as const;
+// Traders that don't have traditional loyalty levels (LL1-4)
+// Uses normalizedName for language-independent, stable identification
+export const TRADERS_WITHOUT_LOYALTY_LEVELS = [
+  'fence',
+  'lightkeeper',
+  'btr-driver',
+  'mr-kerman',
+  'taran',
+  'voevoda',
+  'radio-station',
+] as const;
+// Traders with non-standard or no reputation tracking (hide rep input entirely)
+export const TRADERS_WITHOUT_REPUTATION = [
+  'lightkeeper',
+  'btr-driver',
+  'mr-kerman',
+  'taran',
+  'voevoda',
+  'radio-station',
+] as const;
+export const TASK_ID_REGISTRY = {
+  GETTING_ACQUAINTED: '625d700cc48e6c62a440fab5',
+  A_HELPING_HAND: '6752f6d83038f7df520c83e8',
+  EASY_MONEY_PART_1: '66058cb22cee99303f1ba067',
+  HOT_WHEELS: '673f4e956f1b89c7bc0f56ef',
+} as const;
+// Traders that require a specific task to unlock
+export const TRADER_UNLOCK_TASKS: Record<string, string> = {
+  lightkeeper: TASK_ID_REGISTRY.GETTING_ACQUAINTED,
+  'btr-driver': TASK_ID_REGISTRY.A_HELPING_HAND,
+  ref: TASK_ID_REGISTRY.EASY_MONEY_PART_1,
 } as const;
 // Trader display order (matches in-game order)
 // Uses normalizedName for language-independent, stable identification
@@ -159,8 +198,63 @@ export const TRADER_ORDER = [
   'voevoda', // Arena trader
   'radio-station', // Radio operator
 ] as const;
-export const HOT_WHEELS_TASK_ID = '673f4e956f1b89c7bc0f56ef';
+export const HOT_WHEELS_TASK_ID = TASK_ID_REGISTRY.HOT_WHEELS;
 export const MANUAL_FAIL_TASK_IDS: readonly string[] = [HOT_WHEELS_TASK_ID];
+// Skill display order (matches in-game character screen order)
+export const SKILL_ORDER_ID = [
+  'Strength',
+  'Vitality',
+  'Health',
+  'StressResistance',
+  'Metabolism',
+  'Immunity',
+  'Perception',
+  'Intellect',
+  'Attention',
+  'Charisma',
+  'Pistol',
+  'Revolver',
+  'SMG',
+  'Assault',
+  'Shotgun',
+  'Sniper',
+  'LMG',
+  'HMG',
+  'Launcher',
+  'AttachedLauncher',
+  'Throwing',
+  'Melee',
+  'DMR',
+  'AimDrills',
+  'TroubleShooting',
+  'Surgery',
+  'CovertMovement',
+  'Search',
+  'MagDrills',
+  'LightVests',
+  'HeavyVests',
+  'WeaponTreatment',
+  'Crafting',
+  'HideoutManagement',
+] as const;
+export const SKILL_SORT_MODES = ['priority', 'ingame'] as const;
+export type SkillSortMode = (typeof SKILL_SORT_MODES)[number];
+// Sort skills by in-game order
+// Skills not in SKILL_ORDER_ID are placed at the end, sorted alphabetically
+export function sortSkillsByGameOrder<T extends { name: string; id?: string; key?: string }>(
+  skills: T[]
+): T[] {
+  return [...skills].sort((a, b) => {
+    const aId = a.id ?? a.key;
+    const bId = b.id ?? b.key;
+    const aIndex = aId ? SKILL_ORDER_ID.indexOf(aId as (typeof SKILL_ORDER_ID)[number]) : -1;
+    const bIndex = bId ? SKILL_ORDER_ID.indexOf(bId as (typeof SKILL_ORDER_ID)[number]) : -1;
+    if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  });
+}
 // Sort traders by in-game order using normalizedName
 // Traders not in TRADER_ORDER are placed at the end, sorted alphabetically
 export function sortTradersByGameOrder<T extends { name: string; normalizedName?: string }>(

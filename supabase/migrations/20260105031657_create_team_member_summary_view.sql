@@ -1,27 +1,28 @@
--- Create a summary view for team member progress stats
+-- Create a view that returns only summary data for team members
+-- This dramatically reduces egress by avoiding full JSONB transfers
 
-CREATE OR REPLACE VIEW public.team_member_summary AS
-SELECT
+CREATE OR REPLACE VIEW team_member_summary AS
+SELECT 
   user_id,
   current_game_mode,
-  (pvp_data ->> 'displayName'::text) AS pvp_display_name,
-  ((pvp_data ->> 'level'::text))::integer AS pvp_level,
+  -- PVP summary
+  pvp_data->>'displayName' as pvp_display_name,
+  (pvp_data->>'level')::int as pvp_level,
   (
-    SELECT COUNT(*)::integer
-    FROM jsonb_each(COALESCE((user_progress.pvp_data -> 'taskCompletions'::text), '{}'::jsonb)) tc(
-      key,
-      value
-    )
-    WHERE ((tc.value ->> 'complete'::text))::boolean = true
-  ) AS pvp_tasks_completed,
-  (pve_data ->> 'displayName'::text) AS pve_display_name,
-  ((pve_data ->> 'level'::text))::integer AS pve_level,
+    SELECT COUNT(*)::int 
+    FROM jsonb_each(COALESCE(pvp_data->'taskCompletions', '{}'::jsonb)) as tc
+    WHERE (tc.value->>'complete')::boolean = true
+  ) as pvp_tasks_completed,
+  -- PVE summary  
+  pve_data->>'displayName' as pve_display_name,
+  (pve_data->>'level')::int as pve_level,
   (
-    SELECT COUNT(*)::integer
-    FROM jsonb_each(COALESCE((user_progress.pve_data -> 'taskCompletions'::text), '{}'::jsonb)) tc(
-      key,
-      value
-    )
-    WHERE ((tc.value ->> 'complete'::text))::boolean = true
-  ) AS pve_tasks_completed
-FROM public.user_progress;
+    SELECT COUNT(*)::int 
+    FROM jsonb_each(COALESCE(pve_data->'taskCompletions', '{}'::jsonb)) as tc
+    WHERE (tc.value->>'complete')::boolean = true
+  ) as pve_tasks_completed
+FROM user_progress;
+
+-- Grant access to the view
+GRANT SELECT ON team_member_summary TO authenticated;
+GRANT SELECT ON team_member_summary TO anon;;

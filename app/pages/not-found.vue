@@ -8,3 +8,13 @@
     </UCard>
   </div>
 </template>
+<script setup lang="ts">
+  const { t } = useI18n({ useScope: 'global' });
+  definePageMeta({
+    layout: 'default',
+  });
+  useHead(() => ({
+    title: t('page.not_found.title', 'Not Found'),
+    meta: [{ name: 'robots', content: 'noindex, nofollow' }],
+  }));
+</script>

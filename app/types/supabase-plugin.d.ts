@@ -27,6 +27,7 @@ export interface SupabaseUser {
 export interface SupabasePlugin {
   client: SupabaseClient;
   user: SupabaseUser;
+  isOfflineMode: boolean;
   signInWithOAuth: (
     provider: 'twitch' | 'discord' | 'google' | 'github',
     options?: { skipBrowserRedirect?: boolean; redirectTo?: string }

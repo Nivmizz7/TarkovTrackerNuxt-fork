@@ -1,7 +1,12 @@
 <script setup lang="ts">
-  import { computed, useSlots, useAttrs } from 'vue';
   import type { SelectMenuItem } from '#ui/types';
-  type SelectMenuValue = SelectMenuItem | number | string;
+  type SelectMenuItemLike =
+    | SelectMenuItem
+    | (Record<string, string | number | boolean | undefined> & {
+        label?: string;
+        value?: string | number;
+      });
+  type SelectMenuValue = SelectMenuItemLike | number | string;
   const props = defineProps<{
     modelValue?: SelectMenuValue;
     items?: SelectMenuValue[];
@@ -14,26 +19,31 @@
   const hasCustomDefault = computed(() => !!slots.default);
   const valueKey = computed(() => props.valueKey || 'value');
   const labelKey = computed(() => props.labelKey || 'label');
+  const asRecord = (value: SelectMenuValue | undefined) =>
+    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+  const getProp = (value: SelectMenuValue | undefined, key: string) => {
+    const record = asRecord(value);
+    if (!record) return value;
+    const hasKey = Object.prototype.hasOwnProperty.call(record, key) || key in (record as object);
+    return hasKey ? record[key] : value;
+  };
   const getCurrentLabel = () => {
     if (!props.items?.length) return '';
     const currentItem = props.items.find((item) => {
-      const itemValue = typeof item === 'object' && item !== null ? item[valueKey.value] : item;
-      const compareValue =
-        typeof props.modelValue === 'object' && props.modelValue !== null
-          ? props.modelValue[valueKey.value]
-          : props.modelValue;
+      const itemValue = getProp(item, valueKey.value);
+      const compareValue = getProp(props.modelValue, valueKey.value);
       return itemValue === compareValue;
     });
     if (!currentItem) return '';
-    return typeof currentItem === 'object' && currentItem !== null
-      ? currentItem[labelKey.value]
-      : currentItem;
+    const currentRecord = asRecord(currentItem);
+    return currentRecord ? currentRecord[labelKey.value] : currentItem;
   };
   const getLongestLabel = () => {
     if (!props.items?.length) return '';
-    const labels = props.items.map((item) =>
-      typeof item === 'object' && item !== null ? item[labelKey.value] : item
-    );
+    const labels = props.items.map((item) => {
+      const record = asRecord(item);
+      return record ? record[labelKey.value] : item;
+    });
     return labels.reduce((longest, label) => {
       const labelStr = String(label || '');
       const longestStr = String(longest || '');

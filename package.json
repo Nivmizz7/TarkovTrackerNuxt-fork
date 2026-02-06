@@ -10,6 +10,8 @@
     "@nuxt/eslint": "^1.13.0",
     "@nuxt/image": "^2.0.0",
     "@nuxt/ui": "^4.4.0",
+    "@nuxtjs/i18n": "^10.2.1",
+    "@nuxtjs/sitemap": "^7.6.0",
     "@pinia/nuxt": "^0.11.3",
     "@supabase/supabase-js": "^2.93.3",
     "@unhead/vue": "^2.1.2",
@@ -77,9 +79,12 @@
     "build": "nuxt build",
     "deps": "npx taze --r --I",
     "dev": "nuxt dev",
-    "format": "prettier --write \"app/**/*.{js,ts,tsx,vue,json,json5,css,scss,md}\" \"docs/**/*.{md,markdown}\" \"nuxt.config.ts\" \"app.config.ts\" \"vitest.config.ts\" \"vitest.happy-dom.config.ts\" \"vitest.nuxt.config.ts\" \"vitest.shared.ts\" \"tests/test-setup.ts\" && eslint app --fix",
-    "format:check": "prettier --check \"app/**/*.{js,ts,tsx,vue,json,json5,css,scss,md}\" \"docs/**/*.{md,markdown}\" \"nuxt.config.ts\" \"app.config.ts\" \"vitest.config.ts\" \"vitest.happy-dom.config.ts\" \"vitest.nuxt.config.ts\" \"vitest.shared.ts\" \"tests/test-setup.ts\"",
+    "format": "prettier --write \"app/**/*.{js,ts,tsx,vue,json,json5,css,scss,md}\" \"docs/**/*.{md,markdown}\" \"nuxt.config.ts\" \"app/app.config.ts\" \"vitest.config.ts\" \"vitest.happy-dom.config.ts\" \"vitest.nuxt.config.ts\" \"vitest.shared.ts\" \"tests/test-setup.ts\" && eslint app --fix",
+    "format:check": "prettier --check \"app/**/*.{js,ts,tsx,vue,json,json5,css,scss,md}\" \"docs/**/*.{md,markdown}\" \"nuxt.config.ts\" \"app/app.config.ts\" \"vitest.config.ts\" \"vitest.happy-dom.config.ts\" \"vitest.nuxt.config.ts\" \"vitest.shared.ts\" \"tests/test-setup.ts\"",
     "generate": "nuxt generate",
+    "i18n:check": "node scripts/lint-i18n.mjs",
+    "i18n:sync": "node scripts/sync-i18n.mjs",
+    "i18n:translate": "node scripts/translate-i18n.mjs",
     "lint": "eslint app --max-warnings=0",
     "typecheck": "nuxt typecheck",
     "lint:fix": "eslint app --fix",
@@ -101,13 +106,20 @@
     "app/**/*.{json,json5,css,md}": [
       "prettier --write"
     ],
+    "app/locales/*.json5": [
+      "node scripts/lint-i18n.mjs"
+    ],
     "docs/**/*.{md,markdown}": [
       "prettier --write"
     ],
     "tests/test-setup.ts": [
       "prettier --write"
     ],
-    "{nuxt,app}.config.ts": [
+    "nuxt.config.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "app/app.config.ts": [
       "prettier --write",
       "eslint --fix"
     ],

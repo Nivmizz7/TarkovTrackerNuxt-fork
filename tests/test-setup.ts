@@ -76,18 +76,12 @@ vi.stubGlobal('$fetch', mockFetch);
 try {
   enableAutoUnmount(afterEach);
 } catch (error) {
-  if (!(error instanceof Error && error.message.includes('already enabled'))) {
+  if (!(error instanceof Error && error.message.includes('cannot be called more than once'))) {
     throw error;
   }
 }
-let warnSpy: ReturnType<typeof vi.spyOn>;
 beforeAll(() => {
   const originalWarn = console.warn.bind(console);
-  warnSpy = vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
-    const first = args[0];
-    if (typeof first === 'string' && first.startsWith('[Icon]')) return;
-    originalWarn(...args);
-  });
 });
 afterAll(() => {
   vi.restoreAllMocks();
