@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'fs';
 import { join, relative } from 'path';
 const EXCEPTION_FILES = [
   'app/components/HolidayToggle.vue',
@@ -114,9 +114,18 @@ function scanFile(filePath) {
 function main() {
   const appDir = join(process.cwd(), 'app');
   const baselineFile = join(process.cwd(), '.color-lint-baseline');
+  let baseline = null;
   if (!existsSync(appDir)) {
     console.error('Error: app/ directory not found');
     process.exit(1);
+  }
+  try {
+    const baselineValue = parseInt(readFileSync(baselineFile, 'utf-8').trim(), 10);
+    baseline = Number.isNaN(baselineValue) ? null : baselineValue;
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
   }
   console.log('🎨 Scanning for raw palette color usage...\n');
   const allFiles = getAllFiles(appDir);
@@ -139,7 +148,7 @@ function main() {
   });
   if (allViolations.length === 0) {
     console.log('✅ No raw palette violations found!\n');
-    if (existsSync(baselineFile)) {
+    if (baseline !== null) {
       writeFileSync(baselineFile, '0');
     }
     process.exit(0);
@@ -154,9 +163,7 @@ function main() {
       });
       console.log('');
     });
-  let baseline = null;
-  if (existsSync(baselineFile)) {
-    baseline = parseInt(readFileSync(baselineFile, 'utf-8').trim(), 10);
+  if (baseline !== null) {
     console.log(`📊 Baseline: ${baseline} violations`);
     console.log(`📊 Current:  ${allViolations.length} violations\n`);
     if (allViolations.length > baseline) {
