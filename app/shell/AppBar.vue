@@ -45,9 +45,9 @@
             target="_blank"
             rel="noopener noreferrer"
             :aria-label="t('footer.call_to_action.discord', 'Discord')"
-            class="hover:bg-surface-700 flex h-7 w-7 items-center justify-center rounded transition-colors"
+            class="hover:bg-surface-700 group flex h-7 w-7 items-center justify-center rounded transition-colors"
           >
-            <DiscordIcon class="text-discord hover:text-white" />
+            <DiscordIcon class="text-discord group-hover:text-discord-hover" />
           </a>
         </AppTooltip>
         <AppTooltip :text="t('footer.call_to_action.github')">

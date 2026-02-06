@@ -1,16 +1,20 @@
 <template>
   <div class="scrollbar-none flex items-center justify-end gap-1.5 overflow-x-auto">
-    <UButton
-      size="xs"
-      variant="ghost"
-      :color="isPinned ? 'primary' : 'neutral'"
-      :icon="isPinned ? 'i-mdi-pin' : 'i-mdi-pin-outline'"
-      class="shrink-0"
-      :aria-label="
-        isPinned ? t('page.tasks.questcard.unpin_task') : t('page.tasks.questcard.pin_task')
-      "
-      @click.stop="emit('togglePin')"
-    />
+    <AppTooltip
+      :text="isPinned ? t('page.tasks.questcard.unpin_task') : t('page.tasks.questcard.pin_task')"
+    >
+      <UButton
+        size="xs"
+        variant="ghost"
+        :color="isPinned ? 'primary' : 'neutral'"
+        :icon="isPinned ? 'i-mdi-pin' : 'i-mdi-pin-outline'"
+        class="shrink-0"
+        :aria-label="
+          isPinned ? t('page.tasks.questcard.unpin_task') : t('page.tasks.questcard.pin_task')
+        "
+        @click.stop="emit('togglePin')"
+      />
+    </AppTooltip>
     <AppTooltip
       v-if="(task.minPlayerLevel ?? 0) > 0"
       :text="
