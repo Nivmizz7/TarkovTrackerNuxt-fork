@@ -88,7 +88,6 @@ BEGIN
   RETURN;
 END;
 $$;
-
 -- Run the test function and output results
 DO $$
 DECLARE
@@ -116,10 +115,8 @@ BEGIN
   END IF;
 END;
 $$;
-
 -- Drop the test function (cleanup)
 DROP FUNCTION IF EXISTS public.test_user_system_admin_rls();
-
 -- Add comment documenting the security measures
 COMMENT ON COLUMN public.user_system.is_admin IS
   'Admin flag for privileged users. Protected by:

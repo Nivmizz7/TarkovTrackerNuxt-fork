@@ -4,10 +4,8 @@
 -- Prevent multiple teams per user per game mode.
 CREATE UNIQUE INDEX IF NOT EXISTS team_memberships_user_mode_unique
   ON public.team_memberships (user_id, game_mode);
-
 -- Remove duplicate index left over from legacy team_id rename.
 DROP INDEX IF EXISTS public.idx_user_system_team_id;
-
 -- Sync user_system when memberships change.
 CREATE OR REPLACE FUNCTION public.sync_user_system_team_memberships()
 RETURNS trigger
@@ -75,7 +73,6 @@ BEGIN
   RETURN NULL;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS team_memberships_sync_user_system ON public.team_memberships;
 CREATE TRIGGER team_memberships_sync_user_system
 AFTER INSERT OR UPDATE OR DELETE ON public.team_memberships

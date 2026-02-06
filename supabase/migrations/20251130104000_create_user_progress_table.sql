@@ -10,5 +10,4 @@ CREATE TABLE IF NOT EXISTS public.user_progress (
   CONSTRAINT user_progress_current_game_mode_check
     CHECK (current_game_mode = ANY (ARRAY['pvp'::text, 'pve'::text]))
 );
-
 ALTER TABLE public.user_progress ENABLE ROW LEVEL SECURITY;
