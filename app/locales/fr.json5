@@ -166,6 +166,11 @@
         items: 'Objets de quête',
         kappa: 'Quêtes Kappa',
         lightkeeper: 'Lightkeeper',
+        filtered_status_active: 'Filtré par les réglages de quêtes',
+        filtered_status_inactive: 'Tous les types de quêtes actifs',
+        filtered_notice: 'Les statistiques du tableau de bord sont synchronisées avec vos filtres de quêtes.',
+        filtered_warning: 'Des filtres de quêtes sont actifs. Les statistiques du tableau de bord peuvent être restreintes.',
+        filtered_warning_tooltip: 'Ces valeurs suivent vos filtres de quêtes (Kappa, Lightkeeper et quêtes non spéciales).',
       },
       milestones: {
         title: 'Progression',

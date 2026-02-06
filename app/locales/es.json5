@@ -166,6 +166,11 @@
         items: 'Objetos de misión',
         kappa: 'Misiones Kappa',
         lightkeeper: 'Guardafaro',
+        filtered_status_active: 'Filtrado por configuración de tareas',
+        filtered_status_inactive: 'Todos los tipos de tareas activos',
+        filtered_notice: 'Las estadísticas del panel están sincronizadas con tus filtros de tareas.',
+        filtered_warning: 'Los filtros de tareas están activos. Las estadísticas del panel pueden estar limitadas.',
+        filtered_warning_tooltip: 'Estas cifras siguen tus filtros de tareas (Kappa, Guardafaro y no especiales).',
       },
       milestones: {
         title: 'Hitos',

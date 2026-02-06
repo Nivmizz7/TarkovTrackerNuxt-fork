@@ -7,6 +7,17 @@
           {{ t('page.dashboard.changelog.title') }}
         </div>
         <div class="flex items-center gap-2">
+          <UButton
+            v-if="preferencesStore.dashboardNoticeDismissed"
+            size="xs"
+            color="neutral"
+            variant="link"
+            :aria-label="t('page.dashboard.notice.show')"
+            @click="showDashboardNotice"
+          >
+            {{ t('page.dashboard.notice.show') }}
+          </UButton>
+          <span v-if="preferencesStore.dashboardNoticeDismissed" class="text-surface-600">|</span>
           <NuxtLink
             to="/changelog"
             class="text-primary-400 hover:text-primary-300 text-xs transition-colors"
@@ -27,6 +38,24 @@
         </div>
       </div>
       <div v-if="isOpen" :id="PANEL_ID" class="mt-2 space-y-3 text-xs sm:text-sm">
+        <div
+          v-if="!preferencesStore.dashboardNoticeDismissed"
+          class="border-surface-700 bg-surface-900/70 text-surface-200 flex items-start gap-2 rounded-lg border px-3 py-2 text-xs leading-snug"
+        >
+          <UIcon name="i-mdi-bullhorn-outline" class="text-primary-400 mt-0.5 h-4 w-4 shrink-0" />
+          <span class="flex-1">
+            {{ t('page.dashboard.notice.message') }}
+          </span>
+          <UButton
+            icon="i-mdi-close"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :aria-label="t('page.dashboard.notice.dismiss')"
+            :title="t('page.dashboard.notice.dismiss')"
+            @click="dismissDashboardNotice"
+          />
+        </div>
         <div v-if="pending" class="text-surface-400 text-xs">
           {{ t('page.dashboard.changelog.loading') }}
         </div>
@@ -58,6 +87,7 @@
 </template>
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
+  import { usePreferencesStore } from '@/stores/usePreferences';
   import {
     cleanText,
     extractReleaseBullets,
@@ -81,6 +111,7 @@
   const GITHUB_RELEASES_URL = `https://api.github.com/repos/${githubOwner}/${githubRepo}/releases`;
   const GITHUB_COMMITS_URL = `https://api.github.com/repos/${githubOwner}/${githubRepo}/commits`;
   const { locale, t } = useI18n({ useScope: 'global' });
+  const preferencesStore = usePreferencesStore();
   const isOpen = ref(false);
   const hasRequested = ref(false);
   const entries = ref<ChangelogItem[]>([]);
@@ -444,6 +475,13 @@
   };
   const toggleOpen = () => {
     isOpen.value = !isOpen.value;
+  };
+  const dismissDashboardNotice = () => {
+    preferencesStore.setDashboardNoticeDismissed(true);
+  };
+  const showDashboardNotice = () => {
+    preferencesStore.setDashboardNoticeDismissed(false);
+    isOpen.value = true;
   };
   const retry = async () => {
     hasRequested.value = false;

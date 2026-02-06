@@ -166,6 +166,11 @@
         items: 'Aufgabengegenstände',
         kappa: 'Kappa Aufgaben',
         lightkeeper: 'Leuchtturmwärter',
+        filtered_status_active: 'Durch Aufgabenfilter eingeschränkt',
+        filtered_status_inactive: 'Alle Aufgabentypen aktiv',
+        filtered_notice: 'Dashboard-Statistiken sind mit deinen Aufgabenfiltern synchronisiert.',
+        filtered_warning: 'Aufgabenfilter sind aktiv. Dashboard-Statistiken können eingeschränkt sein.',
+        filtered_warning_tooltip: 'Diese Werte folgen deinen Aufgabenfiltern (Kappa, Leuchtturmwärter und normale Aufgaben).',
       },
       milestones: {
         title: 'Meilensteine',

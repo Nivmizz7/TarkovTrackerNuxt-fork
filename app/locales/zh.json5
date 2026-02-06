@@ -166,6 +166,11 @@
         items: '任务物品',
         kappa: 'Kappa保险箱任务',
         lightkeeper: '灯塔守护者任务',
+        filtered_status_active: '已按任务设置筛选',
+        filtered_status_inactive: '已启用全部任务类型',
+        filtered_notice: '总览统计会与您的任务筛选设置同步。',
+        filtered_warning: '任务筛选已启用，总览统计可能被收窄。',
+        filtered_warning_tooltip: '这些数据会遵循你的任务筛选设置（Kappa、灯塔守护者和普通任务）。',
       },
       milestones: {
         title: '里程碑',

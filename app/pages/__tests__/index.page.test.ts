@@ -75,6 +75,9 @@ const setup = async (
     derivedLevel?: number;
     enableHolidayEffects?: boolean;
     useAutomaticLevel?: boolean;
+    showKappaTasks?: boolean;
+    showNonSpecialTasks?: boolean;
+    showLightkeeperTasks?: boolean;
   } = {}
 ) => {
   const {
@@ -82,6 +85,9 @@ const setup = async (
     derivedLevel = 10,
     enableHolidayEffects = false,
     useAutomaticLevel = false,
+    showKappaTasks = true,
+    showNonSpecialTasks = true,
+    showLightkeeperTasks = true,
   } = storeOverrides;
   vi.resetModules();
   vi.doMock('@/composables/useDashboardStats', () => ({
@@ -107,6 +113,15 @@ const setup = async (
       },
       get getUseAutomaticLevelCalculation() {
         return useAutomaticLevel;
+      },
+      get getHideNonKappaTasks() {
+        return !showKappaTasks;
+      },
+      get getShowNonSpecialTasks() {
+        return showNonSpecialTasks;
+      },
+      get getShowLightkeeperTasks() {
+        return showLightkeeperTasks;
       },
       dashboardNoticeDismissed: false,
       setDashboardNoticeDismissed: vi.fn(),
@@ -274,6 +289,26 @@ describe('dashboard page', () => {
         global: { stubs: defaultGlobalStubs },
       });
       expect(wrapper.find('[data-testid="milestone-card"]').exists()).toBe(true);
+    });
+  });
+  describe('dashboard filter warning', () => {
+    it('renders neutral notice when all task-type filters are enabled', async () => {
+      const { DashboardPage } = await setup();
+      const wrapper = await mountSuspended(DashboardPage, {
+        global: { stubs: defaultGlobalStubs },
+      });
+      const notice = wrapper.find('[data-testid="dashboard-filter-notice"]');
+      expect(notice.exists()).toBe(true);
+      expect(notice.attributes('data-filter-active')).toBe('false');
+    });
+    it('renders warning state when task-type filters are narrowed', async () => {
+      const { DashboardPage } = await setup({}, { showNonSpecialTasks: false });
+      const wrapper = await mountSuspended(DashboardPage, {
+        global: { stubs: defaultGlobalStubs },
+      });
+      const notice = wrapper.find('[data-testid="dashboard-filter-notice"]');
+      expect(notice.exists()).toBe(true);
+      expect(notice.attributes('data-filter-active')).toBe('true');
     });
   });
   describe('level calculation modes', () => {

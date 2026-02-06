@@ -1,35 +1,5 @@
 <template>
   <div class="container mx-auto min-h-[calc(100vh-250px)] max-w-7xl px-4 py-6">
-    <div v-if="!preferencesStore.dashboardNoticeDismissed" class="mb-3">
-      <div
-        class="border-surface-800 bg-surface-900/70 text-surface-200 flex items-start gap-2 rounded-lg border px-3 py-2 text-xs leading-snug sm:text-sm"
-      >
-        <UIcon name="i-mdi-bullhorn-outline" class="text-primary-400 mt-0.5 h-4 w-4 shrink-0" />
-        <span class="flex-1">
-          {{ $t('page.dashboard.notice.message') }}
-        </span>
-        <UButton
-          icon="i-mdi-close"
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          :aria-label="$t('page.dashboard.notice.dismiss')"
-          :title="$t('page.dashboard.notice.dismiss')"
-          @click="dismissDashboardNotice"
-        />
-      </div>
-    </div>
-    <div v-else class="mb-3 flex justify-end">
-      <UButton
-        size="xs"
-        color="neutral"
-        variant="link"
-        :aria-label="$t('page.dashboard.notice.show')"
-        @click="showDashboardNotice"
-      >
-        {{ $t('page.dashboard.notice.show') }}
-      </UButton>
-    </div>
     <DashboardChangelog />
     <!-- Progress Breakdown Section -->
     <div class="content-visibility-auto-280 mb-8">
@@ -46,6 +16,32 @@
           class="text-surface-400 group-hover:text-surface-200 ml-auto h-5 w-5 transition-colors"
         />
       </button>
+      <div
+        class="text-surface-400 mb-2 flex items-center justify-end gap-1.5 text-[11px] sm:text-xs"
+        data-testid="dashboard-filter-notice"
+        :data-filter-active="hasDashboardFiltersActive ? 'true' : 'false'"
+      >
+        <UIcon
+          :name="hasDashboardFiltersActive ? 'i-mdi-filter-variant-minus' : 'i-mdi-filter-variant'"
+          class="h-3.5 w-3.5 shrink-0"
+          :class="hasDashboardFiltersActive ? 'text-warning-300' : 'text-info-300'"
+        />
+        <span :class="hasDashboardFiltersActive ? 'text-warning-200' : 'text-surface-400'">
+          {{
+            hasDashboardFiltersActive
+              ? $t('page.dashboard.progress.filtered_status_active')
+              : $t('page.dashboard.progress.filtered_status_inactive')
+          }}
+        </span>
+        <AppTooltip :text="$t('page.dashboard.progress.filtered_warning_tooltip')">
+          <UIcon
+            name="i-mdi-help-circle-outline"
+            class="h-3.5 w-3.5 shrink-0"
+            :class="hasDashboardFiltersActive ? 'text-warning-300' : 'text-info-300'"
+            aria-hidden="true"
+          />
+        </AppTooltip>
+      </div>
       <div
         v-show="!progressSectionCollapsed"
         class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
@@ -218,12 +214,12 @@
   const dashboardStats = useDashboardStats();
   const router = useRouter();
   const preferencesStore = usePreferencesStore();
-  const dismissDashboardNotice = () => {
-    preferencesStore.setDashboardNoticeDismissed(true);
-  };
-  const showDashboardNotice = () => {
-    preferencesStore.setDashboardNoticeDismissed(false);
-  };
+  const hasDashboardFiltersActive = computed(() => {
+    const showKappaTasks = preferencesStore.getHideNonKappaTasks !== true;
+    const showNonSpecialTasks = preferencesStore.getShowNonSpecialTasks !== false;
+    const showLightkeeperTasks = preferencesStore.getShowLightkeeperTasks !== false;
+    return !(showKappaTasks && showNonSpecialTasks && showLightkeeperTasks);
+  });
   // Unwrap trader stats for template usage
   const traderStats = computed(() => dashboardStats.traderStats.value || []);
   // Percentage calculations (numeric)

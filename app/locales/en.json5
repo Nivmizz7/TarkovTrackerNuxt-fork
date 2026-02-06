@@ -172,6 +172,11 @@
         items: 'Task Items',
         kappa: 'Kappa Tasks',
         lightkeeper: 'Lightkeeper',
+        filtered_status_active: 'Filtered by task settings',
+        filtered_status_inactive: 'Using all task types',
+        filtered_notice: 'Dashboard stats are synced to your task filter settings.',
+        filtered_warning: 'Task filters are active. Dashboard stats may be narrowed.',
+        filtered_warning_tooltip: 'These stats follow your task filter settings (Kappa, Lightkeeper, and non-special tasks).',
       },
       milestones: {
         title: 'Milestones',
