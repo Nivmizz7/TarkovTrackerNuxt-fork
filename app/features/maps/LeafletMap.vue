@@ -78,6 +78,16 @@
         >
           {{ t('maps.factions.scav') }}
         </UButton>
+        <UButton
+          v-if="props.showSpawnToggle && hasPmcSpawns"
+          :color="showPmcSpawns ? 'primary' : 'neutral'"
+          :variant="showPmcSpawns ? 'soft' : 'ghost'"
+          size="sm"
+          icon="i-mdi-crosshairs-gps"
+          @click="showPmcSpawns = !showPmcSpawns"
+        >
+          {{ t('maps.layers.pmc_spawns', 'PMC Spawns') }}
+        </UButton>
         <div class="bg-surface-900/40 flex items-center gap-2 rounded px-2 py-1">
           <span class="text-surface-400 text-[10px] font-semibold uppercase">
             {{ t('maps.zoom') }}
@@ -111,6 +121,10 @@
           <div class="flex items-center gap-1">
             <div class="bg-extract-scav h-3 w-3 rounded-full" />
             <span>{{ t('maps.legend.team_objectives') }}</span>
+          </div>
+          <div v-if="showPmcSpawns && hasPmcSpawns" class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-full" :style="{ backgroundColor: MAP_COLORS.PMC_SPAWN }" />
+            <span>{{ t('maps.legend.pmc_spawn', 'PMC Spawn') }}</span>
           </div>
           <div v-if="showPmcExtracts" class="flex items-center gap-1">
             <UIcon name="i-mdi-exit-run" class="text-success-500 h-3 w-3" />
@@ -167,7 +181,7 @@
     isValidMapTileConfig,
   } from '@/utils/mapCoordinates';
   import { MAP_MARKER_COLORS as MAP_COLORS } from '@/utils/theme-colors';
-  import type { MapExtract, TarkovMap } from '@/types/tarkov';
+  import type { MapExtract, MapSpawn, TarkovMap } from '@/types/tarkov';
   import type L from 'leaflet';
   interface MapZone {
     map: { id: string };
@@ -191,6 +205,8 @@
     showPmcExtracts?: boolean;
     showScavExtracts?: boolean;
     showExtractToggle?: boolean;
+    showPmcSpawns?: boolean;
+    showSpawnToggle?: boolean;
     showLegend?: boolean;
     height?: number;
   }
@@ -198,6 +214,7 @@
     marks: () => [],
     showExtracts: true,
     showExtractToggle: true,
+    showSpawnToggle: true,
     showLegend: true,
     height: undefined,
   });
@@ -215,6 +232,7 @@
   const mapContainer = ref<HTMLElement | null>(null);
   const showPmcExtracts = ref(props.showPmcExtracts ?? props.showExtracts);
   const showScavExtracts = ref(props.showScavExtracts ?? props.showExtracts);
+  const showPmcSpawns = ref(props.showPmcSpawns ?? false);
   const {
     mapInstance,
     leaflet,
@@ -224,6 +242,7 @@
     isLoading,
     objectiveLayer,
     extractLayer,
+    spawnLayer,
     setFloor,
     refreshView,
     clearMarkers,
@@ -235,6 +254,16 @@
     if (!props.map?.extracts) return [];
     return props.map.extracts;
   });
+  const mapPmcSpawns = computed<MapSpawn[]>(() => {
+    if (!props.map?.spawns) return [];
+    return props.map.spawns.filter((spawn) => {
+      const hasPmcAccess = spawn.sides?.includes('pmc') || spawn.sides?.includes('all');
+      const isPlayerSpawn =
+        spawn.categories?.includes('player') || spawn.categories?.includes('all');
+      return Boolean(spawn.position) && Boolean(hasPmcAccess) && Boolean(isPlayerSpawn);
+    });
+  });
+  const hasPmcSpawns = computed(() => mapPmcSpawns.value.length > 0);
   const isCoopExtract = (extract: MapExtract): boolean => {
     return /\bco-?op\b/i.test(extract.name || '');
   };
@@ -752,10 +781,32 @@
       extractLayer.value!.addLayer(labelMarker);
     });
   }
+  function createPmcSpawnMarkers(): void {
+    if (!leaflet.value || !spawnLayer.value || !props.map) return;
+    if (!isValidMapSvgConfig(props.map.svg) && !isValidMapTileConfig(props.map.tile)) return;
+    spawnLayer.value.clearLayers();
+    if (!showPmcSpawns.value || mapPmcSpawns.value.length === 0) return;
+    const L = leaflet.value;
+    mapPmcSpawns.value.forEach((spawn) => {
+      const position = spawn.position;
+      if (!position) return;
+      const latLng = gameToLatLng(position.x, position.z);
+      const marker = L.circleMarker([latLng.lat, latLng.lng], {
+        radius: 3,
+        fillColor: MAP_COLORS.PMC_SPAWN,
+        fillOpacity: 0.9,
+        color: MAP_COLORS.MARKER_BORDER,
+        weight: 1,
+        interactive: false,
+      });
+      spawnLayer.value!.addLayer(marker);
+    });
+  }
   function updateMarkers(): void {
     try {
       createObjectiveMarkers();
       createExtractMarkers();
+      createPmcSpawnMarkers();
     } catch (error) {
       logger.error('Error updating map markers:', error);
     }
@@ -784,6 +835,22 @@
     applyZoomSpeed(mapInstance.value, speed);
   });
   watch([showPmcExtracts, showScavExtracts], () => createExtractMarkers());
+  watch(showPmcSpawns, () => createPmcSpawnMarkers());
+  watch(
+    () => props.showPmcSpawns,
+    (value) => {
+      if (typeof value === 'boolean') {
+        showPmcSpawns.value = value;
+      }
+    }
+  );
+  watch(
+    () => props.map,
+    () => {
+      lastMarksHash.value = '';
+      updateMarkers();
+    }
+  );
   watch(selectedFloor, () => {
     lastMarksHash.value = '';
     updateMarkers();
@@ -801,9 +868,16 @@
     { immediate: true }
   );
   watch(
-    [isLoading, objectiveLayer, extractLayer, mapInstance],
-    ([loading, objectiveMarkersLayer, extractMarkersLayer, instance]) => {
-      if (loading || !instance || !objectiveMarkersLayer || !extractMarkersLayer) return;
+    [isLoading, objectiveLayer, extractLayer, spawnLayer, mapInstance],
+    ([loading, objectiveMarkersLayer, extractMarkersLayer, spawnMarkersLayer, instance]) => {
+      if (
+        loading ||
+        !instance ||
+        !objectiveMarkersLayer ||
+        !extractMarkersLayer ||
+        !spawnMarkersLayer
+      )
+        return;
       lastMarksHash.value = '';
       waitForSvgAndUpdateMarkers(instance);
     },

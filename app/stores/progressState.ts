@@ -15,6 +15,11 @@
  * @module stores/userProgressState
  */
 import { GAME_MODES, type GameMode } from '@/utils/constants';
+import {
+  isTaskComplete as isTaskCompletionComplete,
+  isTaskFailed as isTaskCompletionFailed,
+  type RawTaskCompletion,
+} from '@/utils/taskStatus';
 import type { _GettersTree } from 'pinia';
 // State interfaces
 interface TaskObjective {
@@ -217,9 +222,9 @@ export const getters = {
   getHideoutPartCount: (state: UserState) => (objectiveId: string) =>
     getCurrentData(state)?.hideoutParts?.[objectiveId]?.count ?? 0,
   isTaskComplete: (state: UserState) => (taskId: string) =>
-    getCurrentData(state)?.taskCompletions?.[taskId]?.complete ?? false,
+    isTaskCompletionComplete(getCurrentData(state)?.taskCompletions?.[taskId] as RawTaskCompletion),
   isTaskFailed: (state: UserState) => (taskId: string) =>
-    getCurrentData(state)?.taskCompletions?.[taskId]?.failed ?? false,
+    isTaskCompletionFailed(getCurrentData(state)?.taskCompletions?.[taskId] as RawTaskCompletion),
   isTaskObjectiveComplete: (state: UserState) => (objectiveId: string) =>
     getCurrentData(state)?.taskObjectives?.[objectiveId]?.complete ?? false,
   isHideoutPartComplete: (state: UserState) => (objectiveId: string) =>

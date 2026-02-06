@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
+import { TASK_ID_REGISTRY } from '@/utils/constants';
 const createProgressData = (taskCompletions: Record<string, unknown>) => ({
   level: 1,
   pmcFaction: 'USEC',
@@ -15,21 +16,43 @@ const createProgressData = (taskCompletions: Record<string, unknown>) => ({
   prestigeLevel: 0,
   skillOffsets: {},
 });
-const createStoreState = (taskCompletions: Record<string, unknown>) => ({
-  currentGameMode: 'pvp',
+const createStoreState = ({
+  currentGameMode = 'pvp',
+  pvpCompletions = {},
+  pveCompletions = {},
+}: {
+  currentGameMode?: 'pvp' | 'pve';
+  pvpCompletions?: Record<string, unknown>;
+  pveCompletions?: Record<string, unknown>;
+}) => ({
+  currentGameMode,
   gameEdition: 1,
-  pvp: createProgressData(taskCompletions),
-  pve: createProgressData({}),
+  pvp: createProgressData(pvpCompletions),
+  pve: createProgressData(pveCompletions),
 });
-const setupMocks = (
-  selfCompletions: Record<string, unknown>,
-  teammateCompletions: Record<string, unknown>
-) => {
+const setupMocks = ({
+  selfCompletions = {},
+  teammateCompletions = {},
+  selfState,
+  teammateState,
+  tasks = [{ id: 'task-1', name: 'Task One' }],
+  traders = [],
+}: {
+  selfCompletions?: Record<string, unknown>;
+  teammateCompletions?: Record<string, unknown>;
+  selfState?: ReturnType<typeof createStoreState>;
+  teammateState?: ReturnType<typeof createStoreState>;
+  tasks?: Array<Record<string, unknown>>;
+  traders?: Array<Record<string, unknown>>;
+}) => {
   vi.resetModules();
   setActivePinia(createPinia());
-  const task = { id: 'task-1', name: 'Task One' };
-  const selfStore = { $state: createStoreState(selfCompletions) };
-  const teammateStore = { $state: createStoreState(teammateCompletions) };
+  const selfStore = {
+    $state: selfState ?? createStoreState({ pvpCompletions: selfCompletions }),
+  };
+  const teammateStore = {
+    $state: teammateState ?? createStoreState({ pvpCompletions: teammateCompletions }),
+  };
   const teammateStores = ref({ 'teammate-1': teammateStore });
   vi.doMock('@/stores/useTeamStore', () => ({
     useTeamStore: () => ({ memberProfiles: {} }),
@@ -44,8 +67,8 @@ const setupMocks = (
   }));
   vi.doMock('@/stores/useMetadata', () => ({
     useMetadataStore: () => ({
-      tasks: [task],
-      traders: [],
+      tasks,
+      traders,
       hideoutStations: [],
       playerLevels: [],
       editions: [],
@@ -57,15 +80,62 @@ const setupMocks = (
 };
 describe('useProgressStore', () => {
   it('treats boolean teammate completions as completed', async () => {
-    setupMocks({ 'task-1': { complete: false, failed: false } }, { 'task-1': true });
+    setupMocks({
+      selfCompletions: { 'task-1': { complete: false, failed: false } },
+      teammateCompletions: { 'task-1': true },
+    });
     const { useProgressStore } = await import('@/stores/useProgress');
     const store = useProgressStore();
     expect(store.tasksCompletions['task-1']).toEqual({ self: false, 'teammate-1': true });
   });
   it('treats boolean false as not failed in tasksFailed', async () => {
-    setupMocks({ 'task-1': { complete: false, failed: true } }, { 'task-1': true });
+    setupMocks({
+      selfCompletions: { 'task-1': { complete: false, failed: true } },
+      teammateCompletions: { 'task-1': true },
+    });
     const { useProgressStore } = await import('@/stores/useProgress');
     const store = useProgressStore();
     expect(store.tasksFailed['task-1']).toEqual({ self: true, 'teammate-1': false });
+  });
+  it('unlocks Ref tasks in PvE using Easy Money - Part 1 PvE completion', async () => {
+    const refTask = {
+      id: 'ref-task',
+      name: 'Ref Task',
+      factionName: 'Any',
+      trader: { id: 'ref', name: 'Ref', normalizedName: 'ref' },
+    };
+    const easyMoneyPveTask = {
+      id: TASK_ID_REGISTRY.EASY_MONEY_PART_1_PVE,
+      name: 'Easy Money - Part 1 [PVE ZONE]',
+      factionName: 'Any',
+      trader: { id: 'skier', name: 'Skier', normalizedName: 'skier' },
+    };
+    setupMocks({
+      selfState: createStoreState({
+        currentGameMode: 'pve',
+        pveCompletions: { [TASK_ID_REGISTRY.EASY_MONEY_PART_1_PVE]: true },
+      }),
+      tasks: [refTask, easyMoneyPveTask],
+      traders: [{ id: 'fence', normalizedName: 'fence', name: 'Fence' }],
+    });
+    const { useProgressStore } = await import('@/stores/useProgress');
+    const store = useProgressStore();
+    expect(store.unlockedTasks['ref-task']?.self).toBe(true);
+  });
+  it('does not lock Ref tasks when unlock task is missing from loaded task payload', async () => {
+    const refTask = {
+      id: 'ref-task',
+      name: 'Ref Task',
+      factionName: 'Any',
+      trader: { id: 'ref', name: 'Ref', normalizedName: 'ref' },
+    };
+    setupMocks({
+      selfCompletions: {},
+      tasks: [refTask],
+      traders: [{ id: 'fence', normalizedName: 'fence', name: 'Fence' }],
+    });
+    const { useProgressStore } = await import('@/stores/useProgress');
+    const store = useProgressStore();
+    expect(store.unlockedTasks['ref-task']?.self).toBe(true);
   });
 });

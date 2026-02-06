@@ -1,5 +1,7 @@
 <template>
-  <div class="scrollbar-none flex items-center justify-end gap-1.5 overflow-x-auto">
+  <div
+    class="scrollbar-none flex flex-wrap items-center gap-1.5 sm:flex-nowrap sm:justify-end sm:overflow-x-auto"
+  >
     <AppTooltip
       :text="isPinned ? t('page.tasks.questcard.unpin_task') : t('page.tasks.questcard.pin_task')"
     >
@@ -156,18 +158,20 @@
       </UBadge>
     </AppTooltip>
     <slot name="actions" />
-    <AppTooltip v-if="isOurFaction" :text="t('page.tasks.questcard.more', 'More')">
-      <UButton
-        size="xs"
-        color="neutral"
-        variant="ghost"
-        class="shrink-0"
-        :aria-label="t('page.tasks.questcard.more', 'More')"
-        @click="emit('openMenu', $event)"
-      >
-        <UIcon name="i-mdi-dots-horizontal" aria-hidden="true" class="h-5 w-5" />
-      </UButton>
-    </AppTooltip>
+    <div class="hidden sm:flex">
+      <AppTooltip v-if="isOurFaction" :text="t('page.tasks.questcard.more', 'More')">
+        <UButton
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          class="shrink-0"
+          :aria-label="t('page.tasks.questcard.more', 'More')"
+          @click="emit('openMenu', $event)"
+        >
+          <UIcon name="i-mdi-dots-horizontal" aria-hidden="true" class="h-5 w-5" />
+        </UButton>
+      </AppTooltip>
+    </div>
   </div>
 </template>
 <script setup lang="ts">

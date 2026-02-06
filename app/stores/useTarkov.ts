@@ -17,6 +17,7 @@ import { usePreferencesStore } from '@/stores/usePreferences';
 import { GAME_MODES, SPECIAL_STATIONS, type GameMode } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
+import { getCompletionFlags, type RawTaskCompletion } from '@/utils/taskStatus';
 import type { GameEdition, HideoutStation, Task } from '@/types/tarkov';
 // ============================================================================
 // Constants
@@ -52,6 +53,7 @@ const coerceGameMode = (mode?: string | null): GameMode => {
 type TarkovStoreInstance = UserState & {
   $state: UserState;
   $patch(partialOrMutator: Partial<UserState> | ((state: UserState) => void)): void;
+  migrateTaskCompletionSchema(): { pvpMigrated: number; pveMigrated: number };
   repairGameModeFailedTasks(gameModeData: UserProgressData, tasksMap: Map<string, Task>): number;
   repairGameModeCompletedObjectives(
     gameModeData: UserProgressData,
@@ -112,6 +114,33 @@ const mergeCountableObjects = <T extends Record<string, CountableEntry>>(
     }
   }
   return merged;
+};
+const normalizeTaskCompletionEntry = (
+  completion: RawTaskCompletion
+): { complete?: boolean; failed?: boolean; timestamp?: number } | undefined => {
+  if (completion === null || completion === undefined) return undefined;
+  if (typeof completion === 'boolean') {
+    return { complete: completion, failed: false };
+  }
+  return {
+    complete: completion.complete === true,
+    failed: completion.failed === true,
+    timestamp: typeof completion.timestamp === 'number' ? completion.timestamp : undefined,
+  };
+};
+const normalizeTaskCompletionsMap = (
+  taskCompletions: Record<string, RawTaskCompletion> | undefined
+): number => {
+  if (!taskCompletions) return 0;
+  let migrated = 0;
+  for (const [taskId, completion] of Object.entries(taskCompletions)) {
+    if (typeof completion !== 'boolean') continue;
+    const normalized = normalizeTaskCompletionEntry(completion);
+    if (!normalized) continue;
+    taskCompletions[taskId] = normalized;
+    migrated += 1;
+  }
+  return migrated;
 };
 const getToastTranslate = () => {
   try {
@@ -498,26 +527,56 @@ const tarkovActions = {
       !this.pvp ||
       !this.pve ||
       ((this as unknown as Record<string, unknown>).level !== undefined && !this.pvp?.level);
+    const taskCompletionMigration = this.migrateTaskCompletionSchema();
+    const hasTaskCompletionMigration =
+      taskCompletionMigration.pvpMigrated > 0 || taskCompletionMigration.pveMigrated > 0;
     if (needsMigration) {
       logger.debug('Migrating legacy data structure to gamemode-aware structure');
       const migratedData = migrateToGameModeStructure(deepClone(this.$state));
       this.$patch(migratedData);
+      this.migrateTaskCompletionSchema();
       const { $supabase } = useNuxtApp();
       if ($supabase.user.loggedIn && $supabase.user.id) {
         try {
           lastLocalSyncTime = Date.now(); // Track for self-origin filtering
           $supabase.client.from('user_progress').upsert({
             user_id: $supabase.user.id,
-            current_game_mode: migratedData.currentGameMode,
-            game_edition: migratedData.gameEdition,
-            pvp_data: migratedData.pvp,
-            pve_data: migratedData.pve,
+            current_game_mode: this.currentGameMode,
+            game_edition: this.gameEdition,
+            pvp_data: this.pvp,
+            pve_data: this.pve,
           });
         } catch (error) {
           logger.error('Error saving migrated data to Supabase:', error);
         }
       }
+    } else if (hasTaskCompletionMigration) {
+      const { $supabase } = useNuxtApp();
+      if ($supabase.user.loggedIn && $supabase.user.id) {
+        try {
+          lastLocalSyncTime = Date.now();
+          $supabase.client.from('user_progress').upsert({
+            user_id: $supabase.user.id,
+            current_game_mode: this.currentGameMode,
+            game_edition: this.gameEdition,
+            pvp_data: this.pvp,
+            pve_data: this.pve,
+          });
+        } catch (error) {
+          logger.error('Error saving task completion migration to Supabase:', error);
+        }
+      }
     }
+  },
+  migrateTaskCompletionSchema(this: TarkovStoreInstance) {
+    const pvpMigrated = normalizeTaskCompletionsMap(this.pvp?.taskCompletions);
+    const pveMigrated = normalizeTaskCompletionsMap(this.pve?.taskCompletions);
+    if (pvpMigrated > 0 || pveMigrated > 0) {
+      logger.debug(
+        `[TarkovStore] Migrated legacy task completion schema - PvP: ${pvpMigrated}, PvE: ${pveMigrated}`
+      );
+    }
+    return { pvpMigrated, pveMigrated };
   },
   async resetOnlineProfile(this: TarkovStoreInstance) {
     const { $supabase } = useNuxtApp();
@@ -849,6 +908,7 @@ const tarkovActions = {
 } satisfies UserActions & {
   switchGameMode(mode: GameMode): Promise<void>;
   migrateDataIfNeeded(): void;
+  migrateTaskCompletionSchema(): { pvpMigrated: number; pveMigrated: number };
   resetOnlineProfile(): Promise<void>;
   resetCurrentGameModeData(): Promise<void>;
   resetPvPData(): Promise<void>;
@@ -1281,8 +1341,30 @@ export async function initializeTarkovSync() {
     }
     // Repair failed task states for existing users (runs once after data load)
     // This fixes data for users who completed tasks before the "failed alternatives" feature
-    tarkovStore.repairFailedTaskStates();
-    tarkovStore.repairCompletedTaskObjectives();
+    const completionSchemaMigration = tarkovStore.migrateTaskCompletionSchema();
+    const failedRepairResult = tarkovStore.repairFailedTaskStates();
+    const completedObjectivesRepairResult = tarkovStore.repairCompletedTaskObjectives();
+    const hasCompletionSchemaMigration =
+      completionSchemaMigration.pvpMigrated > 0 || completionSchemaMigration.pveMigrated > 0;
+    const hasRepairChanges =
+      failedRepairResult.pvpRepaired > 0 ||
+      failedRepairResult.pveRepaired > 0 ||
+      completedObjectivesRepairResult.pvpRepaired > 0 ||
+      completedObjectivesRepairResult.pveRepaired > 0;
+    if (hasCompletionSchemaMigration || hasRepairChanges) {
+      try {
+        lastLocalSyncTime = Date.now();
+        await $supabase.client.from('user_progress').upsert({
+          user_id: $supabase.user.id,
+          current_game_mode: tarkovStore.currentGameMode,
+          game_edition: tarkovStore.gameEdition,
+          pvp_data: tarkovStore.pvp,
+          pve_data: tarkovStore.pve,
+        });
+      } catch (error) {
+        logger.error('[TarkovStore] Failed to persist post-load data migration/repair:', error);
+      }
+    }
     const startSync = () => {
       if (syncController) return;
       if (pendingSyncWatchStop) {
@@ -1418,13 +1500,19 @@ function detectDataConflicts(
   const localTasks = local.taskCompletions || {};
   const remoteTasks = remote.taskCompletions || {};
   for (const taskId of Object.keys(remoteTasks)) {
-    const localTask = localTasks[taskId];
-    const remoteTask = remoteTasks[taskId];
-    if (localTask && remoteTask) {
-      // Normalize booleans to false when undefined to avoid false positives
+    const localTask = localTasks[taskId] as RawTaskCompletion;
+    const remoteTask = remoteTasks[taskId] as RawTaskCompletion;
+    if (
+      localTask !== undefined &&
+      localTask !== null &&
+      remoteTask !== undefined &&
+      remoteTask !== null
+    ) {
+      const localFlags = getCompletionFlags(localTask);
+      const remoteFlags = getCompletionFlags(remoteTask);
       if (
-        (localTask.complete ?? false) !== (remoteTask.complete ?? false) ||
-        (localTask.failed ?? false) !== (remoteTask.failed ?? false)
+        localFlags.complete !== remoteFlags.complete ||
+        localFlags.failed !== remoteFlags.failed
       ) {
         conflictCount++;
       }
@@ -1605,22 +1693,24 @@ function mergeProgressData(
   // - Once complete=true is set, it persists UNLESS the newer entry explicitly sets complete=false
   // - This prevents progress regression when syncing partial updates that omit the complete flag
   const mergeTaskCompletion = (
-    localComp: { complete?: boolean; failed?: boolean; timestamp?: number } | undefined,
-    remoteComp: { complete?: boolean; failed?: boolean; timestamp?: number } | undefined
+    localComp: RawTaskCompletion,
+    remoteComp: RawTaskCompletion
   ): { complete?: boolean; failed?: boolean; timestamp?: number } | undefined => {
-    if (!localComp) return remoteComp;
-    if (!remoteComp) return localComp;
-    const localTs = localComp.timestamp ?? 0;
-    const remoteTs = remoteComp.timestamp ?? 0;
+    const normalizedLocal = normalizeTaskCompletionEntry(localComp);
+    const normalizedRemote = normalizeTaskCompletionEntry(remoteComp);
+    if (!normalizedLocal) return normalizedRemote;
+    if (!normalizedRemote) return normalizedLocal;
+    const localTs = normalizedLocal.timestamp ?? 0;
+    const remoteTs = normalizedRemote.timestamp ?? 0;
     // Start with timestamp-based merge (newer entry takes precedence)
-    const base = remoteTs >= localTs ? remoteComp : localComp;
-    const other = remoteTs >= localTs ? localComp : remoteComp;
+    const base = remoteTs >= localTs ? normalizedRemote : normalizedLocal;
+    const other = remoteTs >= localTs ? normalizedLocal : normalizedRemote;
     const merged = { ...other, ...base };
     // Sticky complete: preserve complete=true unless explicitly overridden with complete=false
     // Check if the newer entry (base) explicitly sets complete to false via own property check
     const newerExplicitlySetsFalse =
       Object.prototype.hasOwnProperty.call(base, 'complete') && base.complete === false;
-    if ((localComp.complete || remoteComp.complete) && !newerExplicitlySetsFalse) {
+    if ((normalizedLocal.complete || normalizedRemote.complete) && !newerExplicitlySetsFalse) {
       merged.complete = true;
     }
     // Use the latest timestamp from either entry

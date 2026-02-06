@@ -18,8 +18,21 @@
     >
       <!-- 1) Identity + Header (Padded) -->
       <div class="flex flex-col" :class="compactClasses.header">
-        <div class="flex items-start justify-between gap-3">
-          <TaskCardHeader :task="task" />
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+          <div class="flex min-w-0 items-start justify-between gap-2">
+            <TaskCardHeader :task="task" class="min-w-0" />
+            <UButton
+              v-if="isOurFaction"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              class="shrink-0 sm:hidden"
+              :aria-label="t('page.tasks.questcard.more', 'More')"
+              @click.stop="openOverflowMenu"
+            >
+              <UIcon name="i-mdi-dots-horizontal" aria-hidden="true" class="h-5 w-5" />
+            </UButton>
+          </div>
           <TaskCardBadges
             :task="task"
             :is-pinned="isPinned"
@@ -188,23 +201,6 @@
     <!-- Overflow / Context Menu -->
     <ContextMenu ref="taskContextMenu">
       <template #default="{ close }">
-        <ContextMenuItem
-          v-if="task.wikiLink"
-          icon="/img/logos/wikilogo.webp"
-          :label="t('page.tasks.questcard.view_on_wiki', 'View on Wiki')"
-          @click="
-            openTaskWiki();
-            close();
-          "
-        />
-        <ContextMenuItem
-          icon="/img/logos/tarkovdevlogo.webp"
-          :label="t('page.tasks.questcard.view_on_tarkov_dev', 'View on Tarkov.dev')"
-          @click="
-            openTaskOnTarkovDev();
-            close();
-          "
-        />
         <ContextMenuItem
           icon="i-mdi-link-variant"
           :label="t('page.tasks.questcard.copy_task_link', 'Copy Task Link')"

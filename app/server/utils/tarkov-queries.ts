@@ -158,6 +158,24 @@ export const TARKOV_TASKS_CORE_QUERY = `
     }
   }
 `;
+export const TARKOV_MAP_SPAWNS_QUERY = `
+  query TarkovMapSpawns($lang: LanguageCode, $gameMode: GameMode) {
+    maps(lang: $lang, gameMode: $gameMode) {
+      id
+      name
+      spawns {
+        zoneName
+        sides
+        categories
+        position {
+          x
+          y
+          z
+        }
+      }
+    }
+  }
+`;
 const ITEM_REF_FRAGMENT = `
   fragment ItemRef on Item {
     id

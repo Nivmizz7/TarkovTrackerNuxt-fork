@@ -1,25 +1,27 @@
 <template>
-  <div class="container mx-auto space-y-6 px-4 py-6">
-    <div v-if="route?.query?.team && route?.query?.code" class="mx-auto max-w-6xl">
-      <TeamInvite />
-    </div>
-    <div class="relative mx-auto max-w-6xl">
-      <div class="space-y-6">
-        <UAlert
-          icon="i-mdi-alert"
-          color="warning"
-          variant="soft"
-          :title="t('page.team.warning.title')"
-        >
-          <template #description>
-            {{ t('page.team.warning.description') }}
-          </template>
-        </UAlert>
-        <div class="grid gap-4 lg:grid-cols-2">
-          <MyTeam />
-          <TeamOptions />
+  <div class="px-3 py-6 sm:px-6">
+    <div class="mx-auto max-w-[1400px] space-y-6">
+      <div v-if="route?.query?.team && route?.query?.code" class="mx-auto max-w-6xl">
+        <TeamInvite />
+      </div>
+      <div class="relative mx-auto max-w-6xl">
+        <div class="space-y-6">
+          <UAlert
+            icon="i-mdi-alert"
+            color="warning"
+            variant="soft"
+            :title="t('page.team.warning.title')"
+          >
+            <template #description>
+              {{ t('page.team.warning.description') }}
+            </template>
+          </UAlert>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <MyTeam />
+            <TeamOptions />
+          </div>
+          <TeamMembers v-if="userHasTeam" />
         </div>
-        <TeamMembers v-if="userHasTeam" />
       </div>
     </div>
   </div>

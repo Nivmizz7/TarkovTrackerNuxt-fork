@@ -106,7 +106,8 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import {
-    TRADER_UNLOCK_TASKS,
+    GAME_MODES,
+    resolveTraderUnlockTaskIds,
     TRADERS_WITHOUT_LOYALTY_LEVELS,
     TRADERS_WITHOUT_REPUTATION,
   } from '@/utils/constants';
@@ -138,16 +139,28 @@
       )
   );
   const isFence = computed(() => props.trader.normalizedName === 'fence');
-  const unlockTaskId = computed(
-    () => TRADER_UNLOCK_TASKS[props.trader.normalizedName as keyof typeof TRADER_UNLOCK_TASKS]
+  const unlockTaskIds = computed(() =>
+    resolveTraderUnlockTaskIds(
+      props.trader.normalizedName,
+      tarkovStore.getCurrentGameMode?.() ?? GAME_MODES.PVP
+    )
   );
+  const availableUnlockTasks = computed(() => {
+    if (!unlockTaskIds.value.length || !metadataStore.tasks?.length) return [];
+    const unlockTaskIdSet = new Set(unlockTaskIds.value);
+    return metadataStore.tasks.filter((task) => unlockTaskIdSet.has(task.id));
+  });
+  const unlockTaskId = computed(() => {
+    const firstTask = availableUnlockTasks.value[0];
+    return firstTask?.id ?? null;
+  });
   const unlockTask = computed(() => {
-    if (!unlockTaskId.value) return null;
-    return metadataStore.tasks?.find((t) => t.id === unlockTaskId.value) ?? null;
+    const firstTask = availableUnlockTasks.value[0];
+    return firstTask ?? null;
   });
   const isLocked = computed(() => {
-    if (!unlockTaskId.value) return false;
-    return !tarkovStore.isTaskComplete(unlockTaskId.value);
+    if (!availableUnlockTasks.value.length) return false;
+    return !availableUnlockTasks.value.some((task) => tarkovStore.isTaskComplete(task.id));
   });
   const currentLevel = computed(() => tarkovStore.getTraderLevel(props.trader.id));
   const currentReputation = computed(() => tarkovStore.getTraderReputation(props.trader.id));

@@ -1,114 +1,116 @@
 <template>
-  <div class="px-4 py-6">
-    <NeededItemsFilterBar
-      v-model="activeFilter"
-      v-model:search="search"
-      v-model:view-mode="viewMode"
-      v-model:fir-filter="firFilter"
-      v-model:group-by-item="groupByItem"
-      v-model:hide-non-fir-special-equipment="hideNonFirSpecialEquipment"
-      v-model:hide-team-items="hideTeamItems"
-      v-model:kappa-only="kappaOnly"
-      v-model:sort-by="sortBy"
-      v-model:sort-direction="sortDirection"
-      v-model:hide-owned="hideOwned"
-      v-model:card-style="cardStyle"
-      :filter-tabs="filterTabsWithCounts"
-      :total-count="displayItems.length"
-      :ungrouped-count="filteredItems.length"
-    />
-    <UCard class="bg-contentbackground border border-white/5">
-      <div
-        v-if="itemsError"
-        class="text-surface-400 flex flex-col items-center justify-center gap-4 p-8"
-        aria-live="polite"
-      >
-        <UIcon name="i-mdi-alert-circle" class="text-error-400 h-8 w-8" />
-        <span class="text-error-400">
-          {{ $t('page.needed_items.error', 'Failed to load items.') }}
-        </span>
-        <UButton color="primary" @click="ensureNeededItemsData">
-          {{ $t('page.needed_items.retry', 'Retry') }}
-        </UButton>
-      </div>
-      <div
-        v-else-if="!itemsReady"
-        class="text-surface-400 flex items-center justify-center gap-2 p-8"
-        aria-live="polite"
-      >
-        <UIcon name="i-mdi-loading" class="h-5 w-5 animate-spin" />
-        <span>{{ $t('page.needed_items.loading', 'Loading items...') }}</span>
-      </div>
-      <template v-else>
+  <div class="px-3 py-6 sm:px-6">
+    <div class="mx-auto max-w-[1400px]">
+      <NeededItemsFilterBar
+        v-model="activeFilter"
+        v-model:search="search"
+        v-model:view-mode="viewMode"
+        v-model:fir-filter="firFilter"
+        v-model:group-by-item="groupByItem"
+        v-model:hide-non-fir-special-equipment="hideNonFirSpecialEquipment"
+        v-model:hide-team-items="hideTeamItems"
+        v-model:kappa-only="kappaOnly"
+        v-model:sort-by="sortBy"
+        v-model:sort-direction="sortDirection"
+        v-model:hide-owned="hideOwned"
+        v-model:card-style="cardStyle"
+        :filter-tabs="filterTabsWithCounts"
+        :total-count="displayItems.length"
+        :ungrouped-count="filteredItems.length"
+      />
+      <UCard class="bg-contentbackground border border-white/5">
         <div
-          v-if="displayItems.length === 0"
-          class="text-surface-400 p-8 text-center"
+          v-if="itemsError"
+          class="text-surface-400 flex flex-col items-center justify-center gap-4 p-8"
           aria-live="polite"
         >
-          {{ $t('page.needed_items.empty', 'No items match your search.') }}
+          <UIcon name="i-mdi-alert-circle" class="text-error-400 h-8 w-8" />
+          <span class="text-error-400">
+            {{ $t('page.needed_items.error', 'Failed to load items.') }}
+          </span>
+          <UButton color="primary" @click="ensureNeededItemsData">
+            {{ $t('page.needed_items.retry', 'Retry') }}
+          </UButton>
         </div>
-        <div v-else-if="groupByItem" class="p-2">
+        <div
+          v-else-if="!itemsReady"
+          class="text-surface-400 flex items-center justify-center gap-2 p-8"
+          aria-live="polite"
+        >
+          <UIcon name="i-mdi-loading" class="h-5 w-5 animate-spin" />
+          <span>{{ $t('page.needed_items.loading', 'Loading items...') }}</span>
+        </div>
+        <template v-else>
           <div
-            class="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            v-if="displayItems.length === 0"
+            class="text-surface-400 p-8 text-center"
+            aria-live="polite"
           >
-            <NeededItemGroupedCard
-              v-for="(group, index) in visibleGroupedItems"
-              :key="group.item.id"
-              :grouped-item="group"
-              :task-objectives="objectivesByItemId.get(group.item.id)?.taskObjectives ?? []"
-              :hideout-modules="objectivesByItemId.get(group.item.id)?.hideoutModules ?? []"
-              :active-filter="activeFilter"
-              :data-index="index"
-              class="content-visibility-auto-220 h-full"
-            />
+            {{ $t('page.needed_items.empty', 'No items match your search.') }}
           </div>
-          <div
-            v-if="visibleCount < displayItems.length"
-            ref="gridSentinel"
-            class="h-1 w-full"
-          ></div>
-        </div>
-        <div v-else-if="viewMode === 'list'">
-          <div
-            v-for="(item, index) in visibleIndividualItems"
-            :key="`${item.needType}-${item.id}`"
-            class="content-visibility-auto-128 border-b border-white/5 pb-1"
-          >
-            <NeededItem
-              :need="item"
-              item-style="row"
-              :initially-visible="index < adjustedRenderCount"
-            />
+          <div v-else-if="groupByItem" class="p-2">
+            <div
+              class="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            >
+              <NeededItemGroupedCard
+                v-for="(group, index) in visibleGroupedItems"
+                :key="group.item.id"
+                :grouped-item="group"
+                :task-objectives="objectivesByItemId.get(group.item.id)?.taskObjectives ?? []"
+                :hideout-modules="objectivesByItemId.get(group.item.id)?.hideoutModules ?? []"
+                :active-filter="activeFilter"
+                :data-index="index"
+                class="content-visibility-auto-220 h-full"
+              />
+            </div>
+            <div
+              v-if="visibleCount < displayItems.length"
+              ref="gridSentinel"
+              class="h-1 w-full"
+            ></div>
           </div>
-          <div
-            v-if="visibleCount < displayItems.length"
-            ref="listSentinel"
-            class="h-1 w-full"
-          ></div>
-        </div>
-        <div v-else class="p-2">
-          <div
-            class="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
-          >
-            <NeededItem
+          <div v-else-if="viewMode === 'list'">
+            <div
               v-for="(item, index) in visibleIndividualItems"
               :key="`${item.needType}-${item.id}`"
-              :need="item"
-              item-style="card"
-              :card-style="cardStyle"
-              :initially-visible="index < adjustedRenderCount"
-              :data-index="index"
-              class="content-visibility-auto-240 h-full"
-            />
+              class="content-visibility-auto-128 border-b border-white/5 pb-1"
+            >
+              <NeededItem
+                :need="item"
+                item-style="row"
+                :initially-visible="index < adjustedRenderCount"
+              />
+            </div>
+            <div
+              v-if="visibleCount < displayItems.length"
+              ref="listSentinel"
+              class="h-1 w-full"
+            ></div>
           </div>
-          <div
-            v-if="visibleCount < displayItems.length"
-            ref="gridSentinel"
-            class="h-1 w-full"
-          ></div>
-        </div>
-      </template>
-    </UCard>
+          <div v-else class="p-2">
+            <div
+              class="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+            >
+              <NeededItem
+                v-for="(item, index) in visibleIndividualItems"
+                :key="`${item.needType}-${item.id}`"
+                :need="item"
+                item-style="card"
+                :card-style="cardStyle"
+                :initially-visible="index < adjustedRenderCount"
+                :data-index="index"
+                class="content-visibility-auto-240 h-full"
+              />
+            </div>
+            <div
+              v-if="visibleCount < displayItems.length"
+              ref="gridSentinel"
+              class="h-1 w-full"
+            ></div>
+          </div>
+        </template>
+      </UCard>
+    </div>
   </div>
 </template>
 <script setup lang="ts">

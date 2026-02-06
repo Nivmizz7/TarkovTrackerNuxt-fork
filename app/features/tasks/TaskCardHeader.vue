@@ -17,7 +17,7 @@
           :alt="task?.factionName"
           class="h-6 w-6 shrink-0 object-contain invert"
         />
-        <span class="text-surface-100 min-w-0 truncate text-sm font-semibold sm:text-base">
+        <span class="text-surface-100 min-w-0 text-sm font-semibold sm:truncate sm:text-base">
           {{ task?.name }}
         </span>
         <UIcon

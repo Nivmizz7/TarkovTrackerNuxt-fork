@@ -1,178 +1,186 @@
 <template>
-  <div class="container mx-auto min-h-[calc(100vh-250px)] space-y-4 px-4 py-6">
-    <div class="flex flex-col gap-4">
-      <div class="flex justify-center">
-        <div
-          class="bg-surface-900 border-surface-700/50 w-full max-w-4xl rounded-lg border px-4 py-3 shadow-sm"
-        >
-          <div class="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <div></div>
-            <div class="flex flex-wrap justify-center gap-2">
-              <template v-for="(view, index) in primaryViews" :key="view.view">
-                <UButton
-                  :icon="`i-${view.icon}`"
-                  :variant="'ghost'"
-                  :color="'neutral'"
-                  size="md"
-                  class="shrink-0"
-                  :class="{
-                    'border-surface-200 rounded-none border-b-2': activePrimaryView === view.view,
-                  }"
-                  @click="activePrimaryView = view.view"
-                >
-                  <span class="text-xs sm:text-sm">{{ view.title.toUpperCase() }}</span>
-                  <span
-                    :class="[
-                      'ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm',
-                      view.badgeColor,
-                    ]"
+  <div class="min-h-[calc(100vh-250px)] px-3 py-6 sm:px-6">
+    <div class="mx-auto max-w-[1400px] space-y-4">
+      <div class="flex flex-col gap-4">
+        <div class="flex justify-center">
+          <div
+            class="bg-surface-900 border-surface-700/50 w-full max-w-4xl rounded-lg border px-4 py-3 shadow-sm"
+          >
+            <div class="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2">
+              <div></div>
+              <div class="flex flex-wrap justify-center gap-2">
+                <template v-for="(view, index) in primaryViews" :key="view.view">
+                  <UButton
+                    :icon="`i-${view.icon}`"
+                    :variant="'ghost'"
+                    :color="'neutral'"
+                    size="md"
+                    class="shrink-0"
+                    :class="{
+                      'border-surface-200 rounded-none border-b-2': activePrimaryView === view.view,
+                    }"
+                    @click="activePrimaryView = view.view"
                   >
-                    {{ view.count }}
-                  </span>
-                </UButton>
-                <span
-                  v-if="index === 0"
-                  aria-hidden="true"
-                  class="bg-surface-700/60 h-6 w-px self-center"
-                ></span>
-              </template>
-            </div>
-            <div class="flex justify-end">
-              <UPopover>
-                <UButton
-                  icon="i-mdi-cog"
-                  color="neutral"
-                  variant="ghost"
-                  size="sm"
-                  :aria-label="t('settings.title', 'Settings')"
-                >
-                  <span class="hidden sm:inline">
-                    {{ t('settings.title', 'Settings').toUpperCase() }}
-                  </span>
-                </UButton>
-                <template #content>
-                  <div class="w-64 space-y-3 p-3">
-                    <UCheckbox
-                      v-model="preferencesStore.hideoutCollapseCompleted"
-                      :label="
-                        $t('page.hideout.collapse_completed') || 'Collapse completed stations'
-                      "
-                      color="success"
-                    />
-                    <UCheckbox
-                      v-model="preferencesStore.hideoutSortReadyFirst"
-                      :label="$t('page.hideout.sort.ready_first') || 'Sort ready to build first'"
-                      color="info"
-                    />
-                    <div class="border-surface-700/60 space-y-2 border-t pt-3">
-                      <div class="text-surface-400 text-xs font-semibold tracking-wider uppercase">
-                        {{ $t('page.hideout.prereq_filters.title') || 'Availability requirements' }}
-                      </div>
-                      <UCheckbox
-                        :model-value="preferencesStore.hideoutRequireStationLevels"
-                        :label="
-                          $t('page.hideout.prereq_filters.station_levels') ||
-                          'Require station levels'
-                        "
-                        @update:model-value="
-                          (value) => handlePrereqToggle('station', Boolean(value))
-                        "
-                      />
-                      <UCheckbox
-                        :model-value="preferencesStore.hideoutRequireSkillLevels"
-                        :label="
-                          $t('page.hideout.prereq_filters.skill_levels') || 'Require skill levels'
-                        "
-                        @update:model-value="(value) => handlePrereqToggle('skill', Boolean(value))"
-                      />
-                      <UCheckbox
-                        :model-value="preferencesStore.hideoutRequireTraderLoyalty"
-                        :label="
-                          $t('page.hideout.prereq_filters.trader_loyalty') ||
-                          'Require trader loyalty'
-                        "
-                        @update:model-value="
-                          (value) => handlePrereqToggle('trader', Boolean(value))
-                        "
-                      />
-                    </div>
-                  </div>
+                    <span class="text-xs sm:text-sm">{{ view.title.toUpperCase() }}</span>
+                    <span
+                      :class="[
+                        'ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white sm:h-7 sm:min-w-7 sm:px-1.5 sm:text-sm',
+                        view.badgeColor,
+                      ]"
+                    >
+                      {{ view.count }}
+                    </span>
+                  </UButton>
+                  <span
+                    v-if="index === 0"
+                    aria-hidden="true"
+                    class="bg-surface-700/60 h-6 w-px self-center"
+                  ></span>
                 </template>
-              </UPopover>
+              </div>
+              <div class="flex justify-end">
+                <UPopover>
+                  <UButton
+                    icon="i-mdi-cog"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                    :aria-label="t('settings.title', 'Settings')"
+                  >
+                    <span class="hidden sm:inline">
+                      {{ t('settings.title', 'Settings').toUpperCase() }}
+                    </span>
+                  </UButton>
+                  <template #content>
+                    <div class="w-64 space-y-3 p-3">
+                      <UCheckbox
+                        v-model="preferencesStore.hideoutCollapseCompleted"
+                        :label="
+                          $t('page.hideout.collapse_completed') || 'Collapse completed stations'
+                        "
+                        color="success"
+                      />
+                      <UCheckbox
+                        v-model="preferencesStore.hideoutSortReadyFirst"
+                        :label="$t('page.hideout.sort.ready_first') || 'Sort ready to build first'"
+                        color="info"
+                      />
+                      <div class="border-surface-700/60 space-y-2 border-t pt-3">
+                        <div
+                          class="text-surface-400 text-xs font-semibold tracking-wider uppercase"
+                        >
+                          {{
+                            $t('page.hideout.prereq_filters.title') || 'Availability requirements'
+                          }}
+                        </div>
+                        <UCheckbox
+                          :model-value="preferencesStore.hideoutRequireStationLevels"
+                          :label="
+                            $t('page.hideout.prereq_filters.station_levels') ||
+                            'Require station levels'
+                          "
+                          @update:model-value="
+                            (value) => handlePrereqToggle('station', Boolean(value))
+                          "
+                        />
+                        <UCheckbox
+                          :model-value="preferencesStore.hideoutRequireSkillLevels"
+                          :label="
+                            $t('page.hideout.prereq_filters.skill_levels') || 'Require skill levels'
+                          "
+                          @update:model-value="
+                            (value) => handlePrereqToggle('skill', Boolean(value))
+                          "
+                        />
+                        <UCheckbox
+                          :model-value="preferencesStore.hideoutRequireTraderLoyalty"
+                          :label="
+                            $t('page.hideout.prereq_filters.trader_loyalty') ||
+                            'Require trader loyalty'
+                          "
+                          @update:model-value="
+                            (value) => handlePrereqToggle('trader', Boolean(value))
+                          "
+                        />
+                      </div>
+                    </div>
+                  </template>
+                </UPopover>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <UModal
-      v-model:open="showPrereqConfirm"
-      :title="prereqConfirmTitle"
-      :description="prereqConfirmDescription"
-      :ui="{ content: 'bg-transparent border-0 p-0 shadow-none ring-0 outline-none' }"
-      prevent-close
-    >
-      <template #content>
-        <UCard class="w-full max-w-sm">
-          <template #header>
-            <div class="px-4 py-3 text-lg font-semibold text-white">
-              {{ prereqConfirmTitle }}
+      <UModal
+        v-model:open="showPrereqConfirm"
+        :title="prereqConfirmTitle"
+        :description="prereqConfirmDescription"
+        :ui="{ content: 'bg-transparent border-0 p-0 shadow-none ring-0 outline-none' }"
+        prevent-close
+      >
+        <template #content>
+          <UCard class="w-full max-w-sm">
+            <template #header>
+              <div class="px-4 py-3 text-lg font-semibold text-white">
+                {{ prereqConfirmTitle }}
+              </div>
+            </template>
+            <div class="text-surface-300 px-4 pb-4 text-sm">
+              {{ prereqConfirmDescription }}
             </div>
-          </template>
-          <div class="text-surface-300 px-4 pb-4 text-sm">
-            {{ prereqConfirmDescription }}
+            <template #footer>
+              <div class="flex justify-end gap-2 px-4 pb-4">
+                <UButton color="neutral" variant="ghost" @click="cancelPrereqToggle">
+                  {{ $t('page.hideout.prereq_filters.confirm_cancel') || 'Cancel' }}
+                </UButton>
+                <UButton color="warning" variant="solid" @click="confirmPrereqToggle">
+                  {{ $t('page.hideout.prereq_filters.confirm_confirm') || 'Enable' }}
+                </UButton>
+              </div>
+            </template>
+          </UCard>
+        </template>
+      </UModal>
+      <div>
+        <div v-if="isStoreLoading" class="text-surface-200 flex flex-col items-center gap-3 py-10">
+          <UIcon name="i-heroicons-arrow-path" class="text-info-400 h-8 w-8 animate-spin" />
+          <div class="flex items-center gap-2 text-sm">
+            {{ $t('page.hideout.loading') }}
+            <RefreshButton />
           </div>
-          <template #footer>
-            <div class="flex justify-end gap-2 px-4 pb-4">
-              <UButton color="neutral" variant="ghost" @click="cancelPrereqToggle">
-                {{ $t('page.hideout.prereq_filters.confirm_cancel') || 'Cancel' }}
-              </UButton>
-              <UButton color="warning" variant="solid" @click="confirmPrereqToggle">
-                {{ $t('page.hideout.prereq_filters.confirm_confirm') || 'Enable' }}
-              </UButton>
-            </div>
-          </template>
-        </UCard>
-      </template>
-    </UModal>
-    <div>
-      <div v-if="isStoreLoading" class="text-surface-200 flex flex-col items-center gap-3 py-10">
-        <UIcon name="i-heroicons-arrow-path" class="text-info-400 h-8 w-8 animate-spin" />
-        <div class="flex items-center gap-2 text-sm">
-          {{ $t('page.hideout.loading') }}
-          <RefreshButton />
         </div>
-      </div>
-      <div v-else-if="visibleStations.length === 0" class="flex justify-center">
-        <UAlert
-          icon="i-mdi-clipboard-search"
-          color="neutral"
-          variant="soft"
-          class="max-w-xl"
-          :title="$t('page.hideout.no_stations_found')"
-        />
-      </div>
-      <div v-else class="mt-2 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <div
-          v-for="(hStation, hIndex) in visibleStationsSlice"
-          :key="hIndex"
-          class="content-visibility-auto-240 h-full"
-        >
-          <HideoutCard
-            :station="hStation"
-            :collapsed="
-              getStationStatus(hStation) === 'maxed' && preferencesStore.hideoutCollapseCompleted
-            "
-            :highlighted="highlightedStationId === hStation.id"
-            :highlight-module-id="
-              highlightedStationId === hStation.id ? highlightedModuleId : undefined
-            "
+        <div v-else-if="visibleStations.length === 0" class="flex justify-center">
+          <UAlert
+            icon="i-mdi-clipboard-search"
+            color="neutral"
+            variant="soft"
+            class="max-w-xl"
+            :title="$t('page.hideout.no_stations_found')"
           />
         </div>
-      </div>
-      <div v-if="visibleStationCount < visibleStations.length" class="mt-4 flex justify-center">
-        <UButton color="neutral" variant="outline" size="sm" @click="loadMoreStations">
-          {{ t('page.hideout.load_more_stations', 'Load more stations') }}
-        </UButton>
+        <div v-else class="mt-2 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            v-for="(hStation, hIndex) in visibleStationsSlice"
+            :key="hIndex"
+            class="content-visibility-auto-240 h-full"
+          >
+            <HideoutCard
+              :station="hStation"
+              :collapsed="
+                getStationStatus(hStation) === 'maxed' && preferencesStore.hideoutCollapseCompleted
+              "
+              :highlighted="highlightedStationId === hStation.id"
+              :highlight-module-id="
+                highlightedStationId === hStation.id ? highlightedModuleId : undefined
+              "
+            />
+          </div>
+        </div>
+        <div v-if="visibleStationCount < visibleStations.length" class="mt-4 flex justify-center">
+          <UButton color="neutral" variant="outline" size="sm" @click="loadMoreStations">
+            {{ t('page.hideout.load_more_stations', 'Load more stations') }}
+          </UButton>
+        </div>
       </div>
     </div>
   </div>

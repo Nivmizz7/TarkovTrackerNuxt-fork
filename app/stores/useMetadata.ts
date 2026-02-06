@@ -22,6 +22,7 @@ import type {
   TarkovItem,
   TarkovItemsQueryResult,
   TarkovMap,
+  TarkovMapSpawnsQueryResult,
   TarkovPrestigeQueryResult,
   TarkovTaskObjectivesQueryResult,
   TarkovTaskRewardsQueryResult,
@@ -166,6 +167,7 @@ export type CraftSource = { stationId: string; stationName: string; stationLevel
 interface PromiseStore {
   readonly itemsFullPromise: Promise<void> | null;
   readonly itemsLitePromise: Promise<void> | null;
+  readonly mapSpawnsPromise: Promise<void> | null;
   readonly taskObjectivesPromise: Promise<void> | null;
   readonly taskRewardsPromise: Promise<void> | null;
   readonly initPromise: Promise<void> | null;
@@ -184,6 +186,7 @@ function getPromiseStore(storeInstance: object): MutablePromiseStore {
     promises = {
       itemsFullPromise: null,
       itemsLitePromise: null,
+      mapSpawnsPromise: null,
       taskObjectivesPromise: null,
       taskRewardsPromise: null,
       initPromise: null,
@@ -250,13 +253,16 @@ interface MetadataState {
   tasksObjectivesHydrated: boolean;
   hideoutLoading: boolean;
   itemsLoading: boolean;
+  mapSpawnsLoading: boolean;
   itemsLanguage: string;
   itemsFullLoaded: boolean;
+  mapSpawnsLoaded: boolean;
   prestigeLoading: boolean;
   editionsLoading: boolean;
   error: Error | null;
   hideoutError: Error | null;
   itemsError: Error | null;
+  mapSpawnsError: Error | null;
   prestigeError: Error | null;
   editionsError: Error | null;
   // Raw data from API
@@ -298,13 +304,16 @@ export const useMetadataStore = defineStore('metadata', {
     tasksObjectivesHydrated: false,
     hideoutLoading: false,
     itemsLoading: false,
+    mapSpawnsLoading: false,
     itemsLanguage: 'en',
     itemsFullLoaded: false,
+    mapSpawnsLoaded: false,
     prestigeLoading: false,
     editionsLoading: false,
     error: null,
     hideoutError: null,
     itemsError: null,
+    mapSpawnsError: null,
     prestigeError: null,
     editionsError: null,
     tasks: markRaw([]),
@@ -656,9 +665,16 @@ export const useMetadataStore = defineStore('metadata', {
         | 'tasksObjectivesPending'
         | 'hideoutLoading'
         | 'itemsLoading'
+        | 'mapSpawnsLoading'
         | 'prestigeLoading'
         | 'editionsLoading';
-      errorKey?: 'error' | 'hideoutError' | 'itemsError' | 'prestigeError' | 'editionsError';
+      errorKey?:
+        | 'error'
+        | 'hideoutError'
+        | 'itemsError'
+        | 'mapSpawnsError'
+        | 'prestigeError'
+        | 'editionsError';
       processData: (data: T) => void;
       onEmpty?: () => void;
       logName: string;
@@ -693,9 +709,16 @@ export const useMetadataStore = defineStore('metadata', {
         | 'tasksObjectivesPending'
         | 'hideoutLoading'
         | 'itemsLoading'
+        | 'mapSpawnsLoading'
         | 'prestigeLoading'
         | 'editionsLoading';
-      errorKey?: 'error' | 'hideoutError' | 'itemsError' | 'prestigeError' | 'editionsError';
+      errorKey?:
+        | 'error'
+        | 'hideoutError'
+        | 'itemsError'
+        | 'mapSpawnsError'
+        | 'prestigeError'
+        | 'editionsError';
       processData: (data: T) => void;
       onEmpty?: () => void;
       logName: string;
@@ -1028,6 +1051,23 @@ export const useMetadataStore = defineStore('metadata', {
         forceRefresh,
       });
     },
+    async fetchMapSpawnsData(forceRefresh = false) {
+      if (this.mapSpawnsLoaded && !forceRefresh) return;
+      const apiGameMode = this.getApiGameMode();
+      await this.fetchWithCache<TarkovMapSpawnsQueryResult>({
+        cacheType: 'map-spawns' as CacheType,
+        cacheKey: apiGameMode,
+        endpoint: '/api/tarkov/map-spawns',
+        queryParams: { lang: this.languageCode, gameMode: apiGameMode },
+        cacheTTL: CACHE_CONFIG.DEFAULT_TTL,
+        loadingKey: 'mapSpawnsLoading',
+        errorKey: 'mapSpawnsError',
+        processData: (data) => this.mergeMapSpawns(data),
+        logName: 'Map spawns',
+        forceRefresh,
+        promiseKey: 'mapSpawnsPromise',
+      });
+    },
     /**
      * Fetch task objectives and fail conditions data
      */
@@ -1294,6 +1334,30 @@ export const useMetadataStore = defineStore('metadata', {
         traders: data.traders || [],
       });
       perfEnd(perfTimer, { tasks: this.tasks.length });
+    },
+    mergeMapSpawns(data: TarkovMapSpawnsQueryResult) {
+      if (!this.maps.length) {
+        this.mapSpawnsLoaded = false;
+        return;
+      }
+      const spawnsByMapId = new Map(
+        (data.maps || []).map((map) => [map.id, map.spawns || []] as const)
+      );
+      if (spawnsByMapId.size === 0) {
+        this.mapSpawnsLoaded = true;
+        return;
+      }
+      let changed = false;
+      const mergedMaps = this.maps.map((map) => {
+        const spawns = spawnsByMapId.get(map.id);
+        if (!spawns) return map;
+        changed = true;
+        return { ...map, spawns };
+      });
+      if (changed) {
+        this.maps = markRaw(mergedMaps);
+      }
+      this.mapSpawnsLoaded = true;
     },
     dedupeObjectiveIds(tasks: Task[]) {
       const objectiveCounts = new Map<string, number>();
@@ -1617,6 +1681,7 @@ export const useMetadataStore = defineStore('metadata', {
       const tarkovStore = useTarkovStore();
       tarkovStore.repairCompletedTaskObjectives();
       this.maps = markRaw(data.maps || []);
+      this.mapSpawnsLoaded = false;
       this.traders = markRaw(data.traders || []);
       if (Array.isArray(data.playerLevels)) {
         this.playerLevels = markRaw(this.convertToCumulativeXP(data.playerLevels));
@@ -1731,6 +1796,9 @@ export const useMetadataStore = defineStore('metadata', {
       this.neededItemTaskObjectives = markRaw([]);
       this.tasksObjectivesPending = false;
       this.tasksObjectivesHydrated = false;
+      this.mapSpawnsLoaded = false;
+      this.mapSpawnsLoading = false;
+      this.mapSpawnsError = null;
     },
     /**
      * Reset hideout data to empty state

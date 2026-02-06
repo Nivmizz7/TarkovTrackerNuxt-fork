@@ -61,6 +61,7 @@ vi.mock('@/stores/useMetadata', () => ({
     editions: [],
     objectiveMaps: {},
     objectiveGPS: {},
+    fetchMapSpawnsData: vi.fn(() => Promise.resolve()),
   }),
 }));
 vi.mock('@/stores/usePreferences', () => ({

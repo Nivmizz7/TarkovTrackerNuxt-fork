@@ -1,91 +1,93 @@
 <template>
   <div class="flex min-h-full overflow-x-hidden">
     <div
-      class="min-w-0 flex-1 px-4 py-6 transition-[padding] duration-200"
+      class="min-w-0 flex-1 px-3 py-6 transition-[padding] duration-200 sm:px-6"
       :class="{ 'pr-80': isSettingsDrawerOpen }"
     >
-      <TaskLoadingState v-if="isLoading" />
-      <div v-else>
-        <TaskFilterBar v-model:search-query="searchQuery" />
-        <div v-if="showMapDisplay" ref="mapContainerRef" class="mb-6">
-          <div class="bg-surface-800/50 rounded-lg p-4">
-            <div class="mb-3 flex items-center justify-between">
-              <h3 class="text-surface-200 text-lg font-medium">
-                {{ selectedMapData?.name || 'Map' }}
-                <span class="text-surface-400 ml-2 text-sm font-normal">
-                  {{ displayTime }}
-                </span>
-              </h3>
-            </div>
-            <template v-if="selectedMapData">
-              <LeafletMapComponent
-                ref="leafletMapRef"
-                :map="selectedMapData"
-                :marks="mapObjectiveMarks"
-                :show-extracts="true"
-                :show-extract-toggle="true"
-                :show-legend="true"
-                :height="mapHeight"
-              />
-              <div
-                ref="resizeHandleRef"
-                role="separator"
-                aria-orientation="horizontal"
-                :aria-label="t('page.tasks.map.resize_handle')"
-                :aria-valuemin="mapHeightMin"
-                :aria-valuemax="mapHeightMax"
-                :aria-valuenow="mapHeight"
-                tabindex="0"
-                class="bg-surface-900/60 border-surface-700 text-surface-400 hover:text-surface-200 focus-visible:ring-primary-500 mt-3 flex h-8 w-full cursor-row-resize touch-none items-center justify-center rounded-md border transition"
-                :class="{ 'ring-primary-500 text-surface-200 ring-1': isResizing }"
-                @pointerdown="startResize"
-                @keydown="onResizeKeydown"
-              >
-                <UIcon name="i-mdi-drag-horizontal-variant" class="h-4 w-4" />
+      <div class="mx-auto max-w-[1400px]">
+        <TaskLoadingState v-if="isLoading" />
+        <div v-else>
+          <TaskFilterBar v-model:search-query="searchQuery" />
+          <div v-if="showMapDisplay" ref="mapContainerRef" class="mb-6">
+            <div class="bg-surface-800/50 rounded-lg p-4">
+              <div class="mb-3 flex items-center justify-between">
+                <h3 class="text-surface-200 text-lg font-medium">
+                  {{ selectedMapData?.name || 'Map' }}
+                  <span class="text-surface-400 ml-2 text-sm font-normal">
+                    {{ displayTime }}
+                  </span>
+                </h3>
               </div>
-            </template>
-            <UAlert
-              v-else
-              icon="i-mdi-alert-circle"
-              color="warning"
-              variant="soft"
-              title="No map data available for this selection."
-            />
+              <template v-if="selectedMapData">
+                <LeafletMapComponent
+                  ref="leafletMapRef"
+                  :map="selectedMapData"
+                  :marks="mapObjectiveMarks"
+                  :show-extracts="true"
+                  :show-extract-toggle="true"
+                  :show-legend="true"
+                  :height="mapHeight"
+                />
+                <div
+                  ref="resizeHandleRef"
+                  role="separator"
+                  aria-orientation="horizontal"
+                  :aria-label="t('page.tasks.map.resize_handle')"
+                  :aria-valuemin="mapHeightMin"
+                  :aria-valuemax="mapHeightMax"
+                  :aria-valuenow="mapHeight"
+                  tabindex="0"
+                  class="bg-surface-900/60 border-surface-700 text-surface-400 hover:text-surface-200 focus-visible:ring-primary-500 mt-3 flex h-8 w-full cursor-row-resize touch-none items-center justify-center rounded-md border transition"
+                  :class="{ 'ring-primary-500 text-surface-200 ring-1': isResizing }"
+                  @pointerdown="startResize"
+                  @keydown="onResizeKeydown"
+                >
+                  <UIcon name="i-mdi-drag-horizontal-variant" class="h-4 w-4" />
+                </div>
+              </template>
+              <UAlert
+                v-else
+                icon="i-mdi-alert-circle"
+                color="warning"
+                variant="soft"
+                title="No map data available for this selection."
+              />
+            </div>
           </div>
-        </div>
-        <div v-if="filteredTasks.length === 0" class="py-6">
-          <TaskEmptyState />
-        </div>
-        <div v-else ref="taskListRef" data-testid="task-list">
-          <div v-if="pinnedTasksInSlice.length > 0" class="mb-6">
-            <div class="mb-3 flex items-center gap-2">
-              <UIcon name="i-mdi-pin" class="text-primary-400 h-4 w-4" />
-              <h3 class="text-surface-200 text-sm font-medium">
-                {{ t('page.tasks.pinned_tasks_section') }}
-              </h3>
-              <div class="bg-surface-700 h-px flex-1" />
+          <div v-if="filteredTasks.length === 0" class="py-6">
+            <TaskEmptyState />
+          </div>
+          <div v-else ref="taskListRef" data-testid="task-list">
+            <div v-if="pinnedTasksInSlice.length > 0" class="mb-6">
+              <div class="mb-3 flex items-center gap-2">
+                <UIcon name="i-mdi-pin" class="text-primary-400 h-4 w-4" />
+                <h3 class="text-surface-200 text-sm font-medium">
+                  {{ t('page.tasks.pinned_tasks_section') }}
+                </h3>
+                <div class="bg-surface-700 h-px flex-1" />
+              </div>
+              <div
+                v-for="task in pinnedTasksInSlice"
+                :key="`pinned-${task.id}`"
+                class="content-visibility-auto-280 pb-4"
+              >
+                <TaskCard :task="task" @on-task-action="onTaskAction" />
+              </div>
             </div>
             <div
-              v-for="task in pinnedTasksInSlice"
-              :key="`pinned-${task.id}`"
+              v-for="task in unpinnedTasksInSlice"
+              :key="`task-${task.id}`"
               class="content-visibility-auto-280 pb-4"
             >
               <TaskCard :task="task" @on-task-action="onTaskAction" />
             </div>
-          </div>
-          <div
-            v-for="task in unpinnedTasksInSlice"
-            :key="`task-${task.id}`"
-            class="content-visibility-auto-280 pb-4"
-          >
-            <TaskCard :task="task" @on-task-action="onTaskAction" />
-          </div>
-          <div
-            v-if="visibleTaskCount < filteredTasks.length"
-            ref="loadMoreSentinel"
-            class="flex items-center justify-center py-4"
-          >
-            <UIcon name="i-mdi-loading" class="text-surface-400 h-5 w-5 animate-spin" />
+            <div
+              v-if="visibleTaskCount < filteredTasks.length"
+              ref="loadMoreSentinel"
+              class="flex items-center justify-center py-4"
+            >
+              <UIcon name="i-mdi-loading" class="text-surface-400 h-5 w-5 animate-spin" />
+            </div>
           </div>
         </div>
       </div>
@@ -247,6 +249,16 @@
     const staticTime = STATIC_TIME_MAPS[mapId];
     return staticTime ?? tarkovTime.value;
   });
+  watch(
+    [showMapDisplay, selectedMapData],
+    ([showMap, selectedMap]) => {
+      if (!showMap || !selectedMap) return;
+      metadataStore.fetchMapSpawnsData().catch((error) => {
+        logger.error('[Tasks] Failed to load map spawn data:', error);
+      });
+    },
+    { immediate: true }
+  );
   const {
     mapHeight,
     mapHeightMax,

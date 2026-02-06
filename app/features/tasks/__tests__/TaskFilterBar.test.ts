@@ -16,7 +16,18 @@ const USelectMenuStub = {
   emits: ['update:modelValue'],
   template: '<select @change="$emit(\'update:modelValue\', $event.target.value)"></select>',
 };
-const setup = async () => {
+type SetupOptions = {
+  preferencesStore?: Partial<{
+    getTaskPrimaryView: string;
+    getTaskSecondaryView: string;
+    getTaskUserView: string;
+    getTaskMapView: string;
+    getTaskTraderView: string;
+  }>;
+  sortedTraders?: Array<{ id: string; name: string }>;
+  traderCounts?: Record<string, number>;
+};
+const setup = async (options: SetupOptions = {}) => {
   const preferencesStore = {
     getTaskPrimaryView: 'all',
     getTaskSecondaryView: 'available',
@@ -36,6 +47,9 @@ const setup = async () => {
     setTaskSortMode: vi.fn(),
     setTaskSortDirection: vi.fn(),
   };
+  Object.assign(preferencesStore, options.preferencesStore ?? {});
+  const sortedTraders = options.sortedTraders ?? [{ id: 'trader-1', name: 'Trader One' }];
+  const traderCounts = options.traderCounts ?? { 'trader-1': 2 };
   vi.resetModules();
   vi.doMock('@/composables/useTaskFiltering', () => ({
     useTaskFiltering: () => ({
@@ -47,14 +61,14 @@ const setup = async () => {
         completed: 1,
         failed: 0,
       }),
-      calculateTraderCounts: () => ({ 'trader-1': 2 }),
+      calculateTraderCounts: () => traderCounts,
     }),
   }));
   vi.doMock('@/stores/useMetadata', () => ({
     useMetadataStore: () => ({
       tasks: [{ id: 'task-1' }],
       mapsWithSvg: [{ id: 'map-1', name: 'Map One' }],
-      sortedTraders: [{ id: 'trader-1', name: 'Trader One' }],
+      sortedTraders,
     }),
   }));
   vi.doMock('@/stores/usePreferences', () => ({
@@ -118,5 +132,62 @@ describe('TaskFilterBar', () => {
     const wrapper = mountTaskFilterBar(TaskFilterBar);
     await wrapper.find('button[data-icon="i-mdi-sort-ascending"]').trigger('click');
     expect(preferencesStore.setTaskSortDirection).toHaveBeenCalledWith('desc');
+  });
+  it('shows only traders with non-zero task counts for the active filter', async () => {
+    const { TaskFilterBar } = await setup({
+      preferencesStore: {
+        getTaskPrimaryView: 'traders',
+      },
+      sortedTraders: [
+        { id: 'trader-1', name: 'Trader One' },
+        { id: 'trader-2', name: 'Trader Two' },
+      ],
+      traderCounts: {
+        'trader-1': 2,
+        'trader-2': 0,
+      },
+    });
+    const wrapper = mountTaskFilterBar(TaskFilterBar);
+    const buttonTexts = wrapper.findAll('button').map((button) => button.text());
+    expect(buttonTexts.some((text) => text.includes('Trader One'))).toBe(true);
+    expect(buttonTexts.some((text) => text.includes('Trader Two'))).toBe(false);
+  });
+  it('keeps traders visible when the current filter has tasks for them', async () => {
+    const { TaskFilterBar } = await setup({
+      preferencesStore: {
+        getTaskPrimaryView: 'traders',
+        getTaskSecondaryView: 'all',
+      },
+      sortedTraders: [
+        { id: 'trader-1', name: 'Trader One' },
+        { id: 'trader-2', name: 'Trader Two' },
+      ],
+      traderCounts: {
+        'trader-1': 2,
+        'trader-2': 1,
+      },
+    });
+    const wrapper = mountTaskFilterBar(TaskFilterBar);
+    const buttonTexts = wrapper.findAll('button').map((button) => button.text());
+    expect(buttonTexts.some((text) => text.includes('Trader One'))).toBe(true);
+    expect(buttonTexts.some((text) => text.includes('Trader Two'))).toBe(true);
+  });
+  it('auto-selects first visible trader when current selection has no tasks', async () => {
+    const { TaskFilterBar, preferencesStore } = await setup({
+      preferencesStore: {
+        getTaskPrimaryView: 'traders',
+        getTaskTraderView: 'trader-2',
+      },
+      sortedTraders: [
+        { id: 'trader-1', name: 'Trader One' },
+        { id: 'trader-2', name: 'Trader Two' },
+      ],
+      traderCounts: {
+        'trader-1': 3,
+        'trader-2': 0,
+      },
+    });
+    mountTaskFilterBar(TaskFilterBar);
+    expect(preferencesStore.setTaskTraderView).toHaveBeenCalledWith('trader-1');
   });
 });

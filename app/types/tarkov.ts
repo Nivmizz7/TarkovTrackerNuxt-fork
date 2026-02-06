@@ -262,6 +262,12 @@ export interface MapPosition {
   y: number;
   z: number;
 }
+export interface MapSpawn {
+  zoneName?: string;
+  position: MapPosition;
+  sides?: string[];
+  categories?: string[];
+}
 /**
  * Extraction point on a map
  */
@@ -302,6 +308,7 @@ export interface TarkovMap {
   id: string;
   name: string;
   normalizedName?: string;
+  spawns?: MapSpawn[];
   /** Extraction points available on this map */
   extracts?: MapExtract[];
   /** Whether the map is unavailable for display */
@@ -372,6 +379,9 @@ export interface TarkovTasksCoreQueryResult {
   tasks: Task[];
   maps: TarkovMap[];
   traders: Trader[];
+}
+export interface TarkovMapSpawnsQueryResult {
+  maps: Array<Pick<TarkovMap, 'id' | 'name' | 'spawns'>>;
 }
 export interface TarkovTaskObjectivesQueryResult {
   tasks: Array<Pick<Task, 'id' | 'objectives' | 'failConditions'>>;

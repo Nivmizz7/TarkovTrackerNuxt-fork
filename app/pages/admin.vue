@@ -49,18 +49,20 @@
       :description="`Failed to load admin data. Please refresh or contact support. Reference: ${errorReference ?? 'N/A'}`"
     />
   </div>
-  <div v-else-if="systemStore.isAdmin" class="container mx-auto space-y-6 px-4 py-6">
-    <UAlert icon="i-mdi-alert" color="warning" variant="soft" title="Admin Access">
-      <template #description>
-        Actions performed here affect all users. Logged in as
-        <span class="font-medium">
-          {{ $supabase.user?.email || $supabase.user?.displayName || 'Unknown' }}
-        </span>
-      </template>
-    </UAlert>
-    <div class="grid gap-6 lg:grid-cols-2">
-      <AdminCacheCard />
-      <AdminAuditLog />
+  <div v-else-if="systemStore.isAdmin" class="px-3 py-6 sm:px-6">
+    <div class="mx-auto max-w-[1400px] space-y-6">
+      <UAlert icon="i-mdi-alert" color="warning" variant="soft" title="Admin Access">
+        <template #description>
+          Actions performed here affect all users. Logged in as
+          <span class="font-medium">
+            {{ $supabase.user?.email || $supabase.user?.displayName || 'Unknown' }}
+          </span>
+        </template>
+      </UAlert>
+      <div class="grid gap-6 lg:grid-cols-2">
+        <AdminCacheCard />
+        <AdminAuditLog />
+      </div>
     </div>
   </div>
 </template>

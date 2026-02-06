@@ -29,6 +29,7 @@ export type CacheType =
   | 'hideout'
   | 'items-lite'
   | 'items'
+  | 'map-spawns'
   | 'prestige'
   | 'editions';
 export interface CachedData<T> {

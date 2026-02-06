@@ -5,9 +5,10 @@ import { useTarkovStore } from '@/stores/useTarkov';
 import { useTeammateStores, useTeamStore } from '@/stores/useTeamStore';
 import {
   GAME_MODES,
+  resolveTraderUnlockTaskIds,
   SPECIAL_STATIONS,
   TASK_STATE,
-  TRADER_UNLOCK_TASKS,
+  type GameMode,
   type TaskState,
 } from '@/utils/constants';
 import { logger } from '@/utils/logger';
@@ -19,6 +20,7 @@ import {
   isTaskActive,
   isTaskComplete,
   isTaskFailed,
+  type RawTaskCompletion,
 } from '@/utils/taskStatus';
 import type { UserProgressData, UserState } from '@/stores/progressState';
 import type { GameEdition, Task, TaskRequirement } from '@/types/tarkov';
@@ -179,9 +181,10 @@ export const useProgressStore = defineStore('progress', () => {
     const teamDataCache = new Map<
       string,
       {
+        mode: GameMode;
         level: number;
         faction: string;
-        completions: Record<string, { complete?: boolean; failed?: boolean }>;
+        completions: Record<string, RawTaskCompletion>;
         traders: Record<string, { level?: number; reputation?: number }>;
       }
     >();
@@ -189,6 +192,7 @@ export const useProgressStore = defineStore('progress', () => {
       const store = visibleTeamStores.value[teamId];
       const currentData = getGameModeData(store);
       teamDataCache.set(teamId, {
+        mode: store.$state.currentGameMode === GAME_MODES.PVE ? GAME_MODES.PVE : GAME_MODES.PVP,
         level: getLevel(teamId),
         faction: currentData?.pmcFaction ?? 'USEC',
         completions: currentData?.taskCompletions ?? {},
@@ -254,7 +258,7 @@ export const useProgressStore = defineStore('progress', () => {
         // Check failed requirements
         if (task.failedRequirements) {
           for (const req of task.failedRequirements) {
-            if (req?.task?.id && teamData.completions[req.task.id]?.failed) {
+            if (req?.task?.id && isTaskFailed(teamData.completions[req.task.id])) {
               memo.set(taskId, false);
               visiting.delete(taskId);
               return false;
@@ -313,8 +317,15 @@ export const useProgressStore = defineStore('progress', () => {
         // Trader unlock check - some traders require completing a specific task to unlock
         const traderName = task.trader?.normalizedName || task.trader?.name?.toLowerCase();
         if (traderName) {
-          const unlockTaskId = TRADER_UNLOCK_TASKS[traderName];
-          if (unlockTaskId && !isTaskComplete(teamData.completions[unlockTaskId])) {
+          const modeUnlockTaskIds = resolveTraderUnlockTaskIds(traderName, teamData.mode).filter(
+            (unlockTaskId) => unlockTaskId !== taskId && tasksById.has(unlockTaskId)
+          );
+          if (
+            modeUnlockTaskIds.length > 0 &&
+            !modeUnlockTaskIds.some((unlockTaskId) =>
+              isTaskComplete(teamData.completions[unlockTaskId])
+            )
+          ) {
             memo.set(taskId, false);
             visiting.delete(taskId);
             return false;

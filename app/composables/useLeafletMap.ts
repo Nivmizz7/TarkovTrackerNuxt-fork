@@ -49,6 +49,8 @@ export interface UseLeafletMapReturn {
   objectiveLayer: ShallowRef<L.LayerGroup | null>;
   /** Extract markers layer group */
   extractLayer: ShallowRef<L.LayerGroup | null>;
+  /** PMC spawn markers layer group */
+  spawnLayer: ShallowRef<L.LayerGroup | null>;
   /** Set the current floor */
   setFloor: (floor: string) => void;
   /** Refresh the map view */
@@ -147,6 +149,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   const tileLayer = shallowRef<L.TileLayer | null>(null);
   const objectiveLayer = shallowRef<L.LayerGroup | null>(null);
   const extractLayer = shallowRef<L.LayerGroup | null>(null);
+  const spawnLayer = shallowRef<L.LayerGroup | null>(null);
   const crsKey = ref('');
   const renderKey = ref('');
   // Map event handlers
@@ -748,6 +751,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       // Create layer groups for markers
       objectiveLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
       extractLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
+      spawnLayer.value = leaflet.value.layerGroup().addTo(mapInstance.value);
       // Setup idle detection
       if (enableIdleDetection && mapInstance.value) {
         mapInstance.value.on('movestart', resetIdleTimer);
@@ -813,6 +817,9 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     if (extractLayer.value) {
       extractLayer.value.clearLayers();
     }
+    if (spawnLayer.value) {
+      spawnLayer.value.clearLayers();
+    }
   }
   function destroy(): void {
     initializeToken += 1;
@@ -837,6 +844,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     tileLayer.value = null;
     objectiveLayer.value = null;
     extractLayer.value = null;
+    spawnLayer.value = null;
     leaflet.value = null;
   }
   // Watch for map changes
@@ -909,6 +917,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     svgLayer,
     objectiveLayer,
     extractLayer,
+    spawnLayer,
     setFloor,
     refreshView,
     clearMarkers,

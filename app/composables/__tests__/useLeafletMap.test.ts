@@ -623,17 +623,21 @@ describe('useLeafletMap', () => {
       const { result, wrapper } = await mountUseLeafletMap(mapData);
       const objectiveLayer = result.objectiveLayer.value;
       const extractLayer = result.extractLayer.value;
+      const spawnLayer = result.spawnLayer.value;
       const leaflet = result.leaflet.value;
-      if (!objectiveLayer || !extractLayer || !leaflet) {
+      if (!objectiveLayer || !extractLayer || !spawnLayer || !leaflet) {
         throw new Error('Marker layers or Leaflet were not initialized');
       }
       objectiveLayer.addLayer(leaflet.layerGroup());
       extractLayer.addLayer(leaflet.layerGroup());
+      spawnLayer.addLayer(leaflet.layerGroup());
       expect(objectiveLayer.getLayers()).toHaveLength(1);
       expect(extractLayer.getLayers()).toHaveLength(1);
+      expect(spawnLayer.getLayers()).toHaveLength(1);
       result.clearMarkers();
       expect(objectiveLayer.getLayers()).toHaveLength(0);
       expect(extractLayer.getLayers()).toHaveLength(0);
+      expect(spawnLayer.getLayers()).toHaveLength(0);
       wrapper.unmount();
     });
   });
@@ -660,6 +664,7 @@ describe('useLeafletMap', () => {
       expect(result.svgLayer.value).toBe(null);
       expect(result.objectiveLayer.value).toBe(null);
       expect(result.extractLayer.value).toBe(null);
+      expect(result.spawnLayer.value).toBe(null);
       expect(result.leaflet.value).toBe(null);
       wrapper.unmount();
     });

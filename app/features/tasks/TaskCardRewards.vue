@@ -5,7 +5,7 @@
     :class="[showDetails && hasExpandableDetails ? 'bg-surface-900/40' : 'bg-surface-900/20']"
   >
     <div
-      class="text-surface-400 focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 group flex w-full items-center gap-2 text-xs transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      class="text-surface-400 focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 group flex w-full flex-wrap items-center gap-1.5 text-xs transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:gap-2"
       :class="[
         hasExpandableDetails ? 'hover:bg-surface-700/20 cursor-pointer' : '',
         isCompact ? 'px-3 py-1.5' : 'px-4 py-2',
@@ -92,7 +92,7 @@
         <UIcon name="i-mdi-star" aria-hidden="true" class="text-warning-400 h-3.5 w-3.5" />
         <span class="text-warning-300 font-medium">{{ formatNumber(experienceValue) }} XP</span>
       </div>
-      <div class="flex-1"></div>
+      <div class="hidden flex-1 sm:block"></div>
       <AppTooltip
         v-if="unlocksNextCount && unlocksNextCount > 0"
         :text="

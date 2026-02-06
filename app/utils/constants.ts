@@ -171,14 +171,32 @@ export const TASK_ID_REGISTRY = {
   GETTING_ACQUAINTED: '625d700cc48e6c62a440fab5',
   A_HELPING_HAND: '6752f6d83038f7df520c83e8',
   EASY_MONEY_PART_1: '66058cb22cee99303f1ba067',
+  EASY_MONEY_PART_1_PVP: '66058cb22cee99303f1ba067',
+  EASY_MONEY_PART_1_PVE: '6834145ebc1f443d7603c8a7',
   HOT_WHEELS: '673f4e956f1b89c7bc0f56ef',
 } as const;
+export type TraderUnlockTaskConfig = string | Partial<Record<GameMode, string>>;
 // Traders that require a specific task to unlock
-export const TRADER_UNLOCK_TASKS: Record<string, string> = {
+export const TRADER_UNLOCK_TASKS: Record<string, TraderUnlockTaskConfig> = {
   lightkeeper: TASK_ID_REGISTRY.GETTING_ACQUAINTED,
   'btr-driver': TASK_ID_REGISTRY.A_HELPING_HAND,
-  ref: TASK_ID_REGISTRY.EASY_MONEY_PART_1,
+  ref: {
+    [GAME_MODES.PVP]: TASK_ID_REGISTRY.EASY_MONEY_PART_1_PVP,
+    [GAME_MODES.PVE]: TASK_ID_REGISTRY.EASY_MONEY_PART_1_PVE,
+  },
 } as const;
+export function resolveTraderUnlockTaskIds(
+  traderName: string | undefined,
+  gameMode: GameMode
+): string[] {
+  if (!traderName) return [];
+  const config = TRADER_UNLOCK_TASKS[traderName];
+  if (!config) return [];
+  if (typeof config === 'string') return [config];
+  const modeSpecificId = config[gameMode];
+  if (modeSpecificId) return [modeSpecificId];
+  return Object.values(config).filter((value): value is string => typeof value === 'string');
+}
 // Trader display order (matches in-game order)
 // Uses normalizedName for language-independent, stable identification
 export const TRADER_ORDER = [

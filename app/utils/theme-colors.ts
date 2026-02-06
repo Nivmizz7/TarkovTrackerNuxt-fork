@@ -40,6 +40,10 @@ export const THEME_COLORS = {
   success: {
     500: 'hsl(150 59.2% 41.4%)',
   },
+  // CSS var: --color-info-*
+  info: {
+    500: 'hsl(205 70% 45%)',
+  },
   // Accent colors (not in theme, but used for map markers)
   sky: {
     400: 'hsl(198 93.2% 59.6%)',
@@ -87,6 +91,8 @@ export const MAP_MARKER_COLORS = {
   SHARED_EXTRACT: THEME_COLORS.sky[400],
   /** Co-op extracts - sky-600 */
   COOP_EXTRACT: THEME_COLORS.sky[600],
+  /** PMC spawns - --color-info-500 */
+  PMC_SPAWN: THEME_COLORS.info[500],
   /** Default extract - --color-secondary-500 */
   DEFAULT_EXTRACT: THEME_COLORS.secondary[500],
   /** Marker border - white */

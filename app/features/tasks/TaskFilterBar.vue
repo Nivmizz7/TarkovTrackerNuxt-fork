@@ -1,7 +1,7 @@
 <template>
   <div class="mb-6 space-y-3">
     <div
-      class="bg-surface-900 flex items-center gap-3 rounded-lg border border-white/12 px-4 py-3 shadow-sm"
+      class="bg-surface-900 flex flex-wrap items-center gap-3 rounded-lg border border-white/12 px-3 py-3 shadow-sm sm:px-4"
     >
       <div class="w-full sm:w-56 sm:max-w-64 lg:max-w-72">
         <UInput
@@ -76,7 +76,7 @@
           :items="sortOptions"
           value-key="value"
           size="sm"
-          class="w-36 sm:w-44"
+          class="w-28 sm:w-44"
           :aria-label="t('page.tasks.sort.aria_label', 'Sort tasks by')"
         >
           <template #leading>
@@ -113,9 +113,9 @@
     </div>
     <div class="space-y-3">
       <div
-        class="bg-surface-900 flex flex-wrap items-center justify-center gap-3 rounded-lg border border-white/12 px-4 py-3 shadow-sm"
+        class="scrollbar-none bg-surface-900 flex items-center gap-3 overflow-x-auto rounded-lg border border-white/12 px-3 py-3 shadow-sm [-webkit-overflow-scrolling:touch] sm:flex-wrap sm:justify-center sm:overflow-x-visible sm:px-4"
       >
-        <div class="flex items-center gap-1">
+        <div class="flex shrink-0 items-center gap-1">
           <UButton
             v-if="preferencesStore.getShowAllFilter"
             variant="ghost"
@@ -221,7 +221,7 @@
           </UButton>
         </div>
         <div class="hidden h-6 w-px shrink-0 bg-white/20 sm:block" />
-        <div class="flex items-center gap-1">
+        <div class="flex shrink-0 items-center gap-1">
           <UButton
             variant="ghost"
             color="neutral"
@@ -281,9 +281,12 @@
           </UButton>
         </div>
       </div>
-      <div v-if="primaryView === 'maps' && maps.length > 0" class="w-full overflow-x-auto">
+      <div
+        v-if="primaryView === 'maps' && maps.length > 0"
+        class="scrollbar-none w-full overflow-x-auto [-webkit-overflow-scrolling:touch]"
+      >
         <div
-          class="bg-surface-900 flex w-max min-w-full justify-center gap-1 rounded-lg border border-white/12 px-4 py-3 shadow-sm"
+          class="bg-surface-900 flex w-max min-w-full justify-center gap-1 rounded-lg border border-white/12 px-3 py-3 shadow-sm sm:px-4"
         >
           <UButton
             v-for="mapOption in mapOptions"
@@ -314,9 +317,12 @@
           </UButton>
         </div>
       </div>
-      <div v-if="primaryView === 'traders' && traders.length > 0" class="w-full overflow-x-auto">
+      <div
+        v-if="primaryView === 'traders' && traders.length > 0"
+        class="scrollbar-none w-full overflow-x-auto [-webkit-overflow-scrolling:touch]"
+      >
         <div
-          class="bg-surface-900 flex w-max min-w-full justify-center gap-1 rounded-lg border border-white/12 px-4 py-3 shadow-sm"
+          class="bg-surface-900 flex w-max min-w-full justify-center gap-1 rounded-lg border border-white/12 px-3 py-3 shadow-sm sm:px-4"
         >
           <UButton
             v-for="trader in traders"
@@ -388,15 +394,13 @@
   const { calculateMapTaskTotals, calculateStatusCounts, calculateTraderCounts } =
     useTaskFiltering();
   const maps = computed(() => metadataStore.mapsWithSvg);
+  const traderCounts = computed(() => {
+    const userView = preferencesStore.getTaskUserView;
+    const secondaryView = normalizeSecondaryView(preferencesStore.getTaskSecondaryView);
+    return calculateTraderCounts(userView, secondaryView);
+  });
   const traders = computed(() => {
-    const traderIds = new Set<string>();
-    for (const task of metadataStore.tasks) {
-      const traderId = task.trader?.id;
-      if (traderId !== undefined && traderId !== null) {
-        traderIds.add(traderId);
-      }
-    }
-    return metadataStore.sortedTraders.filter((trader) => traderIds.has(trader.id));
+    return metadataStore.sortedTraders.filter((trader) => (traderCounts.value[trader.id] ?? 0) > 0);
   });
   // Get current user's display name
   const currentUserDisplayName = computed(() => {
@@ -476,11 +480,6 @@
   const currentSortIcon = computed(() => {
     return SORT_MODE_ICONS[taskSortMode.value] ?? 'i-mdi-sort';
   });
-  const traderCounts = computed(() => {
-    const userView = preferencesStore.getTaskUserView;
-    const secondaryView = normalizeSecondaryView(preferencesStore.getTaskSecondaryView);
-    return calculateTraderCounts(userView, secondaryView);
-  });
   const mergedMaps = computed(() => {
     return maps.value.map((map) => {
       const mergedIds = (map as { mergedIds?: string[] }).mergedIds || [];
@@ -512,12 +511,11 @@
         preferencesStore.setTaskMapView(firstMap.id);
       }
     }
-    // When switching to traders, ensure a trader is selected
-    if (
-      view === 'traders' &&
-      traders.value.length > 0 &&
-      preferencesStore.getTaskTraderView === 'all'
-    ) {
+    if (view === 'traders' && traders.value.length > 0) {
+      const hasSelectedTrader = traders.value.some(
+        (trader) => trader.id === preferencesStore.getTaskTraderView
+      );
+      if (hasSelectedTrader) return;
       const firstTrader = traders.value[0];
       if (firstTrader?.id) {
         preferencesStore.setTaskTraderView(firstTrader.id);
@@ -558,4 +556,17 @@
       preferencesStore.setTaskUserView(selected.value);
     }
   };
+  watch(
+    [() => preferencesStore.getTaskPrimaryView, traders, () => preferencesStore.getTaskTraderView],
+    ([view, visibleTraders, selectedTrader]) => {
+      if (view !== 'traders' || visibleTraders.length === 0) return;
+      const isSelectedTraderVisible = visibleTraders.some((trader) => trader.id === selectedTrader);
+      if (isSelectedTraderVisible) return;
+      const firstTrader = visibleTraders[0];
+      if (firstTrader?.id) {
+        preferencesStore.setTaskTraderView(firstTrader.id);
+      }
+    },
+    { immediate: true }
+  );
 </script>
