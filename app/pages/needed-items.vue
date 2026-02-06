@@ -227,9 +227,11 @@
   const infiniteScrollOptions = {
     enabled: infiniteScrollEnabled,
     rootMargin: INFINITE_SCROLL_MARGIN,
-    autoFill: false,
+    autoFill: true,
     autoLoadOnReady: true,
     useScrollFallback: true,
+    maxAutoLoads: 12,
+    stickToBottomThreshold: 400,
   };
   const { checkAndLoadMore } = useInfiniteScroll(currentSentinel, loadMore, infiniteScrollOptions);
   const resetVisibleCount = () => {

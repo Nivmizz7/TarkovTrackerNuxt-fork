@@ -131,9 +131,9 @@
             </span>
             <span
               class="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
-              :class="statusCounts.all > 0 ? 'bg-surface-500' : 'bg-surface-600'"
+              :class="displayStatusCounts.all > 0 ? 'bg-surface-500' : 'bg-surface-600'"
             >
-              {{ statusCounts.all }}
+              {{ displayStatusCounts.all }}
             </span>
           </UButton>
           <span
@@ -156,9 +156,9 @@
             </span>
             <span
               class="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
-              :class="statusCounts.available > 0 ? 'bg-info-500' : 'bg-surface-600'"
+              :class="displayStatusCounts.available > 0 ? 'bg-info-500' : 'bg-surface-600'"
             >
-              {{ statusCounts.available }}
+              {{ displayStatusCounts.available }}
             </span>
           </UButton>
           <UButton
@@ -176,9 +176,9 @@
             </span>
             <span
               class="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
-              :class="statusCounts.locked > 0 ? 'bg-surface-600' : 'bg-surface-700'"
+              :class="displayStatusCounts.locked > 0 ? 'bg-surface-600' : 'bg-surface-700'"
             >
-              {{ statusCounts.locked }}
+              {{ displayStatusCounts.locked }}
             </span>
           </UButton>
           <UButton
@@ -197,7 +197,7 @@
             <span
               class="bg-success-500 ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
             >
-              {{ statusCounts.completed }}
+              {{ displayStatusCounts.completed }}
             </span>
           </UButton>
           <UButton
@@ -216,7 +216,7 @@
             <span
               class="bg-error-500 ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
             >
-              {{ statusCounts.failed }}
+              {{ displayStatusCounts.failed }}
             </span>
           </UButton>
         </div>
@@ -377,10 +377,11 @@
   import { useTeamStore } from '@/stores/useTeamStore';
   import { TASK_SORT_MODES } from '@/types/taskSort';
   import { normalizeSecondaryView, normalizeSortMode } from '@/utils/taskFilterNormalization';
-  import type { TaskSecondaryView } from '@/types/taskFilter';
   import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
-  defineProps<{
+  const props = defineProps<{
     searchQuery: string;
+    activeSearchCount?: number;
+    isSearchActive?: boolean;
   }>();
   defineEmits<{
     'update:searchQuery': [value: string];
@@ -427,6 +428,16 @@
   const statusCounts = computed(() => {
     const userView = preferencesStore.getTaskUserView;
     return calculateStatusCounts(userView);
+  });
+  const displayStatusCounts = computed(() => {
+    if (!props.isSearchActive || props.activeSearchCount === undefined) {
+      return statusCounts.value;
+    }
+    const activeView = secondaryView.value;
+    return {
+      ...statusCounts.value,
+      [activeView]: props.activeSearchCount,
+    };
   });
   type SortOption = {
     value: TaskSortMode;

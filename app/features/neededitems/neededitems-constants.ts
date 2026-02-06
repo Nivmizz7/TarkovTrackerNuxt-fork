@@ -6,7 +6,7 @@ export const BATCH_SIZE_GRID = 12;
 /** Number of items to load per batch in list view */
 export const BATCH_SIZE_LIST = 30;
 /** Root margin for infinite scroll intersection observer */
-export const INFINITE_SCROLL_MARGIN = '200px';
+export const INFINITE_SCROLL_MARGIN = '600px';
 /** Default initial render count before responsive adjustments */
 export const DEFAULT_INITIAL_RENDER_COUNT = 12;
 /**

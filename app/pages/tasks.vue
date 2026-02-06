@@ -7,7 +7,11 @@
       <div class="mx-auto max-w-[1400px]">
         <TaskLoadingState v-if="isLoading" />
         <div v-else>
-          <TaskFilterBar v-model:search-query="searchQuery" />
+          <TaskFilterBar
+            v-model:search-query="searchQuery"
+            :active-search-count="activeSearchCount"
+            :is-search-active="isSearchActive"
+          />
           <div v-if="showMapDisplay" ref="mapContainerRef" class="mb-6">
             <div class="bg-surface-800/50 rounded-lg p-4">
               <div class="mb-3 flex items-center justify-between">
@@ -436,6 +440,7 @@
     });
   });
   const normalizedSearch = computed(() => debouncedSearch.value.toLowerCase().trim());
+  const isSearchActive = computed(() => normalizedSearch.value.length > 0);
   const filteredTasks = computed((): Task[] => {
     if (!normalizedSearch.value) {
       return visibleTasks.value;
@@ -450,6 +455,7 @@
       .sort((a, b) => b.score - a.score);
     return scored.map(({ task }) => task);
   });
+  const activeSearchCount = computed(() => filteredTasks.value.length);
   const {
     pinnedTask,
     clearPinnedTask,
