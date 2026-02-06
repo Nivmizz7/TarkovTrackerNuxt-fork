@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-surface-900 hover:border-surface-600 focus-visible:border-surface-500 focus-visible:ring-surface-700/50 rounded-lg border border-white/12 px-4 py-3 shadow-md transition-all outline-none hover:shadow-lg focus-visible:ring-2"
+    class="bg-surface-900 hover:border-surface-600 focus-visible:border-surface-500 focus-visible:ring-surface-700/50 flex h-full min-h-44 flex-col rounded-lg border border-white/12 px-4 py-3 shadow-md transition-all outline-none hover:shadow-lg focus-visible:ring-2"
   >
     <div class="mb-2 flex items-center gap-3">
       <button
