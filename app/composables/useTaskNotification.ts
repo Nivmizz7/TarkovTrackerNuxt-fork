@@ -80,7 +80,7 @@ export function useTaskNotification() {
   const handleAlternatives = (
     alternatives: string[] | undefined,
     taskAction: 'setTaskComplete' | 'setTaskUncompleted' | 'setTaskFailed',
-    objectiveAction: 'setTaskObjectiveComplete' | 'setTaskObjectiveUncomplete'
+    objectiveAction?: 'setTaskObjectiveComplete' | 'setTaskObjectiveUncomplete'
   ) => {
     if (!Array.isArray(alternatives)) return;
     alternatives.forEach((a: string) => {
@@ -95,7 +95,7 @@ export function useTaskNotification() {
       if (alternativeTask?.objectives) {
         if (taskAction === 'setTaskFailed') {
           clearTaskObjectives(alternativeTask.objectives);
-        } else {
+        } else if (objectiveAction) {
           handleTaskObjectives(alternativeTask.objectives, objectiveAction);
         }
       }
@@ -120,7 +120,7 @@ export function useTaskNotification() {
       tarkovStore.setTaskComplete(taskId);
       if (taskToUndo?.objectives) {
         handleTaskObjectives(taskToUndo.objectives, 'setTaskObjectiveComplete');
-        handleAlternatives(taskToUndo.alternatives, 'setTaskFailed', 'setTaskObjectiveComplete');
+        handleAlternatives(taskToUndo.alternatives, 'setTaskFailed');
         const minLevel = taskToUndo.minPlayerLevel;
         if (minLevel !== undefined) {
           const currentLevel = tarkovStore.playerLevel();

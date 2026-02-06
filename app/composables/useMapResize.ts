@@ -59,13 +59,15 @@ export function useMapResize(options: UseMapResizeOptions = {}): UseMapResizeRet
   const savedUserSelect = ref('');
   const isResizing = computed(() => resizeState.value !== null);
   const onResizeMove = (event: PointerEvent) => {
-    if (!resizeState.value) return;
-    const delta = event.clientY - resizeState.value.startY;
-    mapHeight.value = Math.round(resizeState.value.startHeight + delta);
+    const state = resizeState.value;
+    if (!state || state.pointerId !== event.pointerId) return;
+    const delta = event.clientY - state.startY;
+    mapHeight.value = Math.round(state.startHeight + delta);
   };
-  const stopResize = () => {
+  const stopResize = (event?: PointerEvent) => {
     const state = resizeState.value;
     if (!state) return;
+    if (event && state.pointerId !== event.pointerId) return;
     const pointerId = state.pointerId;
     const handle = resizeHandleRef.value;
     resizeState.value = null;
