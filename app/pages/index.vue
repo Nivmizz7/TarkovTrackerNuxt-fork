@@ -5,6 +5,7 @@
     <div class="content-visibility-auto-280 mb-8">
       <button
         type="button"
+        data-testid="dashboard-progress-toggle"
         class="group mb-4 flex w-full cursor-pointer items-center text-2xl font-bold text-white"
         :aria-expanded="!progressSectionCollapsed"
         @click="progressSectionCollapsed = !progressSectionCollapsed"
@@ -17,6 +18,7 @@
         />
       </button>
       <div
+        v-if="!progressSectionCollapsed"
         class="text-surface-400 mb-2 flex items-center justify-end gap-1.5 text-[11px] sm:text-xs"
         data-testid="dashboard-filter-notice"
         :data-filter-active="hasDashboardFiltersActive ? 'true' : 'false'"

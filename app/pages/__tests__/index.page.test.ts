@@ -310,6 +310,17 @@ describe('dashboard page', () => {
       expect(notice.exists()).toBe(true);
       expect(notice.attributes('data-filter-active')).toBe('true');
     });
+    it('hides filter notice when progress breakdown is collapsed', async () => {
+      const { DashboardPage } = await setup();
+      const wrapper = await mountSuspended(DashboardPage, {
+        global: { stubs: defaultGlobalStubs },
+      });
+      const progressToggle = wrapper.find('[data-testid="dashboard-progress-toggle"]');
+      expect(progressToggle.exists()).toBe(true);
+      expect(wrapper.find('[data-testid="dashboard-filter-notice"]').exists()).toBe(true);
+      await progressToggle.trigger('click');
+      expect(wrapper.find('[data-testid="dashboard-filter-notice"]').exists()).toBe(false);
+    });
   });
   describe('level calculation modes', () => {
     it('uses manual level when automatic calculation disabled', async () => {
