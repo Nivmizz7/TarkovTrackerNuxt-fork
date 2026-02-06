@@ -2,7 +2,7 @@
   <GenericCard
     :id="stationAnchorId"
     :avatar="stationAvatar"
-    :highlight-color="getHighlightColor()"
+    :highlight-color="highlightColor"
     :avatar-height="50"
     :fill-height="false"
     :show-divider="false"
@@ -122,7 +122,7 @@
             <!-- Prerequisites Section -->
             <div v-if="hasPrerequisites" class="border-surface-700 space-y-2 border-t pt-3">
               <div class="text-surface-400 mb-2 text-xs font-medium tracking-wider uppercase">
-                {{ $t('page.hideout.stationcard.prerequisites') || 'Prerequisites' }}
+                {{ $t('page.hideout.stationcard.prerequisites', 'Prerequisites') }}
               </div>
               <!-- Station Level Requirements -->
               <div
@@ -337,12 +337,12 @@
   const downgradeButtonUi = {
     base: 'bg-error-900/40 hover:bg-error-900/60 active:bg-error-900/80 text-error-300 border border-error-700/50',
   };
-  const getHighlightColor = (): 'success' | 'error' | 'primary' => {
+  const highlightColor = computed((): 'success' | 'error' | 'primary' => {
     if (!nextLevel.value) return 'primary';
     return prerequisitesMet.value ? 'success' : 'error';
-  };
+  });
   const highlightClasses = computed(() => {
-    const color = getHighlightColor();
+    const color = highlightColor.value;
     const classes: Record<string, boolean> = {};
     switch (color) {
       case 'primary':
