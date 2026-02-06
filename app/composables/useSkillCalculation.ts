@@ -143,14 +143,12 @@ export function useSkillCalculation() {
               imageLink,
             });
           } else if (imageLink && !skillsMap.get(skillName)!.imageLink) {
-            // Update imageLink if we didn't have it before
             skillsMap.get(skillName)!.imageLink = imageLink;
           }
           if (!skillsMap.get(skillName)!.id && skillId) {
             skillsMap.get(skillName)!.id = skillId;
           }
           skillsMap.get(skillName)!.requiredByTasks.push(taskName);
-          // Track unique required levels
           if (
             requiredLevel > 0 &&
             !skillsMap.get(skillName)!.requiredLevels.includes(requiredLevel)
@@ -159,9 +157,7 @@ export function useSkillCalculation() {
           }
         }
       });
-      // Extract skills from finish rewards
       task.finishRewards?.skillLevelReward?.forEach((reward) => {
-        // Skip null/undefined rewards (sparse array data from API)
         if (reward?.name) {
           const skillName = reward.name;
           const skillId = reward.skill?.id;
@@ -176,7 +172,6 @@ export function useSkillCalculation() {
               imageLink,
             });
           } else if (imageLink && !skillsMap.get(skillName)!.imageLink) {
-            // Update imageLink if we didn't have it before
             skillsMap.get(skillName)!.imageLink = imageLink;
           }
           if (!skillsMap.get(skillName)!.id && skillId) {

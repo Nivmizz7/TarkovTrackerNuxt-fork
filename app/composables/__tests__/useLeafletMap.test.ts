@@ -113,7 +113,7 @@ const createDeferred = <T>() => {
   return { promise, resolve, reject };
 };
 describe('useLeafletMap', () => {
-  let useLeafletMap: typeof import('../useLeafletMap').useLeafletMap;
+  let useLeafletMap: typeof import('@/composables/useLeafletMap').useLeafletMap;
   let containerRef: Ref<HTMLElement | null>;
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -127,7 +127,7 @@ describe('useLeafletMap', () => {
         text: async () => '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
       }))
     );
-    const module = await import('../useLeafletMap');
+    const module = await import('@/composables/useLeafletMap');
     useLeafletMap = module.useLeafletMap;
   });
   afterEach(() => {
@@ -282,6 +282,63 @@ describe('useLeafletMap', () => {
       );
       expect(result.mapInstance.value).toBe(null);
       expect(result.leaflet.value).toBe(null);
+      wrapper.unmount();
+    });
+    it('ignores stale async reload when render key changes again before fetch resolves', async () => {
+      const mapWithSvg = (file: string): TarkovMap =>
+        ({
+          id: 'customs',
+          name: 'Customs',
+          normalizedName: 'customs',
+          svg: {
+            file,
+            floors: ['ground'],
+            defaultFloor: 'ground',
+            coordinateRotation: 0,
+            bounds: [
+              [0, 0],
+              [100, 100],
+            ],
+          },
+        }) as TarkovMap;
+      const deferredReload = createDeferred<{ ok: boolean; text: () => Promise<string> }>();
+      let fetchCount = 0;
+      const fetchSpy = vi.fn((_url: string, init?: RequestInit) => {
+        fetchCount += 1;
+        if (fetchCount === 1) {
+          return Promise.resolve({
+            ok: true,
+            text: async () =>
+              '<svg xmlns="http://www.w3.org/2000/svg"><g id="Ground_Level"></g></svg>',
+          });
+        }
+        if (fetchCount === 2) {
+          const signal = init?.signal;
+          signal?.addEventListener('abort', () => {
+            deferredReload.reject(new DOMException('Aborted', 'AbortError'));
+          });
+          return deferredReload.promise;
+        }
+        return Promise.resolve({
+          ok: true,
+          text: async () =>
+            '<svg xmlns="http://www.w3.org/2000/svg"><g id="Ground_Level"></g></svg>',
+        });
+      });
+      vi.stubGlobal('fetch', fetchSpy);
+      const leafletModule = await import('leaflet');
+      const svgOverlaySpy = vi.spyOn(leafletModule.default, 'svgOverlay');
+      const { wrapper, mapRef } = await mountUseLeafletMap(mapWithSvg('customs-a.svg'));
+      expect(svgOverlaySpy).toHaveBeenCalledTimes(1);
+      mapRef.value = mapWithSvg('customs-b.svg');
+      await nextTick();
+      await waitFor(() => fetchSpy.mock.calls.length >= 2);
+      mapRef.value = mapWithSvg('customs-c.svg');
+      await nextTick();
+      await waitFor(() => fetchSpy.mock.calls.length >= 3);
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(svgOverlaySpy).toHaveBeenCalledTimes(2);
       wrapper.unmount();
     });
   });
@@ -604,6 +661,55 @@ describe('useLeafletMap', () => {
       expect(result.objectiveLayer.value).toBe(null);
       expect(result.extractLayer.value).toBe(null);
       expect(result.leaflet.value).toBe(null);
+      wrapper.unmount();
+    });
+    it('destroy cancels in-flight reload and prevents stale layer mutation', async () => {
+      const mapWithSvg = (file: string): TarkovMap =>
+        ({
+          id: 'customs',
+          name: 'Customs',
+          normalizedName: 'customs',
+          svg: {
+            file,
+            floors: ['ground'],
+            defaultFloor: 'ground',
+            coordinateRotation: 0,
+            bounds: [
+              [0, 0],
+              [100, 100],
+            ],
+          },
+        }) as TarkovMap;
+      const deferredReload = createDeferred<{ ok: boolean; text: () => Promise<string> }>();
+      let fetchCount = 0;
+      const fetchSpy = vi.fn((_url: string, init?: RequestInit) => {
+        fetchCount += 1;
+        if (fetchCount === 1) {
+          return Promise.resolve({
+            ok: true,
+            text: async () =>
+              '<svg xmlns="http://www.w3.org/2000/svg"><g id="Ground_Level"></g></svg>',
+          });
+        }
+        const signal = init?.signal;
+        signal?.addEventListener('abort', () => {
+          deferredReload.reject(new DOMException('Aborted', 'AbortError'));
+        });
+        return deferredReload.promise;
+      });
+      vi.stubGlobal('fetch', fetchSpy);
+      const leafletModule = await import('leaflet');
+      const svgOverlaySpy = vi.spyOn(leafletModule.default, 'svgOverlay');
+      const { result, wrapper, mapRef } = await mountUseLeafletMap(mapWithSvg('customs-a.svg'));
+      expect(svgOverlaySpy).toHaveBeenCalledTimes(1);
+      mapRef.value = mapWithSvg('customs-b.svg');
+      await nextTick();
+      await waitFor(() => fetchSpy.mock.calls.length >= 2);
+      result.destroy();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(svgOverlaySpy).toHaveBeenCalledTimes(1);
+      expect(result.mapInstance.value).toBe(null);
       wrapper.unmount();
     });
   });

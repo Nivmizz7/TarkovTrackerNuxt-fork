@@ -62,37 +62,54 @@ export interface UseLeafletMapReturn {
   /** Destroy the map instance */
   destroy: () => void;
 }
+interface MapLayerLoadToken {
+  id: number;
+  signal: AbortSignal;
+}
 // SVG cache to avoid refetching
 const svgCache = new Map<string, string>();
+function isAbortError(error: unknown): boolean {
+  return (
+    (error instanceof DOMException && error.name === 'AbortError') ||
+    (typeof error === 'object' &&
+      error !== null &&
+      'name' in error &&
+      (error as { name?: string }).name === 'AbortError')
+  );
+}
 /**
  * Fetches SVG content with fallback support.
  */
 async function fetchSvgContent(
   primaryUrl: string,
-  fallbackUrls: string[] = []
+  fallbackUrls: string[] = [],
+  signal?: AbortSignal
 ): Promise<string | null> {
+  if (signal?.aborted) return null;
   // Check cache first
   if (svgCache.has(primaryUrl)) {
     return svgCache.get(primaryUrl)!;
   }
   try {
-    const response = await fetch(primaryUrl);
+    const response = await fetch(primaryUrl, { signal });
     if (response.ok) {
       const content = await response.text();
       svgCache.set(primaryUrl, content);
       return content;
     }
   } catch (e) {
+    if (isAbortError(e) || signal?.aborted) return null;
     logger.warn(`Failed to fetch SVG from primary URL: ${primaryUrl}`, e);
   }
   // Try fallbacks in order
   for (const fallbackUrl of fallbackUrls) {
+    if (signal?.aborted) return null;
     if (!fallbackUrl) continue;
     if (svgCache.has(fallbackUrl)) {
       return svgCache.get(fallbackUrl)!;
     }
     try {
-      const response = await fetch(fallbackUrl);
+      const response = await fetch(fallbackUrl, { signal });
       if (response.ok) {
         const content = await response.text();
         svgCache.set(fallbackUrl, content);
@@ -100,6 +117,7 @@ async function fetchSvgContent(
         return content;
       }
     } catch (e) {
+      if (isAbortError(e) || signal?.aborted) return null;
       logger.warn(`Failed to fetch SVG from fallback URL: ${fallbackUrl}`, e);
     }
   }
@@ -180,6 +198,37 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   let resizeObserver: ResizeObserver | null = null;
   let initializeToken = 0;
   const isInitializeTokenActive = (token: number): boolean => token === initializeToken;
+  let currentLoadId = 0;
+  let currentLoadController: AbortController | null = null;
+  const createMapLayerLoadToken = (): MapLayerLoadToken => {
+    if (currentLoadController) {
+      currentLoadController.abort();
+    }
+    currentLoadId += 1;
+    currentLoadController = new AbortController();
+    return {
+      id: currentLoadId,
+      signal: currentLoadController.signal,
+    };
+  };
+  const cancelMapLayerLoad = (): void => {
+    currentLoadId += 1;
+    if (currentLoadController) {
+      currentLoadController.abort();
+      currentLoadController = null;
+    }
+  };
+  const isMapLayerLoadActive = (token?: MapLayerLoadToken): boolean => {
+    if (!token) return true;
+    return token.id === currentLoadId && !token.signal.aborted;
+  };
+  const isLayerLoadOperationActive = (
+    initToken?: number,
+    loadToken?: MapLayerLoadToken
+  ): boolean => {
+    if (initToken !== undefined && !isInitializeTokenActive(initToken)) return false;
+    return isMapLayerLoadActive(loadToken);
+  };
   // Computed
   const getSvgConfig = (): MapSvgConfig | undefined => {
     const svgConfig = map.value?.svg;
@@ -265,9 +314,10 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
    */
   async function loadStandardMapSvg(
     L: typeof import('leaflet'),
-    initToken?: number
+    initToken?: number,
+    loadToken?: MapLayerLoadToken
   ): Promise<void> {
-    if (initToken !== undefined && !isInitializeTokenActive(initToken)) return;
+    if (!isLayerLoadOperationActive(initToken, loadToken)) return;
     const svgConfig = map.value?.svg;
     if (!isValidMapSvgConfig(svgConfig)) return;
     const floor = selectedFloor.value || svgConfig.defaultFloor;
@@ -279,14 +329,15 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     const hasMultipleFloors = svgConfig.floors.length > 1;
     const primaryUrl = baseUrl;
     const fallbackUrls = hasMultipleFloors ? [fallbackUrl] : [perFloorUrl, fallbackUrl];
-    const svgContent = await fetchSvgContent(primaryUrl, fallbackUrls);
-    if (initToken !== undefined && !isInitializeTokenActive(initToken)) return;
+    const svgContent = await fetchSvgContent(primaryUrl, fallbackUrls, loadToken?.signal);
+    if (!isLayerLoadOperationActive(initToken, loadToken)) return;
     if (!svgContent) {
       logger.error(`Failed to load SVG for map: ${mapName}`);
       return;
     }
     const svgElement = parseSvgContent(svgContent);
     if (!svgElement) return;
+    if (!isLayerLoadOperationActive(initToken, loadToken)) return;
     if (tileLayer.value && mapInstance.value) {
       mapInstance.value.removeLayer(tileLayer.value);
       tileLayer.value = null;
@@ -296,10 +347,13 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       mapInstance.value.removeLayer(svgLayer.value);
     }
     // Create new SVG overlay using svgBounds if available
+    if (!isLayerLoadOperationActive(initToken, loadToken)) return;
     const bounds = getSvgOverlayBounds(svgConfig);
-    svgLayer.value = L.svgOverlay(svgElement, bounds, { pane: 'mapBackground' });
+    const nextSvgLayer = L.svgOverlay(svgElement, bounds, { pane: 'mapBackground' });
+    if (!isLayerLoadOperationActive(initToken, loadToken)) return;
+    svgLayer.value = nextSvgLayer;
     if (mapInstance.value) {
-      svgLayer.value.addTo(mapInstance.value);
+      nextSvgLayer.addTo(mapInstance.value);
       // Apply floor visibility if there are multiple floors in a single SVG
       if (floors.value.length > 1) {
         updateFloorVisibility(svgElement);
@@ -309,9 +363,10 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   async function loadTileMap(
     L: typeof import('leaflet'),
     tileConfig: MapTileConfig,
-    initToken?: number
+    initToken?: number,
+    loadToken?: MapLayerLoadToken
   ): Promise<void> {
-    if (initToken !== undefined && !isInitializeTokenActive(initToken)) return;
+    if (!isLayerLoadOperationActive(initToken, loadToken)) return;
     const leafletMap = mapInstance.value;
     if (!leafletMap) return;
     if (tileLayer.value) {
@@ -332,7 +387,12 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       const layer = tileLayer.value;
       const attachTileErrorHandler = (currentIndex: number) => {
         const handleTileError = (event: L.LeafletEvent) => {
-          if (!layer || tileLayer.value !== layer) return;
+          if (
+            !layer ||
+            tileLayer.value !== layer ||
+            !isLayerLoadOperationActive(initToken, loadToken)
+          )
+            return;
           const failedUrl = tilePaths[currentIndex] ?? tileConfig.tilePath;
           const nextIndex = currentIndex + 1;
           const nextUrl = tilePaths[nextIndex];
@@ -354,10 +414,11 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
         };
         layer.on('tileerror', handleTileError);
       };
-      if (layer) {
+      if (layer && isLayerLoadOperationActive(initToken, loadToken)) {
         attachTileErrorHandler(0);
         layer.addTo(leafletMap);
       }
+      if (!isLayerLoadOperationActive(initToken, loadToken)) return;
       if (svgLayer.value) {
         leafletMap.removeLayer(svgLayer.value);
         svgLayer.value = null;
@@ -652,6 +713,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     // Skip initialization for unavailable maps or missing container
     if (!containerRef.value || isMapUnavailable()) return;
     const initToken = ++initializeToken;
+    let loadToken: MapLayerLoadToken | undefined;
     isLoading.value = true;
     try {
       // Dynamic import Leaflet
@@ -685,8 +747,13 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
         selectedFloor.value = '';
       }
       renderKey.value = getRenderKey() ?? '';
-      await loadMapLayer(initToken);
-      if (!isInitializeTokenActive(initToken) || !leaflet.value || !mapInstance.value) {
+      loadToken = createMapLayerLoadToken();
+      await loadMapLayer(initToken, loadToken);
+      if (
+        !isLayerLoadOperationActive(initToken, loadToken) ||
+        !leaflet.value ||
+        !mapInstance.value
+      ) {
         return;
       }
       // Create layer groups for markers
@@ -706,7 +773,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     } catch (error) {
       logger.error('Failed to initialize Leaflet map:', error);
     } finally {
-      if (isInitializeTokenActive(initToken)) {
+      if (isInitializeTokenActive(initToken) && isMapLayerLoadActive(loadToken)) {
         isLoading.value = false;
       }
     }
@@ -731,17 +798,17 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   /**
    * Loads the appropriate map layer for the current map.
    */
-  async function loadMapLayer(initToken?: number): Promise<void> {
-    if (initToken !== undefined && !isInitializeTokenActive(initToken)) return;
+  async function loadMapLayer(initToken?: number, loadToken?: MapLayerLoadToken): Promise<void> {
+    if (!isLayerLoadOperationActive(initToken, loadToken)) return;
     if (!leaflet.value || !mapInstance.value) return;
     const tileConfig = getTileConfig();
     if (tileConfig) {
-      await loadTileMap(leaflet.value, tileConfig, initToken);
+      await loadTileMap(leaflet.value, tileConfig, initToken, loadToken);
       return;
     }
     const svgConfig = getSvgConfig();
     if (svgConfig) {
-      await loadStandardMapSvg(leaflet.value, initToken);
+      await loadStandardMapSvg(leaflet.value, initToken, loadToken);
     }
   }
   /**
@@ -772,6 +839,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
    */
   function destroy(): void {
     initializeToken += 1;
+    cancelMapLayerLoad();
     isLoading.value = false;
     if (idleTimer) {
       clearTimeout(idleTimer);
@@ -831,13 +899,17 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       }
       const nextRenderKey = getRenderKey() ?? '';
       if (nextRenderKey !== renderKey.value) {
+        const loadToken = createMapLayerLoadToken();
         isLoading.value = true;
         try {
           renderKey.value = nextRenderKey;
-          await loadMapLayer();
+          await loadMapLayer(undefined, loadToken);
+          if (!isMapLayerLoadActive(loadToken)) return;
           refreshView();
         } finally {
-          isLoading.value = false;
+          if (isMapLayerLoadActive(loadToken)) {
+            isLoading.value = false;
+          }
         }
       }
     }

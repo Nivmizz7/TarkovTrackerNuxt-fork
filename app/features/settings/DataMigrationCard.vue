@@ -67,39 +67,40 @@
       />
       <UModal v-model:open="migration.showObjectivesDetails.value">
         <template #header>
-          <div class="text-xl font-medium">Task Objectives Information</div>
+          <div class="text-xl font-medium">
+            {{ t('settings.data_migration.objectives_modal_title') }}
+          </div>
         </template>
         <template #body>
           <div class="space-y-3">
             <p>
-              The count of {{ migration.countTaskObjectives.value }} task objectives represents all
-              objective data in your import.
+              {{
+                t('settings.data_migration.objectives_modal_count', {
+                  count: migration.countTaskObjectives.value,
+                })
+              }}
             </p>
-            <p>
-              The dashboard may show a different number because it only counts unique task
-              objectives that are currently relevant to your progress.
-            </p>
-            <p>
-              This difference is normal and doesn't indicate any problem with your data migration.
-            </p>
+            <p>{{ t('settings.data_migration.objectives_modal_dashboard') }}</p>
+            <p>{{ t('settings.data_migration.objectives_modal_normal') }}</p>
           </div>
         </template>
         <template #footer="{ close }">
           <div class="flex justify-end">
-            <UButton color="primary" variant="solid" @click="close">Close</UButton>
+            <UButton color="primary" variant="solid" @click="close">
+              {{ t('settings.data_migration.close') }}
+            </UButton>
           </div>
         </template>
       </UModal>
       <UModal v-model:open="migration.showFailedTaskDetails.value">
         <template #header>
-          <div class="text-xl font-medium">Failed Task Details</div>
+          <div class="text-xl font-medium">
+            {{ t('settings.data_migration.failed_modal_title') }}
+          </div>
         </template>
         <template #body>
           <div class="space-y-3">
-            <p>
-              These tasks are marked as "failed" in your data. This typically happens when you chose
-              a different quest branch or when a task became unavailable.
-            </p>
+            <p>{{ t('settings.data_migration.failed_modal_description') }}</p>
             <div class="mt-2 space-y-2">
               <div
                 v-for="task in migration.failedTasks.value"
@@ -107,24 +108,27 @@
                 class="border-surface-700 border-b pb-2 last:border-0"
               >
                 <div class="flex items-center">
-                  <span>Task ID: {{ task.id }}</span>
+                  <span>
+                    {{ t('settings.data_migration.failed_modal_task_id', { id: task.id }) }}
+                  </span>
                   <UBadge size="xs" color="error" class="ml-2">Failed</UBadge>
                 </div>
                 <div class="text-surface-400 text-sm">
-                  This task will remain marked as failed after migration.
+                  {{ t('settings.data_migration.failed_modal_task_status') }}
                 </div>
               </div>
             </div>
             <p>
-              <strong>Note:</strong>
-              This is normal for tasks that are mutually exclusive with other tasks you've
-              completed.
+              <strong>{{ t('common.note', 'Note') }}:</strong>
+              {{ t('settings.data_migration.failed_modal_note') }}
             </p>
           </div>
         </template>
         <template #footer="{ close }">
           <div class="flex justify-end">
-            <UButton color="primary" variant="solid" @click="close">Close</UButton>
+            <UButton color="primary" variant="solid" @click="close">
+              {{ t('settings.data_migration.close') }}
+            </UButton>
           </div>
         </template>
       </UModal>

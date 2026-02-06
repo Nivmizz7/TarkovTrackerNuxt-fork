@@ -223,8 +223,6 @@
 </template>
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
-  import GameItem from '@/components/ui/GameItem.vue';
-  import { useItemDistribution } from '@/composables/useItemDistribution';
   import NeededItemGroupedInputControls from '@/features/neededitems/NeededItemGroupedInputControls.vue';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { useTarkovStore } from '@/stores/useTarkov';

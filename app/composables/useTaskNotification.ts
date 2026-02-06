@@ -4,7 +4,16 @@ import { useTarkovStore } from '@/stores/useTarkov';
 import { logger } from '@/utils/logger';
 import type { TaskActionPayload } from '@/composables/useTaskActions';
 import type { TaskObjective } from '@/types/tarkov';
-export function useTaskNotification() {
+interface TaskNotificationReturn {
+  taskStatusUpdated: Ref<boolean>;
+  taskStatus: Ref<string>;
+  showUndoButton: Ref<boolean>;
+  onTaskAction: (event: TaskActionPayload) => void;
+  undoLastAction: () => void;
+  closeNotification: () => void;
+  cleanup: () => void;
+}
+export function useTaskNotification(): TaskNotificationReturn {
   const { t } = useI18n({ useScope: 'global' });
   const metadataStore = useMetadataStore();
   const tarkovStore = useTarkovStore();

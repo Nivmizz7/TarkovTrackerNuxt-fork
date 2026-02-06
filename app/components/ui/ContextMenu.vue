@@ -55,9 +55,6 @@
       triggerRef.value?.focus();
     });
   };
-  // Handles keyboard navigation within the menu. Escape handling here
-  // stops propagation for focused-menu interactions; see handleGlobalKeydown
-  // for the complementary listener that catches Escape from outside.
   const handleMenuKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -97,7 +94,6 @@
     x.value = event.clientX;
     y.value = event.clientY;
     visible.value = true;
-    // Adjust position if menu goes off-screen
     nextTick(() => {
       if (menuRef.value) {
         const rect = menuRef.value.getBoundingClientRect();
@@ -119,9 +115,6 @@
     }
   });
   onClickOutside(menuRef, closeMenu);
-  // handleGlobalKeydown intentionally also handles Escape, duplicating the check in
-  // handleMenuKeydown. handleMenuKeydown stops propagation for focused menu interactions,
-  // while handleGlobalKeydown catches Escape when focus is outside the menu element.
   const handleGlobalKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && visible.value) {
       event.preventDefault();

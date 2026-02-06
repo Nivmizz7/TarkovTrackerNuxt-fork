@@ -77,7 +77,7 @@ export function useNeededItemsSorting(
     const itemData = getNeededItemData(item);
     return {
       priority: getNeededItemPriority(item),
-      count: item.count || 0,
+      count: item.count ?? 0,
       name: itemData?.name ?? '',
       category: itemData?.category?.name ?? '',
     };
