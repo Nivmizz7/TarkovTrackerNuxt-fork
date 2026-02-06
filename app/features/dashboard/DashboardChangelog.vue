@@ -74,6 +74,7 @@
   const GITHUB_CACHE_KEY_PREFIX = 'dashboard-changelog-cache';
   const GITHUB_CACHE_TTL_MS = 15 * 60 * 1000;
   const GITHUB_RATE_LIMIT_LOW_THRESHOLD = 2;
+  const ENABLE_CLIENT_GITHUB_FALLBACK = false;
   const runtimeConfig = useRuntimeConfig();
   const githubOwner = runtimeConfig.public.githubOwner || 'tarkovtracker-org';
   const githubRepo = runtimeConfig.public.githubRepo || 'TarkovTracker';
@@ -429,11 +430,13 @@
       pending.value = false;
       return;
     }
-    newEntries = await fetchGithubItems();
-    if (newEntries?.length) {
-      entries.value = newEntries;
-      pending.value = false;
-      return;
+    if (ENABLE_CLIENT_GITHUB_FALLBACK) {
+      newEntries = await fetchGithubItems();
+      if (newEntries?.length) {
+        entries.value = newEntries;
+        pending.value = false;
+        return;
+      }
     }
     entries.value = [];
     error.value = true;
