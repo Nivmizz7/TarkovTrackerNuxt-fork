@@ -36,6 +36,11 @@ const setup = async (options: SetupOptions = {}) => {
     getTaskTraderView: 'all',
     getTaskSortMode: 'none',
     getTaskSortDirection: 'asc',
+    getShowAllFilter: true,
+    getShowAvailableFilter: true,
+    getShowLockedFilter: true,
+    getShowCompletedFilter: true,
+    getShowFailedFilter: true,
     getHideGlobalTasks: false,
     getHideNonKappaTasks: false,
     getTaskSharedByAllOnly: false,
@@ -100,9 +105,13 @@ const setup = async (options: SetupOptions = {}) => {
   const { default: TaskFilterBar } = await import('@/features/tasks/TaskFilterBar.vue');
   return { TaskFilterBar, preferencesStore };
 };
-const mountTaskFilterBar = (TaskFilterBar: Parameters<typeof mount>[0], searchQuery = '') => {
+const mountTaskFilterBar = (
+  TaskFilterBar: Parameters<typeof mount>[0],
+  searchQuery = '',
+  extraProps: Record<string, unknown> = {}
+) => {
   return mount(TaskFilterBar, {
-    props: { searchQuery },
+    props: { searchQuery, ...extraProps },
     global: {
       stubs: {
         AppTooltip: { template: '<span><slot /></span>' },
@@ -189,5 +198,18 @@ describe('TaskFilterBar', () => {
     });
     mountTaskFilterBar(TaskFilterBar);
     expect(preferencesStore.setTaskTraderView).toHaveBeenCalledWith('trader-1');
+  });
+  it('shows active secondary tab count from search results while search is active', async () => {
+    const { TaskFilterBar } = await setup();
+    const wrapper = mountTaskFilterBar(TaskFilterBar, 'easy', {
+      activeSearchCount: 0,
+      isSearchActive: true,
+    });
+    const availableButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('AVAILABLE'));
+    expect(availableButton).toBeTruthy();
+    expect(availableButton!.text()).toContain('0');
+    expect(availableButton!.text()).not.toContain('1');
   });
 });

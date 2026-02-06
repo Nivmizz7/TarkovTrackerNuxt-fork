@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { computed, ref } from 'vue';
 import type { NeededItemTaskObjective } from '@/types/tarkov';
 import { createDefaultNeededItem } from '#tests/test-helpers/mockStores';
+let useInfiniteScrollMock = vi.fn();
 const createMockUseNeededItems = (options: {
   neededItem?: NeededItemTaskObjective | null;
   viewMode?: 'list' | 'grid';
@@ -82,11 +83,12 @@ const setup = async (
   } = {}
 ) => {
   vi.resetModules();
+  useInfiniteScrollMock = vi.fn(() => ({ checkAndLoadMore: vi.fn() }));
   vi.doMock('@/composables/useNeededItems', () => ({
     useNeededItems: createMockUseNeededItems(options),
   }));
   vi.doMock('@/composables/useInfiniteScroll', () => ({
-    useInfiniteScroll: () => ({ checkAndLoadMore: vi.fn() }),
+    useInfiniteScroll: useInfiniteScrollMock,
   }));
   vi.doMock('@/composables/useSharedBreakpoints', () => ({
     useSharedBreakpoints: () => ({
@@ -182,6 +184,19 @@ describe('needed items page', () => {
       items.forEach((item) => {
         expect(item.attributes('data-style')).toBe('card');
       });
+    });
+  });
+  it('enables infinite-scroll autofill to prevent footer-adjacent loading stalls', async () => {
+    const NeededItemsPage = await setup({ viewMode: 'grid' });
+    await mountSuspended(NeededItemsPage, {
+      global: { stubs: defaultGlobalStubs },
+    });
+    expect(useInfiniteScrollMock).toHaveBeenCalled();
+    const options = useInfiniteScrollMock.mock.calls[0]?.[2];
+    expect(options).toMatchObject({
+      autoFill: true,
+      autoLoadOnReady: true,
+      useScrollFallback: true,
     });
   });
 });
