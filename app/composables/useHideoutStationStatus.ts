@@ -44,8 +44,6 @@ export const useHideoutStationStatus = (): UseHideoutStationStatusReturn => {
       });
       return true;
     }
-    // Prefer tarkovStore.getCurrentProgressData().skills when available (fresh snapshot); fall back
-    // to tarkovStore.getSkillLevel for stored/derived values.
     const currentSkills = tarkovStore.getCurrentProgressData().skills ?? {};
     const currentLevel =
       currentSkills[requirement.name] ?? tarkovStore.getSkillLevel(requirement.name);

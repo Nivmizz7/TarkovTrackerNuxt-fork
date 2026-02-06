@@ -9,7 +9,13 @@
       }
     },
     "collect": {
-      "numberOfRuns": 3
+      "numberOfRuns": 3,
+      "settings": {
+        "chromeFlags": [
+          "--allow-insecure-localhost",
+          "--disable-features=HttpsFirstBalancedMode,HttpsFirstModeV2,HttpsUpgrades"
+        ]
+      }
     }
   }
 }

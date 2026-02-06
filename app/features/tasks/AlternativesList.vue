@@ -18,9 +18,10 @@
     xs?: boolean;
     label?: string;
   }>();
+  const taskById = computed(() => new Map(props.tasks.map((task) => [task.id, task])));
   const alternativeTasks = computed(() =>
     props.alternatives
-      .map((alternative) => props.tasks.find((task) => task.id === alternative))
+      .map((alternative) => taskById.value.get(alternative))
       .filter((task): task is Task => Boolean(task))
   );
   const { t } = useI18n({ useScope: 'global' });
