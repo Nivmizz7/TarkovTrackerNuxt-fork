@@ -62,7 +62,7 @@
     },
   });
   const { t } = useI18n({ useScope: 'global' });
-  const factionImage = computed(() => getFactionIconPath(props.task?.factionName));
+  const factionImage = computed(() => getFactionIconPath(props.task?.factionName) ?? undefined);
   const isFactionTask = computed(() => Boolean(factionImage.value));
   const factionAlt = computed(() => props.task?.factionName || 'Faction image');
   const traderAlt = computed(() => props.task?.trader?.name || 'Trader');

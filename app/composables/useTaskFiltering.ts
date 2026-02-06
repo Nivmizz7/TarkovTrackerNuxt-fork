@@ -311,7 +311,7 @@ export function useTaskFiltering() {
     // Get prestige filtering data
     const userPrestigeLevel = tarkovStore.getPrestigeLevel();
     const prestigeTaskMap = metadataStore.prestigeTaskMap || new Map<string, number>();
-    const prestigeTaskIds = metadataStore.prestigeTaskIds || [];
+    const prestigeTaskIds = Array.from(prestigeTaskMap.keys());
     // Get edition-based excluded tasks
     const userEdition = tarkovStore.getGameEdition();
     const excludedTaskIds = metadataStore.getExcludedTaskIdsForEdition(userEdition);
@@ -748,7 +748,7 @@ export function useTaskFiltering() {
     // Get prestige filtering data
     const userPrestigeLevel = tarkovStore.getPrestigeLevel();
     const prestigeTaskMap = metadataStore.prestigeTaskMap || new Map<string, number>();
-    const prestigeTaskIds = metadataStore.prestigeTaskIds || [];
+    const prestigeTaskIds = Array.from(prestigeTaskMap.keys());
     // Get edition-based excluded tasks
     const userEdition = tarkovStore.getGameEdition();
     const excludedTaskIds = metadataStore.getExcludedTaskIdsForEdition(userEdition);
@@ -848,7 +848,7 @@ export function useTaskFiltering() {
     const showNonSpecial = preferencesStore.getShowNonSpecialTasks;
     const userPrestigeLevel = tarkovStore.getPrestigeLevel();
     const prestigeTaskMap = metadataStore.prestigeTaskMap || new Map<string, number>();
-    const prestigeTaskIds = metadataStore.prestigeTaskIds || [];
+    const prestigeTaskIds = Array.from(prestigeTaskMap.keys());
     const userEdition = tarkovStore.getGameEdition();
     const excludedTaskIds = metadataStore.getExcludedTaskIdsForEdition(userEdition);
     const isAvailableStatus = (status: {
