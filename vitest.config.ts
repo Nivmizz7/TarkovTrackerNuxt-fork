@@ -17,11 +17,13 @@ export default defineVitestConfig({
     setupFiles: ['./tests/test-setup.ts'],
     exclude: [...configDefaults.exclude, 'workers/**', '**/node_modules/**'],
     clearMocks: true,
+    restoreMocks: true,
+    isolate: true,
     logHeapUsage: false,
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true,
+        isolate: true,
         maxForks: 1,
         minForks: 1,
       },
