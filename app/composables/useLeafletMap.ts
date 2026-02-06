@@ -795,9 +795,6 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       }
     }
   }
-  /**
-   * Loads the appropriate map layer for the current map.
-   */
   async function loadMapLayer(initToken?: number, loadToken?: MapLayerLoadToken): Promise<void> {
     if (!isLayerLoadOperationActive(initToken, loadToken)) return;
     if (!leaflet.value || !mapInstance.value) return;

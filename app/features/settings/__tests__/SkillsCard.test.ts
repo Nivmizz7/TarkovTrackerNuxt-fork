@@ -70,7 +70,7 @@ const createWrapper = (overrides: Partial<UseSkillCalculationMock> = {}) => {
     getSkillOffset: () => 5,
     getSkillMetadata: () => null,
     setSkillOffset: vi.fn(),
-    setTotalSkillLevel: vi.fn(),
+    setTotalSkillLevel: vi.fn(() => true),
     resetSkillOffset: vi.fn(),
   };
   vi.mocked(useSkillCalculation).mockReturnValue({ ...defaultMock, ...overrides });
@@ -96,7 +96,7 @@ const createWrapper = (overrides: Partial<UseSkillCalculationMock> = {}) => {
 };
 describe('SkillsCard', () => {
   it('prevents invalid characters on keydown', async () => {
-    const setTotalSkillLevel = vi.fn();
+    const setTotalSkillLevel = vi.fn(() => true);
     const wrapper = createWrapper({ setTotalSkillLevel });
     const input = wrapper.find('input');
     const inputEl = input.element as HTMLInputElement;
@@ -139,7 +139,7 @@ describe('SkillsCard', () => {
       getSkillLevel: () => 5,
       getQuestSkillLevel: () => 0,
       getSkillOffset: () => 5,
-      setTotalSkillLevel: vi.fn(),
+      setTotalSkillLevel: vi.fn(() => true),
     });
     const input = wrapper.find('input');
     const inputEl = input.element as HTMLInputElement;

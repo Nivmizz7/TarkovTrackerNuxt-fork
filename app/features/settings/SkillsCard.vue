@@ -234,15 +234,30 @@
     const level = getSkillLevel(skillName);
     return level >= MAX_SKILL_LEVEL ? t('skills.elite_level', 'ELITE Level') : level;
   };
+  const showInvalidSkillValueToast = () => {
+    toast.add({
+      id: 'skill-invalid-value-error',
+      title: t('settings.display_name.validation_error', 'Validation Error'),
+      description: t('settings.skills.valid_range', `Valid range: 0-${MAX_SKILL_LEVEL}`),
+      color: 'error',
+      icon: 'i-mdi-alert-circle',
+    });
+  };
+  const setTotalSkillLevel = (skillName: string, totalLevel: number) => {
+    const isUpdated = skillCalculation.setTotalSkillLevel(skillName, totalLevel);
+    if (!isUpdated) {
+      showInvalidSkillValueToast();
+    }
+  };
   const updateSkillLevel = (skillName: string, value: string | number) => {
     if (value === '') {
-      skillCalculation.setTotalSkillLevel(skillName, 0);
+      setTotalSkillLevel(skillName, 0);
       return;
     }
     const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
     if (!isNaN(numValue) && numValue >= 0) {
       const clampedValue = Math.min(Math.max(numValue, 0), MAX_SKILL_LEVEL);
-      skillCalculation.setTotalSkillLevel(skillName, clampedValue);
+      setTotalSkillLevel(skillName, clampedValue);
     }
   };
   const preventInvalidInput = (e: KeyboardEvent) => {
@@ -305,7 +320,7 @@
     const numVal = parseInt(pastedText, 10);
     if (!isNaN(numVal)) {
       const clamped = Math.min(Math.max(numVal, 0), MAX_SKILL_LEVEL);
-      skillCalculation.setTotalSkillLevel(skillName, clamped);
+      setTotalSkillLevel(skillName, clamped);
     }
   };
   const resetOffset = (skillName: string) => {

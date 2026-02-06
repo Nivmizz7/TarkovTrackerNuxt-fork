@@ -301,6 +301,7 @@
         undo_uncomplete: 'Annulation du marquage de {name} comme non terminé',
         undo_failed: "Annulation de l'échec de {name}",
         undo_reset_failed: "Statut d'échec restauré pour {name}",
+        undo_unknown: "Impossible d'annuler l'action pour {name}",
         mark_failed_confirm: 'Marquer cette quête comme échouée ? Ceci est uniquement pour les problèmes de données, non recommandé et peut bloquer les chaînes de quêtes.',
         failed_because: 'Échouée car',
         failed_because_unknown: 'Échouée manuellement ou données manquantes',
