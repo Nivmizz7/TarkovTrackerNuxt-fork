@@ -178,6 +178,11 @@ const initHideoutTest = async ({
   vi.doMock('@/stores/useTarkov', () => ({
     useTarkovStore: () => tarkovStore,
   }));
+  vi.doMock('@/composables/useSkillCalculation', () => ({
+    useSkillCalculation: () => ({
+      getSkillLevel: (name: string) => skillLevels[name as keyof typeof skillLevels] ?? 0,
+    }),
+  }));
   const { useHideoutFiltering } = await import('@/composables/useHideoutFiltering');
   return {
     hideoutFiltering: useHideoutFiltering(),

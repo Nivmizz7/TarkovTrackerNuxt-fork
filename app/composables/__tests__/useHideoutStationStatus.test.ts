@@ -38,9 +38,12 @@ vi.mock('@/stores/useProgress', () => ({
 }));
 vi.mock('@/stores/useTarkov', () => ({
   useTarkovStore: () => ({
-    getCurrentProgressData: () => ({ skills: mockState.skills }),
-    getSkillLevel: (name: string) => mockState.skills[name] ?? 0,
     getTraderLevel: (id: string) => mockState.traderLevels[id] ?? 0,
+  }),
+}));
+vi.mock('@/composables/useSkillCalculation', () => ({
+  useSkillCalculation: () => ({
+    getSkillLevel: (name: string) => mockState.skills[name] ?? 0,
   }),
 }));
 const createLevel = (level: number, overrides: Partial<HideoutLevel> = {}): HideoutLevel => ({

@@ -130,7 +130,7 @@
                 :key="`station-${rIndex}`"
                 class="flex items-center gap-2 text-sm"
                 :class="
-                  isStationReqMet(requirement) ? 'text-surface-300' : 'text-error-400 font-semibold'
+                  isStationReqMet(requirement) ? 'text-success-400' : 'text-error-400 font-semibold'
                 "
               >
                 <UIcon
@@ -153,7 +153,7 @@
                 :key="`skill-${rIndex}`"
                 class="flex items-center gap-2 text-sm"
                 :class="
-                  isSkillReqMet(requirement) ? 'text-surface-300' : 'text-error-400 font-semibold'
+                  isSkillReqMet(requirement) ? 'text-success-400' : 'text-error-400 font-semibold'
                 "
               >
                 <UIcon
@@ -176,7 +176,7 @@
                 :key="`trader-${rIndex}`"
                 class="flex items-center gap-2 text-sm"
                 :class="
-                  isTraderReqMet(requirement) ? 'text-surface-300' : 'text-error-400 font-semibold'
+                  isTraderReqMet(requirement) ? 'text-success-400' : 'text-error-400 font-semibold'
                 "
               >
                 <UIcon
@@ -278,6 +278,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
   import { useToast } from '#imports';
+  import { useSkillCalculation } from '@/composables/useSkillCalculation';
   import { useProgressStore } from '@/stores/useProgress';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { SPECIAL_STATIONS } from '@/utils/constants';
@@ -306,6 +307,7 @@
   );
   const progressStore = useProgressStore();
   const tarkovStore = useTarkovStore();
+  const skillCalculation = useSkillCalculation();
   const { t } = useI18n({ useScope: 'global' });
   const toast = useToast();
   const isContentVisible = ref(!props.collapsed);
@@ -366,12 +368,7 @@
   };
   const isSkillReqMet = (requirement: SkillRequirement) => {
     if (!requirement?.name || typeof requirement?.level !== 'number') return true;
-    const currentSkills =
-      (tarkovStore.getCurrentProgressData?.() || {}).skills ||
-      // progressStore currently stores skills under current progress data; fallback to empty
-      {};
-    const currentLevel =
-      currentSkills?.[requirement.name] ?? tarkovStore.getSkillLevel(requirement.name);
+    const currentLevel = skillCalculation.getSkillLevel(requirement.name);
     return currentLevel >= requirement.level;
   };
   const isTraderReqMet = (requirement: TraderRequirement) => {

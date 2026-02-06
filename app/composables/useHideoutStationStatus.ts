@@ -1,3 +1,4 @@
+import { useSkillCalculation } from '@/composables/useSkillCalculation';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
 import { useTarkovStore } from '@/stores/useTarkov';
@@ -21,6 +22,7 @@ export const useHideoutStationStatus = (): UseHideoutStationStatusReturn => {
   const preferencesStore = usePreferencesStore();
   const progressStore = useProgressStore();
   const tarkovStore = useTarkovStore();
+  const skillCalculation = useSkillCalculation();
   const requireStationLevels = computed(() => preferencesStore.getHideoutRequireStationLevels);
   const requireSkillLevels = computed(() => preferencesStore.getHideoutRequireSkillLevels);
   const requireTraderLoyalty = computed(() => preferencesStore.getHideoutRequireTraderLoyalty);
@@ -44,10 +46,7 @@ export const useHideoutStationStatus = (): UseHideoutStationStatusReturn => {
       });
       return true;
     }
-    const currentSkills = tarkovStore.getCurrentProgressData().skills ?? {};
-    const currentLevel =
-      currentSkills[requirement.name] ?? tarkovStore.getSkillLevel(requirement.name);
-    if (typeof currentLevel !== 'number') return false;
+    const currentLevel = skillCalculation.getSkillLevel(requirement.name);
     return currentLevel >= requirement.level;
   };
   const isTraderReqMet = (requirement: TraderRequirement): boolean => {

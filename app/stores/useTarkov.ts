@@ -297,6 +297,26 @@ const resolveValidHideoutModules = (
   }
   return validModules;
 };
+const computeTotalSkills = (
+  currentData: UserProgressData,
+  tasks: Task[]
+): Record<string, number> => {
+  const result: Record<string, number> = {};
+  const completions = currentData.taskCompletions ?? {};
+  for (const task of tasks) {
+    if (!completions[task.id]?.complete || completions[task.id]?.failed) continue;
+    const skillRewards = task.finishRewards?.skillLevelReward ?? [];
+    for (const reward of skillRewards) {
+      if (!reward?.name) continue;
+      result[reward.name] = (result[reward.name] ?? 0) + (reward.level ?? 0);
+    }
+  }
+  const offsets = currentData.skillOffsets ?? {};
+  for (const [skillName, offset] of Object.entries(offsets)) {
+    result[skillName] = (result[skillName] ?? 0) + offset;
+  }
+  return result;
+};
 const enforceHideoutPrereqs = (store: TarkovStoreInstance): string[] => {
   const metadataStore = useMetadataStore();
   const stations = metadataStore.hideoutStations;
@@ -322,7 +342,7 @@ const enforceHideoutPrereqs = (store: TarkovStoreInstance): string[] => {
     requireStationLevels,
     requireSkillLevels,
     requireTraderLoyalty,
-    skills: currentData.skills ?? {},
+    skills: computeTotalSkills(currentData, metadataStore.tasks),
     traders: currentData.traders ?? {},
   });
   const removedModules = new Set<string>();

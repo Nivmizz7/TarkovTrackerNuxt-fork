@@ -407,7 +407,11 @@ export const actions = {
     updateObjective(this, 'traders', traderId, { reputation: reputation });
   },
   setSkillLevel(this: UserState, skillName: string, level: number) {
-    updateObjective(this, 'skills', skillName, { level: level });
+    const currentData = getCurrentData(this);
+    if (!currentData.skills) {
+      currentData.skills = {};
+    }
+    currentData.skills[skillName] = Number.isFinite(level) ? level : 0;
   },
 } as const;
 export type UserActions = typeof actions;
