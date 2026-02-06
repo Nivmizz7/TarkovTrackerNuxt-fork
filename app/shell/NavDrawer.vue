@@ -69,25 +69,25 @@
         </div>
         <ul class="flex flex-col gap-0.5 px-1">
           <DrawerItem
-            icon="i-mdi-earth"
+            avatar="/img/logos/tarkovdevlogo.webp"
             locale-key="tarkovdev"
             href="https://tarkov.dev/"
             :is-collapsed="isCollapsed"
           />
           <DrawerItem
-            icon="i-mdi-radar"
+            avatar="/img/logos/tarkovmonitorlogo.avif"
             locale-key="tarkovmonitor"
             href="https://github.com/the-hideout/TarkovMonitor"
             :is-collapsed="isCollapsed"
           />
           <DrawerItem
-            icon="i-mdi-crosshairs-gps"
+            avatar="/img/logos/ratscannerlogo.webp"
             locale-key="ratscanner"
             href="https://github.com/RatScanner/RatScanner"
             :is-collapsed="isCollapsed"
           />
           <DrawerItem
-            icon="i-mdi-chart-line"
+            avatar="/img/logos/tarkovchangeslogo.svg"
             locale-key="tarkovchanges"
             href="https://tarkov-changes.com/"
             :is-collapsed="isCollapsed"
