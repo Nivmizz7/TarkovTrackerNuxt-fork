@@ -29,12 +29,17 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { logger } from '@/utils/logger';
   import type { NuxtError } from '#app';
   const props = defineProps({
     error: {
       type: Object as () => NuxtError,
       required: true,
     },
+  });
+  logger.error('Error page displayed', {
+    statusCode: props.error.statusCode,
+    message: props.error.message,
   });
   const handleError = () => clearError({ redirect: '/' });
   const errorTitle = computed(() =>
