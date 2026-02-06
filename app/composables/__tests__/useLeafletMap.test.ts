@@ -239,15 +239,20 @@ describe('useLeafletMap', () => {
           ],
         },
       } as TarkovMap;
-      let result: ReturnType<typeof useLeafletMap> | null = null;
-      let mapRef: Ref<TarkovMap | null> | null = null;
+      const mountedState: {
+        mapRef: Ref<TarkovMap | null> | null;
+        result: ReturnType<typeof useLeafletMap> | null;
+      } = {
+        mapRef: null,
+        result: null,
+      };
       const wrapper = mount(
         defineComponent({
           setup() {
-            mapRef = ref(mapData) as Ref<TarkovMap | null>;
-            result = useLeafletMap({
+            mountedState.mapRef = ref(mapData) as Ref<TarkovMap | null>;
+            mountedState.result = useLeafletMap({
               containerRef,
-              map: mapRef,
+              map: mountedState.mapRef,
               enableIdleDetection: false,
             });
             return () => null;
@@ -255,6 +260,8 @@ describe('useLeafletMap', () => {
         })
       );
       await waitFor(() => fetchSpy.mock.calls.length > 0);
+      const mapRef = mountedState.mapRef;
+      const result = mountedState.result;
       if (!mapRef || !result) {
         throw new Error('useLeafletMap did not initialize for stale init test');
       }

@@ -190,6 +190,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     if (!isValidMapTileConfig(tileConfig)) return undefined;
     return normalizeTileConfig(tileConfig);
   };
+  const isMapUnavailable = (): boolean => map.value?.unavailable === true;
   const getRenderConfig = (): MapRenderConfig | undefined => getSvgConfig() ?? getTileConfig();
   const renderKeyRef = computed<string | undefined>(() => {
     const svgConfig = getSvgConfig();
@@ -649,17 +650,13 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
    */
   async function initializeMap(): Promise<void> {
     // Skip initialization for unavailable maps or missing container
-    if (!containerRef.value || map.value?.unavailable === true) return;
+    if (!containerRef.value || isMapUnavailable()) return;
     const initToken = ++initializeToken;
     isLoading.value = true;
     try {
       // Dynamic import Leaflet
       const L = await import('leaflet');
-      if (
-        !isInitializeTokenActive(initToken) ||
-        !containerRef.value ||
-        map.value?.unavailable === true
-      ) {
+      if (!isInitializeTokenActive(initToken) || !containerRef.value || isMapUnavailable()) {
         return;
       }
       leaflet.value = L.default || L;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { logger } from '@/utils/logger';
+  import type { OAuthAuthorizationDetails } from '@supabase/auth-js';
   definePageMeta({
     layout: 'default',
   });
@@ -11,13 +12,7 @@
   });
   const loading = ref(true);
   const error = ref('');
-  const details = ref<{
-    user?: { id: string; email: string };
-    scope?: string;
-    authorization_id: string;
-    redirect_url?: string;
-    client?: { id: string; name: string; uri?: string; logo_uri?: string };
-  } | null>(null);
+  const details = ref<OAuthAuthorizationDetails | null>(null);
   onMounted(async () => {
     if (!authorizationId.value) {
       error.value = 'Missing authorization_id parameter';
@@ -33,16 +28,6 @@
       const { data, error: fetchError } = await supabase.auth.oauth.getAuthorizationDetails(
         authorizationId.value
       );
-      if (import.meta.dev) {
-        const sanitized = {
-          client_id: data?.client?.id,
-          client_name: data?.client?.name,
-          scope: data?.scope,
-          prompt: (data as Record<string, unknown>)?.prompt,
-          authorization_id: data?.authorization_id,
-        };
-        logger.debug('[OAuth] Authorization details:', JSON.stringify(sanitized, null, 2));
-      }
       if (fetchError) {
         if (fetchError.message?.includes('cannot be processed')) {
           error.value = 'This authorization request has expired or was already processed.';
@@ -51,10 +36,23 @@
         }
         return;
       }
-      if (data?.redirect_url) {
+      if (!data) {
+        error.value = 'Authorization details unavailable.';
+        return;
+      }
+      if ('redirect_url' in data) {
         logger.info('[OAuth] Auto-redirecting to:', data.redirect_url);
         window.location.href = data.redirect_url;
         return;
+      }
+      if (import.meta.dev) {
+        const sanitized = {
+          client_id: data.client.id,
+          client_name: data.client.name,
+          scope: data.scope,
+          authorization_id: data.authorization_id,
+        };
+        logger.debug('[OAuth] Authorization details:', JSON.stringify(sanitized, null, 2));
       }
       details.value = data;
     } catch (e) {
@@ -145,9 +143,9 @@
               </li>
             </ul>
           </div>
-          <p v-if="details.redirect_url" class="text-text-tertiary mb-4 text-xs">
+          <p v-if="details.redirect_uri" class="text-text-tertiary mb-4 text-xs">
             Will redirect to:
-            <span class="font-mono">{{ details.redirect_url }}</span>
+            <span class="font-mono">{{ details.redirect_uri }}</span>
           </p>
         </div>
         <div class="flex gap-3">
