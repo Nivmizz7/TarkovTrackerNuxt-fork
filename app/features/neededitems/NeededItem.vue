@@ -289,8 +289,8 @@
   });
   const lockedBefore = computed(() => {
     if (props.need.needType == 'taskObjective') {
-      if (!relatedTask.value?.predecessors) return 0;
-      return relatedTask.value.predecessors.filter((s) => !isTaskSuccessful(s)).length;
+      if (!relatedTask.value?.parents) return 0;
+      return relatedTask.value.parents.filter((s) => !isTaskSuccessful(s)).length;
     } else if (props.need.needType == 'hideoutModule') {
       return props.need.hideoutModule.predecessors.filter(
         (s: string) => !tarkovStore.isHideoutModuleComplete(s)

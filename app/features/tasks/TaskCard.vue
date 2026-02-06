@@ -475,7 +475,7 @@
     );
   });
   const lockedBefore = computed(() => {
-    return props.task.predecessors?.filter((s) => !isTaskSuccessful(s)).length || 0;
+    return props.task.parents?.filter((s) => !isTaskSuccessful(s)).length || 0;
   });
   const parentTasks = computed(() => {
     if (!props.task.parents?.length) return [];
