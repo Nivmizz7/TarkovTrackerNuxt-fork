@@ -497,7 +497,7 @@ html.no-smooth-scroll {
   --ui-text-muted: var(--color-text-secondary);
   --ui-text-highlighted: var(--color-primary-400);
   --ui-text-dimmed: var(--color-text-muted);
-  --ui-text-inverted: var(--color-surface-50);
+  --ui-text-inverted: var(--color-surface-950);
   /* Borders: clear separation */
   --ui-border: var(--color-surface-600);
   --ui-border-accented: var(--color-surface-500);
@@ -604,7 +604,9 @@ html.no-smooth-scroll {
   }
   /* Card hover: use state overlay instead of solid color */
   .card-interactive {
-    transition: all 150ms ease-in-out;
+    transition:
+      background-color 150ms ease-in-out,
+      transform 150ms ease-in-out;
   }
   .card-interactive:hover {
     background-color: color-mix(in srgb, var(--color-surface-850), var(--state-hover));
@@ -744,6 +746,17 @@ summary {
   .fade-enter-from,
   .fade-leave-to {
     opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-enter-active,
+  .fade-leave-active {
+    transition-duration: 0ms;
+  }
+  .objective-highlight,
+  .snowflake,
+  .snowflake-inner {
+    animation: none;
   }
 }
 .objective-highlight {

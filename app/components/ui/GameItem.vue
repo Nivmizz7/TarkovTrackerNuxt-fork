@@ -260,7 +260,7 @@
   useI18n({ useScope: 'global' });
   const { copyToClipboard } = useCopyToClipboard();
   const formatNumber = useLocaleNumberFormatter();
-  const backgroundClassMap = {
+  const BACKGROUND_CLASS_MAP = {
     violet: 'bg-rarity-violet',
     grey: 'bg-rarity-grey',
     yellow: 'bg-rarity-yellow',
@@ -271,7 +271,7 @@
     blue: 'bg-rarity-blue',
     default: 'bg-rarity-default',
   } as const;
-  type BackgroundKey = keyof typeof backgroundClassMap;
+  type BackgroundKey = keyof typeof BACKGROUND_CLASS_MAP;
   const contextMenu = ref<InstanceType<typeof ContextMenu>>();
   // Compute image source based on available props
   const computedImageSrc = computed(() => {
@@ -332,11 +332,11 @@
       props.imageItem?.backgroundColor ||
       'default'
     ).toLowerCase() as BackgroundKey;
-    const backgroundClass: string = backgroundClassMap[bgColor] ?? backgroundClassMap.default;
+    const backgroundClass: string = BACKGROUND_CLASS_MAP[bgColor] ?? BACKGROUND_CLASS_MAP.default;
     // In `fill` mode, treat a transparent/default background as grey to preserve visible contrast when
     // the tile is expanded/filled. This is an intentional visual design decision to avoid invisible fills.
-    if (backgroundClass === backgroundClassMap.default && props.fill) {
-      return backgroundClassMap.grey;
+    if (backgroundClass === BACKGROUND_CLASS_MAP.default && props.fill) {
+      return BACKGROUND_CLASS_MAP.grey;
     }
     return backgroundClass;
   });
@@ -344,7 +344,7 @@
     const baseImageClasses = imageClasses.value;
     const backgroundClass = resolvedBackgroundClass.value;
     const classes: string[] = baseImageClasses.slice();
-    if (backgroundClass !== backgroundClassMap.default) {
+    if (backgroundClass !== BACKGROUND_CLASS_MAP.default) {
       classes.push('ring-1', 'ring-white/5', 'shadow-inner');
     }
     return classes;
