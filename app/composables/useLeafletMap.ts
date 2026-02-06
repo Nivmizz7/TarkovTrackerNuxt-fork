@@ -1,7 +1,3 @@
-/**
- * Composable for managing Leaflet map instances for Tarkov maps.
- * Handles map initialization, SVG overlay loading, floor switching, and layer management.
- */
 import { useDebounceFn } from '@vueuse/core';
 import { logger } from '@/utils/logger';
 import {
@@ -66,7 +62,6 @@ interface MapLayerLoadToken {
   id: number;
   signal: AbortSignal;
 }
-// SVG cache to avoid refetching
 const svgCache = new Map<string, string>();
 function isAbortError(error: unknown): boolean {
   return (
@@ -77,9 +72,6 @@ function isAbortError(error: unknown): boolean {
       (error as { name?: string }).name === 'AbortError')
   );
 }
-/**
- * Fetches SVG content with fallback support.
- */
 async function fetchSvgContent(
   primaryUrl: string,
   fallbackUrls: string[] = [],
@@ -706,9 +698,6 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     }
     resetIdleTimer();
   }
-  /**
-   * Initializes the Leaflet map.
-   */
   async function initializeMap(): Promise<void> {
     // Skip initialization for unavailable maps or missing container
     if (!containerRef.value || isMapUnavailable()) return;
@@ -808,9 +797,6 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       await loadStandardMapSvg(leaflet.value, initToken, loadToken);
     }
   }
-  /**
-   * Refreshes the map view.
-   */
   function refreshView(): void {
     if (mapInstance.value) {
       mapInstance.value.invalidateSize();
@@ -820,9 +806,6 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     }
     resetIdleTimer();
   }
-  /**
-   * Clears all markers from the map.
-   */
   function clearMarkers(): void {
     if (objectiveLayer.value) {
       objectiveLayer.value.clearLayers();
@@ -831,9 +814,6 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
       extractLayer.value.clearLayers();
     }
   }
-  /**
-   * Destroys the map instance and cleans up.
-   */
   function destroy(): void {
     initializeToken += 1;
     cancelMapLayerLoad();
