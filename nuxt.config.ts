@@ -68,8 +68,6 @@ export default defineNuxtConfig({
     },
   },
   routeRules: {
-    // Prerender the index page for zero-invocation loading of the SPA shell
-    '/': { prerender: true },
     '/neededitems': { redirect: { to: '/needed-items', statusCode: 301 } },
     // Explicit long-term caching for build assets
     '/_nuxt/**': {
