@@ -25,6 +25,7 @@ export type TaskFilterSettings = {
   hideNonKappaTasks: boolean;
   showNonSpecialTasks: boolean;
   showLightkeeperTasks: boolean;
+  onlyTasksWithRequiredKeys: boolean;
   respectTaskFiltersForImpact: boolean;
   showAllFilter: boolean;
   showAvailableFilter: boolean;
@@ -78,6 +79,7 @@ export interface PreferencesState {
   // Task filter settings
   showNonSpecialTasks: boolean;
   showLightkeeperTasks: boolean;
+  onlyTasksWithRequiredKeys: boolean;
   respectTaskFiltersForImpact: boolean;
   // Task appearance settings
   showRequiredLabels: boolean;
@@ -152,6 +154,7 @@ export const preferencesDefaultState: PreferencesState = {
   // Task filter settings (all shown by default)
   showNonSpecialTasks: true,
   showLightkeeperTasks: true,
+  onlyTasksWithRequiredKeys: false,
   respectTaskFiltersForImpact: true,
   // Task appearance settings
   showRequiredLabels: true,
@@ -195,6 +198,22 @@ const initialSavingState = {
 export const usePreferencesStore = defineStore('preferences', {
   state: (): PreferencesState => {
     const state = JSON.parse(JSON.stringify(preferencesDefaultState));
+    if (import.meta.client) {
+      try {
+        const rawPersistedState = localStorage.getItem(STORAGE_KEYS.preferences);
+        if (rawPersistedState) {
+          const persistedState = JSON.parse(rawPersistedState) as Record<string, unknown>;
+          if (
+            typeof persistedState.onlyTasksWithRequiredKeys !== 'boolean' &&
+            typeof persistedState.onlyTasksWithSuggestedKeys === 'boolean'
+          ) {
+            state.onlyTasksWithRequiredKeys = persistedState.onlyTasksWithSuggestedKeys;
+          }
+        }
+      } catch (_error) {
+        logger.warn('[PreferencesStore] Failed to migrate local required keys preference:', _error);
+      }
+    }
     // Always reset saving state on store creation
     state.saving = { ...initialSavingState };
     return state;
@@ -334,6 +353,9 @@ export const usePreferencesStore = defineStore('preferences', {
     },
     getShowLightkeeperTasks: (state) => {
       return state.showLightkeeperTasks ?? true;
+    },
+    getOnlyTasksWithRequiredKeys: (state) => {
+      return state.onlyTasksWithRequiredKeys ?? false;
     },
     getRespectTaskFiltersForImpact: (state) => {
       return state.respectTaskFiltersForImpact ?? true;
@@ -535,6 +557,9 @@ export const usePreferencesStore = defineStore('preferences', {
     setShowLightkeeperTasks(show: boolean) {
       this.showLightkeeperTasks = show;
     },
+    setOnlyTasksWithRequiredKeys(onlyWithRequiredKeys: boolean) {
+      this.onlyTasksWithRequiredKeys = onlyWithRequiredKeys;
+    },
     setRespectTaskFiltersForImpact(enabled: boolean) {
       this.respectTaskFiltersForImpact = enabled;
     },
@@ -664,6 +689,7 @@ export const usePreferencesStore = defineStore('preferences', {
       // Task filter settings
       'showNonSpecialTasks',
       'showLightkeeperTasks',
+      'onlyTasksWithRequiredKeys',
       'respectTaskFiltersForImpact',
       // Task appearance settings
       'showRequiredLabels',
@@ -734,16 +760,34 @@ if (shouldInitPreferencesWatchers) {
                 }
                 if (data) {
                   logger.debug('[PreferencesStore] Loading preferences from Supabase:', data);
+                  const preferenceRow = data as Record<string, unknown>;
+                  const requiredKeysValue = preferenceRow.only_tasks_with_required_keys;
+                  const suggestedKeysValue = preferenceRow.only_tasks_with_suggested_keys;
+                  const shouldPreferRequiredKeys = typeof requiredKeysValue === 'boolean';
                   // Update store with server data
-                  Object.keys(data).forEach((key) => {
+                  Object.keys(preferenceRow).forEach((key) => {
                     if (key !== 'user_id' && key !== 'created_at' && key !== 'updated_at') {
-                      const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
+                      const value = preferenceRow[key];
+                      if (key === 'only_tasks_with_suggested_keys' && shouldPreferRequiredKeys) {
+                        return;
+                      }
+                      if (
+                        key === 'only_tasks_with_required_keys' &&
+                        typeof value !== 'boolean' &&
+                        typeof suggestedKeysValue === 'boolean'
+                      ) {
+                        return;
+                      }
+                      const normalizedKey =
+                        key === 'only_tasks_with_suggested_keys'
+                          ? 'only_tasks_with_required_keys'
+                          : key;
+                      const camelKey = normalizedKey.replace(/_([a-z])/g, (_, letter) =>
                         letter.toUpperCase()
                       );
                       if (camelKey in preferencesStore.$state) {
-                        // Fix type issue by casting through unknown first
                         (preferencesStore.$state as unknown as Record<string, unknown>)[camelKey] =
-                          data[key];
+                          value;
                       }
                     }
                   });
@@ -788,6 +832,7 @@ if (shouldInitPreferencesWatchers) {
                       hide_non_kappa_tasks: preferencesState.hideNonKappaTasks,
                       show_non_special_tasks: preferencesState.showNonSpecialTasks,
                       show_lightkeeper_tasks: preferencesState.showLightkeeperTasks,
+                      only_tasks_with_required_keys: preferencesState.onlyTasksWithRequiredKeys,
                       respect_task_filters_for_impact: preferencesState.respectTaskFiltersForImpact,
                       show_required_labels: preferencesState.showRequiredLabels,
                       show_experience_rewards: preferencesState.showExperienceRewards,

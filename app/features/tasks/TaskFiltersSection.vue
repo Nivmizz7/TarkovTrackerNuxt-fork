@@ -3,11 +3,11 @@
     <div class="mb-2 flex items-center gap-2">
       <UIcon name="i-mdi-filter-variant" class="text-primary-400 h-4 w-4" />
       <h3 class="text-xs font-semibold tracking-wide text-white uppercase">
-        {{ t('page.tasks.settings.tabs.filters', 'Task Filters') }}
+        {{ t('page.tasks.settings.tabs.filters') }}
       </h3>
     </div>
     <p class="text-surface-500 mb-2 text-xs">
-      {{ t('page.tasks.settings.filters.hint', 'Control which tasks appear.') }}
+      {{ t('page.tasks.settings.filters.hint') }}
     </p>
     <div class="space-y-1">
       <label
@@ -16,7 +16,7 @@
         <UCheckbox v-model="showNonSpecialTasksModel" />
         <div class="min-w-0 flex-1">
           <span class="text-surface-200 text-sm">
-            {{ t('page.tasks.settings.filters.regular_tasks', 'Regular Tasks') }}
+            {{ t('page.tasks.settings.filters.regular_tasks') }}
           </span>
         </div>
       </label>
@@ -25,10 +25,10 @@
       >
         <UCheckbox v-model="showKappaTasksModel" />
         <div class="flex min-w-0 flex-1 items-center gap-2">
+          <UIcon name="i-mdi-trophy" class="text-kappa h-4 w-4 shrink-0" aria-hidden="true" />
           <span class="text-surface-200 text-sm">
-            {{ t('page.tasks.settings.filters.kappa_required', 'Kappa Required') }}
+            {{ t('page.tasks.settings.filters.kappa_required') }}
           </span>
-          <UBadge color="kappa" variant="soft" size="xs">KAPPA</UBadge>
         </div>
       </label>
       <label
@@ -36,10 +36,14 @@
       >
         <UCheckbox v-model="showLightkeeperTasksModel" />
         <div class="flex min-w-0 flex-1 items-center gap-2">
+          <UIcon
+            name="i-mdi-lighthouse"
+            class="text-lightkeeper h-4 w-4 shrink-0"
+            aria-hidden="true"
+          />
           <span class="text-surface-200 text-sm">
-            {{ t('page.tasks.settings.filters.lightkeeper_required', 'Lightkeeper Required') }}
+            {{ t('page.tasks.settings.filters.lightkeeper_required') }}
           </span>
-          <UBadge color="lightkeeper" variant="soft" size="xs">LIGHTKEEPER</UBadge>
         </div>
       </label>
       <label
@@ -49,7 +53,17 @@
         <UCheckbox v-model="sharedByAllOnlyModel" />
         <div class="min-w-0 flex-1">
           <span class="text-surface-200 text-sm">
-            {{ t('page.tasks.settings.filters.team_shared_only', 'Team Shared Only') }}
+            {{ t('page.tasks.settings.filters.team_shared_only') }}
+          </span>
+        </div>
+      </label>
+      <label
+        class="hover:bg-surface-700/50 flex cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 transition-colors"
+      >
+        <UCheckbox v-model="onlyTasksWithRequiredKeysModel" />
+        <div class="min-w-0 flex-1">
+          <span class="text-surface-200 text-sm">
+            {{ t('page.tasks.settings.filters.has_required_keys') }}
           </span>
         </div>
       </label>
@@ -59,7 +73,7 @@
         <UCheckbox v-model="showGlobalTasksModel" />
         <div class="min-w-0 flex-1">
           <span class="text-surface-200 text-sm">
-            {{ t('page.tasks.settings.filters.show_global_tasks', 'Show Global Tasks on Map') }}
+            {{ t('page.tasks.settings.filters.show_global_tasks') }}
           </span>
         </div>
       </label>
@@ -69,12 +83,7 @@
         <UCheckbox v-model="respectTaskFiltersForImpactModel" />
         <div class="min-w-0 flex-1">
           <span class="text-surface-200 text-sm">
-            {{
-              t(
-                'page.tasks.settings.filters.impact_respects_filters',
-                'Impact Respects Task Filters'
-              )
-            }}
+            {{ t('page.tasks.settings.filters.impact_respects_filters') }}
           </span>
         </div>
       </label>
@@ -88,6 +97,7 @@
     showKappaTasks: boolean;
     showLightkeeperTasks: boolean;
     sharedByAllOnly: boolean;
+    onlyTasksWithRequiredKeys: boolean;
     showGlobalTasks: boolean;
     respectTaskFiltersForImpact: boolean;
   }>();
@@ -96,6 +106,7 @@
     'update:showKappaTasks': [value: boolean];
     'update:showLightkeeperTasks': [value: boolean];
     'update:sharedByAllOnly': [value: boolean];
+    'update:onlyTasksWithRequiredKeys': [value: boolean];
     'update:showGlobalTasks': [value: boolean];
     'update:respectTaskFiltersForImpact': [value: boolean];
   }>();
@@ -115,6 +126,10 @@
   const sharedByAllOnlyModel = computed({
     get: () => props.sharedByAllOnly,
     set: (value: boolean) => emit('update:sharedByAllOnly', value),
+  });
+  const onlyTasksWithRequiredKeysModel = computed({
+    get: () => props.onlyTasksWithRequiredKeys,
+    set: (value: boolean) => emit('update:onlyTasksWithRequiredKeys', value),
   });
   const showGlobalTasksModel = computed({
     get: () => props.showGlobalTasks,

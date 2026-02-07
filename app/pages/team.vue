@@ -29,12 +29,15 @@
 <script setup lang="ts">
   import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   const { t } = useI18n({ useScope: 'global' });
-  const metaTitle = computed(() => t('page.team.meta.title', 'Team'));
-  const metaDescription = computed(() =>
-    t('page.team.meta.description', 'Collaborate with teammates on Escape from Tarkov progress.')
-  );
+  const route = useRoute();
+  const metaTitle = computed(() => {
+    const titleKey =
+      typeof route.meta.titleKey === 'string' ? route.meta.titleKey : 'page.team.meta.title';
+    return t(titleKey);
+  });
+  const metaDescription = computed(() => t('page.team.meta.description'));
   definePageMeta({
-    title: 'Team',
+    titleKey: 'page.team.meta.title',
   });
   useSeoMeta({
     title: metaTitle,
@@ -46,6 +49,5 @@
   const MyTeam = defineAsyncComponent(() => import('@/features/team/MyTeam.vue'));
   const TeamInvite = defineAsyncComponent(() => import('@/features/team/TeamInvite.vue'));
   const { hasTeam } = useSystemStoreWithSupabase();
-  const route = useRoute();
   const userHasTeam = computed(() => hasTeam());
 </script>

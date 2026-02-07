@@ -224,7 +224,10 @@
     const showKappaTasks = preferencesStore.getHideNonKappaTasks !== true;
     const showNonSpecialTasks = preferencesStore.getShowNonSpecialTasks !== false;
     const showLightkeeperTasks = preferencesStore.getShowLightkeeperTasks !== false;
-    return !(showKappaTasks && showNonSpecialTasks && showLightkeeperTasks);
+    const onlyTasksWithRequiredKeys = preferencesStore.getOnlyTasksWithRequiredKeys === true;
+    return (
+      !(showKappaTasks && showNonSpecialTasks && showLightkeeperTasks) || onlyTasksWithRequiredKeys
+    );
   });
   // Unwrap trader stats for template usage
   const traderStats = computed(() => dashboardStats.traderStats.value || []);

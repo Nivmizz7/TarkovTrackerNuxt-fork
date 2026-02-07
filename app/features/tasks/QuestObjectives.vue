@@ -6,6 +6,7 @@
         :title="row.title"
         :icon-name="row.iconName"
         :objectives="row.objectives"
+        :optional="row.optional"
       />
       <TaskObjective v-else :objective="row.objective" />
     </div>
@@ -45,6 +46,7 @@
         title: string;
         iconName: string;
         objectives: TaskObjectiveType[];
+        optional: boolean;
       };
   const rows = computed<Row[]>(() => {
     // Types that should be grouped together with item display
@@ -68,24 +70,22 @@
       if (category === 'both') {
         return {
           title: foundInRaid
-            ? t('page.tasks.questcard.find_and_hand_over_fir', 'Find and Hand over found in raid')
-            : t('page.tasks.questcard.find_and_hand_over', 'Find and Hand over'),
+            ? t('page.tasks.questcard.find_and_hand_over_fir')
+            : t('page.tasks.questcard.find_and_hand_over'),
           iconName: 'mdi-package-variant-closed',
         };
       }
       if (category === 'giveOnly') {
         return {
           title: foundInRaid
-            ? t('page.tasks.questcard.hand_over_fir', 'Hand over found in raid')
-            : t('page.tasks.questcard.hand_over', 'Hand over'),
+            ? t('page.tasks.questcard.hand_over_fir')
+            : t('page.tasks.questcard.hand_over'),
           iconName: 'mdi-package-variant-closed',
         };
       }
       // findOnly
       return {
-        title: foundInRaid
-          ? t('page.tasks.questcard.find_fir', 'Find in raid')
-          : t('page.tasks.questcard.find', 'Find'),
+        title: foundInRaid ? t('page.tasks.questcard.find_fir') : t('page.tasks.questcard.find'),
         iconName: 'mdi-magnify',
       };
     };
@@ -170,6 +170,7 @@
             title: config.title,
             iconName: config.iconName,
             objectives: group.objectives,
+            optional: group.objectives.every((o) => o.optional === true),
           });
           inserted.add(groupKey);
         }
