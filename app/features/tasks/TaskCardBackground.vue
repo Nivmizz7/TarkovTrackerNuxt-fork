@@ -6,7 +6,7 @@
   <div
     v-if="showIcon"
     class="pointer-events-none absolute inset-0 z-0 flex rotate-12 transform items-center justify-center p-8"
-    :class="[iconColor, isComplete && !isFailed ? 'opacity-[0.08]' : 'opacity-15']"
+    :class="[iconColor, iconOpacity]"
   >
     <UIcon :name="iconName" aria-hidden="true" class="h-24 w-24" />
   </div>
@@ -36,7 +36,12 @@
     if (props.isFailed) return 'text-error-400';
     if (props.isComplete) return 'text-completed-400';
     if (props.isInvalid) return 'text-surface-400';
-    if (props.isLocked) return 'text-warning-400';
+    if (props.isLocked) return 'text-locked-500';
     return 'text-brand-200';
+  });
+  const iconOpacity = computed(() => {
+    if (props.isComplete && !props.isFailed) return 'opacity-[0.12]';
+    if (props.isLocked) return 'opacity-20';
+    return 'opacity-15';
   });
 </script>

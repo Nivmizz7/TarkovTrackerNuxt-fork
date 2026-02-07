@@ -67,6 +67,7 @@ type IdleTask = {
   reject: (error: unknown) => void;
   expiresAt: number;
 };
+const TASK_OBJECTIVES_CACHE_VERSION = 'v2';
 const idleQueue: IdleTask[] = [];
 let idleRunnerActive = false;
 const CACHE_PURGE_STORAGE_KEY = STORAGE_KEYS.cachePurgeAt;
@@ -202,6 +203,7 @@ type ObjectiveWithItems = TaskObjective & {
   items?: TarkovItem[];
   markerItem?: TarkovItem;
   questItem?: TarkovItem;
+  requiredKeys?: TarkovItem[][];
   containsAll?: TarkovItem[];
   useAny?: TarkovItem[];
   usingWeapon?: TarkovItem;
@@ -235,13 +237,19 @@ function createItemPicker(itemsById: Map<string, TarkovItem>) {
     const mergedProperties = item.properties
       ? { ...(fullItem.properties ?? {}), ...item.properties }
       : fullItem.properties;
-    return mergedProperties ? { ...fullItem, properties: mergedProperties } : fullItem;
+    const merged = { ...item, ...fullItem };
+    if (mergedProperties) merged.properties = mergedProperties;
+    return merged;
   };
   const pickItemArray = (items?: TarkovItem[] | null): TarkovItem[] | undefined => {
     if (!Array.isArray(items)) return items ?? undefined;
     return items.map((i) => pickItemLite(i) ?? i);
   };
-  return { pickItemLite, pickItemArray };
+  const pickItemMatrix = (items?: TarkovItem[][] | null): TarkovItem[][] | undefined => {
+    if (!Array.isArray(items)) return items ?? undefined;
+    return items.map((group) => pickItemArray(group) ?? []);
+  };
+  return { pickItemLite, pickItemArray, pickItemMatrix };
 }
 interface MetadataState {
   // Initialization and loading states
@@ -1076,7 +1084,7 @@ export const useMetadataStore = defineStore('metadata', {
       const apiGameMode = this.getApiGameMode();
       await this.fetchWithCache<TarkovTaskObjectivesQueryResult>({
         cacheType: 'tasks-objectives' as CacheType,
-        cacheKey: apiGameMode,
+        cacheKey: `${TASK_OBJECTIVES_CACHE_VERSION}-${apiGameMode}`,
         endpoint: '/api/tarkov/tasks-objectives',
         queryParams: { lang: this.languageCode, gameMode: apiGameMode },
         cacheTTL: CACHE_CONFIG.DEFAULT_TTL,
@@ -1555,7 +1563,7 @@ export const useMetadataStore = defineStore('metadata', {
       const itemsById = this.itemsById.size
         ? this.itemsById
         : new Map(this.items.map((item) => [item.id, item]));
-      const { pickItemLite, pickItemArray } = createItemPicker(itemsById);
+      const { pickItemLite, pickItemArray, pickItemMatrix } = createItemPicker(itemsById);
       const hydrateObjective = (objective: TaskObjective): TaskObjective => {
         const obj = objective as ObjectiveWithItems;
         return {
@@ -1564,6 +1572,7 @@ export const useMetadataStore = defineStore('metadata', {
           items: pickItemArray(obj.items),
           markerItem: pickItemLite(obj.markerItem),
           questItem: pickItemLite(obj.questItem),
+          requiredKeys: pickItemMatrix(obj.requiredKeys),
           containsAll: pickItemArray(obj.containsAll),
           useAny: pickItemArray(obj.useAny),
           usingWeapon: pickItemLite(obj.usingWeapon),
@@ -1590,10 +1599,6 @@ export const useMetadataStore = defineStore('metadata', {
         ...task,
         objectives: task.objectives?.map(hydrateObjective),
         failConditions: task.failConditions?.map(hydrateObjective),
-        neededKeys: task.neededKeys?.map((needed) => ({
-          ...needed,
-          keys: needed.keys?.map((key) => pickItemLite(key) ?? key) ?? needed.keys,
-        })),
         startRewards: hydrateRewards(task.startRewards),
         finishRewards: hydrateRewards(task.finishRewards),
         failureOutcome: hydrateRewards(task.failureOutcome),

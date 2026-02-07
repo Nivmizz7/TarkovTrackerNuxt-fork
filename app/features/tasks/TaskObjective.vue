@@ -32,7 +32,17 @@
       <div class="min-w-0">
         <div class="text-surface-100 text-sm leading-5">
           {{ props.objective?.description }}
+          <span
+            v-if="props.objective.optional"
+            class="text-warning-300 ml-1 text-[10px] font-semibold uppercase"
+          >
+            ({{ t('page.tasks.questcard.objective_optional_badge') }})
+          </span>
         </div>
+        <ObjectiveRequiredKeys
+          v-if="objectiveRequiredKeys.length"
+          :required-keys="objectiveRequiredKeys"
+        />
         <AppTooltip
           v-if="userHasTeam && activeUserView === 'all' && userNeeds.length > 0"
           :text="userNeedsTitle"
@@ -44,15 +54,12 @@
         </AppTooltip>
       </div>
       <div class="flex items-center gap-2" @click.stop>
-        <AppTooltip
-          v-if="hasMapLocation"
-          :text="t('page.tasks.questcard.jump_to_map', 'Jump To Map')"
-        >
+        <AppTooltip v-if="hasMapLocation" :text="t('page.tasks.questcard.jump_to_map')">
           <button
             type="button"
             class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 text-surface-300 flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             :class="isJumpToMapDisabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-white/10'"
-            :aria-label="t('page.tasks.questcard.jump_to_map', 'Jump To Map')"
+            :aria-label="t('page.tasks.questcard.jump_to_map')"
             :disabled="isJumpToMapDisabled"
             @click.stop="onJumpToMapClick"
           >
@@ -72,9 +79,7 @@
         <AppTooltip
           v-else
           :text="
-            isComplete
-              ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
-              : t('page.tasks.questcard.complete', 'Complete')
+            isComplete ? t('page.tasks.questcard.uncomplete') : t('page.tasks.questcard.complete')
           "
         >
           <button
@@ -104,6 +109,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
+  import ObjectiveRequiredKeys from '@/features/tasks/ObjectiveRequiredKeys.vue';
   import { OBJECTIVE_ICON_MAP } from '@/features/tasks/task-objective-constants';
   import { objectiveHasMapLocation } from '@/features/tasks/task-objective-helpers';
   import { useMetadataStore } from '@/stores/useMetadata';
@@ -135,25 +141,32 @@
     return tarkovStore.isTaskObjectiveComplete(props.objective.id);
   });
   const objectiveLabel = computed(() => {
-    return props.objective.description || t('page.tasks.questcard.objective', 'Objective');
+    return props.objective.description || t('page.tasks.questcard.objective');
   });
   const toggleObjectiveLabel = computed(() => {
     const actionLabel = isComplete.value
-      ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
-      : t('page.tasks.questcard.complete', 'Complete');
+      ? t('page.tasks.questcard.uncomplete')
+      : t('page.tasks.questcard.complete');
     return `${actionLabel}: ${objectiveLabel.value}`;
   });
   const objectiveAriaLabel = computed(() => {
+    const optionalPrefix = props.objective.optional
+      ? `${t('page.tasks.questcard.objective_optional_badge')}. `
+      : '';
     const status = isComplete.value
-      ? t('page.tasks.questcard.completed', 'Completed')
-      : t('page.tasks.questcard.not_completed', 'Not completed');
+      ? t('page.tasks.questcard.completed')
+      : t('page.tasks.questcard.not_completed');
     const toggleAction = isComplete.value
-      ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
-      : t('page.tasks.questcard.complete', 'Complete');
-    return `${objectiveLabel.value}. ${status}. ${toggleAction}.`;
+      ? t('page.tasks.questcard.uncomplete')
+      : t('page.tasks.questcard.complete');
+    return `${optionalPrefix}${objectiveLabel.value}. ${status}. ${toggleAction}.`;
   });
   const fullObjective = computed(() => {
     return objectives.value.find((o) => o.id == props.objective.id);
+  });
+  const objectiveRequiredKeys = computed(() => {
+    const keys = fullObjective.value?.requiredKeys ?? props.objective.requiredKeys;
+    return (keys ?? []).filter((group) => group.length > 0);
   });
   const parentTaskId = computed(() => {
     return fullObjective.value?.taskId ?? props.objective.taskId;

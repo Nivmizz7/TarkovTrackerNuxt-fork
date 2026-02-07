@@ -6,8 +6,8 @@
       <div class="w-full sm:w-56 sm:max-w-64 lg:max-w-72">
         <UInput
           :model-value="searchQuery"
-          :placeholder="t('page.tasks.search.placeholder', 'Search...')"
-          :aria-label="t('page.tasks.search.aria_label', 'Search tasks')"
+          :placeholder="t('page.tasks.search.placeholder')"
+          :aria-label="t('page.tasks.search.aria_label')"
           icon="i-mdi-magnify"
           size="sm"
           :ui="{ trailing: 'pe-1' }"
@@ -20,7 +20,7 @@
               variant="link"
               size="xs"
               icon="i-mdi-close-circle"
-              aria-label="Clear search"
+              :aria-label="t('page.tasks.search.clear')"
               @click="$emit('update:searchQuery', '')"
             />
           </template>
@@ -77,7 +77,7 @@
           value-key="value"
           size="sm"
           class="w-28 sm:w-44"
-          :aria-label="t('page.tasks.sort.aria_label', 'Sort tasks by')"
+          :aria-label="t('page.tasks.sort.aria_label')"
         >
           <template #leading>
             <UIcon :name="currentSortIcon" class="h-4 w-4" />
@@ -97,13 +97,13 @@
           :aria-label="sortDirectionLabel"
           @click="toggleSortDirection"
         />
-        <AppTooltip :text="t('page.tasks.settings.title', 'Task Settings')">
+        <AppTooltip :text="t('page.tasks.settings.title')">
           <UButton
             variant="ghost"
             color="neutral"
             size="sm"
             icon="i-mdi-cog"
-            :aria-label="t('page.tasks.settings.title', 'Task Settings')"
+            :aria-label="t('page.tasks.settings.title')"
             :aria-pressed="isDrawerOpen"
             :class="isDrawerOpen ? 'bg-white/10 text-white' : 'text-surface-400'"
             @click="toggleDrawer"
@@ -211,7 +211,7 @@
           >
             <UIcon name="i-mdi-close-circle" class="hidden h-4 w-4 sm:mr-1 sm:block" />
             <span class="text-xs sm:text-sm">
-              {{ t('page.tasks.secondary_views.failed', 'FAILED').toUpperCase() }}
+              {{ t('page.tasks.secondary_views.failed').toUpperCase() }}
             </span>
             <span
               class="bg-error-500 ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold text-white"
@@ -368,7 +368,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n';
   import { useTaskFiltering } from '@/composables/useTaskFiltering';
   import { useTaskSettingsDrawer } from '@/composables/useTaskSettingsDrawer';
   import { useMetadataStore } from '@/stores/useMetadata';
@@ -453,19 +452,10 @@
     teammates: 'i-mdi-account-multiple',
     xp: 'i-mdi-star',
   };
-  const SORT_MODE_FALLBACK_LABELS: Record<TaskSortMode, string> = {
-    none: 'Default order',
-    impact: 'Impact',
-    alphabetical: 'Alphabetical',
-    level: 'Level required',
-    trader: 'Trader order',
-    teammates: 'Teammates available',
-    xp: 'XP Reward',
-  };
   const sortOptions = computed<SortOption[]>(() =>
     TASK_SORT_MODES.map((mode) => ({
       value: mode,
-      label: t(`page.tasks.sort.${mode}`, SORT_MODE_FALLBACK_LABELS[mode]),
+      label: t(`page.tasks.sort.${mode}`),
       icon: SORT_MODE_ICONS[mode],
     }))
   );
@@ -482,8 +472,8 @@
   );
   const sortDirectionLabel = computed(() =>
     taskSortDirection.value === 'asc'
-      ? t('page.tasks.sort.ascending', 'Ascending')
-      : t('page.tasks.sort.descending', 'Descending')
+      ? t('page.tasks.sort.ascending')
+      : t('page.tasks.sort.descending')
   );
   const toggleSortDirection = () => {
     taskSortDirection.value = taskSortDirection.value === 'asc' ? 'desc' : 'asc';

@@ -313,6 +313,15 @@ export function useTaskFiltering() {
     buildTaskTypeFilterOptions(preferencesStore, tarkovStore, metadataStore);
   const filterTasksByTypeSettings = (taskList: Task[]): Task[] =>
     filterTasksByTypeSettingsUtil(taskList, getTaskTypeOptions());
+  const taskHasRequiredKeys = (task: Task): boolean => (task.requiredKeys?.length ?? 0) > 0;
+  const shouldApplyRequiredKeysFilter = (): boolean =>
+    preferencesStore.getOnlyTasksWithRequiredKeys && metadataStore.tasksObjectivesHydrated;
+  const filterTasksByRequiredKeysSetting = (taskList: Task[]): Task[] => {
+    if (!shouldApplyRequiredKeysFilter()) {
+      return taskList;
+    }
+    return taskList.filter(taskHasRequiredKeys);
+  };
   /**
    * Helper to extract all map locations from a task
    */
@@ -374,7 +383,12 @@ export function useTaskFiltering() {
     });
     const mapTaskCounts: Record<string, number> = {};
     const typedTasks = filterTasksByTypeSettings(tasks);
-    const statusFilteredTasks = filterTasksByStatus(typedTasks, secondaryView, activeUserView);
+    const keyFilteredTasks = filterTasksByRequiredKeysSetting(typedTasks);
+    const statusFilteredTasks = filterTasksByStatus(
+      keyFilteredTasks,
+      secondaryView,
+      activeUserView
+    );
     let globalTaskCount = 0;
     if (!hideGlobalTasks) {
       for (const task of statusFilteredTasks) {
@@ -459,7 +473,11 @@ export function useTaskFiltering() {
     const directionFactor = sortDirection === 'desc' ? -1 : 1;
     const teamIds = resolveImpactTeamIds(userView, progressStore.visibleTeamStores);
     const impactEligibleTaskIds = preferencesStore.getRespectTaskFiltersForImpact
-      ? new Set(filterTasksByTypeSettings(metadataStore.tasks).map((task) => task.id))
+      ? new Set(
+          filterTasksByRequiredKeysSetting(filterTasksByTypeSettings(metadataStore.tasks)).map(
+            (task) => task.id
+          )
+        )
       : undefined;
     const impactScores = buildTaskImpactScores(
       taskList,
@@ -638,6 +656,11 @@ export function useTaskFiltering() {
         perfOn
       );
       visibleTaskList = afterStatus;
+      const [afterRequiredKeys, filterRequiredKeysMs] = timed(
+        () => filterTasksByRequiredKeysSetting(visibleTaskList),
+        perfOn
+      );
+      visibleTaskList = afterRequiredKeys;
       let sharedFilterMs = 0;
       if (
         preferencesStore.getTaskSharedByAllOnly &&
@@ -672,6 +695,7 @@ export function useTaskFiltering() {
         filterTypeMs: perfOn ? roundMs(filterTypeMs) : undefined,
         filterViewMs: perfOn ? roundMs(filterViewMs) : undefined,
         filterStatusMs: perfOn ? roundMs(filterStatusMs) : undefined,
+        filterRequiredKeysMs: perfOn ? roundMs(filterRequiredKeysMs) : undefined,
         sharedFilterMs: perfOn ? roundMs(sharedFilterMs) : undefined,
         sortMs: perfOn ? roundMs(sortMs) : undefined,
       });
@@ -695,6 +719,8 @@ export function useTaskFiltering() {
     const showKappa = !preferencesStore.getHideNonKappaTasks;
     const showLightkeeper = preferencesStore.getShowLightkeeperTasks;
     const showNonSpecial = preferencesStore.getShowNonSpecialTasks;
+    const hasTypeSelection = showKappa || showLightkeeper || showNonSpecial;
+    const onlyTasksWithRequiredKeys = shouldApplyRequiredKeysFilter();
     // Get prestige filtering data
     const userPrestigeLevel = tarkovStore.getPrestigeLevel();
     const prestigeTaskMap = metadataStore.prestigeTaskMap || new Map<string, number>();
@@ -715,10 +741,14 @@ export function useTaskFiltering() {
       const isLightkeeperRequired = task.lightkeeperRequired === true;
       const isNonSpecial = !isKappaRequired && !isLightkeeperRequired;
       if (
-        (isKappaRequired && !showKappa) ||
-        (isLightkeeperRequired && !showLightkeeper) ||
-        (isNonSpecial && !showNonSpecial)
+        hasTypeSelection &&
+        ((isKappaRequired && !showKappa) ||
+          (isLightkeeperRequired && !showLightkeeper) ||
+          (isNonSpecial && !showNonSpecial))
       ) {
+        continue;
+      }
+      if (onlyTasksWithRequiredKeys && !taskHasRequiredKeys(task)) {
         continue;
       }
       if (isAllUsersView(userView)) {
@@ -796,6 +826,8 @@ export function useTaskFiltering() {
     const showKappa = !preferencesStore.getHideNonKappaTasks;
     const showLightkeeper = preferencesStore.getShowLightkeeperTasks;
     const showNonSpecial = preferencesStore.getShowNonSpecialTasks;
+    const hasTypeSelection = showKappa || showLightkeeper || showNonSpecial;
+    const onlyTasksWithRequiredKeys = shouldApplyRequiredKeysFilter();
     const userPrestigeLevel = tarkovStore.getPrestigeLevel();
     const prestigeTaskMap = metadataStore.prestigeTaskMap || new Map<string, number>();
     const prestigeTaskIds = Array.from(prestigeTaskMap.keys());
@@ -816,10 +848,14 @@ export function useTaskFiltering() {
       const isLightkeeperRequired = task.lightkeeperRequired === true;
       const isNonSpecial = !isKappaRequired && !isLightkeeperRequired;
       if (
-        (isKappaRequired && !showKappa) ||
-        (isLightkeeperRequired && !showLightkeeper) ||
-        (isNonSpecial && !showNonSpecial)
+        hasTypeSelection &&
+        ((isKappaRequired && !showKappa) ||
+          (isLightkeeperRequired && !showLightkeeper) ||
+          (isNonSpecial && !showNonSpecial))
       ) {
+        continue;
+      }
+      if (onlyTasksWithRequiredKeys && !taskHasRequiredKeys(task)) {
         continue;
       }
       const traderId = task.trader?.id;

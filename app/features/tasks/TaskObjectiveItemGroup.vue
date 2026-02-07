@@ -3,7 +3,12 @@
     <div class="grid grid-cols-[16px_1fr] items-start gap-2">
       <UIcon :name="`i-${iconName}`" aria-hidden="true" class="text-surface-400 mt-0.5 h-4 w-4" />
       <div class="min-w-0">
-        <div class="text-surface-100 text-sm font-medium">{{ title }}</div>
+        <div class="text-surface-100 flex items-center gap-1.5 text-sm font-medium">
+          {{ title }}
+          <span v-if="props.optional" class="text-warning-300 text-[10px] font-semibold uppercase">
+            ({{ t('page.tasks.questcard.objective_optional_badge') }})
+          </span>
+        </div>
       </div>
     </div>
     <div class="flex flex-wrap gap-2 pl-6">
@@ -37,17 +42,20 @@
         >
           FiR
         </span>
-        <AppTooltip
-          v-if="rowHasMapLocation(row)"
-          :text="t('page.tasks.questcard.jump_to_map', 'Jump To Map')"
+        <span
+          v-if="isRowOptional(row)"
+          class="bg-warning-500/20 text-warning-300 rounded px-1 py-0.5 text-[10px] font-semibold uppercase"
         >
+          {{ t('page.tasks.questcard.objective_optional_badge') }}
+        </span>
+        <AppTooltip v-if="rowHasMapLocation(row)" :text="t('page.tasks.questcard.jump_to_map')">
           <button
             type="button"
             class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 text-surface-300 flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             :class="
               isJumpToMapDisabledForRow(row) ? 'cursor-not-allowed opacity-50' : 'hover:bg-white/10'
             "
-            :aria-label="t('page.tasks.questcard.jump_to_map', 'Jump To Map')"
+            :aria-label="t('page.tasks.questcard.jump_to_map')"
             :disabled="isJumpToMapDisabledForRow(row)"
             @click.stop="onJumpToMapClick($event, row)"
           >
@@ -71,8 +79,8 @@
           class="focus-visible:ring-primary-500 focus-visible:ring-offset-surface-900 flex h-7 w-7 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed"
           :aria-label="
             row.allComplete
-              ? t('page.tasks.questcard.uncomplete', 'Uncomplete')
-              : t('page.tasks.questcard.complete', 'Complete')
+              ? t('page.tasks.questcard.uncomplete')
+              : t('page.tasks.questcard.complete')
           "
           :aria-pressed="row.allComplete"
           :disabled="isParentTaskLocked"
@@ -91,22 +99,29 @@
         </button>
       </div>
     </div>
+    <ObjectiveRequiredKeys
+      v-if="groupRequiredKeys.length > 0"
+      :required-keys="groupRequiredKeys"
+      class="ml-6"
+    />
   </div>
 </template>
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
+  import ObjectiveRequiredKeys from '@/features/tasks/ObjectiveRequiredKeys.vue';
   import { objectiveHasMapLocation } from '@/features/tasks/task-objective-helpers';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
-  import type { TaskObjective } from '@/types/tarkov';
+  import type { TaskObjective, TarkovItem } from '@/types/tarkov';
   const jumpToMapObjective = inject<((id: string) => void) | null>('jumpToMapObjective', null);
   const isMapView = inject<Ref<boolean>>('isMapView', ref(false));
   const props = defineProps<{
     title: string;
     iconName: string;
     objectives: TaskObjective[];
+    optional?: boolean;
   }>();
   const { t } = useI18n({ useScope: 'global' });
   const tarkovStore = useTarkovStore();
@@ -132,6 +147,26 @@
     currentCount: number;
   };
   const fullObjectives = computed(() => metadataStore.objectives);
+  const groupRequiredKeys = computed<TarkovItem[][]>(() => {
+    const allKeys: TarkovItem[][] = [];
+    const seen = new Set<string>();
+    for (const objective of props.objectives) {
+      const full = fullObjectives.value.find((o) => o.id === objective.id);
+      const keys = full?.requiredKeys ?? objective.requiredKeys;
+      if (!keys) continue;
+      for (const group of keys) {
+        if (group.length === 0) continue;
+        const groupKey = group
+          .map((k) => k.id)
+          .sort()
+          .join(',');
+        if (seen.has(groupKey)) continue;
+        seen.add(groupKey);
+        allKeys.push(group);
+      }
+    }
+    return allKeys;
+  });
   const objectiveMetaById = computed<Record<string, ObjectiveMeta>>(() => {
     const map: Record<string, ObjectiveMeta> = {};
     props.objectives.forEach((objective) => {
@@ -157,10 +192,7 @@
         neededCount,
         currentCount,
         itemName:
-          item?.shortName ||
-          item?.name ||
-          objective.description ||
-          t('page.tasks.questcard.item', 'Item'),
+          item?.shortName || item?.name || objective.description || t('page.tasks.questcard.item'),
         itemIcon: imageItem?.iconLink || imageItem?.image512pxLink || image8xLink,
         foundInRaid: full?.foundInRaid === true || objective.foundInRaid === true,
       };
@@ -172,7 +204,7 @@
       const fallback: ObjectiveMeta = {
         neededCount: objective.count ?? 1,
         currentCount: tarkovStore.getObjectiveCount(objective.id),
-        itemName: objective.description || t('page.tasks.questcard.item', 'Item'),
+        itemName: objective.description || t('page.tasks.questcard.item'),
         itemIcon: undefined,
         foundInRaid: objective.foundInRaid === true,
       };
@@ -400,5 +432,9 @@
       }
       remaining -= objCount;
     });
+  };
+  const isRowOptional = (row: ConsolidatedRow): boolean => {
+    if (props.optional) return false;
+    return row.objectives.every((obj) => obj.objective.optional === true);
   };
 </script>
