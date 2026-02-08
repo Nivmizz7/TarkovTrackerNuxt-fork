@@ -827,6 +827,10 @@ summary {
 .leaflet-control-zoom a:hover {
   background-color: var(--color-surface-700) !important;
 }
+.leaflet-control-zoom-reset {
+  border-top: 1px solid var(--color-surface-700) !important;
+  font-size: 18px;
+}
 .map-zone-tooltip {
   background-color: var(--color-surface-900) !important;
   color: var(--color-gray-200) !important;
