@@ -130,7 +130,7 @@ describe('useTarkovStore failed-state repair', () => {
       failed: false,
     });
   });
-  it('keeps a task failed when timestamps cannot determine completion order', () => {
+  it('unfails a completed task with one-way failCondition when timestamps are missing', () => {
     setActivePinia(createPinia());
     const store = useTarkovStore();
     const gameModeData = createProgressData({
@@ -154,8 +154,63 @@ describe('useTarkovStore failed-state repair', () => {
       ],
     ]);
     const repairedCount = store.repairGameModeFailedTasks(gameModeData, tasksMap);
-    expect(repairedCount).toBe(0);
+    expect(repairedCount).toBe(1);
     expect(gameModeData.taskCompletions['task-no-ts']).toMatchObject({
+      complete: false,
+      failed: false,
+    });
+  });
+  it('keeps a non-completed task failed when timestamps are missing', () => {
+    setActivePinia(createPinia());
+    const store = useTarkovStore();
+    const gameModeData = createProgressData({
+      'task-never-done': { complete: false, failed: true, manual: false },
+      'task-trigger': { complete: true, failed: false },
+    });
+    const tasksMap = new Map<string, Task>([
+      [
+        'task-never-done',
+        createTask('task-never-done', {
+          failConditions: [
+            { id: 'fail-never-done', task: { id: 'task-trigger' }, status: ['complete'] },
+          ],
+        }),
+      ],
+      ['task-trigger', createTask('task-trigger')],
+    ]);
+    const repairedCount = store.repairGameModeFailedTasks(gameModeData, tasksMap);
+    expect(repairedCount).toBe(0);
+    expect(gameModeData.taskCompletions['task-never-done']).toMatchObject({
+      complete: false,
+      failed: true,
+    });
+  });
+  it('keeps a completed task failed for mutual failConditions without timestamps', () => {
+    setActivePinia(createPinia());
+    const store = useTarkovStore();
+    const gameModeData = createProgressData({
+      'task-a': { complete: true, failed: true, manual: false },
+      'task-b': { complete: true, failed: false },
+    });
+    const tasksMap = new Map<string, Task>([
+      [
+        'task-a',
+        createTask('task-a', {
+          alternatives: ['task-b'],
+          failConditions: [{ id: 'fail-a', task: { id: 'task-b' }, status: ['complete'] }],
+        }),
+      ],
+      [
+        'task-b',
+        createTask('task-b', {
+          alternatives: ['task-a'],
+          failConditions: [{ id: 'fail-b', task: { id: 'task-a' }, status: ['complete'] }],
+        }),
+      ],
+    ]);
+    const repairedCount = store.repairGameModeFailedTasks(gameModeData, tasksMap);
+    expect(repairedCount).toBe(0);
+    expect(gameModeData.taskCompletions['task-a']).toMatchObject({
       complete: true,
       failed: true,
     });

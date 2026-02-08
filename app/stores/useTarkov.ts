@@ -868,13 +868,15 @@ const tarkovActions = {
     const wasCompletedBeforeTrigger = (
       task: Task | undefined,
       taskTimestamp: number | undefined,
-      triggerTaskId: string
+      triggerTaskId: string,
+      taskWasCompleted?: boolean
     ) => {
+      if (shouldFailWhenOtherCompleted(tasksMap.get(triggerTaskId), task?.id ?? '')) return false;
       const ts = taskTimestamp ?? 0;
       const triggerTs = completions[triggerTaskId]?.timestamp ?? 0;
-      if (ts <= 0 || triggerTs <= 0 || ts >= triggerTs) return false;
-      if (shouldFailWhenOtherCompleted(tasksMap.get(triggerTaskId), task?.id ?? '')) return false;
-      return true;
+      if (ts > 0 && triggerTs > 0) return ts < triggerTs;
+      if (taskWasCompleted) return true;
+      return false;
     };
     const shouldRemainFailed = (
       task: Task | undefined,
@@ -891,7 +893,12 @@ const tarkovActions = {
             objective?.task?.id &&
             hasCompleteStatus(objective.status) &&
             isTaskSuccessful(objective.task.id) &&
-            !wasCompletedBeforeTrigger(task, completion?.timestamp, objective.task.id)
+            !wasCompletedBeforeTrigger(
+              task,
+              completion?.timestamp,
+              objective.task.id,
+              completion?.complete === true
+            )
         )
       ) {
         return true;
@@ -900,7 +907,12 @@ const tarkovActions = {
       const failedByAlternative = alternativeSources.some(
         (sourceId) =>
           isTaskSuccessful(sourceId) &&
-          !wasCompletedBeforeTrigger(task, completion?.timestamp, sourceId)
+          !wasCompletedBeforeTrigger(
+            task,
+            completion?.timestamp,
+            sourceId,
+            completion?.complete === true
+          )
       );
       if (failedByAlternative) {
         return true;

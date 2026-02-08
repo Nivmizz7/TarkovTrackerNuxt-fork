@@ -55,7 +55,7 @@
     setCenter,
     setViewport,
     viewport: flowViewport,
-  } = useVueFlow({ id: 'task-graph' });
+  } = useVueFlow('task-graph');
   const isGraphMounted = ref(false);
   const graphSurfaceRef = ref<HTMLElement | null>(null);
   const pressedGraphKeys = new Set<'up' | 'down' | 'left' | 'right' | 'zoom-in' | 'zoom-out'>();
