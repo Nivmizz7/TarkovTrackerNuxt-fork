@@ -273,7 +273,7 @@
         return { date, label: label || undefined, bullets };
       })
       .filter((item) => item.date && item.bullets.length);
-    return sortByDateDesc(items);
+    return items;
   };
   const buildCommitItems = (commits: Array<Record<string, unknown>>): ChangelogItem[] => {
     const grouped = new Map<string, ChangelogItem>();
