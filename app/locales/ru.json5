@@ -105,9 +105,13 @@
       pmc: 'PMC',
       scav: 'ТТХ0ZZ',
     },
+    layers: {
+      pmc_spawns: 'Спавны PMC',
+    },
     legend: {
       your_objectives: 'Ваши цели',
       team_objectives: 'Цели команды',
+      pmc_spawn: 'Спавн PMC',
       pmc_extract: 'Выход PMC',
       scav_extract: 'Выход Scav',
       shared_extract: 'Общий выход (любая фракция)',

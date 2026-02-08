@@ -105,9 +105,13 @@
       pmc: 'PMC',
       scav: 'Scav',
     },
+    layers: {
+      pmc_spawns: 'Спавни PMC',
+    },
     legend: {
       your_objectives: 'Ваші цілі',
       team_objectives: 'Цілі команди',
+      pmc_spawn: 'Спавн PMC',
       pmc_extract: 'Вихід PMC',
       scav_extract: 'Вихід Scav',
       shared_extract: 'Спільний вихід (будь-яка фракція)',
