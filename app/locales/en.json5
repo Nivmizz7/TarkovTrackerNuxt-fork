@@ -55,7 +55,8 @@
     confirm: 'Confirm Import',
   },
   maps: {
-    zoom: 'Zoom speed',
+    zoom_speed: 'Zoom speed',
+    pan_speed: 'Pan speed',
     not_available_title: 'Map Not Available',
     not_available_description: 'The interactive map for {mapName} is not yet available. We are waiting for a compatible map to be created.',
     placeholder: 'this location',
@@ -80,12 +81,17 @@
     },
     controls: {
       keyboard: {
+        pan: 'to Pan',
+        zoom_keys: 'to Zoom',
+        click: 'to Click at Cursor',
+        reset: 'to Reset View',
         cycle_floors: '+ Scroll to Cycle Floors',
         zoom: '+ Scroll to Zoom',
       },
     },
     aria: {
       zoom_speed: 'Zoom speed',
+      pan_speed: 'Pan speed',
     },
     tooltip: {
       go_to: 'Go to objective',
@@ -748,6 +754,20 @@
         title: 'Maps',
         show_extracts: 'Show Extracts by Default',
         zoom_speed: 'Zoom Speed',
+        pan_speed: 'Pan Speed',
+        colors: {
+          title: 'Map Colors',
+          description: 'Set marker colors for better readability and accessibility.',
+          reset: 'Reset',
+          self_objective: 'Your Objective',
+          team_objective: 'Team Objective',
+          selected: 'Pinned Objective',
+          pmc_extract: 'PMC Extract',
+          scav_extract: 'Scav Extract',
+          shared_extract: 'Shared Extract',
+          coop_extract: 'Co-op Extract',
+          pmc_spawn: 'PMC Spawn',
+        },
       },
       misc: {
         title: 'Miscellaneous',

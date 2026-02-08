@@ -6,6 +6,12 @@ import { SKILL_SORT_MODES, type SkillSortMode } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 import { normalizeSecondaryView, normalizeSortMode } from '@/utils/taskFilterNormalization';
+import {
+  MAP_MARKER_COLORS,
+  normalizeMapMarkerColors,
+  type MapMarkerColorKey,
+  type MapMarkerColors,
+} from '@/utils/theme-colors';
 import type {
   NeededItemsFirFilter,
   NeededItemsFilterType,
@@ -116,7 +122,9 @@ export interface PreferencesState {
   dashboardNoticeDismissed: boolean;
   // Map display settings
   showMapExtracts: boolean;
+  mapMarkerColors: MapMarkerColors;
   mapZoomSpeed: number;
+  mapPanSpeed: number;
   pinnedTaskIds: string[];
   // Skills settings
   skillSortMode: SkillSortMode | null;
@@ -191,7 +199,9 @@ export const preferencesDefaultState: PreferencesState = {
   dashboardNoticeDismissed: false,
   // Map display settings
   showMapExtracts: true,
+  mapMarkerColors: { ...MAP_MARKER_COLORS },
   mapZoomSpeed: 1,
+  mapPanSpeed: 1,
   pinnedTaskIds: [],
   // Skills settings
   skillSortMode: null,
@@ -359,6 +369,9 @@ export const usePreferencesStore = defineStore('preferences', {
     getMapZoomSpeed: (state) => {
       return state.mapZoomSpeed ?? 1;
     },
+    getMapPanSpeed: (state) => {
+      return state.mapPanSpeed ?? 1;
+    },
     getLocaleOverride: (state) => {
       return state.localeOverride ?? null;
     },
@@ -425,6 +438,9 @@ export const usePreferencesStore = defineStore('preferences', {
     getShowMapExtracts: (state) => {
       return state.showMapExtracts ?? true;
     },
+    getMapMarkerColors: (state) => {
+      return normalizeMapMarkerColors(state.mapMarkerColors);
+    },
     getPinnedTaskIds: (state) => {
       return state.pinnedTaskIds ?? [];
     },
@@ -471,6 +487,14 @@ export const usePreferencesStore = defineStore('preferences', {
       }
       const clamped = Math.min(3, Math.max(0.5, speed));
       this.mapZoomSpeed = clamped;
+    },
+    setMapPanSpeed(speed: number) {
+      if (!Number.isFinite(speed)) {
+        this.mapPanSpeed = 1;
+        return;
+      }
+      const clamped = Math.min(3, Math.max(0.5, speed));
+      this.mapPanSpeed = clamped;
     },
     setTaskMapView(view: string) {
       this.taskMapView = view;
@@ -628,6 +652,16 @@ export const usePreferencesStore = defineStore('preferences', {
     setShowMapExtracts(show: boolean) {
       this.showMapExtracts = show;
     },
+    setMapMarkerColor(key: MapMarkerColorKey, color: string) {
+      if (typeof color !== 'string' || color.trim().length === 0) return;
+      this.mapMarkerColors = {
+        ...this.getMapMarkerColors,
+        [key]: color.trim(),
+      };
+    },
+    resetMapMarkerColors() {
+      this.mapMarkerColors = { ...MAP_MARKER_COLORS };
+    },
     togglePinnedTask(taskId: string) {
       const current = this.pinnedTaskIds ?? [];
       const index = current.indexOf(taskId);
@@ -728,7 +762,9 @@ export const usePreferencesStore = defineStore('preferences', {
       'hideoutRequireSkillLevels',
       'hideoutRequireTraderLoyalty',
       'showMapExtracts',
+      'mapMarkerColors',
       'mapZoomSpeed',
+      'mapPanSpeed',
       'pinnedTaskIds',
       'taskFilterPresets',
       'skillSortMode',
@@ -859,6 +895,7 @@ if (shouldInitPreferencesWatchers) {
                       enable_holiday_effects: preferencesState.enableHolidayEffects,
                       dashboard_notice_dismissed: preferencesState.dashboardNoticeDismissed,
                       show_map_extracts: preferencesState.showMapExtracts,
+                      map_marker_colors: normalizeMapMarkerColors(preferencesState.mapMarkerColors),
                       neededitems_style: preferencesState.neededitemsStyle,
                       hideout_primary_view: preferencesState.hideoutPrimaryView,
                       hideout_collapse_completed: preferencesState.hideoutCollapseCompleted,
@@ -887,6 +924,7 @@ if (shouldInitPreferencesWatchers) {
                         preferencesState.neededItemsCardStyle
                       ),
                       map_zoom_speed: preferencesState.mapZoomSpeed,
+                      map_pan_speed: preferencesState.mapPanSpeed,
                       pinned_task_ids: Array.isArray(preferencesState.pinnedTaskIds)
                         ? preferencesState.pinnedTaskIds.filter(
                             (taskId): taskId is string =>

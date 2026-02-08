@@ -1,5 +1,10 @@
 <template>
-  <div class="relative isolate w-full">
+  <div
+    ref="mapSurfaceRef"
+    tabindex="0"
+    class="relative isolate w-full focus-visible:outline-none"
+    @pointerdown.capture="focusMapSurface"
+  >
     <div
       v-if="isMapUnavailable"
       class="bg-surface-900 flex h-100 w-full flex-col items-center justify-center rounded sm:h-125 lg:h-150"
@@ -95,27 +100,120 @@
         >
           {{ t('maps.layers.pmc_spawns') }}
         </UButton>
-        <div class="bg-surface-900/40 flex items-center gap-2 rounded px-2 py-1">
-          <span class="text-surface-400 text-[10px] font-semibold uppercase">
-            {{ t('maps.zoom') }}
-          </span>
-          <input
-            v-model.number="mapZoomSpeed"
-            type="range"
-            :min="ZOOM_SPEED_MIN"
-            :max="ZOOM_SPEED_MAX"
-            step="0.1"
-            class="accent-surface-200 h-1.5 w-24 cursor-pointer"
-            :aria-label="t('maps.aria.zoom_speed')"
-          />
-          <span class="text-surface-200 text-[10px] tabular-nums">{{ zoomSpeedLabel }}</span>
+        <UPopover>
+          <UButton
+            color="neutral"
+            variant="soft"
+            size="sm"
+            icon="i-mdi-palette"
+            :class="MAP_BUTTON_ACTIVE_CLASS"
+            :title="t('settings.interface.maps.colors.title')"
+            :aria-label="t('settings.interface.maps.colors.title')"
+          >
+            <span class="hidden md:inline">{{ t('settings.interface.maps.colors.title') }}</span>
+          </UButton>
+          <template #content>
+            <div
+              class="bg-surface-900 border-surface-700 w-72 space-y-3 rounded-md border p-3 md:w-80"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-0.5">
+                  <p class="text-surface-200 text-xs font-semibold tracking-wide uppercase">
+                    {{ t('settings.interface.maps.colors.title') }}
+                  </p>
+                  <p class="text-surface-400 text-xs">
+                    {{ t('settings.interface.maps.colors.description') }}
+                  </p>
+                </div>
+                <UButton
+                  color="neutral"
+                  size="xs"
+                  variant="ghost"
+                  @click="preferencesStore.resetMapMarkerColors()"
+                >
+                  {{ t('settings.interface.maps.colors.reset') }}
+                </UButton>
+              </div>
+              <div class="grid gap-2 sm:grid-cols-2">
+                <label
+                  v-for="option in mapColorOptions"
+                  :key="option.key"
+                  class="bg-surface-800/70 border-surface-700 flex items-center justify-between gap-2 rounded-md border px-2 py-1.5"
+                >
+                  <span class="flex min-w-0 items-center gap-2">
+                    <span
+                      class="h-3.5 w-3.5 shrink-0 rounded-full border border-white/30"
+                      :style="{ backgroundColor: mapColors[option.key] }"
+                    />
+                    <span class="text-surface-200 truncate text-[11px] font-medium">
+                      {{ option.label }}
+                    </span>
+                  </span>
+                  <input
+                    :aria-label="option.label"
+                    :value="mapColors[option.key]"
+                    type="color"
+                    class="bg-surface-900 border-surface-700 h-7 w-10 shrink-0 cursor-pointer rounded border p-1"
+                    @input="onMapColorInput(option.key, $event)"
+                  />
+                </label>
+              </div>
+            </div>
+          </template>
+        </UPopover>
+        <div class="bg-surface-900/40 flex flex-col gap-1 rounded px-2 py-1">
+          <div class="flex items-center gap-2">
+            <span class="text-surface-400 w-10 text-[10px] font-semibold uppercase">
+              {{ t('maps.zoom_speed') }}
+            </span>
+            <input
+              v-model.number="mapZoomSpeed"
+              type="range"
+              :min="ZOOM_SPEED_MIN"
+              :max="ZOOM_SPEED_MAX"
+              step="0.1"
+              class="accent-surface-200 h-1.5 w-24 cursor-pointer"
+              :aria-label="t('maps.aria.zoom_speed')"
+            />
+            <span class="text-surface-200 text-[10px] tabular-nums">{{ zoomSpeedLabel }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-surface-400 w-10 text-[10px] font-semibold uppercase">
+              {{ t('maps.pan_speed') }}
+            </span>
+            <input
+              v-model.number="mapPanSpeed"
+              type="range"
+              :min="PAN_SPEED_MIN"
+              :max="PAN_SPEED_MAX"
+              step="0.1"
+              class="accent-surface-200 h-1.5 w-24 cursor-pointer"
+              :aria-label="t('maps.aria.pan_speed')"
+            />
+            <span class="text-surface-200 text-[10px] tabular-nums">{{ panSpeedLabel }}</span>
+          </div>
         </div>
       </div>
-      <div
-        ref="mapContainer"
-        class="bg-surface-900 h-100 w-full rounded sm:h-125 lg:h-150"
-        :style="mapHeightStyle"
-      />
+      <div class="relative">
+        <div
+          ref="mapContainer"
+          class="bg-surface-900 h-100 w-full rounded sm:h-125 lg:h-150"
+          :style="mapHeightStyle"
+        />
+        <div
+          v-if="showKeyboardCursor"
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 z-1000"
+        >
+          <div
+            class="border-surface-50/80 bg-surface-950/40 ring-surface-950/80 absolute top-1/2 left-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border ring-1"
+          >
+            <div
+              class="bg-surface-50 absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            />
+          </div>
+        </div>
+      </div>
       <div class="mt-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-4">
         <div
           v-if="props.showLegend"
@@ -181,6 +279,24 @@
         <div
           class="text-surface-400 ml-auto flex flex-wrap-reverse items-center justify-end gap-x-4 gap-y-1 text-[10px] font-medium"
         >
+          <div class="flex items-center gap-1">
+            <kbd class="bg-surface-700 text-surface-300 rounded px-1 py-0.5 font-mono">WASD</kbd>
+            <span>/</span>
+            <kbd class="bg-surface-700 text-surface-300 rounded px-1 py-0.5 font-mono">←↑↓→</kbd>
+            <span>{{ t('maps.controls.keyboard.pan') }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <kbd class="bg-surface-700 text-surface-300 rounded px-1 py-0.5 font-mono">Q/E</kbd>
+            <span>{{ t('maps.controls.keyboard.zoom_keys') }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <kbd class="bg-surface-700 text-surface-300 rounded px-1 py-0.5 font-mono">F</kbd>
+            <span>{{ t('maps.controls.keyboard.click') }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <kbd class="bg-surface-700 text-surface-300 rounded px-1 py-0.5 font-mono">R</kbd>
+            <span>{{ t('maps.controls.keyboard.reset') }}</span>
+          </div>
           <div v-if="hasMultipleFloors" class="flex items-center gap-1">
             <kbd class="bg-surface-700 text-surface-300 rounded px-1 py-0.5 font-mono">Ctrl</kbd>
             <span>{{ t('maps.controls.keyboard.cycle_floors') }}</span>
@@ -210,7 +326,7 @@
     isValidMapSvgConfig,
     isValidMapTileConfig,
   } from '@/utils/mapCoordinates';
-  import { MAP_MARKER_COLORS } from '@/utils/theme-colors';
+  import { getMapColorOptions, type MapMarkerColorKey } from '@/utils/theme-colors';
   import type { MapExtract, MapSpawn, TarkovMap } from '@/types/tarkov';
   import type L from 'leaflet';
   interface MapZone {
@@ -251,6 +367,8 @@
   const { t } = useI18n({ useScope: 'global' });
   const router = useRouter();
   const preferencesStore = usePreferencesStore();
+  const mapSurfaceRef = ref<HTMLElement | null>(null);
+  const showKeyboardCursor = ref(false);
   const mapColors = computed(() => preferencesStore.getMapMarkerColors);
   const clearPinnedTask = inject<(() => void) | null>('clearPinnedTask', null);
   const mapHeightStyle = computed(() => {
@@ -310,6 +428,8 @@
   });
   const ZOOM_SPEED_MIN = 0.5;
   const ZOOM_SPEED_MAX = 3;
+  const PAN_SPEED_MIN = 0.5;
+  const PAN_SPEED_MAX = 3;
   const MAP_BUTTON_ACTIVE_CLASS = '!bg-surface-700/80 !text-surface-50 !ring-1 !ring-white/30';
   const MAP_BUTTON_INACTIVE_CLASS = 'text-surface-300 hover:text-surface-100';
   const SPAWN_CLUSTER_ZOOM_THRESHOLD = 3.5;
@@ -354,7 +474,305 @@
       preferencesStore.setMapZoomSpeed(clamped);
     },
   });
+  const mapPanSpeed = computed({
+    get: () => preferencesStore.mapPanSpeed ?? 1,
+    set: (value) => {
+      const parsed = Number(value);
+      const clamped = Math.min(PAN_SPEED_MAX, Math.max(PAN_SPEED_MIN, parsed));
+      preferencesStore.setMapPanSpeed(clamped);
+    },
+  });
+  const mapColorOptions = computed(() => getMapColorOptions(t));
+  const onMapColorInput = (key: MapMarkerColorKey, event: Event) => {
+    const input = event.target as HTMLInputElement | null;
+    if (!input) return;
+    preferencesStore.setMapMarkerColor(key, input.value);
+  };
   const zoomSpeedLabel = computed(() => `${mapZoomSpeed.value.toFixed(1)}x`);
+  const panSpeedLabel = computed(() => `${mapPanSpeed.value.toFixed(1)}x`);
+  const pressedMapKeys = new Set<'up' | 'down' | 'left' | 'right' | 'zoom-in' | 'zoom-out'>();
+  let mapKeyboardFrameId: number | null = null;
+  let mapKeyboardLastTick = 0;
+  let keyboardCursorHoverTarget: Element | null = null;
+  const MAP_KEYBOARD_PAN_SPEED = 225;
+  const MAP_KEYBOARD_ZOOM_SPEED = 1.7;
+  const normalizeMapControlKey = (
+    key: string,
+    code?: string
+  ): 'up' | 'down' | 'left' | 'right' | 'zoom-in' | 'zoom-out' | null => {
+    const normalizedKey = key.toLowerCase();
+    switch (normalizedKey) {
+      case 'w':
+      case 'arrowup':
+        return 'up';
+      case 's':
+      case 'arrowdown':
+        return 'down';
+      case 'a':
+      case 'arrowleft':
+        return 'left';
+      case 'd':
+      case 'arrowright':
+        return 'right';
+      case 'e':
+        return 'zoom-in';
+      case 'q':
+        return 'zoom-out';
+      default:
+        break;
+    }
+    switch (code) {
+      case 'KeyW':
+        return 'up';
+      case 'KeyS':
+        return 'down';
+      case 'KeyA':
+        return 'left';
+      case 'KeyD':
+        return 'right';
+      case 'KeyE':
+        return 'zoom-in';
+      case 'KeyQ':
+        return 'zoom-out';
+      default:
+        return null;
+    }
+  };
+  const isEditableTarget = (target: EventTarget | null): boolean => {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+    return Boolean(
+      target.closest(
+        'input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="textbox"]'
+      )
+    );
+  };
+  const isMapKeyboardActive = (): boolean => {
+    if (!mapInstance.value) return false;
+    const mapSurface = mapSurfaceRef.value;
+    if (!mapSurface) return false;
+    const activeElement = document.activeElement;
+    return activeElement instanceof HTMLElement && mapSurface.contains(activeElement);
+  };
+  const stopMapKeyboardLoop = (clearKeys = false) => {
+    if (mapKeyboardFrameId !== null) {
+      window.cancelAnimationFrame(mapKeyboardFrameId);
+      mapKeyboardFrameId = null;
+    }
+    mapKeyboardLastTick = 0;
+    if (clearKeys) {
+      pressedMapKeys.clear();
+    }
+  };
+  const getMapCenterTarget = (): {
+    clientX: number;
+    clientY: number;
+    target: Element;
+  } | null => {
+    const instance = mapInstance.value;
+    if (!instance) return null;
+    const container = instance.getContainer();
+    const rect = container.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    const clientX = rect.left + rect.width / 2;
+    const clientY = rect.top + rect.height / 2;
+    const eventTarget = document.elementFromPoint(clientX, clientY);
+    const target =
+      eventTarget instanceof Element && container.contains(eventTarget) ? eventTarget : container;
+    return { clientX, clientY, target };
+  };
+  const dispatchCenterMouseEvent = (
+    type: string,
+    target: Element,
+    clientX: number,
+    clientY: number,
+    buttons = 0,
+    detail = 0
+  ) => {
+    target.dispatchEvent(
+      new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        buttons,
+        clientX,
+        clientY,
+        detail,
+        view: window,
+      })
+    );
+  };
+  const clearKeyboardCursorHover = () => {
+    if (!keyboardCursorHoverTarget) return;
+    const centerTarget = getMapCenterTarget();
+    if (centerTarget) {
+      dispatchCenterMouseEvent(
+        'mouseout',
+        keyboardCursorHoverTarget,
+        centerTarget.clientX,
+        centerTarget.clientY
+      );
+      dispatchCenterMouseEvent(
+        'mouseleave',
+        keyboardCursorHoverTarget,
+        centerTarget.clientX,
+        centerTarget.clientY
+      );
+    }
+    keyboardCursorHoverTarget = null;
+  };
+  const syncKeyboardCursorHover = () => {
+    if (!showKeyboardCursor.value) {
+      clearKeyboardCursorHover();
+      return;
+    }
+    const centerTarget = getMapCenterTarget();
+    if (!centerTarget) return;
+    const { clientX, clientY, target } = centerTarget;
+    if (keyboardCursorHoverTarget !== target) {
+      if (keyboardCursorHoverTarget) {
+        dispatchCenterMouseEvent('mouseout', keyboardCursorHoverTarget, clientX, clientY);
+        dispatchCenterMouseEvent('mouseleave', keyboardCursorHoverTarget, clientX, clientY);
+      }
+      dispatchCenterMouseEvent('mouseover', target, clientX, clientY);
+      dispatchCenterMouseEvent('mouseenter', target, clientX, clientY);
+      keyboardCursorHoverTarget = target;
+    }
+    dispatchCenterMouseEvent('mousemove', target, clientX, clientY);
+  };
+  const applyMapKeyboardStep = (elapsedMs: number) => {
+    const instance = mapInstance.value;
+    if (!instance || !pressedMapKeys.size) return;
+    const panDelta = MAP_KEYBOARD_PAN_SPEED * mapPanSpeed.value * (elapsedMs / 1000);
+    const zoomDelta = MAP_KEYBOARD_ZOOM_SPEED * mapZoomSpeed.value * (elapsedMs / 1000);
+    let panX = 0;
+    let panY = 0;
+    const moveUp = pressedMapKeys.has('up');
+    const moveDown = pressedMapKeys.has('down');
+    const moveLeft = pressedMapKeys.has('left');
+    const moveRight = pressedMapKeys.has('right');
+    if (moveUp && !moveDown) panY -= panDelta;
+    if (moveDown && !moveUp) panY += panDelta;
+    if (moveLeft && !moveRight) panX -= panDelta;
+    if (moveRight && !moveLeft) panX += panDelta;
+    if (panX !== 0 || panY !== 0) {
+      instance.panBy([panX, panY], {
+        animate: false,
+        noMoveStart: true,
+      });
+    }
+    const zoomIn = pressedMapKeys.has('zoom-in');
+    const zoomOut = pressedMapKeys.has('zoom-out');
+    if ((zoomIn && zoomOut) || (!zoomIn && !zoomOut)) {
+      syncKeyboardCursorHover();
+      return;
+    }
+    const currentZoom = instance.getZoom();
+    const minZoom = Number.isFinite(instance.getMinZoom()) ? instance.getMinZoom() : currentZoom;
+    const maxZoom = Number.isFinite(instance.getMaxZoom()) ? instance.getMaxZoom() : currentZoom;
+    let nextZoom = currentZoom;
+    if (zoomIn) {
+      nextZoom = Math.min(maxZoom, currentZoom * (1 + zoomDelta));
+    } else {
+      nextZoom = Math.max(minZoom, currentZoom / (1 + zoomDelta));
+    }
+    if (nextZoom === currentZoom) {
+      syncKeyboardCursorHover();
+      return;
+    }
+    const container = instance.getContainer();
+    const center = instance.containerPointToLatLng([
+      container.clientWidth / 2,
+      container.clientHeight / 2,
+    ]);
+    const originalZoomSnap = instance.options.zoomSnap ?? 0;
+    instance.options.zoomSnap = 0;
+    try {
+      instance.setZoomAround(center, nextZoom, { animate: false });
+    } finally {
+      instance.options.zoomSnap = originalZoomSnap;
+    }
+    syncKeyboardCursorHover();
+  };
+  const runMapKeyboardLoop = (timestamp: number) => {
+    if (!isMapKeyboardActive() || !pressedMapKeys.size) {
+      clearKeyboardCursorHover();
+      showKeyboardCursor.value = false;
+      stopMapKeyboardLoop(true);
+      return;
+    }
+    const elapsedMs = mapKeyboardLastTick ? Math.min(48, timestamp - mapKeyboardLastTick) : 16;
+    mapKeyboardLastTick = timestamp;
+    applyMapKeyboardStep(elapsedMs);
+    mapKeyboardFrameId = window.requestAnimationFrame(runMapKeyboardLoop);
+  };
+  const startMapKeyboardLoop = () => {
+    if (mapKeyboardFrameId !== null) return;
+    mapKeyboardLastTick = 0;
+    mapKeyboardFrameId = window.requestAnimationFrame(runMapKeyboardLoop);
+  };
+  const focusMapSurface = () => {
+    clearKeyboardCursorHover();
+    showKeyboardCursor.value = false;
+    mapSurfaceRef.value?.focus({ preventScroll: true });
+  };
+  const triggerCenterMapClick = () => {
+    const centerTarget = getMapCenterTarget();
+    if (!centerTarget) return;
+    const { clientX, clientY, target } = centerTarget;
+    dispatchCenterMouseEvent('mousedown', target, clientX, clientY, 1);
+    dispatchCenterMouseEvent('mouseup', target, clientX, clientY);
+    dispatchCenterMouseEvent('click', target, clientX, clientY, 0, 1);
+  };
+  const onGlobalMapKeydown = (event: KeyboardEvent) => {
+    const normalizedKey = event.key.toLowerCase();
+    const normalizedCode = event.code.toLowerCase();
+    if (normalizedKey === 'f' || normalizedCode === 'keyf') {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isEditableTarget(event.target)) return;
+      if (!isMapKeyboardActive()) return;
+      event.preventDefault();
+      showKeyboardCursor.value = true;
+      syncKeyboardCursorHover();
+      if (event.repeat) return;
+      triggerCenterMapClick();
+      return;
+    }
+    if (normalizedKey === 'r' || normalizedCode === 'keyr') {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isEditableTarget(event.target)) return;
+      if (!isMapKeyboardActive()) return;
+      event.preventDefault();
+      showKeyboardCursor.value = true;
+      if (event.repeat) return;
+      refreshView();
+      window.requestAnimationFrame(syncKeyboardCursorHover);
+      return;
+    }
+    const controlKey = normalizeMapControlKey(event.key, event.code);
+    if (!controlKey) return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (isEditableTarget(event.target)) return;
+    if (!isMapKeyboardActive()) return;
+    event.preventDefault();
+    showKeyboardCursor.value = true;
+    syncKeyboardCursorHover();
+    pressedMapKeys.add(controlKey);
+    startMapKeyboardLoop();
+  };
+  const onGlobalMapKeyup = (event: KeyboardEvent) => {
+    const controlKey = normalizeMapControlKey(event.key, event.code);
+    if (!controlKey) return;
+    pressedMapKeys.delete(controlKey);
+    if (!pressedMapKeys.size) {
+      stopMapKeyboardLoop();
+    }
+  };
+  const onMapWindowBlur = () => {
+    clearKeyboardCursorHover();
+    showKeyboardCursor.value = false;
+    stopMapKeyboardLoop(true);
+  };
   const baseZoomDelta = ref<number | null>(null);
   const baseZoomSnap = ref<number | null>(null);
   let svgReadyFallbackTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -675,6 +1093,7 @@
     objectiveMarkers.clear();
     const zoneEntries: Array<{
       polygon: L.Polygon;
+      centerMarker: L.CircleMarker;
       area: number;
       objectiveId: string;
     }> = [];
@@ -723,18 +1142,26 @@
         if (latLngs.length < 3) return;
         const isSelf = mark.users?.includes('self') ?? false;
         const zoneColor = isSelf ? mapColors.value.SELF_OBJECTIVE : mapColors.value.TEAM_OBJECTIVE;
-        const polygon = L.polygon(
-          latLngs.map((ll) => [ll.lat, ll.lng]),
-          {
-            color: zoneColor,
-            fillColor: zoneColor,
-            fillOpacity: 0.2,
-            weight: 2,
-            dashArray: '5, 5',
-          }
-        );
+        const polygonLatLngs = latLngs.map((ll) => [ll.lat, ll.lng]) as L.LatLngExpression[];
+        const polygon = L.polygon(polygonLatLngs, {
+          color: zoneColor,
+          fillColor: zoneColor,
+          fillOpacity: 0.24,
+          weight: 2.25,
+          opacity: 0.95,
+        });
+        const center = polygon.getBounds().getCenter();
+        const centerMarker = L.circleMarker([center.lat, center.lng], {
+          radius: 5,
+          fillColor: zoneColor,
+          fillOpacity: 0.95,
+          color: mapColors.value.MARKER_BORDER,
+          weight: 1.5,
+          opacity: 1,
+        });
         zoneEntries.push({
           polygon,
+          centerMarker,
           area: calculateZoneArea(zone.outline),
           objectiveId,
         });
@@ -742,13 +1169,15 @@
     });
     zoneEntries
       .sort((a, b) => b.area - a.area)
-      .forEach(({ polygon, objectiveId }) => {
+      .forEach(({ polygon, centerMarker, objectiveId }) => {
         if (objectiveId) {
           attachHoverPinPopup(polygon, objectiveId, () => polygon.getBounds().getCenter());
+          attachHoverPinPopup(centerMarker, objectiveId, () => centerMarker.getLatLng());
         }
-        polygon.on('mouseover', () => polygon.setStyle({ fillOpacity: 0.35, weight: 3 }));
-        polygon.on('mouseout', () => polygon.setStyle({ fillOpacity: 0.2, weight: 2 }));
+        polygon.on('mouseover', () => polygon.setStyle({ fillOpacity: 0.4, weight: 3 }));
+        polygon.on('mouseout', () => polygon.setStyle({ fillOpacity: 0.24, weight: 2.25 }));
         objectiveLayer.value!.addLayer(polygon);
+        objectiveLayer.value!.addLayer(centerMarker);
       });
     pointEntries.forEach(({ marker, objectiveId }) => {
       if (objectiveId) {
@@ -969,6 +1398,11 @@
     },
     { immediate: true }
   );
+  onMounted(() => {
+    window.addEventListener('keydown', onGlobalMapKeydown);
+    window.addEventListener('keyup', onGlobalMapKeyup);
+    window.addEventListener('blur', onMapWindowBlur);
+  });
   watch(
     [isLoading, objectiveLayer, extractLayer, spawnLayer, mapInstance],
     (
@@ -1011,6 +1445,11 @@
     refreshView,
   });
   onUnmounted(() => {
+    window.removeEventListener('keydown', onGlobalMapKeydown);
+    window.removeEventListener('keyup', onGlobalMapKeyup);
+    window.removeEventListener('blur', onMapWindowBlur);
+    clearKeyboardCursorHover();
+    stopMapKeyboardLoop(true);
     teardownSvgReadyWatcher();
     if (mapInstance.value) {
       mapInstance.value.off('zoomend', handleSpawnZoomChange);

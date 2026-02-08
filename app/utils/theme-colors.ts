@@ -81,25 +81,54 @@ export const THEME_COLORS = {
  */
 export const MAP_MARKER_COLORS = {
   /** Self objectives - matches --color-error-500 */
-  SELF_OBJECTIVE: THEME_COLORS.error[500],
+  SELF_OBJECTIVE: '#ef4444',
   /** Team objectives - matches --color-info-400 */
-  TEAM_OBJECTIVE: THEME_COLORS.info[400],
+  TEAM_OBJECTIVE: '#3c9add',
   /** Selected/pinned marker - matches --color-selection-500 */
-  SELECTED: THEME_COLORS.selection[500],
+  SELECTED: '#7c3bed',
   /** PMC extracts - matches --color-success-500 */
-  PMC_EXTRACT: THEME_COLORS.success[500],
+  PMC_EXTRACT: '#2ba86a',
   /** Scav extracts - matches --color-info-400 */
-  SCAV_EXTRACT: THEME_COLORS.info[400],
+  SCAV_EXTRACT: '#3c9add',
   /** Shared extracts - matches --color-secondary-400 */
-  SHARED_EXTRACT: THEME_COLORS.secondary[400],
+  SHARED_EXTRACT: '#40b5bf',
   /** Co-op extracts - matches --color-secondary-600 */
-  COOP_EXTRACT: THEME_COLORS.secondary[600],
+  COOP_EXTRACT: '#2b7b82',
   /** PMC spawns - --color-info-500 */
-  PMC_SPAWN: THEME_COLORS.info[500],
+  PMC_SPAWN: '#2280c3',
   /** Default extract - --color-secondary-500 */
-  DEFAULT_EXTRACT: THEME_COLORS.secondary[500],
+  DEFAULT_EXTRACT: '#339199',
   /** Marker border - white */
-  MARKER_BORDER: THEME_COLORS.neutral.white,
+  MARKER_BORDER: '#ffffff',
   /** Extract dot border - near black */
-  EXTRACT_DOT_BORDER: THEME_COLORS.neutral.black,
+  EXTRACT_DOT_BORDER: '#0a0a0b',
 } as const;
+export type MapMarkerColorKey = keyof typeof MAP_MARKER_COLORS;
+export type MapMarkerColors = Record<MapMarkerColorKey, string>;
+export type MapColorOption = { key: MapMarkerColorKey; label: string };
+type MapColorOptionTranslator = (key: string) => string;
+export const MAP_MARKER_COLOR_KEYS = Object.keys(MAP_MARKER_COLORS) as MapMarkerColorKey[];
+export const getMapColorOptions = (t: MapColorOptionTranslator): MapColorOption[] => {
+  return [
+    { key: 'SELF_OBJECTIVE', label: t('settings.interface.maps.colors.self_objective') },
+    { key: 'TEAM_OBJECTIVE', label: t('settings.interface.maps.colors.team_objective') },
+    { key: 'SELECTED', label: t('settings.interface.maps.colors.selected') },
+    { key: 'PMC_EXTRACT', label: t('settings.interface.maps.colors.pmc_extract') },
+    { key: 'SCAV_EXTRACT', label: t('settings.interface.maps.colors.scav_extract') },
+    { key: 'SHARED_EXTRACT', label: t('settings.interface.maps.colors.shared_extract') },
+    { key: 'COOP_EXTRACT', label: t('settings.interface.maps.colors.coop_extract') },
+    { key: 'PMC_SPAWN', label: t('settings.interface.maps.colors.pmc_spawn') },
+  ];
+};
+export const normalizeMapMarkerColors = (value: unknown): MapMarkerColors => {
+  const defaults: MapMarkerColors = { ...MAP_MARKER_COLORS };
+  if (!value || typeof value !== 'object') return defaults;
+  const candidateColors = value as Record<string, unknown>;
+  for (const key of MAP_MARKER_COLOR_KEYS) {
+    const candidate = candidateColors[key];
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      defaults[key] = candidate.trim();
+    }
+  }
+  return defaults;
+};

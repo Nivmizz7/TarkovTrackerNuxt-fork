@@ -55,7 +55,8 @@
     confirm: 'Confirmar importación',
   },
   maps: {
-    zoom: 'Velocidad de zoom',
+    zoom_speed: 'Velocidad de zoom',
+    pan_speed: 'Velocidad de desplazamiento',
     not_available_title: 'Mapa no disponible',
     not_available_description: 'El mapa interactivo de {mapName} aún no está disponible. Estamos esperando a que se cree un mapa compatible.',
     placeholder: 'esta ubicación',
@@ -80,12 +81,17 @@
     },
     controls: {
       keyboard: {
+        pan: 'para mover',
+        zoom_keys: 'para zoom',
+        click: 'para hacer clic en el cursor',
+        reset: 'para reiniciar vista',
         cycle_floors: '+ Desplazar para cambiar de piso',
         zoom: '+ Desplazar para hacer zoom',
       },
     },
     aria: {
       zoom_speed: 'Velocidad de zoom',
+      pan_speed: 'Velocidad de desplazamiento',
     },
     tooltip: {
       go_to: 'Ir al objetivo',
@@ -748,6 +754,20 @@
         title: 'Mapas',
         show_extracts: 'Mostrar extracciones por defecto',
         zoom_speed: 'Velocidad de zoom',
+        pan_speed: 'Velocidad de desplazamiento',
+        colors: {
+          title: 'Colores del mapa',
+          description: 'Ajusta los colores de los marcadores para mejorar legibilidad y accesibilidad.',
+          reset: 'Restablecer',
+          self_objective: 'Tu objetivo',
+          team_objective: 'Objetivo del equipo',
+          selected: 'Objetivo fijado',
+          pmc_extract: 'Extracción PMC',
+          scav_extract: 'Extracción Scav',
+          shared_extract: 'Extracción compartida',
+          coop_extract: 'Extracción cooperativa',
+          pmc_spawn: 'Aparición PMC',
+        },
       },
       misc: {
         title: 'Misceláneo',

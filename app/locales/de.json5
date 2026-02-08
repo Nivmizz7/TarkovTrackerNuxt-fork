@@ -55,7 +55,8 @@
     confirm: 'Import bestätigen',
   },
   maps: {
-    zoom: 'Zoomgeschwindigkeit',
+    zoom_speed: 'Zoomgeschwindigkeit',
+    pan_speed: 'Schwenkgeschwindigkeit',
     not_available_title: 'Karte nicht verfügbar',
     not_available_description: 'Die interaktive Karte für {mapName} ist noch nicht verfügbar. Wir warten auf eine kompatible Karte.',
     placeholder: 'diesen Ort',
@@ -80,12 +81,17 @@
     },
     controls: {
       keyboard: {
+        pan: 'Zum Verschieben',
+        zoom_keys: 'Zum Zoomen',
+        click: 'Zum Klicken am Cursor',
+        reset: 'Ansicht zurücksetzen',
         cycle_floors: '+ Scrollen zum Ebenenwechsel',
         zoom: '+ Scrollen zum Zoomen',
       },
     },
     aria: {
       zoom_speed: 'Zoomgeschwindigkeit',
+      pan_speed: 'Schwenkgeschwindigkeit',
     },
     tooltip: {
       go_to: 'Zum Ziel gehen',
@@ -748,6 +754,20 @@
         title: 'Karten',
         show_extracts: 'Extraktionen standardmäßig anzeigen',
         zoom_speed: 'Zoom-Geschwindigkeit',
+        pan_speed: 'Schwenkgeschwindigkeit',
+        colors: {
+          title: 'Kartenfarben',
+          description: 'Passe Markerfarben für bessere Lesbarkeit und Barrierefreiheit an.',
+          reset: 'Zurücksetzen',
+          self_objective: 'Dein Ziel',
+          team_objective: 'Teamziel',
+          selected: 'Angeheftetes Ziel',
+          pmc_extract: 'PMC-Extraktion',
+          scav_extract: 'Scav-Extraktion',
+          shared_extract: 'Geteilte Extraktion',
+          coop_extract: 'Ko-op-Extraktion',
+          pmc_spawn: 'PMC-Spawn',
+        },
       },
       misc: {
         title: 'Verschiedenes',

@@ -55,7 +55,8 @@
     confirm: 'Подтвердить импорт',
   },
   maps: {
-    zoom: 'Скорость зума',
+    zoom_speed: 'Скорость зума',
+    pan_speed: 'Скорость перемещения',
     not_available_title: 'Карта недоступна',
     not_available_description: 'Интерактивная карта для {mapName} пока недоступна. Мы ждём появления совместимой карты.',
     placeholder: 'этой локации',
@@ -80,12 +81,17 @@
     },
     controls: {
       keyboard: {
+        pan: 'для перемещения',
+        zoom_keys: 'для зума',
+        click: 'для клика по курсору',
+        reset: 'сброс вида',
         cycle_floors: '+ Прокрутка для смены этажей',
         zoom: '+ Прокрутка для зума',
       },
     },
     aria: {
       zoom_speed: 'Скорость зума',
+      pan_speed: 'Скорость перемещения',
     },
     tooltip: {
       go_to: 'Перейти к цели',
@@ -748,6 +754,20 @@
         title: 'Карты',
         show_extracts: 'Показывать выходы по умолчанию',
         zoom_speed: 'Скорость масштабирования',
+        pan_speed: 'Скорость перемещения',
+        colors: {
+          title: 'Цвета карты',
+          description: 'Настройте цвета маркеров для лучшей читаемости и доступности.',
+          reset: 'Сбросить',
+          self_objective: 'Ваша цель',
+          team_objective: 'Цель команды',
+          selected: 'Закрепленная цель',
+          pmc_extract: 'Выход PMC',
+          scav_extract: 'Выход Scav',
+          shared_extract: 'Общий выход',
+          coop_extract: 'Кооп выход',
+          pmc_spawn: 'Спавн PMC',
+        },
       },
       misc: {
         title: 'Разное',

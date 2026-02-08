@@ -55,7 +55,8 @@
     confirm: '确认导入',
   },
   maps: {
-    zoom: '缩放速度',
+    zoom_speed: '缩放速度',
+    pan_speed: '平移速度',
     not_available_title: '地图不可用',
     not_available_description: '"{mapName}"的互动地图尚不可用。我们正在等待兼容地图的制作。',
     placeholder: '该地点',
@@ -80,12 +81,17 @@
     },
     controls: {
       keyboard: {
+        pan: '平移视图',
+        zoom_keys: '键盘缩放',
+        click: '在光标处点击',
+        reset: '重置视图',
         cycle_floors: '+ 滚轮切换楼层',
         zoom: '+ 滚轮缩放',
       },
     },
     aria: {
       zoom_speed: '缩放速度',
+      pan_speed: '平移速度',
     },
     tooltip: {
       go_to: '前往目标',
@@ -748,6 +754,20 @@
         title: '地图',
         show_extracts: '默认显示撤离点',
         zoom_speed: '缩放速度',
+        pan_speed: '平移速度',
+        colors: {
+          title: '地图颜色',
+          description: '自定义标记颜色以提升可读性和无障碍体验。',
+          reset: '重置',
+          self_objective: '你的目标',
+          team_objective: '队伍目标',
+          selected: '已固定目标',
+          pmc_extract: 'PMC 撤离点',
+          scav_extract: 'Scav 撤离点',
+          shared_extract: '共享撤离点',
+          coop_extract: '协同撤离点',
+          pmc_spawn: 'PMC 出生点',
+        },
       },
       misc: {
         title: '杂项',
