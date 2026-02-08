@@ -122,37 +122,59 @@
           class="text-surface-300 flex flex-wrap items-center gap-4 text-xs"
         >
           <div class="flex items-center gap-1">
-            <div class="bg-extract-pmc h-3 w-3 rounded-full" />
+            <div
+              class="h-3 w-3 rounded-full border border-white/30"
+              :style="{ backgroundColor: mapColors.SELF_OBJECTIVE }"
+            />
             <span>{{ t('maps.legend.your_objectives') }}</span>
           </div>
           <div class="flex items-center gap-1">
-            <div class="bg-extract-scav h-3 w-3 rounded-full" />
+            <div
+              class="h-3 w-3 rounded-full border border-white/30"
+              :style="{ backgroundColor: mapColors.TEAM_OBJECTIVE }"
+            />
             <span>{{ t('maps.legend.team_objectives') }}</span>
           </div>
           <div v-if="showPmcSpawns && hasPmcSpawns" class="flex items-center gap-1">
-            <div class="h-3 w-3 rounded-full" :style="{ backgroundColor: MAP_COLORS.PMC_SPAWN }" />
+            <div class="h-3 w-3 rounded-full" :style="{ backgroundColor: mapColors.PMC_SPAWN }" />
             <span>{{ t('maps.legend.pmc_spawn') }}</span>
           </div>
           <div v-if="showPmcExtracts" class="flex items-center gap-1">
-            <UIcon name="i-mdi-exit-run" class="text-success-500 h-3 w-3" />
+            <UIcon
+              name="i-mdi-exit-run"
+              class="h-3 w-3"
+              :style="{ color: mapColors.PMC_EXTRACT }"
+            />
             <span>{{ t('maps.legend.pmc_extract') }}</span>
           </div>
           <div v-if="showScavExtracts" class="flex items-center gap-1">
-            <UIcon name="i-mdi-exit-run" class="text-extract-shared-primary h-3 w-3" />
+            <UIcon
+              name="i-mdi-exit-run"
+              class="h-3 w-3"
+              :style="{ color: mapColors.SCAV_EXTRACT }"
+            />
             <span>{{ t('maps.legend.scav_extract') }}</span>
           </div>
           <div
             v-if="(showPmcExtracts || showScavExtracts) && hasSharedExtracts"
             class="flex items-center gap-1"
           >
-            <UIcon name="i-mdi-exit-run" class="text-extract-shared-secondary h-3 w-3" />
+            <UIcon
+              name="i-mdi-exit-run"
+              class="h-3 w-3"
+              :style="{ color: mapColors.SHARED_EXTRACT }"
+            />
             <span>{{ t('maps.legend.shared_extract') }}</span>
           </div>
           <div
             v-if="(showPmcExtracts || showScavExtracts) && hasCoopExtracts"
             class="flex items-center gap-1"
           >
-            <UIcon name="i-mdi-exit-run" class="text-extract-shared-coop h-3 w-3" />
+            <UIcon
+              name="i-mdi-exit-run"
+              class="h-3 w-3"
+              :style="{ color: mapColors.COOP_EXTRACT }"
+            />
             <span>{{ t('maps.legend.coop_extract') }}</span>
           </div>
         </div>
@@ -188,7 +210,7 @@
     isValidMapSvgConfig,
     isValidMapTileConfig,
   } from '@/utils/mapCoordinates';
-  import { MAP_MARKER_COLORS as MAP_COLORS } from '@/utils/theme-colors';
+  import { MAP_MARKER_COLORS } from '@/utils/theme-colors';
   import type { MapExtract, MapSpawn, TarkovMap } from '@/types/tarkov';
   import type L from 'leaflet';
   interface MapZone {
@@ -229,6 +251,7 @@
   const { t } = useI18n({ useScope: 'global' });
   const router = useRouter();
   const preferencesStore = usePreferencesStore();
+  const mapColors = computed(() => preferencesStore.getMapMarkerColors);
   const clearPinnedTask = inject<(() => void) | null>('clearPinnedTask', null);
   const mapHeightStyle = computed(() => {
     if (typeof props.height !== 'number' || Number.isNaN(props.height)) return undefined;
@@ -458,16 +481,19 @@
     let currentMountedComponent: { element: HTMLElement; unmount: () => void } | null = null;
     let popupListenersAttached = false;
     const styledLayer = layer as L.CircleMarker | L.Polygon;
-    const originalFillColor = styledLayer.options?.fillColor || MAP_COLORS.SELF_OBJECTIVE;
-    const originalStrokeColor = styledLayer.options?.color || MAP_COLORS.SELF_OBJECTIVE;
+    const originalFillColor = styledLayer.options?.fillColor || mapColors.value.SELF_OBJECTIVE;
+    const originalStrokeColor = styledLayer.options?.color || mapColors.value.SELF_OBJECTIVE;
     const isCircleMarker = 'getRadius' in styledLayer;
     const setLayerSelected = (selected: boolean) => {
       if (!('setStyle' in styledLayer)) return;
       if (selected) {
         if (isCircleMarker) {
-          styledLayer.setStyle({ fillColor: MAP_COLORS.SELECTED });
+          styledLayer.setStyle({ fillColor: mapColors.value.SELECTED });
         } else {
-          styledLayer.setStyle({ color: MAP_COLORS.SELECTED, fillColor: MAP_COLORS.SELECTED });
+          styledLayer.setStyle({
+            color: mapColors.value.SELECTED,
+            fillColor: mapColors.value.SELECTED,
+          });
         }
         return;
       }
@@ -678,12 +704,14 @@
         if (!pos) return;
         const latLng = gameToLatLng(pos.x, pos.z);
         const isSelf = mark.users?.includes('self') ?? false;
-        const markerColor = isSelf ? MAP_COLORS.SELF_OBJECTIVE : MAP_COLORS.TEAM_OBJECTIVE;
+        const markerColor = isSelf
+          ? mapColors.value.SELF_OBJECTIVE
+          : mapColors.value.TEAM_OBJECTIVE;
         const marker = L.circleMarker([latLng.lat, latLng.lng], {
           radius: 8,
           fillColor: markerColor,
           fillOpacity: 0.8,
-          color: MAP_COLORS.MARKER_BORDER,
+          color: mapColors.value.MARKER_BORDER,
           weight: 2,
         });
         pointEntries.push({ marker, objectiveId });
@@ -694,7 +722,7 @@
         const latLngs = outlineToLatLngArray(zone.outline);
         if (latLngs.length < 3) return;
         const isSelf = mark.users?.includes('self') ?? false;
-        const zoneColor = isSelf ? MAP_COLORS.SELF_OBJECTIVE : MAP_COLORS.TEAM_OBJECTIVE;
+        const zoneColor = isSelf ? mapColors.value.SELF_OBJECTIVE : mapColors.value.TEAM_OBJECTIVE;
         const polygon = L.polygon(
           latLngs.map((ll) => [ll.lat, ll.lng]),
           {
@@ -750,23 +778,23 @@
       let markerColor: string;
       switch (extract.faction) {
         case 'pmc':
-          markerColor = MAP_COLORS.PMC_EXTRACT;
+          markerColor = mapColors.value.PMC_EXTRACT;
           break;
         case 'scav':
-          markerColor = MAP_COLORS.SCAV_EXTRACT;
+          markerColor = mapColors.value.SCAV_EXTRACT;
           break;
         case 'shared':
-          markerColor = isCoop ? MAP_COLORS.COOP_EXTRACT : MAP_COLORS.SHARED_EXTRACT;
+          markerColor = isCoop ? mapColors.value.COOP_EXTRACT : mapColors.value.SHARED_EXTRACT;
           break;
         default:
-          markerColor = MAP_COLORS.DEFAULT_EXTRACT;
+          markerColor = mapColors.value.DEFAULT_EXTRACT;
           break;
       }
       const extractDot = L.circleMarker([latLng.lat, latLng.lng], {
         radius: 3,
         fillColor: markerColor,
         fillOpacity: 1,
-        color: MAP_COLORS.EXTRACT_DOT_BORDER,
+        color: mapColors.value.EXTRACT_DOT_BORDER,
         weight: 1,
         opacity: 1,
         interactive: false,
@@ -812,9 +840,9 @@
         const latLng = gameToLatLng(position.x, position.z);
         const marker = L.circleMarker([latLng.lat, latLng.lng], {
           radius: 3,
-          fillColor: MAP_COLORS.PMC_SPAWN,
+          fillColor: mapColors.value.PMC_SPAWN,
           fillOpacity: 0.9,
-          color: MAP_COLORS.MARKER_BORDER,
+          color: mapColors.value.MARKER_BORDER,
           weight: 1,
           interactive: false,
         });
@@ -827,9 +855,9 @@
         if (cluster.count === 1) {
           const marker = L.circleMarker([latLng.lat, latLng.lng], {
             radius: 3,
-            fillColor: MAP_COLORS.PMC_SPAWN,
+            fillColor: mapColors.value.PMC_SPAWN,
             fillOpacity: 0.9,
-            color: MAP_COLORS.MARKER_BORDER,
+            color: mapColors.value.MARKER_BORDER,
             weight: 1,
             interactive: false,
           });
@@ -841,9 +869,9 @@
             ((clampedCount - 2) / 18) * (SPAWN_CLUSTER_MAX_RADIUS - SPAWN_CLUSTER_MIN_RADIUS);
           const marker = L.circleMarker([latLng.lat, latLng.lng], {
             radius,
-            fillColor: MAP_COLORS.PMC_SPAWN,
+            fillColor: mapColors.value.PMC_SPAWN,
             fillOpacity: 0.6,
-            color: MAP_COLORS.MARKER_BORDER,
+            color: mapColors.value.MARKER_BORDER,
             weight: 1.5,
             interactive: false,
           });
@@ -899,6 +927,14 @@
   watch(mapZoomSpeed, (speed) => {
     applyZoomSpeed(mapInstance.value, speed);
   });
+  watch(
+    mapColors,
+    () => {
+      lastMarksHash.value = '';
+      updateMarkers();
+    },
+    { deep: true }
+  );
   watch([showPmcExtracts, showScavExtracts], () => createExtractMarkers());
   watch(showPmcSpawns, () => createPmcSpawnMarkers());
   watch(
