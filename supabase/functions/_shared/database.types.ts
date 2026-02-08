@@ -311,7 +311,7 @@ export type Database = {
           items_team_hide_non_fir: boolean | null
           locale_override: string | null
           map_marker_colors: Json
-          map_pan_speed: number | null
+          map_pan_speed: number
           map_team_hide_all: boolean | null
           map_zoom_speed: number | null
           needed_items_card_style: string | null

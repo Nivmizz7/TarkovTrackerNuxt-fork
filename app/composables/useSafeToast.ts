@@ -4,7 +4,10 @@ export function useSafeToast(): ReturnType<typeof useToast> | null {
   try {
     const nuxtApp = useNuxtApp();
     if (typeof nuxtApp.runWithContext === 'function') {
-      return nuxtApp.runWithContext(() => useToast());
+      const toast = nuxtApp.runWithContext(() => useToast());
+      if (!(toast instanceof Promise)) {
+        return toast;
+      }
     }
     if (getCurrentInstance()) {
       return useToast();
