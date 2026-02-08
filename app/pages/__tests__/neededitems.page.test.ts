@@ -90,6 +90,9 @@ const setup = async (
   vi.doMock('@/composables/useInfiniteScroll', () => ({
     useInfiniteScroll: useInfiniteScrollMock,
   }));
+  vi.doMock('@/composables/useNeededItemsRouteSync', () => ({
+    useNeededItemsRouteSync: vi.fn(),
+  }));
   vi.doMock('@/composables/useSharedBreakpoints', () => ({
     useSharedBreakpoints: () => ({
       belowMd: ref(false),

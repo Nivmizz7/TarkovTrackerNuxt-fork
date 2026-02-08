@@ -14,6 +14,8 @@ const createDashboardStatsMock = (
     totalObjectives?: number;
     completedTaskItems?: number;
     totalTaskItems?: number;
+    completedHideoutItems?: number;
+    totalHideoutItems?: number;
     completedKappaTasks?: number;
     totalKappaTasks?: number;
     completedLightkeeperTasks?: number;
@@ -37,6 +39,8 @@ const createDashboardStatsMock = (
     totalObjectives = 6,
     completedTaskItems = 4,
     totalTaskItems = 8,
+    completedHideoutItems = 2,
+    totalHideoutItems = 5,
     completedKappaTasks = 1,
     totalKappaTasks = 2,
     completedLightkeeperTasks = 0,
@@ -61,6 +65,8 @@ const createDashboardStatsMock = (
     totalObjectives: computed(() => totalObjectives),
     completedTaskItems: computed(() => completedTaskItems),
     totalTaskItems: computed(() => totalTaskItems),
+    completedHideoutItems: computed(() => completedHideoutItems),
+    totalHideoutItems: computed(() => totalHideoutItems),
     completedKappaTasks: computed(() => completedKappaTasks),
     totalKappaTasks: computed(() => totalKappaTasks),
     completedLightkeeperTasks: computed(() => completedLightkeeperTasks),
@@ -162,6 +168,20 @@ describe('dashboard page', () => {
       global: { stubs: defaultGlobalStubs },
     });
     expect(wrapper.find('[data-testid="progress-card"]').exists()).toBe(true);
+  });
+  it('renders hideout item progress card values', async () => {
+    const { DashboardPage } = await setup({
+      completedHideoutItems: 77,
+      totalHideoutItems: 88,
+    });
+    const wrapper = await mountSuspended(DashboardPage, {
+      global: { stubs: defaultGlobalStubs },
+    });
+    const progressCards = wrapper.findAll('[data-testid="progress-card"]');
+    const hideoutCard = progressCards.find(
+      (card) => card.attributes('data-completed') === '77' && card.attributes('data-total') === '88'
+    );
+    expect(hideoutCard).toBeDefined();
   });
   it('renders dashboard milestone cards', async () => {
     const { DashboardPage } = await setup();

@@ -130,6 +130,7 @@
         tasks: 'Misiones',
         objectives: 'Objetivos',
         items: 'Objetos de misión',
+        hideout_items: 'Objetos del escondite',
         kappa: 'Misiones Kappa',
         lightkeeper: 'Guardafaro',
         filtered_status_active: 'Filtrado por configuración de tareas',

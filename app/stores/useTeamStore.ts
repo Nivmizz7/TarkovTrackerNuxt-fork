@@ -6,6 +6,7 @@ import { actions, defaultState, getters, type UserState } from '@/stores/progres
 import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
 import { useTarkovStore } from '@/stores/useTarkov';
 import { GAME_MODES } from '@/utils/constants';
+import { getErrorStatus } from '@/utils/errors';
 import { logger } from '@/utils/logger';
 import type { MemberProfile, TeamGetters, TeamState } from '@/types/tarkov';
 import type { RealtimeChannel } from '@supabase/supabase-js';
@@ -160,8 +161,26 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
     }
   };
   const refreshMembers = async (force = false) => {
+    if (!$supabase.user?.loggedIn || !$supabase.user?.id) {
+      teamStore.$patch((state) => {
+        state.members = [];
+        state.memberProfiles = {};
+      });
+      return;
+    }
     if (refreshInFlight) {
-      await refreshInFlight;
+      try {
+        await refreshInFlight;
+      } catch (error) {
+        const status = getErrorStatus(error);
+        if (status === 401 || status === 403) {
+          logger.debug('[TeamStore] Skipping team member refresh due auth/membership status:', {
+            status,
+          });
+          return;
+        }
+        logger.warn('[TeamStore] Failed to load team members:', error);
+      }
       return;
     }
     const now = Date.now();
@@ -188,6 +207,13 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
       })();
       await refreshInFlight;
     } catch (error) {
+      const status = getErrorStatus(error);
+      if (status === 401 || status === 403) {
+        logger.debug('[TeamStore] Skipping team member refresh due auth/membership status:', {
+          status,
+        });
+        return;
+      }
       logger.warn('[TeamStore] Failed to load team members:', error);
     } finally {
       lastMembersRefreshAt = Date.now();
@@ -310,16 +336,12 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
         return;
       }
       lastProgressSnapshot = { ...snapshot };
-      void teamChannel.value.send({
-        type: 'broadcast',
-        event: 'progress',
-        payload: {
-          userId: $supabase.user.id,
-          displayName: snapshot.displayName,
-          level: snapshot.level,
-          tasksCompleted: snapshot.tasksCompleted,
-          gameMode: snapshot.mode,
-        },
+      void teamChannel.value.httpSend('progress', {
+        userId: $supabase.user.id,
+        displayName: snapshot.displayName,
+        level: snapshot.level,
+        tasksCompleted: snapshot.tasksCompleted,
+        gameMode: snapshot.mode,
       });
       teamStore.$patch((state) => {
         state.memberProfiles = {
@@ -367,11 +389,7 @@ export function useTeamStoreWithSupabase(): TeamStoreInstance {
             return;
           }
           for (const update of pendingTaskUpdates.values()) {
-            void teamChannel.value.send({
-              type: 'broadcast',
-              event: 'task-update',
-              payload: update,
-            });
+            void teamChannel.value.httpSend('task-update', update);
           }
           pendingTaskUpdates.clear();
         }, 500);

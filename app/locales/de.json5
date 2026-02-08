@@ -130,6 +130,7 @@
         tasks: 'Aufgaben',
         objectives: 'Ziele',
         items: 'Aufgabengegenstände',
+        hideout_items: 'Versteck-Gegenstände',
         kappa: 'Kappa Aufgaben',
         lightkeeper: 'Leuchtturmwärter',
         filtered_status_active: 'Durch Aufgabenfilter eingeschränkt',

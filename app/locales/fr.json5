@@ -130,6 +130,7 @@
         tasks: 'Quêtes',
         objectives: 'Objectifs',
         items: 'Objets de quête',
+        hideout_items: 'Objets de cachette',
         kappa: 'Quêtes Kappa',
         lightkeeper: 'Lightkeeper',
         filtered_status_active: 'Filtré par les réglages de quêtes',

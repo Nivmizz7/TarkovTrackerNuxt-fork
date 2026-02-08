@@ -6,36 +6,24 @@ export default defineEventHandler(async (event) => {
   const supabaseUrl = config.supabaseUrl as string;
   const supabaseServiceKey = config.supabaseServiceKey as string;
   const supabaseAnonKey = config.supabaseAnonKey as string;
-  if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     throw createError({
       statusCode: 500,
       statusMessage:
-        '[team/members] Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_ANON_KEY must all be set',
+        '[team/members] Missing required environment variables: SUPABASE_URL and SUPABASE_ANON_KEY must both be set',
     });
   }
-  const restFetch = async (path: string, init?: RequestInit) => {
-    const url = `${supabaseUrl}/rest/v1/${path}`;
-    const headers = {
-      apikey: supabaseServiceKey,
-      Authorization: `Bearer ${supabaseServiceKey}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...(init?.headers as Record<string, string> | undefined),
-    };
-    return fetch(url, { ...init, headers });
-  };
   const teamId = (getQuery(event).teamId as string | undefined)?.trim();
   if (!teamId) {
     throw createError({ statusCode: 400, statusMessage: 'teamId is required' });
   }
+  const authHeader = getRequestHeader(event, 'authorization');
   const authContextUser = (event.context as { auth?: { user?: { id?: string } } }).auth?.user;
   let userId = authContextUser?.id || null;
   if (!userId) {
-    const authHeader = getRequestHeader(event, 'authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw createError({ statusCode: 401, statusMessage: 'Missing auth token' });
     }
-    // Validate token -> user via auth endpoint
     const authResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: {
         Authorization: authHeader,
@@ -51,7 +39,23 @@ export default defineEventHandler(async (event) => {
   if (!userId) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid token' });
   }
-  // Ensure caller is member
+  const restApiKey = supabaseServiceKey || supabaseAnonKey;
+  const restAuthorization =
+    authHeader || (supabaseServiceKey ? `Bearer ${supabaseServiceKey}` : '');
+  if (!restAuthorization) {
+    throw createError({ statusCode: 401, statusMessage: 'Missing auth token' });
+  }
+  const restFetch = async (path: string, init?: RequestInit) => {
+    const url = `${supabaseUrl}/rest/v1/${path}`;
+    const headers = {
+      apikey: restApiKey,
+      Authorization: restAuthorization,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(init?.headers as Record<string, string> | undefined),
+    };
+    return fetch(url, { ...init, headers });
+  };
   const membershipResp = await restFetch(
     `team_memberships?team_id=eq.${teamId}&user_id=eq.${userId}&select=user_id&limit=1`
   );
@@ -62,14 +66,12 @@ export default defineEventHandler(async (event) => {
   if (!membershipJson?.length) {
     throw createError({ statusCode: 403, statusMessage: 'Not a team member' });
   }
-  // Fetch all members
   const membersResp = await restFetch(`team_memberships?team_id=eq.${teamId}&select=user_id`);
   if (!membersResp.ok) {
     throw createError({ statusCode: 500, statusMessage: 'Failed to load members' });
   }
   const membersJson = (await membersResp.json()) as Array<{ user_id: string }>;
   const memberIds = membersJson.map((m) => m.user_id);
-  // Fetch display name + level snapshot using summary view (reduces egress by ~99%)
   const idsParam = memberIds.map((id) => `"${id}"`).join(',');
   const profilesResp = await restFetch(
     `team_member_summary?select=user_id,current_game_mode,pvp_display_name,pvp_level,pvp_tasks_completed,pve_display_name,pve_level,pve_tasks_completed&user_id=in.(${idsParam})`
@@ -103,7 +105,6 @@ export default defineEventHandler(async (event) => {
       };
     });
   } else {
-    // Fallback: fetch each user individually using summary view
     for (const id of memberIds) {
       const resp = await restFetch(
         `team_member_summary?select=user_id,current_game_mode,pvp_display_name,pvp_level,pvp_tasks_completed,pve_display_name,pve_level,pve_tasks_completed&user_id=eq.${id}`
