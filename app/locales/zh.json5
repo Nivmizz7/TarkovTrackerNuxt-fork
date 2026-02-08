@@ -130,6 +130,7 @@
         tasks: '任务',
         objectives: '任务目标',
         items: '任务物品',
+        hideout_items: '藏身处物品',
         kappa: 'Kappa保险箱任务',
         lightkeeper: '灯塔守护者任务',
         filtered_status_active: '已按任务设置筛选',

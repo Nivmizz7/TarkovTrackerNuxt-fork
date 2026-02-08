@@ -2,6 +2,7 @@
  * Composable for calling Supabase Edge Functions
  * Provides typed methods for common edge function operations
  */
+import { getErrorStatus } from '@/utils/errors';
 import { logger } from '@/utils/logger';
 import type { PurgeCacheResponse } from '@/types/edge';
 import type {
@@ -11,6 +12,39 @@ import type {
   LeaveTeamResponse,
 } from '@/types/team';
 type GameMode = 'pvp' | 'pve';
+const GATEWAY_OUTAGE_COOLDOWN_MS = 60_000;
+let teamGatewayOutageUntil = 0;
+const getGatewayErrorData = (error: unknown): string | undefined => {
+  if (!error || typeof error !== 'object' || !('data' in error)) {
+    return undefined;
+  }
+  const data = (error as { data?: unknown }).data;
+  if (typeof data === 'string') {
+    return data;
+  }
+  if (
+    data &&
+    typeof data === 'object' &&
+    'message' in data &&
+    typeof (data as { message?: unknown }).message === 'string'
+  ) {
+    return (data as { message: string }).message;
+  }
+  return undefined;
+};
+const isAuthOrMembershipStatus = (status: number | null): boolean =>
+  status === 401 || status === 403;
+const shouldCooldownGateway = (error: unknown): boolean => {
+  const status = getErrorStatus(error);
+  if (status !== null && status >= 500) {
+    return true;
+  }
+  const dataMessage = getGatewayErrorData(error);
+  return (
+    typeof dataMessage === 'string' &&
+    dataMessage.toLowerCase().includes('rate limiter unavailable')
+  );
+};
 export const useEdgeFunctions = () => {
   const { $supabase } = useNuxtApp();
   const runtimeConfig = useRuntimeConfig();
@@ -36,23 +70,15 @@ export const useEdgeFunctions = () => {
       throw new Error('Gateway URL not configured');
     }
     const token = await getAuthToken();
-    try {
-      const response = await $fetch<T>(`${gatewayUrl}/team/${action}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body,
-      });
-      return response as T;
-    } catch (error: unknown) {
-      // Log the full error response for debugging
-      if (error && typeof error === 'object' && 'data' in error) {
-        logger.error('[EdgeFunctions] Gateway error response:', error.data);
-      }
-      throw error;
-    }
+    const response = await $fetch<T>(`${gatewayUrl}/team/${action}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body,
+    });
+    return response as T;
   };
   const callTokenGateway = async <T>(
     action: 'revoke' | 'create',
@@ -95,33 +121,82 @@ export const useEdgeFunctions = () => {
       { displayName: string | null; level: number | null; tasksCompleted: number | null }
     >;
   }> => {
-    // Call Nuxt server route which uses service role and validates membership
+    const callTeamMembersApi = async (token: string) => {
+      return await $fetch<{
+        members: string[];
+        profiles?: Record<
+          string,
+          { displayName: string | null; level: number | null; tasksCompleted: number | null }
+        >;
+      }>(`/api/team/members`, {
+        method: 'GET',
+        query: { teamId },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    };
     const token = await getAuthToken();
-    const result = await $fetch<{
-      members: string[];
-      profiles?: Record<
-        string,
-        { displayName: string | null; level: number | null; tasksCompleted: number | null }
-      >;
-    }>(`/api/team/members`, {
-      method: 'GET',
-      query: { teamId },
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return result;
+    try {
+      const result = await callTeamMembersApi(token);
+      return result;
+    } catch (error) {
+      const status = getErrorStatus(error);
+      if (status === 401) {
+        try {
+          const { data, error: refreshError } = await $supabase.client.auth.refreshSession();
+          const refreshedToken = data?.session?.access_token;
+          if (!refreshError && refreshedToken) {
+            return await callTeamMembersApi(refreshedToken);
+          }
+        } catch (refreshSessionError) {
+          logger.debug('[EdgeFunctions] Session refresh failed during team member fetch:', {
+            refreshSessionError,
+          });
+        }
+      }
+      if (isAuthOrMembershipStatus(status)) {
+        logger.debug(
+          '[EdgeFunctions] /api/team/members auth/membership error, skipping fallback:',
+          {
+            status,
+          }
+        );
+        throw error;
+      }
+      logger.warn('[EdgeFunctions] /api/team/members failed, falling back to team-members:', error);
+      const fallback = await callSupabaseFunction<{ members: string[] }>('team-members', {
+        teamId,
+      });
+      return { members: fallback?.members || [], profiles: {} };
+    }
   };
   const preferGateway = async <T>(action: string, body: Record<string, unknown>): Promise<T> => {
     logger.debug(`[EdgeFunctions] preferGateway called with action: ${action}, body:`, body);
-    if (gatewayUrl) {
+    if (gatewayUrl && Date.now() < teamGatewayOutageUntil) {
+      logger.debug('[EdgeFunctions] Team gateway cooldown active, using Supabase fallback:', {
+        action,
+        retryInMs: teamGatewayOutageUntil - Date.now(),
+      });
+    } else if (gatewayUrl) {
       try {
         logger.debug(`[EdgeFunctions] Attempting gateway call to: ${gatewayUrl}/team/${action}`);
         const result = await callGateway<T>(action, body);
         logger.debug('[EdgeFunctions] Gateway call succeeded:', result);
         return result;
       } catch (error) {
+        const status = getErrorStatus(error);
+        const data = getGatewayErrorData(error);
+        if (shouldCooldownGateway(error)) {
+          teamGatewayOutageUntil = Date.now() + GATEWAY_OUTAGE_COOLDOWN_MS;
+        }
         logger.warn('[EdgeFunctions] Gateway failed, falling back to Supabase:', error);
+        logger.debug('[EdgeFunctions] Gateway fallback metadata:', {
+          action,
+          status,
+          data,
+          cooldownUntil: teamGatewayOutageUntil,
+        });
       }
     }
     const fnName = `team-${action}`;

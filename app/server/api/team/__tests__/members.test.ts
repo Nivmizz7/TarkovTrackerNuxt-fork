@@ -66,13 +66,36 @@ describe('Team Members API', () => {
         'Missing required environment variables'
       );
     });
-    it('should throw error when supabaseServiceKey is missing', async () => {
+    it('should allow missing supabaseServiceKey when auth header exists', async () => {
       runtimeConfig.supabaseServiceKey = '';
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
+      mockGetRequestHeader.mockImplementation((_, header: string) => {
+        if (header === 'authorization') return 'Bearer valid-token';
+        return undefined;
+      });
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => [{ user_id: 'user-123' }],
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => [{ user_id: 'user-123' }],
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => [],
+        });
       const { default: handler } = await import('../members');
-      await expect(handler(mockEvent as H3Event)).rejects.toThrow(
-        'Missing required environment variables'
-      );
+      const result = await handler(mockEvent as H3Event);
+      expect(result.members).toEqual(['user-123']);
+    });
+    it('should require auth token when supabaseServiceKey is missing', async () => {
+      runtimeConfig.supabaseServiceKey = '';
+      mockGetQuery.mockReturnValue({ teamId: 'team-456' });
+      mockGetRequestHeader.mockReturnValue(undefined);
+      const { default: handler } = await import('../members');
+      await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing auth token');
     });
     it('should throw error when supabaseAnonKey is missing', async () => {
       runtimeConfig.supabaseAnonKey = '';

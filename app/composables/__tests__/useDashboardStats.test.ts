@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Task, TaskObjective, Trader } from '@/types/tarkov';
+import { nextTick, reactive } from 'vue';
+import type {
+  NeededItemHideoutModule,
+  NeededItemTaskObjective,
+  Task,
+  TaskObjective,
+  Trader,
+} from '@/types/tarkov';
 const createTasks = (): Task[] => [
   {
     id: 'task-a',
@@ -76,6 +83,9 @@ const createTarkovStore = (
     completedTasks?: Set<string>;
     failedTasks?: Set<string>;
     completedObjectives?: Set<string>;
+    getObjectiveCount?: (objectiveId: string) => number;
+    getHideoutPartCount?: (partId: string) => number;
+    isHideoutPartComplete?: (partId: string) => boolean;
     isTaskComplete?: (taskId: string) => boolean;
     isTaskFailed?: (taskId: string) => boolean;
     isTaskObjectiveComplete?: (objectiveId: string) => boolean;
@@ -93,7 +103,9 @@ const createTarkovStore = (
     getPMCFaction: () => 'USEC',
     getGameEdition: () => 1,
     getPrestigeLevel: () => 0,
-    getObjectiveCount: () => 0,
+    getObjectiveCount: overrides.getObjectiveCount ?? (() => 0),
+    getHideoutPartCount: overrides.getHideoutPartCount ?? (() => 0),
+    isHideoutPartComplete: overrides.isHideoutPartComplete ?? (() => false),
   };
 };
 const createPreferencesStore = () => ({
@@ -105,6 +117,8 @@ type PreferencesStoreMock = ReturnType<typeof createPreferencesStore>;
 interface SetupOverrides {
   tasks?: Task[];
   objectives?: TaskObjective[];
+  neededItemTaskObjectives?: NeededItemTaskObjective[];
+  neededItemHideoutModules?: NeededItemHideoutModule[];
   traders?: Trader[];
   progressStore?: ReturnType<typeof createProgressStore>;
   tarkovStore?: ReturnType<typeof createTarkovStore>;
@@ -113,6 +127,18 @@ interface SetupOverrides {
 const setup = async (overrides: SetupOverrides = {}) => {
   const tasks = overrides.tasks ?? createTasks();
   const objectives = overrides.objectives ?? createObjectives();
+  const neededItemTaskObjectives =
+    overrides.neededItemTaskObjectives ??
+    objectives.map((objective) => ({
+      id: objective.id,
+      needType: 'taskObjective' as const,
+      taskId: objective.taskId ?? '',
+      type: objective.type,
+      item: objective.item ?? { id: objective.id, name: objective.id },
+      count: objective.count ?? 1,
+      foundInRaid: objective.foundInRaid ?? false,
+    }));
+  const neededItemHideoutModules = overrides.neededItemHideoutModules ?? [];
   const traders = overrides.traders ?? [
     { id: 'trader-1', name: 'Trader One' },
     { id: 'trader-2', name: 'Trader Two' },
@@ -123,6 +149,8 @@ const setup = async (overrides: SetupOverrides = {}) => {
     traders,
     sortedTraders: traders,
     editions: [],
+    neededItemTaskObjectives,
+    neededItemHideoutModules,
     prestigeTaskMap: new Map<string, number>(),
     getExcludedTaskIdsForEdition: () => new Set<string>(),
   };
@@ -268,6 +296,205 @@ describe('useDashboardStats', () => {
     expect(traderStat).toBeUndefined();
     // Verify empty traderStats when all tasks are invalid
     expect(dashboardStats.traderStats.value).toEqual([]);
+  });
+  it('uses needed-item objectives as the dashboard item source and stays reactive', async () => {
+    const objectiveCounts = reactive<Record<string, number>>({
+      'obj-a': 0,
+      'obj-hidden': 5,
+    });
+    const objectives: TaskObjective[] = [
+      {
+        id: 'obj-a',
+        taskId: 'task-a',
+        type: 'giveItem',
+        count: 2,
+        item: { id: 'item-a', name: 'Item A' },
+      },
+      {
+        id: 'obj-hidden',
+        taskId: 'task-a',
+        type: 'giveItem',
+        count: 5,
+        item: { id: 'item-hidden', name: 'Item Hidden' },
+      },
+    ];
+    const neededItemTaskObjectives: NeededItemTaskObjective[] = [
+      {
+        id: 'obj-a',
+        needType: 'taskObjective',
+        taskId: 'task-a',
+        type: 'giveItem',
+        item: { id: 'item-a', name: 'Item A' },
+        count: 2,
+        foundInRaid: false,
+      },
+    ];
+    const { dashboardStats } = await setup({
+      objectives,
+      neededItemTaskObjectives,
+      progressStore: {
+        invalidTasks: {},
+        objectiveCompletions: {},
+      },
+      tarkovStore: createTarkovStore({
+        completedTasks: new Set(),
+        failedTasks: new Set(),
+        completedObjectives: new Set(),
+        getObjectiveCount: (objectiveId: string) => objectiveCounts[objectiveId] ?? 0,
+      }),
+    });
+    expect(dashboardStats.totalTaskItems.value).toBe(2);
+    expect(dashboardStats.completedTaskItems.value).toBe(0);
+    objectiveCounts['obj-a'] = 1;
+    await nextTick();
+    expect(dashboardStats.completedTaskItems.value).toBe(1);
+    objectiveCounts['obj-a'] = 2;
+    await nextTick();
+    expect(dashboardStats.completedTaskItems.value).toBe(2);
+  });
+  it('mirrors needed-items merged task item counting for duplicate objective entries', async () => {
+    const objectiveCounts = reactive<Record<string, number>>({
+      'obj-a': 0,
+      'obj-b': 0,
+    });
+    const neededItemTaskObjectives: NeededItemTaskObjective[] = [
+      {
+        id: 'obj-a',
+        needType: 'taskObjective',
+        taskId: 'task-a',
+        type: 'giveItem',
+        item: { id: 'item-shared', name: 'Shared Item' },
+        count: 1,
+        foundInRaid: false,
+      },
+      {
+        id: 'obj-b',
+        needType: 'taskObjective',
+        taskId: 'task-a',
+        type: 'giveItem',
+        item: { id: 'item-shared', name: 'Shared Item' },
+        count: 1,
+        foundInRaid: false,
+      },
+    ];
+    const { dashboardStats } = await setup({
+      neededItemTaskObjectives,
+      progressStore: {
+        invalidTasks: {},
+        objectiveCompletions: {},
+      },
+      tarkovStore: createTarkovStore({
+        completedTasks: new Set(),
+        failedTasks: new Set(),
+        completedObjectives: new Set(),
+        getObjectiveCount: (objectiveId: string) => objectiveCounts[objectiveId] ?? 0,
+      }),
+    });
+    expect(dashboardStats.totalTaskItems.value).toBe(2);
+    expect(dashboardStats.completedTaskItems.value).toBe(0);
+    objectiveCounts['obj-a'] = 2;
+    await nextTick();
+    expect(dashboardStats.completedTaskItems.value).toBe(2);
+    objectiveCounts['obj-a'] = 1;
+    await nextTick();
+    expect(dashboardStats.completedTaskItems.value).toBe(1);
+  });
+  it('mirrors needed-items merged task item counting when duplicate progress comes from obj-b', async () => {
+    const objectiveCounts = reactive<Record<string, number>>({
+      'obj-a': 0,
+      'obj-b': 0,
+    });
+    const neededItemTaskObjectives: NeededItemTaskObjective[] = [
+      {
+        id: 'obj-a',
+        needType: 'taskObjective',
+        taskId: 'task-a',
+        type: 'giveItem',
+        item: { id: 'item-shared', name: 'Shared Item' },
+        count: 1,
+        foundInRaid: false,
+      },
+      {
+        id: 'obj-b',
+        needType: 'taskObjective',
+        taskId: 'task-a',
+        type: 'giveItem',
+        item: { id: 'item-shared', name: 'Shared Item' },
+        count: 1,
+        foundInRaid: false,
+      },
+    ];
+    const { dashboardStats } = await setup({
+      neededItemTaskObjectives,
+      progressStore: {
+        invalidTasks: {},
+        objectiveCompletions: {},
+      },
+      tarkovStore: createTarkovStore({
+        completedTasks: new Set(),
+        failedTasks: new Set(),
+        completedObjectives: new Set(),
+        getObjectiveCount: (objectiveId: string) => objectiveCounts[objectiveId] ?? 0,
+      }),
+    });
+    expect(dashboardStats.totalTaskItems.value).toBe(2);
+    expect(dashboardStats.completedTaskItems.value).toBe(0);
+    objectiveCounts['obj-b'] = 2;
+    await nextTick();
+    expect(dashboardStats.completedTaskItems.value).toBe(2);
+    objectiveCounts['obj-b'] = 1;
+    await nextTick();
+    expect(dashboardStats.completedTaskItems.value).toBe(1);
+  });
+  it('tracks hideout needed items and reacts to count changes', async () => {
+    const hideoutCounts = reactive<Record<string, number>>({
+      'hideout-req-a': 0,
+    });
+    const neededItemHideoutModules: NeededItemHideoutModule[] = [
+      {
+        id: 'hideout-req-a',
+        needType: 'hideoutModule',
+        hideoutModule: {
+          id: 'hideout-module-a',
+          stationId: 'station-a',
+          level: 1,
+          constructionTime: 0,
+          itemRequirements: [],
+          stationLevelRequirements: [],
+          skillRequirements: [],
+          traderRequirements: [],
+          crafts: [],
+          predecessors: [],
+          successors: [],
+          parents: [],
+          children: [],
+        },
+        item: { id: 'hideout-item-a', name: 'Hideout Item A' },
+        count: 4,
+        foundInRaid: false,
+      },
+    ];
+    const { dashboardStats } = await setup({
+      neededItemHideoutModules,
+      progressStore: {
+        invalidTasks: {},
+        objectiveCompletions: {},
+      },
+      tarkovStore: createTarkovStore({
+        completedTasks: new Set(),
+        failedTasks: new Set(),
+        completedObjectives: new Set(),
+        getHideoutPartCount: (partId: string) => hideoutCounts[partId] ?? 0,
+      }),
+    });
+    expect(dashboardStats.totalHideoutItems.value).toBe(4);
+    expect(dashboardStats.completedHideoutItems.value).toBe(0);
+    hideoutCounts['hideout-req-a'] = 2;
+    await nextTick();
+    expect(dashboardStats.completedHideoutItems.value).toBe(2);
+    hideoutCounts['hideout-req-a'] = 4;
+    await nextTick();
+    expect(dashboardStats.completedHideoutItems.value).toBe(4);
   });
   it('excludes tasks without assigned traders from traderStats but counts in totals', async () => {
     const tasks: Task[] = [

@@ -130,6 +130,7 @@
         tasks: 'Tasks',
         objectives: 'Objectives',
         items: 'Task Items',
+        hideout_items: 'Hideout Items',
         kappa: 'Kappa Tasks',
         lightkeeper: 'Lightkeeper',
         filtered_status_active: 'Filtered by task settings',

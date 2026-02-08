@@ -52,15 +52,6 @@
           class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
         >
           <DashboardProgressCard
-            icon="i-mdi-chart-box-outline"
-            :label="$t('page.dashboard.hero.overall')"
-            :completed="overallCompleted"
-            :total="overallTotal"
-            :percentage="overallPercentageNum"
-            color="primary"
-            @click="router.push('/tasks')"
-          />
-          <DashboardProgressCard
             icon="i-mdi-checkbox-marked-circle-outline"
             :label="$t('page.dashboard.progress.tasks')"
             :completed="dashboardStats.completedTasks.value"
@@ -85,7 +76,16 @@
             :total="dashboardStats.totalTaskItems.value"
             :percentage="totalTaskItemsPercentageNum"
             color="success"
-            @click="router.push('/needed-items')"
+            @click="router.push({ path: '/needed-items', query: { type: 'tasks' } })"
+          />
+          <DashboardProgressCard
+            icon="i-mdi-home-city-outline"
+            :label="$t('page.dashboard.progress.hideout_items')"
+            :completed="dashboardStats.completedHideoutItems.value"
+            :total="dashboardStats.totalHideoutItems.value"
+            :percentage="totalHideoutItemsPercentageNum"
+            color="neutral"
+            @click="router.push({ path: '/needed-items', query: { type: 'hideout' } })"
           />
           <DashboardProgressCard
             icon="i-mdi-trophy"
@@ -247,6 +247,12 @@
       dashboardStats.totalTaskItems.value
     )
   );
+  const totalHideoutItemsPercentageNum = computed(() =>
+    calculatePercentageNum(
+      dashboardStats.completedHideoutItems.value,
+      dashboardStats.totalHideoutItems.value
+    )
+  );
   const totalKappaTasksPercentageNum = computed(() =>
     calculatePercentageNum(
       dashboardStats.completedKappaTasks.value,
@@ -258,20 +264,5 @@
       dashboardStats.completedLightkeeperTasks.value,
       dashboardStats.totalLightkeeperTasks.value
     )
-  );
-  const overallCompleted = computed(
-    () =>
-      dashboardStats.completedTasks.value +
-      dashboardStats.completedObjectives.value +
-      dashboardStats.completedTaskItems.value
-  );
-  const overallTotal = computed(
-    () =>
-      dashboardStats.totalTasks.value +
-      dashboardStats.totalObjectives.value +
-      dashboardStats.totalTaskItems.value
-  );
-  const overallPercentageNum = computed(() =>
-    calculatePercentageNum(overallCompleted.value, overallTotal.value)
   );
 </script>

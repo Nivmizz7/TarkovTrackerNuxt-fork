@@ -1,6 +1,9 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import type { ProgressCardColor } from '@/features/dashboard/progressCard';
+vi.mock('@/utils/formatters', () => ({
+  useLocaleNumberFormatter: () => (value: number) => value.toLocaleString('en-US'),
+}));
 const colorVariants: Array<{ color: ProgressCardColor; barClass: string }> = [
   { color: 'primary', barClass: 'bg-primary-500/60' },
   { color: 'neutral', barClass: 'bg-surface-400/60' },
@@ -59,6 +62,14 @@ describe('DashboardProgressCard', () => {
     expect(progressbar.attributes('aria-valuemax')).toBe('100');
     await wrapper.trigger('click');
     expect(wrapper.emitted('click')).toHaveLength(1);
+  });
+  it('formats large counts with locale separators', async () => {
+    const completed = 75007;
+    const total = 15648395;
+    const wrapper = await mountWithProps({ completed, total });
+    expect(wrapper.text()).toContain(
+      `${completed.toLocaleString('en-US')}/${total.toLocaleString('en-US')}`
+    );
   });
   it('renders aria-valuenow as 0 when percentage is 0', async () => {
     const wrapper = await mountWithProps({ completed: 0, total: 10, percentage: 0 });

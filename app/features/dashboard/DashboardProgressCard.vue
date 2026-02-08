@@ -25,7 +25,7 @@
           <div class="text-surface-400 text-xs font-medium tracking-wider uppercase">
             {{ label }}
           </div>
-          <div class="text-xl font-bold text-white">{{ completed }}/{{ total }}</div>
+          <div class="text-xl font-bold text-white">{{ completedDisplay }}/{{ totalDisplay }}</div>
         </div>
       </div>
       <div class="text-3xl font-bold" :class="percentageColorClass">{{ percentageDisplay }}%</div>
@@ -45,6 +45,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useLocaleNumberFormatter } from '@/utils/formatters';
   import type { ProgressCardColor } from '@/features/dashboard/progressCard';
   const props = defineProps<{
     icon: string;
@@ -57,6 +58,7 @@
   defineEmits<{
     click: [];
   }>();
+  const formatNumber = useLocaleNumberFormatter();
   // Normalize the label to avoid awkward fallback phrases
   const normalizedLabel = computed(() => {
     const trimmed = props.label.trim();
@@ -118,4 +120,6 @@
   const percentageColorClass = computed(() => colorClasses[props.color].percentage);
   const barGradientClass = computed(() => colorClasses[props.color].bar);
   const percentageDisplay = computed(() => props.percentage.toFixed(2));
+  const completedDisplay = computed(() => formatNumber(props.completed));
+  const totalDisplay = computed(() => formatNumber(props.total));
 </script>

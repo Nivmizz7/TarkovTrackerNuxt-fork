@@ -1,3 +1,4 @@
+import { getNeededItemId } from '@/features/neededitems/neededItemFilters';
 import { useMetadataStore } from '@/stores/useMetadata';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
@@ -6,7 +7,12 @@ import { CURRENCY_ITEM_IDS } from '@/utils/constants';
 import { isTaskAvailableForEdition as checkTaskEdition } from '@/utils/editionHelpers';
 import { buildTaskTypeFilterOptions, filterTasksByTypeSettings } from '@/utils/taskTypeFilters';
 import type { ComputedRef } from '#imports';
-import type { TaskObjective, Trader } from '@/types/tarkov';
+import type {
+  NeededItemHideoutModule,
+  NeededItemTaskObjective,
+  Task,
+  Trader,
+} from '@/types/tarkov';
 export type TraderStats = {
   id: Trader['id'];
   name: Trader['name'];
@@ -17,6 +23,7 @@ export type TraderStats = {
   completedTasks: number;
   percentage: number;
 };
+type MergedNeededTaskObjective = NeededItemTaskObjective & { objectiveIds: string[] };
 export function useDashboardStats(): {
   availableTasksCount: ComputedRef<number>;
   failedTasksCount: ComputedRef<number>;
@@ -26,6 +33,8 @@ export function useDashboardStats(): {
   completedTasks: ComputedRef<number>;
   completedTaskItems: ComputedRef<number>;
   totalTaskItems: ComputedRef<number>;
+  completedHideoutItems: ComputedRef<number>;
+  totalHideoutItems: ComputedRef<number>;
   totalKappaTasks: ComputedRef<number>;
   completedKappaTasks: ComputedRef<number>;
   totalLightkeeperTasks: ComputedRef<number>;
@@ -67,21 +76,59 @@ export function useDashboardStats(): {
     return metadataStore.tasks.filter((t) => tarkovStore.isTaskFailed(t.id)).length;
   });
   // Needed item task objectives (memoized)
-  const neededItemTaskObjectives = computed(() => {
-    if (!metadataStore.objectives) return [];
-    const itemObjectiveTypes = [
-      'giveItem',
-      'findItem',
-      'findQuestItem',
-      'giveQuestItem',
-      'plantQuestItem',
-      'plantItem',
-      'buildWeapon',
-    ];
-    return metadataStore.objectives.filter(
-      (obj) => obj && obj.type && itemObjectiveTypes.includes(obj.type)
-    );
+  const neededItemTaskObjectives = computed<NeededItemTaskObjective[]>(
+    () => metadataStore.neededItemTaskObjectives ?? []
+  );
+  const mergedNeededTaskItems = computed<MergedNeededTaskObjective[]>(() => {
+    if (!neededItemTaskObjectives.value.length) return [];
+    const merged = new Map<string, MergedNeededTaskObjective>();
+    for (const objective of neededItemTaskObjectives.value) {
+      if (!objective?.taskId || !objective.id) continue;
+      if (!isObjectiveRelevant(objective)) continue;
+      const itemId = getNeededItemId(objective);
+      if (!itemId) continue;
+      const key = `${objective.taskId}:${itemId}`;
+      const normalizedCount = objective.count || 1;
+      const existing = merged.get(key);
+      if (existing) {
+        merged.set(key, {
+          ...existing,
+          count: (existing.count || 1) + normalizedCount,
+          objectiveIds: existing.objectiveIds.includes(objective.id)
+            ? existing.objectiveIds
+            : [...existing.objectiveIds, objective.id],
+        });
+      } else {
+        merged.set(key, { ...objective, count: normalizedCount, objectiveIds: [objective.id] });
+      }
+    }
+    return Array.from(merged.values());
   });
+  const neededItemHideoutModules = computed<NeededItemHideoutModule[]>(
+    () => metadataStore.neededItemHideoutModules ?? []
+  );
+  const mergedNeededHideoutItems = computed<NeededItemHideoutModule[]>(() => {
+    if (!neededItemHideoutModules.value.length) return [];
+    const merged = new Map<string, NeededItemHideoutModule>();
+    for (const requirement of neededItemHideoutModules.value) {
+      const moduleId = requirement?.hideoutModule?.id;
+      if (!requirement?.id || !moduleId) continue;
+      const itemId = getNeededItemId(requirement);
+      if (!itemId) continue;
+      const key = `${moduleId}:${itemId}`;
+      const normalizedCount = requirement.count || 1;
+      const existing = merged.get(key);
+      if (existing) {
+        merged.set(key, { ...existing, count: (existing.count || 1) + normalizedCount });
+      } else {
+        merged.set(key, { ...requirement, count: normalizedCount });
+      }
+    }
+    return Array.from(merged.values());
+  });
+  const taskById = computed(
+    () => new Map((metadataStore.tasks ?? []).map((task) => [task.id, task]))
+  );
   // Total tasks count - includes completed tasks, excludes failed and invalid tasks
   const totalTasks = computed(() => {
     return relevantTasks.value.filter((task) => {
@@ -130,18 +177,21 @@ export function useDashboardStats(): {
     return relevantTasks.value.filter((task) => isTaskSuccessful(task.id)).length;
   });
   // Helper to check if objective is relevant for current faction and edition
-  const isObjectiveRelevant = (objective: TaskObjective | null | undefined) => {
+  const isObjectiveRelevant = (
+    objective: Pick<NeededItemTaskObjective, 'item' | 'markerItem' | 'taskId'> | null | undefined
+  ) => {
     if (!objective) return false;
-    const primaryItem = objective.item ?? objective.items?.[0];
+    const primaryItem = objective.item ?? objective.markerItem;
     if (
       primaryItem &&
       CURRENCY_ITEM_IDS.includes(primaryItem.id as (typeof CURRENCY_ITEM_IDS)[number])
     ) {
       return false;
     }
-    const relatedTask = metadataStore.tasks?.find(
-      (task) => task && objective.taskId && task.id === objective.taskId
-    );
+    const relatedTask = (objective.taskId ? taskById.value.get(objective.taskId) : null) as
+      | Task
+      | null
+      | undefined;
     if (!relatedTask) return false;
     // Exclude objectives from tasks not available for user's edition
     if (!isTaskAvailableForEdition(relatedTask.id)) return false;
@@ -158,45 +208,69 @@ export function useDashboardStats(): {
   };
   // Completed task items count
   const completedTaskItems = computed(() => {
-    if (
-      !neededItemTaskObjectives.value ||
-      !metadataStore.tasks ||
-      !progressStore.tasksCompletions ||
-      !progressStore.objectiveCompletions ||
-      !tarkovStore
-    ) {
+    if (!mergedNeededTaskItems.value.length || !metadataStore.tasks || !tarkovStore) {
       return 0;
     }
     let total = 0;
-    neededItemTaskObjectives.value.forEach((objective) => {
-      if (!isObjectiveRelevant(objective)) return;
+    mergedNeededTaskItems.value.forEach((objective) => {
       if (!objective.id || !objective.taskId) return;
-      const objectiveCompletion = progressStore.objectiveCompletions[objective.id];
+      const requiredCount = objective.count || 1;
+      const maxObjectiveCount = objective.objectiveIds.reduce(
+        (currentMax, objectiveId) =>
+          Math.max(currentMax, tarkovStore.getObjectiveCount(objectiveId)),
+        0
+      );
+      const currentCount = Math.min(requiredCount, maxObjectiveCount);
+      const hasCompletedObjective = objective.objectiveIds.some((objectiveId) =>
+        tarkovStore.isTaskObjectiveComplete(objectiveId)
+      );
       if (
         isTaskSuccessful(objective.taskId) ||
-        (objectiveCompletion && objectiveCompletion['self']) ||
-        (objective.count &&
-          objective.id &&
-          objective.count <= tarkovStore.getObjectiveCount(objective.id))
+        hasCompletedObjective ||
+        requiredCount <= currentCount
       ) {
-        total += objective.count || 1;
+        total += requiredCount;
       } else {
-        if (objective.id) {
-          total += tarkovStore.getObjectiveCount(objective.id);
-        }
+        total += currentCount;
       }
     });
     return total;
   });
   // Total task items count
   const totalTaskItems = computed(() => {
-    if (!metadataStore.objectives || !metadataStore.tasks || !tarkovStore) {
+    if (!mergedNeededTaskItems.value.length || !metadataStore.tasks || !tarkovStore) {
       return 0;
     }
-    return neededItemTaskObjectives.value.reduce((total, objective) => {
-      if (!isObjectiveRelevant(objective)) return total;
-      return total + (objective.count || 1);
-    }, 0);
+    return mergedNeededTaskItems.value.reduce(
+      (total, objective) => total + (objective.count || 1),
+      0
+    );
+  });
+  const completedHideoutItems = computed(() => {
+    if (!mergedNeededHideoutItems.value.length || !tarkovStore) {
+      return 0;
+    }
+    let total = 0;
+    mergedNeededHideoutItems.value.forEach((requirement) => {
+      if (!requirement.id) return;
+      const requiredCount = requirement.count || 1;
+      const currentCount = Math.min(requiredCount, tarkovStore.getHideoutPartCount(requirement.id));
+      if (tarkovStore.isHideoutPartComplete(requirement.id) || requiredCount <= currentCount) {
+        total += requiredCount;
+      } else {
+        total += currentCount;
+      }
+    });
+    return total;
+  });
+  const totalHideoutItems = computed(() => {
+    if (!mergedNeededHideoutItems.value.length) {
+      return 0;
+    }
+    return mergedNeededHideoutItems.value.reduce(
+      (total, requirement) => total + (requirement.count || 1),
+      0
+    );
   });
   // Total Kappa tasks count - includes completed, excludes failed and invalid
   const totalKappaTasks = computed(() => {
@@ -269,6 +343,8 @@ export function useDashboardStats(): {
     completedTasks,
     completedTaskItems,
     totalTaskItems,
+    completedHideoutItems,
+    totalHideoutItems,
     totalKappaTasks,
     completedKappaTasks,
     totalLightkeeperTasks,

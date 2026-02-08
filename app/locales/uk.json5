@@ -130,6 +130,7 @@
         tasks: 'Завдання',
         objectives: 'Цілі',
         items: 'Предмети завдань',
+        hideout_items: 'Предмети схованки',
         kappa: 'Завдання Каппа',
         lightkeeper: 'Наглядач маяка',
         filtered_status_active: 'Відфільтровано налаштуваннями завдань',

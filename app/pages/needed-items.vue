@@ -165,6 +165,7 @@
     itemsError,
     ensureNeededItemsData,
   } = useNeededItems({ search, t });
+  useNeededItemsRouteSync({ activeFilter });
   onMounted(() => {
     ensureNeededItemsData();
   });
