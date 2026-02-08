@@ -1,7 +1,13 @@
-import { debounce } from '@/utils/debounce';
+import { debounce, isDebounceRejection } from '@/utils/debounce';
 import { logger } from '@/utils/logger';
 import type { Store } from 'pinia';
 import type { UserProgressData } from '~/stores/progressState';
+type SupabaseErrorLike = {
+  code?: string | null;
+  message?: string | null;
+  details?: string | null;
+  hint?: string | null;
+};
 export interface SupabaseSyncConfig {
   store: Store;
   table: string;
@@ -27,6 +33,56 @@ function hashState(obj: unknown): string {
     hash = hash & hash; // Convert to 32bit integer
   }
   return hash.toString(36);
+}
+function getMissingColumnName(error: SupabaseErrorLike): string | null {
+  const combined = `${error.message ?? ''} ${error.details ?? ''} ${error.hint ?? ''}`;
+  const schemaCacheMatch = combined.match(/could not find the ['"]([^'"]+)['"] column/i);
+  if (schemaCacheMatch?.[1]) return schemaCacheMatch[1];
+  const quotedColumnMatch = combined.match(/column ['"]([^'"]+)['"] does not exist/i);
+  if (quotedColumnMatch?.[1]) return quotedColumnMatch[1];
+  const bareColumnMatch = combined.match(/column\s+([a-zA-Z0-9_]+)\s+does not exist/i);
+  if (bareColumnMatch?.[1]) return bareColumnMatch[1];
+  return null;
+}
+function isMissingColumnError(error: SupabaseErrorLike): boolean {
+  if (error.code === 'PGRST204') return true;
+  const combined =
+    `${error.message ?? ''} ${error.details ?? ''} ${error.hint ?? ''}`.toLowerCase();
+  return combined.includes('column') && combined.includes('does not exist');
+}
+function getFallbackPreferencesPayload(
+  payload: Record<string, unknown>,
+  missingColumn: string
+): Record<string, unknown> | null {
+  if (missingColumn in payload) {
+    const missingValue = payload[missingColumn];
+    const fallbackPayload = Object.fromEntries(
+      Object.entries(payload).filter(([key]) => key !== missingColumn)
+    );
+    if (
+      missingColumn === 'only_tasks_with_required_keys' &&
+      !('only_tasks_with_suggested_keys' in fallbackPayload)
+    ) {
+      fallbackPayload.only_tasks_with_suggested_keys = missingValue;
+    }
+    return fallbackPayload;
+  }
+  if (missingColumn === 'only_tasks_with_required_keys') {
+    const { only_tasks_with_required_keys: missingValue, ...fallbackPayload } = payload;
+    if (typeof missingValue === 'boolean') {
+      fallbackPayload.only_tasks_with_suggested_keys = missingValue;
+      return fallbackPayload;
+    }
+  }
+  return null;
+}
+function formatSupabaseError(error: SupabaseErrorLike) {
+  return {
+    code: error.code ?? null,
+    details: error.details ?? null,
+    hint: error.hint ?? null,
+    message: error.message ?? null,
+  };
 }
 export function useSupabaseSync({
   store,
@@ -90,11 +146,35 @@ export function useSupabaseSync({
           logger.debug('[Sync] About to upsert to', table);
         }
       }
-      const { error } = await $supabase.client.from(table).upsert(dataToSave);
-      if (error) {
-        logger.error(`[Sync] Error syncing to ${table}:`, error);
-      } else {
-        lastSyncedHash = currentHash; // Update hash on successful sync
+      const upsert = async (payload: Record<string, unknown>) =>
+        $supabase.client.from(table).upsert(payload);
+      const { error } = await upsert(dataToSave);
+      let synced = !error;
+      if (!synced && error && table === 'user_preferences' && isMissingColumnError(error)) {
+        const missingColumn = getMissingColumnName(error);
+        if (missingColumn) {
+          const fallbackPayload = getFallbackPreferencesPayload(dataToSave, missingColumn);
+          if (fallbackPayload) {
+            const { error: fallbackError } = await upsert(fallbackPayload);
+            if (fallbackError) {
+              logger.error(
+                `[Sync] Fallback sync failed for ${table}:`,
+                formatSupabaseError(fallbackError)
+              );
+            } else {
+              synced = true;
+              logger.warn(
+                `[Sync] ${table} fallback sync succeeded after removing missing column '${missingColumn}'`
+              );
+            }
+          }
+        }
+      }
+      if (!synced && error) {
+        logger.error(`[Sync] Error syncing to ${table}:`, formatSupabaseError(error));
+      }
+      if (synced) {
+        lastSyncedHash = currentHash;
         logger.debug(`[Sync] ✅ Successfully synced to ${table}`);
       }
     } catch (err) {
@@ -129,7 +209,10 @@ export function useSupabaseSync({
     (newState) => {
       logger.debug(`[Sync] Store state changed for ${table}, triggering debounced sync`);
       const clonedState = snapshotState(newState);
-      debouncedSync(clonedState);
+      void debouncedSync(clonedState).catch((error) => {
+        if (isDebounceRejection(error)) return;
+        logger.error(`[Sync] Debounced sync failed for ${table}:`, error);
+      });
     },
     { deep: true }
   );

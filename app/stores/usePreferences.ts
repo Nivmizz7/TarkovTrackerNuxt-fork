@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import 'pinia-plugin-persistedstate';
 import { useSupabaseSync } from '@/composables/supabase/useSupabaseSync';
 import { pinia as pluginPinia } from '@/plugins/01.pinia.client';
+import { SKILL_SORT_MODES, type SkillSortMode } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 import { normalizeSecondaryView, normalizeSortMode } from '@/utils/taskFilterNormalization';
@@ -11,7 +12,21 @@ import type {
 } from '@/features/neededitems/neededitems-constants';
 import type { TaskPrimaryView, TaskSecondaryView } from '@/types/taskFilter';
 import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
-import type { SkillSortMode } from '@/utils/constants';
+const NEEDED_ITEMS_CARD_STYLES = ['compact', 'expanded'] as const;
+const NEEDED_ITEMS_SORT_DIRECTIONS = ['asc', 'desc'] as const;
+const NEEDED_ITEMS_SORT_FIELDS = ['priority', 'name', 'category', 'count'] as const;
+function normalizeNeededItemsCardStyle(value: PreferencesState['neededItemsCardStyle']) {
+  return value && NEEDED_ITEMS_CARD_STYLES.includes(value) ? value : null;
+}
+function normalizeNeededItemsSortBy(value: PreferencesState['neededItemsSortBy']) {
+  return value && NEEDED_ITEMS_SORT_FIELDS.includes(value) ? value : null;
+}
+function normalizeNeededItemsSortDirection(value: PreferencesState['neededItemsSortDirection']) {
+  return value && NEEDED_ITEMS_SORT_DIRECTIONS.includes(value) ? value : null;
+}
+function normalizeSkillSortMode(value: PreferencesState['skillSortMode']) {
+  return value && SKILL_SORT_MODES.includes(value) ? value : null;
+}
 export type TaskFilterSettings = {
   taskPrimaryView: TaskPrimaryView | null;
   taskMapView: string | null;
@@ -832,7 +847,9 @@ if (shouldInitPreferencesWatchers) {
                       hide_non_kappa_tasks: preferencesState.hideNonKappaTasks,
                       show_non_special_tasks: preferencesState.showNonSpecialTasks,
                       show_lightkeeper_tasks: preferencesState.showLightkeeperTasks,
-                      only_tasks_with_required_keys: preferencesState.onlyTasksWithRequiredKeys,
+                      only_tasks_with_required_keys: Boolean(
+                        preferencesState.onlyTasksWithRequiredKeys
+                      ),
                       respect_task_filters_for_impact: preferencesState.respectTaskFiltersForImpact,
                       show_required_labels: preferencesState.showRequiredLabels,
                       show_experience_rewards: preferencesState.showExperienceRewards,
@@ -859,14 +876,27 @@ if (shouldInitPreferencesWatchers) {
                       show_failed_filter: preferencesState.showFailedFilter,
                       use_automatic_level_calculation:
                         preferencesState.useAutomaticLevelCalculation,
-                      needed_items_sort_by: preferencesState.neededItemsSortBy,
-                      needed_items_sort_direction: preferencesState.neededItemsSortDirection,
+                      needed_items_sort_by: normalizeNeededItemsSortBy(
+                        preferencesState.neededItemsSortBy
+                      ),
+                      needed_items_sort_direction: normalizeNeededItemsSortDirection(
+                        preferencesState.neededItemsSortDirection
+                      ),
                       needed_items_hide_owned: preferencesState.neededItemsHideOwned,
-                      needed_items_card_style: preferencesState.neededItemsCardStyle,
+                      needed_items_card_style: normalizeNeededItemsCardStyle(
+                        preferencesState.neededItemsCardStyle
+                      ),
                       map_zoom_speed: preferencesState.mapZoomSpeed,
-                      pinned_task_ids: preferencesState.pinnedTaskIds,
-                      task_filter_presets: preferencesState.taskFilterPresets,
-                      skill_sort_mode: preferencesState.skillSortMode,
+                      pinned_task_ids: Array.isArray(preferencesState.pinnedTaskIds)
+                        ? preferencesState.pinnedTaskIds.filter(
+                            (taskId): taskId is string =>
+                              typeof taskId === 'string' && taskId.length > 0
+                          )
+                        : [],
+                      task_filter_presets: Array.isArray(preferencesState.taskFilterPresets)
+                        ? preferencesState.taskFilterPresets
+                        : [],
+                      skill_sort_mode: normalizeSkillSortMode(preferencesState.skillSortMode),
                     };
                   },
                 });
