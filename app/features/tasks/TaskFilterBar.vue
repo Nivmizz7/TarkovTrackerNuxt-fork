@@ -69,6 +69,21 @@
             {{ t('page.tasks.primary_views.maps').toUpperCase() }}
           </span>
         </UButton>
+        <UButton
+          variant="ghost"
+          color="neutral"
+          size="sm"
+          :aria-label="t('page.tasks.primary_views.graph')"
+          :aria-pressed="primaryView === 'graph'"
+          :class="primaryView === 'graph' ? 'bg-white/10 text-white' : 'text-surface-200'"
+          class="hidden lg:inline-flex"
+          @click="setPrimaryView('graph')"
+        >
+          <UIcon name="i-mdi-graph-outline" class="h-4 w-4 sm:mr-1.5" />
+          <span class="hidden text-xs sm:inline">
+            {{ t('page.tasks.primary_views.graph').toUpperCase() }}
+          </span>
+        </UButton>
       </div>
       <div class="flex shrink-0 items-center gap-2">
         <SelectMenuFixed
@@ -318,7 +333,7 @@
         </div>
       </div>
       <div
-        v-if="primaryView === 'traders' && traders.length > 0"
+        v-if="(primaryView === 'traders' || primaryView === 'graph') && traders.length > 0"
         class="scrollbar-none w-full overflow-x-auto [-webkit-overflow-scrolling:touch]"
       >
         <div
@@ -503,6 +518,17 @@
   });
   // Primary view (all / maps / traders)
   const primaryView = computed(() => preferencesStore.getTaskPrimaryView);
+  const ensureSelectedTrader = (visibleTraders: Array<{ id: string }>) => {
+    if (!visibleTraders.length) return;
+    const hasSelectedTrader = visibleTraders.some(
+      (trader) => trader.id === preferencesStore.getTaskTraderView
+    );
+    if (hasSelectedTrader) return;
+    const firstTrader = visibleTraders[0];
+    if (firstTrader?.id) {
+      preferencesStore.setTaskTraderView(firstTrader.id);
+    }
+  };
   const setPrimaryView = (view: string) => {
     preferencesStore.setTaskPrimaryView(view);
     // When switching to maps, ensure a map is selected
@@ -512,15 +538,8 @@
         preferencesStore.setTaskMapView(firstMap.id);
       }
     }
-    if (view === 'traders' && traders.value.length > 0) {
-      const hasSelectedTrader = traders.value.some(
-        (trader) => trader.id === preferencesStore.getTaskTraderView
-      );
-      if (hasSelectedTrader) return;
-      const firstTrader = traders.value[0];
-      if (firstTrader?.id) {
-        preferencesStore.setTaskTraderView(firstTrader.id);
-      }
+    if (view === 'traders' || view === 'graph') {
+      ensureSelectedTrader(traders.value);
     }
   };
   // Secondary view (available / locked / completed)
@@ -560,13 +579,9 @@
   watch(
     [() => preferencesStore.getTaskPrimaryView, traders, () => preferencesStore.getTaskTraderView],
     ([view, visibleTraders, selectedTrader]) => {
-      if (view !== 'traders' || visibleTraders.length === 0) return;
-      const isSelectedTraderVisible = visibleTraders.some((trader) => trader.id === selectedTrader);
-      if (isSelectedTraderVisible) return;
-      const firstTrader = visibleTraders[0];
-      if (firstTrader?.id) {
-        preferencesStore.setTaskTraderView(firstTrader.id);
-      }
+      if (view !== 'traders' && view !== 'graph') return;
+      if (visibleTraders.some((trader) => trader.id === selectedTrader)) return;
+      ensureSelectedTrader(visibleTraders);
     },
     { immediate: true }
   );
