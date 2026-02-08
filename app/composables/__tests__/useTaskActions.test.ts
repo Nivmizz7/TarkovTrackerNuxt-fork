@@ -4,6 +4,7 @@ import type { Task } from '@/types/tarkov';
 const createTarkovStore = (options: {
   playerLevel?: number;
   objectiveCounts?: Record<string, number>;
+  isTaskComplete?: boolean | ((taskId: string) => boolean);
   isTaskFailed?: boolean;
   taskCompletions?: Record<string, unknown>;
 }) => {
@@ -20,6 +21,22 @@ const createTarkovStore = (options: {
     getObjectiveCount: vi.fn((objectiveId: string) => objectiveCounts.get(objectiveId) ?? 0),
     playerLevel: vi.fn(() => options.playerLevel ?? 1),
     setLevel: vi.fn(),
+    isTaskComplete: vi.fn((taskId: string) => {
+      if (typeof options.isTaskComplete === 'function') {
+        return options.isTaskComplete(taskId);
+      }
+      if (typeof options.isTaskComplete === 'boolean') {
+        return options.isTaskComplete;
+      }
+      const completion = options.taskCompletions?.[taskId];
+      if (!completion || typeof completion !== 'object') {
+        return false;
+      }
+      return (
+        (completion as { complete?: boolean }).complete === true &&
+        (completion as { failed?: boolean }).failed !== true
+      );
+    }),
     isTaskFailed: vi.fn(() => options.isTaskFailed ?? false),
     getCurrentProgressData: vi.fn(() => ({
       taskCompletions: options.taskCompletions ?? {},
@@ -266,6 +283,28 @@ describe('useTaskActions', () => {
     expect(onAction).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'complete', taskId: 'task-no-alt' })
     );
+  });
+  it('does not fail already completed alternatives when marking complete', async () => {
+    const task: Task = {
+      id: 'task-main-complete-alt',
+      name: 'Main Task',
+      objectives: [{ id: 'obj-main-complete-alt', count: 1 }],
+      alternatives: ['task-alt-complete'],
+    };
+    const alternative: Task = {
+      id: 'task-alt-complete',
+      name: 'Completed Alt Task',
+      objectives: [{ id: 'obj-alt-complete', count: 1 }],
+    };
+    const { actions, tarkovStore } = await setup(task, [task, alternative], {
+      objectiveCounts: { 'obj-alt-complete': 1 },
+      isTaskComplete: (taskId) => taskId === 'task-alt-complete',
+    });
+    actions.markTaskComplete();
+    expect(tarkovStore.setTaskComplete).toHaveBeenCalledWith('task-main-complete-alt');
+    expect(tarkovStore.setTaskFailed).not.toHaveBeenCalledWith('task-alt-complete');
+    expect(tarkovStore.setTaskObjectiveUncomplete).not.toHaveBeenCalledWith('obj-alt-complete');
+    expect(tarkovStore.setObjectiveCount).not.toHaveBeenCalledWith('obj-alt-complete', 0);
   });
   it('handles tasks with null/undefined fields without exceptions (defensive runtime handling)', async () => {
     // This test validates defensive handling of malformed/untyped external input.

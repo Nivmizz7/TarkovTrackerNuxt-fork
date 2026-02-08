@@ -101,6 +101,9 @@ export function useTaskActions(
   ) => {
     if (!Array.isArray(alternatives)) return;
     alternatives.forEach((alternativeTaskId) => {
+      const preserveCompletedAlternative =
+        taskAction === 'setTaskFailed' && tarkovStore.isTaskComplete(alternativeTaskId);
+      if (preserveCompletedAlternative) return;
       if (taskAction === 'setTaskFailed') {
         tarkovStore.setTaskFailed(alternativeTaskId);
       } else {

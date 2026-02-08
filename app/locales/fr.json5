@@ -328,17 +328,6 @@
         reset: 'Réinitialiser',
         apply: 'Appliquer',
         level_option: 'Niveau {level}',
-        type_option: {
-          pick_up: 'Ramasser',
-          elimination: 'Élimination',
-          completion: 'Terminaison',
-          exploration: 'Exploration',
-          standing: 'Réputation',
-          skill: 'Compétence',
-          multi: 'Multi',
-          weapon_assembly: 'Armurier',
-          merchant: 'Marchand',
-        },
       },
       settings: {
         title: 'Paramètres de tâche',

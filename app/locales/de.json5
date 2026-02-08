@@ -328,17 +328,6 @@
         reset: 'Zurücksetzen',
         apply: 'Anwenden',
         level_option: 'Ebene {level}',
-        type_option: {
-          pick_up: 'Abholen',
-          elimination: 'Eliminierung',
-          completion: 'Abschluss',
-          exploration: 'Erkundung',
-          standing: 'Ansehen',
-          skill: 'Fertigkeit',
-          multi: 'Multi',
-          weapon_assembly: 'Büchsenmacher',
-          merchant: 'Händler',
-        },
       },
       settings: {
         title: 'Aufgabeneinstellungen',

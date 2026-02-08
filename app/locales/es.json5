@@ -328,17 +328,6 @@
         reset: 'Reiniciar',
         apply: 'Aplicar',
         level_option: 'Nivel {level}',
-        type_option: {
-          pick_up: 'Levantar',
-          elimination: 'Eliminación',
-          completion: 'Terminación',
-          exploration: 'Exploración',
-          standing: 'De pie',
-          skill: 'Habilidad',
-          multi: 'Multi',
-          weapon_assembly: 'Armero',
-          merchant: 'Comerciante',
-        },
       },
       settings: {
         title: 'Configuración de tareas',
