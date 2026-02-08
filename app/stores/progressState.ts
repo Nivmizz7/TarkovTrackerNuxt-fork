@@ -31,6 +31,7 @@ interface TaskCompletion {
   complete?: boolean;
   failed?: boolean;
   timestamp?: number;
+  manual?: boolean;
 }
 interface HideoutPart {
   count?: number;
@@ -247,11 +248,17 @@ export const getters = {
   getAllSkillOffsets: (state: UserState) => () => getCurrentData(state)?.skillOffsets ?? {},
 } as const satisfies _GettersTree<UserState>;
 // Helper functions for common operations
-const createCompletion = (complete: boolean, failed = false) => ({
-  complete,
-  failed,
-  timestamp: Date.now(),
-});
+const createCompletion = (complete: boolean, failed = false, manual?: boolean) => {
+  const completion: TaskCompletion = {
+    complete,
+    failed,
+    timestamp: Date.now(),
+  };
+  if (typeof manual === 'boolean') {
+    completion.manual = manual;
+  }
+  return completion;
+};
 const updateObjective = (
   state: UserState,
   key: keyof UserProgressData,
@@ -346,13 +353,13 @@ export const actions = {
     });
   },
   setTaskComplete(this: UserState, taskId: string) {
-    updateObjective(this, 'taskCompletions', taskId, createCompletion(true, false));
+    updateObjective(this, 'taskCompletions', taskId, createCompletion(true, false, false));
   },
-  setTaskFailed(this: UserState, taskId: string) {
-    updateObjective(this, 'taskCompletions', taskId, createCompletion(true, true));
+  setTaskFailed(this: UserState, taskId: string, options?: { manual?: boolean }) {
+    updateObjective(this, 'taskCompletions', taskId, createCompletion(true, true, options?.manual));
   },
   setTaskUncompleted(this: UserState, taskId: string) {
-    updateObjective(this, 'taskCompletions', taskId, createCompletion(false, false));
+    updateObjective(this, 'taskCompletions', taskId, createCompletion(false, false, false));
   },
   setTaskObjectiveComplete(this: UserState, objectiveId: string) {
     updateObjective(this, 'taskObjectives', objectiveId, {

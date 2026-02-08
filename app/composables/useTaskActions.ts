@@ -9,6 +9,7 @@ export type TaskActionPayload = {
   action: 'available' | 'complete' | 'uncomplete' | 'reset_failed' | 'fail';
   undoKey?: string;
   statusKey?: string;
+  wasManualFail?: boolean;
 };
 export type UseTaskActionsReturn = {
   markTaskComplete: (isUndo?: boolean) => void;
@@ -122,6 +123,12 @@ export function useTaskActions(
       tarkovStore.setLevel(minLevel);
     }
   };
+  const isTaskManuallyFailed = (taskId: string) => {
+    const completion = tarkovStore.getCurrentProgressData().taskCompletions?.[taskId];
+    if (!completion || typeof completion !== 'object') return false;
+    if (!Object.prototype.hasOwnProperty.call(completion, 'manual')) return false;
+    return (completion as { manual?: boolean }).manual === true;
+  };
   const emitAction = (payload: TaskActionPayload) => {
     onAction?.(payload);
   };
@@ -156,11 +163,13 @@ export function useTaskActions(
     const currentTask = task();
     const taskName = currentTask.name ?? t('page.tasks.questcard.task');
     const wasFailed = tarkovStore.isTaskFailed(currentTask.id);
+    const wasManualFail = wasFailed && isTaskManuallyFailed(currentTask.id);
     if (!isUndo) {
       emitAction({
         taskId: currentTask.id,
         taskName,
         action: wasFailed ? 'reset_failed' : 'uncomplete',
+        wasManualFail,
         statusKey: wasFailed
           ? 'page.tasks.questcard.status_reset_failed'
           : 'page.tasks.questcard.status_uncomplete',
@@ -180,6 +189,7 @@ export function useTaskActions(
         taskId: currentTask.id,
         taskName,
         action: wasFailed ? 'reset_failed' : 'uncomplete',
+        wasManualFail,
         undoKey: wasFailed
           ? 'page.tasks.questcard.undo_reset_failed'
           : 'page.tasks.questcard.undo_uncomplete',
@@ -227,7 +237,7 @@ export function useTaskActions(
         statusKey: 'page.tasks.questcard.status_failed',
       });
     }
-    tarkovStore.setTaskFailed(currentTask.id);
+    tarkovStore.setTaskFailed(currentTask.id, { manual: true });
     unpinTaskIfPinned(currentTask.id);
     if (currentTask.objectives) {
       clearTaskObjectives(currentTask.objectives);

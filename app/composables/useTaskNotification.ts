@@ -24,6 +24,7 @@ export function useTaskNotification(): TaskNotificationReturn {
     taskId: string;
     taskName: string;
     action: TaskActionPayload['action'];
+    wasManualFail?: boolean;
   } | null>(null);
   const showUndoButton = ref(false);
   const notificationTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
@@ -52,6 +53,7 @@ export function useTaskNotification(): TaskNotificationReturn {
       taskId: event.taskId,
       taskName: event.taskName,
       action: event.action,
+      wasManualFail: event.wasManualFail,
     };
     if (event.undoKey) {
       updateTaskStatus(event.undoKey, event.taskName, false);
@@ -112,7 +114,7 @@ export function useTaskNotification(): TaskNotificationReturn {
   };
   const undoLastAction = () => {
     if (!undoData.value) return;
-    const { taskId, taskName, action } = undoData.value;
+    const { taskId, taskName, action, wasManualFail } = undoData.value;
     const taskToUndo = tasks.value.find((task) => task.id === taskId);
     if (action === 'complete') {
       tarkovStore.setTaskUncompleted(taskId);
@@ -141,7 +143,11 @@ export function useTaskNotification(): TaskNotificationReturn {
       }
       updateTaskStatus('page.tasks.questcard.undo_uncomplete', taskName);
     } else if (action === 'reset_failed') {
-      tarkovStore.setTaskFailed(taskId);
+      if (wasManualFail) {
+        tarkovStore.setTaskFailed(taskId, { manual: true });
+      } else {
+        tarkovStore.setTaskFailed(taskId);
+      }
       if (taskToUndo?.objectives) {
         clearTaskObjectives(taskToUndo.objectives);
       }
