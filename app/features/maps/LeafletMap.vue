@@ -174,6 +174,7 @@
   import LeafletObjectiveTooltip from '@/features/maps/LeafletObjectiveTooltip.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { logger } from '@/utils/logger';
+  import { clusterSpawns } from '@/utils/mapClustering';
   import {
     gameToLatLng,
     outlineToLatLngArray,
@@ -279,6 +280,10 @@
   });
   const ZOOM_SPEED_MIN = 0.5;
   const ZOOM_SPEED_MAX = 3;
+  const SPAWN_CLUSTER_ZOOM_THRESHOLD = 3.5;
+  const SPAWN_CLUSTER_GRID_SIZE = 50;
+  const SPAWN_CLUSTER_MIN_RADIUS = 6;
+  const SPAWN_CLUSTER_MAX_RADIUS = 14;
   const FNV1A_OFFSET_BASIS = 0x811c9dc5;
   const FNV1A_PRIME = 0x01000193;
   const MARKER_SVG_LOAD_DELAY_MS = 500;
@@ -781,26 +786,77 @@
       extractLayer.value!.addLayer(labelMarker);
     });
   }
+  let lastSpawnZoomAboveThreshold: boolean | null = null;
   function createPmcSpawnMarkers(): void {
     if (!leaflet.value || !spawnLayer.value || !props.map) return;
     if (!isValidMapSvgConfig(props.map.svg) && !isValidMapTileConfig(props.map.tile)) return;
     spawnLayer.value.clearLayers();
     if (!showPmcSpawns.value || mapPmcSpawns.value.length === 0) return;
     const L = leaflet.value;
-    mapPmcSpawns.value.forEach((spawn) => {
-      const position = spawn.position;
-      if (!position) return;
-      const latLng = gameToLatLng(position.x, position.z);
-      const marker = L.circleMarker([latLng.lat, latLng.lng], {
-        radius: 3,
-        fillColor: MAP_COLORS.PMC_SPAWN,
-        fillOpacity: 0.9,
-        color: MAP_COLORS.MARKER_BORDER,
-        weight: 1,
-        interactive: false,
+    const currentZoom = mapInstance.value?.getZoom() ?? 0;
+    const aboveThreshold = currentZoom >= SPAWN_CLUSTER_ZOOM_THRESHOLD;
+    lastSpawnZoomAboveThreshold = aboveThreshold;
+    if (aboveThreshold) {
+      mapPmcSpawns.value.forEach((spawn) => {
+        const position = spawn.position;
+        if (!position) return;
+        const latLng = gameToLatLng(position.x, position.z);
+        const marker = L.circleMarker([latLng.lat, latLng.lng], {
+          radius: 3,
+          fillColor: MAP_COLORS.PMC_SPAWN,
+          fillOpacity: 0.9,
+          color: MAP_COLORS.MARKER_BORDER,
+          weight: 1,
+          interactive: false,
+        });
+        spawnLayer.value!.addLayer(marker);
       });
-      spawnLayer.value!.addLayer(marker);
-    });
+    } else {
+      const clusters = clusterSpawns(mapPmcSpawns.value, SPAWN_CLUSTER_GRID_SIZE);
+      for (const cluster of clusters) {
+        const latLng = gameToLatLng(cluster.centerX, cluster.centerZ);
+        if (cluster.count === 1) {
+          const marker = L.circleMarker([latLng.lat, latLng.lng], {
+            radius: 3,
+            fillColor: MAP_COLORS.PMC_SPAWN,
+            fillOpacity: 0.9,
+            color: MAP_COLORS.MARKER_BORDER,
+            weight: 1,
+            interactive: false,
+          });
+          spawnLayer.value!.addLayer(marker);
+        } else {
+          const clampedCount = Math.min(cluster.count, 20);
+          const radius =
+            SPAWN_CLUSTER_MIN_RADIUS +
+            ((clampedCount - 2) / 18) * (SPAWN_CLUSTER_MAX_RADIUS - SPAWN_CLUSTER_MIN_RADIUS);
+          const marker = L.circleMarker([latLng.lat, latLng.lng], {
+            radius,
+            fillColor: MAP_COLORS.PMC_SPAWN,
+            fillOpacity: 0.6,
+            color: MAP_COLORS.MARKER_BORDER,
+            weight: 1.5,
+            interactive: false,
+          });
+          spawnLayer.value!.addLayer(marker);
+          const label = L.tooltip({
+            permanent: true,
+            direction: 'center',
+            className: 'spawn-cluster-label',
+          })
+            .setContent(String(cluster.count))
+            .setLatLng([latLng.lat, latLng.lng]);
+          spawnLayer.value!.addLayer(label as unknown as L.Layer);
+        }
+      }
+    }
+  }
+  function handleSpawnZoomChange(): void {
+    if (!mapInstance.value || !showPmcSpawns.value) return;
+    const currentZoom = mapInstance.value.getZoom();
+    const aboveThreshold = currentZoom >= SPAWN_CLUSTER_ZOOM_THRESHOLD;
+    if (aboveThreshold === lastSpawnZoomAboveThreshold) return;
+    createPmcSpawnMarkers();
   }
   function updateMarkers(): void {
     try {
@@ -848,6 +904,7 @@
     () => props.map,
     () => {
       lastMarksHash.value = '';
+      lastSpawnZoomAboveThreshold = null;
       updateMarkers();
     }
   );
@@ -869,7 +926,14 @@
   );
   watch(
     [isLoading, objectiveLayer, extractLayer, spawnLayer, mapInstance],
-    ([loading, objectiveMarkersLayer, extractMarkersLayer, spawnMarkersLayer, instance]) => {
+    (
+      [loading, objectiveMarkersLayer, extractMarkersLayer, spawnMarkersLayer, instance],
+      oldValues
+    ) => {
+      const oldInstance = oldValues?.[4] as L.Map | null | undefined;
+      if (oldInstance && oldInstance !== instance) {
+        oldInstance.off('zoomend', handleSpawnZoomChange);
+      }
       if (
         loading ||
         !instance ||
@@ -879,6 +943,8 @@
       )
         return;
       lastMarksHash.value = '';
+      instance.off('zoomend', handleSpawnZoomChange);
+      instance.on('zoomend', handleSpawnZoomChange);
       waitForSvgAndUpdateMarkers(instance);
     },
     { immediate: true, flush: 'post' }
@@ -901,6 +967,9 @@
   });
   onUnmounted(() => {
     teardownSvgReadyWatcher();
+    if (mapInstance.value) {
+      mapInstance.value.off('zoomend', handleSpawnZoomChange);
+    }
     if (activePinnedPopupCleanup) {
       activePinnedPopupCleanup();
     }
