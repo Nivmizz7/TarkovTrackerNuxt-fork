@@ -7,7 +7,7 @@ const NEW_BEGINNING_TASK_IDS = [
   '6761ff17cdc36bd66102e9d0',
   '6848100b00afffa81f09e365',
   '68481881f43abfdda2058369',
-];
+] as const;
 const createCondition = (id: string, name: string): TaskObjective => ({
   id: `cond-${id}`,
   status: ['complete'],
