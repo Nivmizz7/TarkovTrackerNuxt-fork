@@ -45,15 +45,6 @@ export function useGraphBuilder() {
       normalized.includes('failed');
     return hasActive && !hasOther;
   };
-  const isFailedOnly = (status: string[] | undefined) => {
-    const normalized = normalizeStatus(status);
-    return (
-      normalized.includes('failed') &&
-      !normalized.includes('active') &&
-      !normalized.includes('complete') &&
-      !normalized.includes('completed')
-    );
-  };
   /**
    * Builds the task graph from task requirements
    */
@@ -117,16 +108,11 @@ export function useGraphBuilder() {
       );
     };
     taskList.forEach((task) => {
-      // Process taskRequirements to find alternative tasks
-      // If Task B requires Task A to be 'failed', then A and B are alternatives
-      // Completing A means B can never be completed (B needs A to be failed)
+      // Process taskRequirements to find alternative tasks.
+      // Active-only requirements can represent branching when the required task
+      // explicitly fails if this task is completed.
       task.taskRequirements?.forEach((requirement) => {
-        if (requirement?.task?.id && isFailedOnly(requirement.status)) {
-          // This task requires another task to be failed
-          // So completing the required task would make this task impossible
-          // The required task has THIS task as an alternative (one-directional)
-          addAlternative(requirement.task.id, task.id);
-        } else if (requirement?.task?.id && isActiveOnly(requirement.status)) {
+        if (requirement?.task?.id && isActiveOnly(requirement.status)) {
           const requiredTask = taskById.get(requirement.task.id);
           // If the required task fails when this task completes, treat them as mutual alternatives.
           if (hasFailConditionForTask(requiredTask, task.id)) {
