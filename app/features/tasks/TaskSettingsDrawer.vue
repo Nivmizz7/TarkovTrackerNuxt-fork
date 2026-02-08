@@ -2,10 +2,15 @@
   <aside
     ref="drawerRef"
     tabindex="-1"
-    role="dialog"
-    aria-modal="true"
+    :role="isOverlayMode ? 'dialog' : 'complementary'"
+    :aria-modal="isOverlayMode ? 'true' : undefined"
     aria-labelledby="task-settings-drawer-title"
-    class="bg-surface-800/95 fixed top-1/2 right-4 z-40 h-fit max-h-[calc(100vh-6rem)] w-72 -translate-y-1/2 overflow-y-auto rounded-lg border border-white/10 p-4 shadow-xl backdrop-blur-sm"
+    class="bg-surface-800/95 w-72 overflow-y-auto rounded-lg border border-white/10 p-4 shadow-xl backdrop-blur-sm"
+    :class="
+      isOverlayMode
+        ? 'fixed top-1/2 right-4 z-40 h-fit max-h-[calc(100vh-6rem)] -translate-y-1/2'
+        : 'sticky top-6 max-h-[calc(100vh-3rem)]'
+    "
     @keydown="handleKeydown"
   >
     <div class="mb-3 flex items-center justify-between">
@@ -107,6 +112,13 @@
   import TaskFiltersSection from '@/features/tasks/TaskFiltersSection.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTeamStore } from '@/stores/useTeamStore';
+  interface Props {
+    mode?: 'overlay' | 'docked';
+  }
+  const props = withDefaults(defineProps<Props>(), {
+    mode: 'overlay',
+  });
+  const isOverlayMode = computed(() => props.mode === 'overlay');
   const { t } = useI18n({ useScope: 'global' });
   const { close } = useTaskSettingsDrawer();
   const preferencesStore = usePreferencesStore();
@@ -146,6 +158,7 @@
   };
   const handleClose = () => {
     close();
+    if (!isOverlayMode.value) return;
     nextTick(() => {
       restoreTriggerFocus();
     });
@@ -164,6 +177,7 @@
       handleClose();
       return;
     }
+    if (!isOverlayMode.value) return;
     if (event.key !== 'Tab') return;
     const focusable = getFocusableElements();
     if (focusable.length === 0) {
@@ -188,6 +202,7 @@
     }
   };
   onMounted(() => {
+    if (!isOverlayMode.value) return;
     storeTriggerElement();
     focusDrawer();
   });

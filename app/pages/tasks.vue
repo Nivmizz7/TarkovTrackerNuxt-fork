@@ -2,7 +2,7 @@
   <div class="flex min-h-full overflow-x-hidden">
     <div
       class="min-w-0 flex-1 px-3 py-6 transition-[padding] duration-200 sm:px-6"
-      :class="{ 'pr-80': isSettingsDrawerOpen }"
+      :class="{ 'lg:pr-80': isOverlaySettingsDrawerOpen && !showMapDisplay }"
     >
       <div class="mx-auto max-w-[1400px]">
         <TaskLoadingState v-if="isLoading" />
@@ -98,13 +98,25 @@
     </div>
     <Transition
       enter-active-class="transition-all duration-200 ease-out"
+      enter-from-class="translate-x-4 opacity-0"
+      enter-to-class="translate-x-0 opacity-100"
+      leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="translate-x-0 opacity-100"
+      leave-to-class="translate-x-4 opacity-0"
+    >
+      <div v-if="isDockedSettingsDrawerOpen" class="shrink-0 px-4 py-6">
+        <TaskSettingsDrawer mode="docked" />
+      </div>
+    </Transition>
+    <Transition
+      enter-active-class="transition-all duration-200 ease-out"
       enter-from-class="translate-x-full opacity-0"
       enter-to-class="translate-x-0 opacity-100"
       leave-active-class="transition-all duration-200 ease-in"
       leave-from-class="translate-x-0 opacity-100"
       leave-to-class="translate-x-full opacity-0"
     >
-      <TaskSettingsDrawer v-if="isSettingsDrawerOpen" />
+      <TaskSettingsDrawer v-if="isOverlaySettingsDrawerOpen" mode="overlay" />
     </Transition>
     <Teleport to="body">
       <Transition
@@ -151,6 +163,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
   import { storeToRefs } from 'pinia';
   import { useI18n } from 'vue-i18n';
   import { useInfiniteScroll } from '@/composables/useInfiniteScroll';
@@ -222,6 +235,8 @@
   const userGameEdition = computed(() => tarkovStore.getGameEdition());
   const { tarkovTime } = useTarkovTime();
   const { isOpen: isSettingsDrawerOpen } = useTaskSettingsDrawer();
+  const breakpoints = useBreakpoints(breakpointsTailwind);
+  const isLgAndUp = breakpoints.greaterOrEqual('lg');
   const STATIC_TIME_MAPS: Record<string, string> = {
     '55f2d3fd4bdc2d5f408b4567': '15:28 / 03:28',
     '5b0fc42d86f7744a585f9105': '15:28 / 03:28',
@@ -239,6 +254,12 @@
   };
   const showMapDisplay = computed(() => {
     return getTaskPrimaryView.value === 'maps' && getTaskMapView.value !== 'all';
+  });
+  const isDockedSettingsDrawerOpen = computed(() => {
+    return isSettingsDrawerOpen.value && showMapDisplay.value && isLgAndUp.value;
+  });
+  const isOverlaySettingsDrawerOpen = computed(() => {
+    return isSettingsDrawerOpen.value && (!showMapDisplay.value || !isLgAndUp.value);
   });
   const shouldShowCompletedObjectives = computed(() => {
     return ['completed', 'all'].includes(getTaskSecondaryView.value);
