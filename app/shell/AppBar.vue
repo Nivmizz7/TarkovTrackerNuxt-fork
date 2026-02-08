@@ -125,7 +125,7 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { logger } from '@/utils/logger';
-  const { t } = useI18n({ useScope: 'global' });
+  const { availableLocales, locale, t, te } = useI18n({ useScope: 'global' });
   const appStore = useAppStore();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
@@ -170,14 +170,23 @@
   const NAV_BAR_ICON = 'i-mdi-menu-open';
   const { loading: dataLoading, hideoutLoading } = storeToRefs(metadataStore);
   const dataError = ref(false);
-  const pageTitleKey = computed(() => {
-    const name = String(route.name || 'index');
-    if (name === 'needed-items' || name === 'neededitems') {
-      return 'page.needed_items.title';
+  const pageTitle = computed(() => {
+    const routeName = String(route.name || 'index').replaceAll('-', '_');
+    const titleKeys = [
+      routeName === 'neededitems' ? 'page.needed_items.title' : `page.${routeName}.title`,
+      `page.${routeName}.meta.title`,
+      routeName === 'admin' ? 'admin.title' : '',
+      `navigation_drawer.${routeName}`,
+    ];
+    const titleKey = titleKeys.find((key) => key && te(key));
+    if (titleKey) {
+      return t(titleKey);
     }
-    return `page.${name.replaceAll('-', '_')}.title`;
+    return routeName
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   });
-  const pageTitle = computed(() => t(pageTitleKey.value));
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape' && appStore.mobileDrawerExpanded && mdAndDown.value) {
       event.preventDefault();
@@ -197,7 +206,6 @@
       appStore.toggleDrawerRail();
     }
   }
-  const { locale, availableLocales } = useI18n({ useScope: 'global' });
   const isAvailableLocale = (value: string): value is typeof locale.value =>
     (availableLocales as readonly string[]).includes(value);
   const localeItems = computed(() => {
