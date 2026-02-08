@@ -127,16 +127,23 @@ const mergeCountableObjects = <T extends Record<string, CountableEntry>>(
 };
 const normalizeTaskCompletionEntry = (
   completion: RawTaskCompletion
-): { complete?: boolean; failed?: boolean; timestamp?: number } | undefined => {
+): { complete?: boolean; failed?: boolean; timestamp?: number; manual?: boolean } | undefined => {
   if (completion === null || completion === undefined) return undefined;
   if (typeof completion === 'boolean') {
     return { complete: completion, failed: false };
   }
-  return {
-    complete: completion.complete === true,
-    failed: completion.failed === true,
-    timestamp: typeof completion.timestamp === 'number' ? completion.timestamp : undefined,
-  };
+  const normalized: { complete?: boolean; failed?: boolean; timestamp?: number; manual?: boolean } =
+    {
+      complete: completion.complete === true,
+      failed: completion.failed === true,
+    };
+  if (typeof completion.timestamp === 'number') {
+    normalized.timestamp = completion.timestamp;
+  }
+  if (typeof completion.manual === 'boolean') {
+    normalized.manual = completion.manual;
+  }
+  return normalized;
 };
 const normalizeTaskCompletionsMap = (
   taskCompletions: Record<string, RawTaskCompletion> | undefined
@@ -862,7 +869,11 @@ const tarkovActions = {
         alternativeSourcesByTask.get(alternativeId)!.push(taskId);
       });
     }
-    const shouldRemainFailed = (task: Task | undefined) => {
+    const shouldRemainFailed = (
+      task: Task | undefined,
+      completion: { complete?: boolean; failed?: boolean; manual?: boolean } | undefined
+    ) => {
+      if (completion?.manual === true) return true;
       if (!task) return true;
       if (MANUAL_FAIL_TASK_IDS.includes(task.id)) return true;
       if (
@@ -885,7 +896,7 @@ const tarkovActions = {
     for (const [taskId, completion] of Object.entries(completions)) {
       if (!completion?.failed) continue;
       const task = tasksMap.get(taskId);
-      if (shouldRemainFailed(task)) continue;
+      if (shouldRemainFailed(task, completion)) continue;
       repairedCount += this.markTaskAsUncompleted(taskId, gameModeData, tasksMap);
     }
     return repairedCount;
@@ -905,6 +916,7 @@ const tarkovActions = {
     }
     completions[taskId]!.complete = false;
     completions[taskId]!.failed = false;
+    completions[taskId]!.manual = false;
     const task = tasksMap.get(taskId);
     if (task?.objectives) {
       if (!gameModeData.taskObjectives) {
@@ -940,6 +952,9 @@ const tarkovActions = {
     }
     completions[taskId]!.complete = true;
     completions[taskId]!.failed = true;
+    if (completions[taskId]!.manual !== true) {
+      completions[taskId]!.manual = false;
+    }
     completions[taskId]!.timestamp = completions[taskId]!.timestamp ?? Date.now();
     // Clear the task's objectives when failed
     const task = tasksMap.get(taskId);
@@ -1754,7 +1769,7 @@ function mergeProgressData(
   const mergeTaskCompletion = (
     localComp: RawTaskCompletion,
     remoteComp: RawTaskCompletion
-  ): { complete?: boolean; failed?: boolean; timestamp?: number } | undefined => {
+  ): { complete?: boolean; failed?: boolean; timestamp?: number; manual?: boolean } | undefined => {
     const normalizedLocal = normalizeTaskCompletionEntry(localComp);
     const normalizedRemote = normalizeTaskCompletionEntry(remoteComp);
     if (!normalizedLocal) return normalizedRemote;

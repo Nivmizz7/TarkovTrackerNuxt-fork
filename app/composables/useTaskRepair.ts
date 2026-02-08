@@ -31,6 +31,12 @@ export function useTaskRepair({ requestRepairConfirm }: UseTaskRepairOptions): U
     const normalized = (status ?? []).map((entry) => entry.toLowerCase());
     return statuses.some((value) => normalized.includes(value));
   };
+  const isTaskManuallyFailed = (taskId: string) => {
+    const completion = tarkovStore.getCurrentProgressData().taskCompletions?.[taskId];
+    if (!completion || typeof completion !== 'object') return false;
+    if (!Object.prototype.hasOwnProperty.call(completion, 'manual')) return false;
+    return (completion as { manual?: boolean }).manual === true;
+  };
   const buildAlternativeSources = () => {
     const sourcesByTask = new Map<string, string[]>();
     metadataStore.tasks.forEach((task) => {
@@ -45,6 +51,7 @@ export function useTaskRepair({ requestRepairConfirm }: UseTaskRepairOptions): U
     return sourcesByTask;
   };
   const shouldTaskBeFailed = (task: RepairableTask, alternativeSources: Map<string, string[]>) => {
+    if (isTaskManuallyFailed(task.id)) return true;
     if (MANUAL_FAIL_TASK_IDS.includes(task.id)) return true;
     const failConditions = task.failConditions ?? [];
     const failedByCondition = failConditions.some((objective) => {
