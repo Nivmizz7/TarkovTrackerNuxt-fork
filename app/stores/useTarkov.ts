@@ -14,7 +14,12 @@ import {
 } from '@/stores/progressState';
 import { useMetadataStore } from '@/stores/useMetadata';
 import { usePreferencesStore } from '@/stores/usePreferences';
-import { GAME_MODES, SPECIAL_STATIONS, type GameMode } from '@/utils/constants';
+import {
+  GAME_MODES,
+  MANUAL_FAIL_TASK_IDS,
+  SPECIAL_STATIONS,
+  type GameMode,
+} from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 import { getCompletionFlags, type RawTaskCompletion } from '@/utils/taskStatus';
@@ -61,6 +66,11 @@ type TarkovStoreInstance = UserState & {
   ): number;
   setTasksAndObjectivesUncompleted(taskIds: string[], objectiveIds: string[]): void;
   enforceHideoutPrereqsNow(): number;
+  markTaskAsUncompleted(
+    taskId: string,
+    gameModeData: UserProgressData,
+    tasksMap: Map<string, Task>
+  ): number;
   markTaskAsFailed(
     taskId: string,
     gameModeData: UserProgressData,
@@ -628,8 +638,7 @@ const tarkovActions = {
   },
   /**
    * Repair failed task states for existing users.
-   * This fixes data for users who completed tasks before the "failed alternatives" feature was implemented.
-   * When a task is completed, its alternatives should be marked as failed.
+   * Re-applies legitimate branch failures and clears stale failed flags.
    */
   repairFailedTaskStates(this: TarkovStoreInstance) {
     const metadataStore = useMetadataStore();
@@ -687,7 +696,7 @@ const tarkovActions = {
     }
     if (pvpRepaired > 0 || pveRepaired > 0) {
       logger.debug(
-        `[TarkovStore] Repaired failed task states - PvP: ${pvpRepaired}, PvE: ${pveRepaired}`
+        `[TarkovStore] Repaired task failed flags - PvP: ${pvpRepaired}, PvE: ${pveRepaired}`
       );
     }
     if (pvpCleared > 0 || pveCleared > 0) {
@@ -771,9 +780,6 @@ const tarkovActions = {
   },
   /**
    * Helper to repair failed tasks for a specific game mode's data.
-   * Handles two cases:
-   * 1. Task completed but alternative not marked as failed (simple case)
-   * 2. Both task AND alternative marked as complete (use timestamps to determine which was first)
    */
   repairGameModeFailedTasks(
     this: TarkovStoreInstance,
@@ -785,54 +791,34 @@ const tarkovActions = {
     if (!gameModeData.taskCompletions) {
       gameModeData.taskCompletions = completions;
     }
-    // Track which tasks we've already processed to avoid double-processing alternatives
     const processedPairs = new Set<string>();
     const normalizeStatuses = (statuses?: string[]) =>
       (statuses ?? []).map((status) => status.toLowerCase());
     const hasAnyStatus = (statuses: string[], values: string[]) =>
       values.some((value) => statuses.includes(value));
-    const isFailedOnlyRequirement = (statuses?: string[]) => {
-      const normalized = normalizeStatuses(statuses);
-      if (normalized.length === 0) return false;
-      return (
-        normalized.includes('failed') &&
-        !hasAnyStatus(normalized, ['active', 'accept', 'accepted', 'complete', 'completed'])
-      );
-    };
     const hasCompleteStatus = (statuses?: string[]) =>
       hasAnyStatus(normalizeStatuses(statuses), ['complete', 'completed']);
     const shouldFailWhenOtherCompleted = (task: Task | undefined, otherTaskId: string) => {
       if (!task) return false;
-      const failedRequirement = task.taskRequirements?.some(
-        (req) => req?.task?.id === otherTaskId && isFailedOnlyRequirement(req.status)
-      );
-      if (failedRequirement) return true;
-      const failCondition = task.failConditions?.some(
+      return (task.failConditions ?? []).some(
         (objective) => objective?.task?.id === otherTaskId && hasCompleteStatus(objective.status)
       );
-      return Boolean(failCondition);
     };
-    // Find all successfully completed tasks
+    // First, enforce branch-failure consistency for completed alternatives.
     for (const [taskId, completion] of Object.entries(completions)) {
-      // Only process successfully completed tasks (complete=true, failed=false/undefined)
       if (!completion?.complete || completion?.failed) continue;
       const task = tasksMap.get(taskId);
       if (!task?.alternatives?.length) continue;
       for (const altTaskId of task.alternatives) {
-        // Create a unique key for this pair to avoid double-processing
         const pairKey = [taskId, altTaskId].sort().join('|');
         if (processedPairs.has(pairKey)) continue;
         processedPairs.add(pairKey);
         const altCompletion = completions[altTaskId];
-        // Skip if alternative is already marked as failed
         if (altCompletion?.failed) continue;
-        // Case 1: Alternative not completed - mark it as failed
         if (!altCompletion?.complete) {
           repairedCount += this.markTaskAsFailed(altTaskId, gameModeData, tasksMap);
           continue;
         }
-        // Case 2: BOTH are marked as complete (invalid state)
-        // Use timestamps to determine which was completed first
         const taskTimestamp = completion.timestamp ?? 0;
         const altTimestamp = altCompletion.timestamp ?? 0;
         if (taskTimestamp === 0 && altTimestamp === 0) {
@@ -855,18 +841,86 @@ const tarkovActions = {
           repairedCount += this.markTaskAsFailed(deterministicFail, gameModeData, tasksMap);
           continue;
         }
-        // Mark the one with the LATER timestamp as failed
-        // (the earlier one is assumed to be the "real" completion)
         if (taskTimestamp >= altTimestamp && altTimestamp > 0) {
-          // This task was completed later (or same time), mark IT as failed
           repairedCount += this.markTaskAsFailed(taskId, gameModeData, tasksMap);
         } else {
-          // Alternative was completed later, mark IT as failed
           repairedCount += this.markTaskAsFailed(altTaskId, gameModeData, tasksMap);
         }
       }
     }
+    // Then clear stale failed flags that no longer have a valid cause.
+    const isTaskSuccessful = (taskId: string) => {
+      const completion = completions[taskId];
+      return completion?.complete === true && completion?.failed !== true;
+    };
+    const alternativeSourcesByTask = new Map<string, string[]>();
+    for (const [taskId, task] of tasksMap.entries()) {
+      (task.alternatives ?? []).forEach((alternativeId) => {
+        if (!alternativeSourcesByTask.has(alternativeId)) {
+          alternativeSourcesByTask.set(alternativeId, []);
+        }
+        alternativeSourcesByTask.get(alternativeId)!.push(taskId);
+      });
+    }
+    const shouldRemainFailed = (task: Task | undefined) => {
+      if (!task) return true;
+      if (MANUAL_FAIL_TASK_IDS.includes(task.id)) return true;
+      if (
+        (task.failConditions ?? []).some(
+          (objective) =>
+            objective?.task?.id &&
+            hasCompleteStatus(objective.status) &&
+            isTaskSuccessful(objective.task.id)
+        )
+      ) {
+        return true;
+      }
+      const alternativeSources = alternativeSourcesByTask.get(task.id) ?? [];
+      const failedByAlternative = alternativeSources.some((sourceId) => isTaskSuccessful(sourceId));
+      if (failedByAlternative) {
+        return true;
+      }
+      return false;
+    };
+    for (const [taskId, completion] of Object.entries(completions)) {
+      if (!completion?.failed) continue;
+      const task = tasksMap.get(taskId);
+      if (shouldRemainFailed(task)) continue;
+      repairedCount += this.markTaskAsUncompleted(taskId, gameModeData, tasksMap);
+    }
     return repairedCount;
+  },
+  markTaskAsUncompleted(
+    this: TarkovStoreInstance,
+    taskId: string,
+    gameModeData: UserProgressData,
+    tasksMap: Map<string, Task>
+  ): number {
+    const completions = gameModeData.taskCompletions ?? {};
+    if (!gameModeData.taskCompletions) {
+      gameModeData.taskCompletions = completions;
+    }
+    if (!completions[taskId]) {
+      completions[taskId] = {};
+    }
+    completions[taskId]!.complete = false;
+    completions[taskId]!.failed = false;
+    const task = tasksMap.get(taskId);
+    if (task?.objectives) {
+      if (!gameModeData.taskObjectives) {
+        gameModeData.taskObjectives = {};
+      }
+      for (const obj of task.objectives) {
+        if (!obj?.id) continue;
+        const existing = gameModeData.taskObjectives[obj.id] ?? {};
+        existing.complete = false;
+        if (existing.count !== undefined || (obj.count ?? 0) > 0) {
+          existing.count = 0;
+        }
+        gameModeData.taskObjectives[obj.id] = existing;
+      }
+    }
+    return 1;
   },
   /**
    * Helper to mark a single task as failed and complete its objectives
@@ -918,6 +972,11 @@ const tarkovActions = {
   repairCompletedTaskObjectives(): { pvpRepaired: number; pveRepaired: number };
   repairGameModeFailedTasks(gameModeData: UserProgressData, tasksMap: Map<string, Task>): number;
   repairGameModeCompletedObjectives(
+    gameModeData: UserProgressData,
+    tasksMap: Map<string, Task>
+  ): number;
+  markTaskAsUncompleted(
+    taskId: string,
     gameModeData: UserProgressData,
     tasksMap: Map<string, Task>
   ): number;
@@ -1340,7 +1399,7 @@ export async function initializeTarkovSync() {
       throw new Error('Supabase initial load failed');
     }
     // Repair failed task states for existing users (runs once after data load)
-    // This fixes data for users who completed tasks before the "failed alternatives" feature
+    // This reapplies valid branch failures and clears stale failed flags
     const completionSchemaMigration = tarkovStore.migrateTaskCompletionSchema();
     const failedRepairResult = tarkovStore.repairFailedTaskStates();
     const completedObjectivesRepairResult = tarkovStore.repairCompletedTaskObjectives();
