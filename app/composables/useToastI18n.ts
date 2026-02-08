@@ -1,4 +1,4 @@
-import { useI18n } from 'vue-i18n';
+import { useSafeToast } from '@/composables/useSafeToast';
 import { logger } from '@/utils/logger';
 export type LocalIgnoredReason = 'other_account' | 'unsaved' | 'guest';
 export type ToastTranslate = (key: string, params?: Record<string, unknown>) => string;
@@ -9,32 +9,36 @@ export interface UseToastI18nReturn {
   showLoadFailed: () => void;
 }
 export const useToastI18n = (translate?: ToastTranslate): UseToastI18nReturn => {
-  const toast = useToast();
+  const toast = useSafeToast();
   const getGlobalT = (): ToastTranslate => {
     try {
-      return useI18n({ useScope: 'global' }).t;
+      const { $i18n } = useNuxtApp();
+      if (typeof $i18n?.t === 'function') {
+        return $i18n.t.bind($i18n) as ToastTranslate;
+      }
     } catch (err) {
       logger.warn('[useToastI18n] Failed to resolve global i18n translator. Using fallback.', err);
-      return (key: string) => key;
     }
+    logger.warn('[useToastI18n] Global i18n translator unavailable. Using fallback.');
+    return (key: string) => key;
   };
   const t = translate ?? getGlobalT();
   const showHideoutUpdated = (removedCount: number) => {
-    toast.add({
+    toast?.add({
       title: t('toast.hideout_updated.title'),
       description: t('toast.hideout_updated.description', { count: removedCount }),
       color: 'warning',
     });
   };
   const showLocalIgnored = (reason: LocalIgnoredReason) => {
-    toast.add({
+    toast?.add({
       title: t('toast.local_ignored.title'),
       description: t(`toast.local_ignored.${reason}`),
       color: 'warning',
     });
   };
   const showLoadFailed = () => {
-    toast.add({
+    toast?.add({
       title: t('toast.load_failed.title'),
       description: t('toast.load_failed.description'),
       color: 'error',

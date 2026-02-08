@@ -1,5 +1,6 @@
 import { type _GettersTree, defineStore, type StateTree } from 'pinia';
 import { useSupabaseSync } from '@/composables/supabase/useSupabaseSync';
+import { useSafeToast } from '@/composables/useSafeToast';
 import { useToastI18n } from '@/composables/useToastI18n';
 import {
   actions,
@@ -1618,14 +1619,14 @@ const maybeNotifyApiUpdate = (
   mode: 'pvp' | 'pve',
   data: UserProgressData | undefined,
   metadataStore: ReturnType<typeof useMetadataStore>,
-  updateTime: number
+  updateTime: number,
+  toast: ReturnType<typeof useToast> | null
 ): boolean => {
   const meta = getApiUpdateMeta(data);
   if (!meta || lastApiUpdateIds[mode] === meta.id) return false;
   if (Math.abs(updateTime - meta.at) > API_UPDATE_FRESHNESS_MS) return false;
   lastApiUpdateIds[mode] = meta.id;
-  const toast = useToast();
-  toast.add({
+  toast?.add({
     title: 'Update from API',
     description: formatApiUpdateDescription(normalizeApiTaskUpdates(meta.tasks), metadataStore),
     color: 'primary',
@@ -1721,6 +1722,7 @@ function setupRealtimeListener() {
   const { $supabase } = useNuxtApp();
   const tarkovStore = useTarkovStore();
   const metadataStore = useMetadataStore();
+  const toast = useSafeToast();
   if (!$supabase.user.loggedIn || !$supabase.user.id) return;
   // Clean up existing channel if any
   if (realtimeChannel) {
@@ -1787,8 +1789,8 @@ function setupRealtimeListener() {
         const hasRealConflict = pvpConflicts.hasConflict || pveConflicts.hasConflict;
         const totalConflicts = pvpConflicts.conflictCount + pveConflicts.conflictCount;
         const apiUpdateHandled =
-          maybeNotifyApiUpdate('pvp', remoteData.pvp_data, metadataStore, updateTime) ||
-          maybeNotifyApiUpdate('pve', remoteData.pve_data, metadataStore, updateTime);
+          maybeNotifyApiUpdate('pvp', remoteData.pvp_data, metadataStore, updateTime, toast) ||
+          maybeNotifyApiUpdate('pve', remoteData.pve_data, metadataStore, updateTime, toast);
         logger.debug('[TarkovStore] Remote update detected, applying changes', {
           hasRealConflict,
           totalConflicts,
@@ -1810,8 +1812,7 @@ function setupRealtimeListener() {
         // Only notify user if there was an actual data conflict that required merging
         // Silent sync for API updates or other-device updates that don't conflict
         if (hasRealConflict && !apiUpdateHandled && !isLikelySelfOrigin) {
-          const toast = useToast();
-          toast.add({
+          toast?.add({
             title: 'Progress merged',
             description: `${totalConflicts} conflicting change${totalConflicts > 1 ? 's were' : ' was'} resolved from another source.`,
             color: 'warning',
