@@ -65,19 +65,57 @@
         <!-- Extra Info Strips (padded area) -->
         <div v-if="lockedBefore > 0" class="text-surface-400 text-xs">
           <span class="text-surface-500">{{ t('page.tasks.questcard.requires') }}:</span>
-          <template v-if="pendingParentTasks.length">
-            <span class="ml-2 inline-flex flex-wrap items-center gap-1.5">
+          <template v-if="useCompactRequires">
+            <AppTooltip :text="compactRequiresTooltip">
+              <span class="text-surface-300 ml-2">
+                {{
+                  t(
+                    'page.tasks.questcard.requires_progress',
+                    { completed: completedParentCount, total: totalParentCount },
+                    `${completedParentCount} of ${totalParentCount} prerequisites completed`
+                  )
+                }}
+              </span>
+            </AppTooltip>
+          </template>
+          <template v-else-if="pendingParentTasks.length">
+            <span class="ml-2 inline-flex flex-wrap items-center gap-x-3 gap-y-1">
               <AppTooltip
                 v-for="parent in displayedPendingParents"
                 :key="parent.id"
-                :text="parent.name"
+                :text="getPendingParentTooltipText(parent)"
               >
-                <router-link
-                  :to="`/tasks?task=${parent.id}`"
-                  class="text-surface-200 inline-flex max-w-[16rem] items-center rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] hover:bg-white/10"
-                >
-                  <span class="truncate">{{ parent.name }}</span>
-                </router-link>
+                <span class="inline-flex items-center gap-1.5">
+                  <router-link
+                    :to="`/tasks?task=${parent.id}`"
+                    class="text-surface-200 text-[11px] underline decoration-white/30 underline-offset-2 hover:decoration-white/60"
+                  >
+                    <span class="truncate">{{ parent.name }}</span>
+                  </router-link>
+                  <span class="text-surface-500 text-[11px]">
+                    {{
+                      t(
+                        'page.tasks.questcard.requires_must_be',
+                        {
+                          status: formatRequirementExpectedStatuses(parent.expectedStatuses),
+                        },
+                        `must be ${formatRequirementExpectedStatuses(parent.expectedStatuses)}`
+                      )
+                    }}
+                  </span>
+                  <span class="inline-flex items-center gap-0.5 text-[10px] text-amber-400/80">
+                    <UIcon name="i-mdi-information-outline" class="h-3 w-3 shrink-0" />
+                    {{
+                      t(
+                        'page.tasks.questcard.requires_currently',
+                        {
+                          status: formatRequirementCurrentStatus(parent.currentStatus),
+                        },
+                        `currently ${formatRequirementCurrentStatus(parent.currentStatus)}`
+                      )
+                    }}
+                  </span>
+                </span>
               </AppTooltip>
               <span v-if="extraPendingParentsCount > 0" class="text-surface-500">
                 +{{ extraPendingParentsCount }}
@@ -88,22 +126,69 @@
             <span class="text-surface-300 ml-2">{{ lockedBefore }}</span>
           </template>
         </div>
-        <div v-if="isFailed" class="text-error-300 text-xs">
-          <span class="text-error-200/70">{{ t('page.tasks.questcard.failed_because') }}:</span>
-          <template v-if="failureSources.length > 0">
-            <span class="ml-2 inline-flex flex-wrap items-center gap-1.5">
-              <router-link
-                v-for="source in failureSources"
+        <div
+          v-if="isFailed || (isInvalid && blockedSources.length > 0)"
+          class="text-xs"
+          :class="isFailed ? 'text-error-300' : 'text-surface-300'"
+        >
+          <span :class="isFailed ? 'text-error-200/70' : 'text-surface-500'">
+            {{
+              isFailed
+                ? t('page.tasks.questcard.failed_because')
+                : t('page.tasks.questcard.blocked_because', 'Blocked because')
+            }}:
+          </span>
+          <template v-if="statusSources.length > 0">
+            <span class="ml-2 inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+              <AppTooltip
+                v-for="source in statusSources"
                 :key="source.id"
-                :to="`/tasks?task=${source.id}`"
-                class="border-error-500/30 bg-error-500/10 text-error-200 hover:bg-error-500/20 inline-flex max-w-[16rem] items-center rounded-md border px-2 py-0.5 text-[11px]"
+                :text="getStatusSourceTooltipText(source)"
               >
-                {{ source.name }}
-              </router-link>
+                <span class="inline-flex items-center gap-1.5">
+                  <router-link
+                    :to="`/tasks?task=${source.id}`"
+                    :class="
+                      isFailed
+                        ? 'text-error-200 decoration-error-400/40 hover:decoration-error-400/70'
+                        : 'text-surface-200 decoration-white/30 hover:decoration-white/60'
+                    "
+                    class="text-[11px] underline underline-offset-2"
+                  >
+                    {{ source.name }}
+                  </router-link>
+                  <span
+                    :class="isFailed ? 'text-error-300' : 'text-surface-400'"
+                    class="text-[11px]"
+                  >
+                    {{
+                      isFailed
+                        ? t(
+                            'page.tasks.questcard.failed_because_was',
+                            {
+                              status: formatRequirementExpectedStatuses(source.triggerStatuses),
+                            },
+                            `was ${formatRequirementExpectedStatuses(source.triggerStatuses)}`
+                          )
+                        : t(
+                            'page.tasks.questcard.blocked_because_was',
+                            {
+                              status: formatRequirementExpectedStatuses(source.triggerStatuses),
+                            },
+                            `was ${formatRequirementExpectedStatuses(source.triggerStatuses)}`
+                          )
+                    }}
+                  </span>
+                </span>
+              </AppTooltip>
             </span>
           </template>
-          <span v-else class="text-error-200/80 ml-2">
-            {{ t('page.tasks.questcard.failed_because_unknown') }}
+          <span v-else class="ml-2" :class="isFailed ? 'text-error-200/80' : 'text-surface-400'">
+            {{
+              isFailed
+                ? t('page.tasks.questcard.failed_because_unknown')
+                : t('page.tasks.questcard.blocked_because_unknown', 'Blocked by prerequisites')
+            }}
           </span>
         </div>
         <div v-if="showNeededBy" class="text-surface-400 text-xs">
@@ -254,7 +339,13 @@
   import { useTaskFiltering } from '@/composables/useTaskFiltering';
   import { isTaskSuccessful, useTaskState } from '@/composables/useTaskState';
   import QuestObjectivesSkeleton from '@/features/tasks/QuestObjectivesSkeleton.vue';
-  import { isTaskRequirementSatisfied } from '@/features/tasks/task-requirement-helpers';
+  import {
+    getCurrentTaskStatusForRequirement,
+    getRequiredTaskStatuses,
+    isTaskRequirementSatisfied,
+    type RequirementCurrentStatus,
+    type RequirementExpectedStatus,
+  } from '@/features/tasks/task-requirement-helpers';
   import TaskCardActions from '@/features/tasks/TaskCardActions.vue';
   import TaskCardBackground from '@/features/tasks/TaskCardBackground.vue';
   import TaskCardBadges from '@/features/tasks/TaskCardBadges.vue';
@@ -271,8 +362,21 @@
   import type { ActionButtonState } from '@/features/tasks/types';
   import type { GameEdition, Task, TaskObjective } from '@/types/tarkov';
   type ContextMenuRef = { open: (event: MouseEvent) => void };
+  type FailureSource = {
+    id: string;
+    name: string;
+    triggerStatuses: RequirementExpectedStatus[];
+  };
+  type PendingParentTask = {
+    currentStatus: RequirementCurrentStatus;
+    expectedStatuses: RequirementExpectedStatus[];
+    id: string;
+    name: string;
+  };
   // Module-level constants (moved from reactive scope)
   const MAX_DISPLAYED_NAMES = 3;
+  const COMPACT_REQUIRES_THRESHOLD = 3;
+  const COMPACT_TOOLTIP_PREVIEW = 3;
   const EDITION_SHORT_NAMES: Record<string, string> = {
     'Edge of Darkness': 'EOD',
     'Unheard Edition': 'Unheard',
@@ -334,6 +438,80 @@
   const hasStatus = (status: string[] | undefined, statuses: string[]) => {
     const normalized = (status ?? []).map((entry) => entry.toLowerCase());
     return statuses.some((value) => normalized.includes(value));
+  };
+  const formatRequirementExpectedStatuses = (statuses: RequirementExpectedStatus[]): string => {
+    const uniqueStatuses = Array.from(new Set(statuses));
+    const labels = uniqueStatuses.map((status) => {
+      if (status === 'active') {
+        return t('page.tasks.questcard.requirement_status_active', 'active/accepted');
+      }
+      if (status === 'failed') {
+        return t('page.tasks.questcard.requirement_status_failed', 'failed');
+      }
+      return t('page.tasks.questcard.requirement_status_completed', 'completed');
+    });
+    return labels.join(` ${t('page.tasks.questcard.keys_or', 'or')} `);
+  };
+  const formatRequirementCurrentStatus = (status: RequirementCurrentStatus): string => {
+    if (status === 'active') {
+      return t('page.tasks.questcard.requirement_status_active', 'active/accepted');
+    }
+    if (status === 'available') {
+      return t('page.tasks.questcard.requirement_status_available', 'available');
+    }
+    if (status === 'failed') {
+      return t('page.tasks.questcard.requirement_status_failed', 'failed');
+    }
+    if (status === 'not_started') {
+      return t('page.tasks.questcard.requirement_status_not_started', 'not started');
+    }
+    return t('page.tasks.questcard.requirement_status_completed', 'completed');
+  };
+  const formatRequirementActionVerbs = (statuses: RequirementExpectedStatus[]): string => {
+    const unique = Array.from(new Set(statuses));
+    const verbs = unique.map((s) => {
+      if (s === 'active') return t('page.tasks.questcard.requires_action_accept', 'Accept');
+      if (s === 'failed') return t('page.tasks.questcard.requires_action_fail', 'Fail');
+      return t('page.tasks.questcard.requires_action_complete', 'Complete');
+    });
+    return verbs.join(` ${t('page.tasks.questcard.keys_or', 'or')} `);
+  };
+  const getPendingParentTooltipText = (parent: PendingParentTask): string => {
+    const expected = formatRequirementExpectedStatuses(parent.expectedStatuses);
+    const current = formatRequirementCurrentStatus(parent.currentStatus);
+    const needsOnlyFailed = parent.expectedStatuses.every((s) => s === 'failed');
+    const needsOnlyCompleted = parent.expectedStatuses.every((s) => s === 'completed');
+    const isConflict =
+      (needsOnlyFailed && parent.currentStatus === 'completed') ||
+      (needsOnlyCompleted && parent.currentStatus === 'failed');
+    if (isConflict) {
+      return t(
+        'page.tasks.questcard.requires_tooltip_conflict',
+        { name: parent.name, expected, current },
+        `"${parent.name}" is ${current} but needs ${expected} — this task may be permanently locked`
+      );
+    }
+    const action = formatRequirementActionVerbs(parent.expectedStatuses);
+    return t(
+      'page.tasks.questcard.requires_tooltip_action',
+      { action, name: parent.name },
+      `${action} "${parent.name}" to unlock this task`
+    );
+  };
+  const getStatusSourceTooltipText = (source: FailureSource): string => {
+    const status = formatRequirementExpectedStatuses(source.triggerStatuses);
+    if (isFailed.value) {
+      return t(
+        'page.tasks.questcard.failed_because_status_tooltip',
+        { name: source.name, status },
+        `Auto-failed when "${source.name}" was ${status}`
+      );
+    }
+    return t(
+      'page.tasks.questcard.blocked_because_status_tooltip',
+      { name: source.name, status },
+      `Permanently blocked — "${source.name}" was ${status}`
+    );
   };
   const isOurFaction = computed(() => {
     const taskFaction = props.task.factionName;
@@ -463,9 +641,9 @@
       .map((id) => metadataStore.getTaskById(id))
       .filter((task): task is Task => task !== undefined);
   });
-  const failureSources = computed(() => {
+  const failureSources = computed<FailureSource[]>(() => {
     if (!isFailed.value) return [];
-    const sources = new Map<string, { id: string; name: string }>();
+    const sources = new Map<string, FailureSource>();
     (props.task.failConditions ?? [])
       .filter(
         (objective) => objective?.task?.id && hasStatus(objective.status, ['complete', 'completed'])
@@ -473,35 +651,126 @@
       .filter((objective) => isTaskSuccessful(objective.task!.id))
       .forEach((objective) => {
         const id = objective.task!.id;
-        sources.set(id, { id, name: objective.task!.name ?? id });
+        const triggerStatuses = getRequiredTaskStatuses(objective.status).filter(
+          (status): status is RequirementExpectedStatus => status !== 'active'
+        );
+        const existing = sources.get(id);
+        if (existing) {
+          existing.triggerStatuses = Array.from(
+            new Set([
+              ...existing.triggerStatuses,
+              ...(triggerStatuses.length ? triggerStatuses : ['completed']),
+            ])
+          );
+          return;
+        }
+        sources.set(id, {
+          id,
+          name: objective.task!.name ?? id,
+          triggerStatuses: triggerStatuses.length ? triggerStatuses : ['completed'],
+        });
       });
     const alternativeSourceIds = metadataStore.alternativeTaskSources[props.task.id] ?? [];
     alternativeSourceIds.forEach((taskId) => {
       if (!isTaskSuccessful(taskId)) return;
       const task = metadataStore.getTaskById(taskId);
       if (!task?.name) return;
-      sources.set(taskId, { id: taskId, name: task.name });
+      const existing = sources.get(taskId);
+      if (existing) {
+        if (!existing.triggerStatuses.includes('completed')) {
+          existing.triggerStatuses.push('completed');
+        }
+        return;
+      }
+      sources.set(taskId, { id: taskId, name: task.name, triggerStatuses: ['completed'] });
     });
     return Array.from(sources.values());
   });
-  const pendingParentTasks = computed(() => {
-    return parentTasks.value.filter((parent) => {
-      const requirementStatuses = requirementStatusesByTaskId.value.get(parent.id);
-      if (!requirementStatuses?.length) {
-        return !isTaskSuccessful(parent.id);
-      }
-      const completion = taskCompletions.value[parent.id];
-      const isUnlockable = progressStore.unlockedTasks[parent.id]?.self === true;
-      return requirementStatuses.some(
-        (statuses) => !isTaskRequirementSatisfied(statuses, completion, isUnlockable)
-      );
+  const blockedSources = computed<FailureSource[]>(() => {
+    if (!isInvalid.value || isFailed.value) return [];
+    const sources = new Map<string, FailureSource>();
+    (props.task.taskRequirements ?? []).forEach((requirement) => {
+      const sourceTaskId = requirement?.task?.id;
+      if (!sourceTaskId) return;
+      const expectedStatuses = getRequiredTaskStatuses(requirement.status);
+      const isFailedOnlyRequirement =
+        expectedStatuses.includes('failed') &&
+        !expectedStatuses.includes('completed') &&
+        !expectedStatuses.includes('active');
+      if (!isFailedOnlyRequirement) return;
+      if (!isTaskSuccessful(sourceTaskId)) return;
+      const sourceTask = metadataStore.getTaskById(sourceTaskId);
+      sources.set(sourceTaskId, {
+        id: sourceTaskId,
+        name: sourceTask?.name ?? sourceTaskId,
+        triggerStatuses: ['completed'],
+      });
     });
+    const alternativeSourceIds = metadataStore.alternativeTaskSources[props.task.id] ?? [];
+    alternativeSourceIds.forEach((taskId) => {
+      if (!isTaskSuccessful(taskId)) return;
+      const task = metadataStore.getTaskById(taskId);
+      if (!task?.name) return;
+      sources.set(taskId, { id: taskId, name: task.name, triggerStatuses: ['completed'] });
+    });
+    return Array.from(sources.values());
+  });
+  const statusSources = computed<FailureSource[]>(() =>
+    isFailed.value ? failureSources.value : blockedSources.value
+  );
+  const pendingParentTasks = computed<PendingParentTask[]>(() => {
+    return parentTasks.value
+      .map((parent) => {
+        const completion = taskCompletions.value[parent.id];
+        const isUnlockable = progressStore.unlockedTasks[parent.id]?.self === true;
+        const requirementStatuses = requirementStatusesByTaskId.value.get(parent.id);
+        const statusesToCheck = requirementStatuses?.length ? requirementStatuses : [undefined];
+        const unmetStatuses = statusesToCheck.filter(
+          (statuses) => !isTaskRequirementSatisfied(statuses, completion, isUnlockable)
+        );
+        if (!unmetStatuses.length) return null;
+        const expectedStatuses = Array.from(
+          new Set(unmetStatuses.flatMap((statuses) => getRequiredTaskStatuses(statuses)))
+        );
+        return {
+          currentStatus: getCurrentTaskStatusForRequirement(completion, isUnlockable),
+          expectedStatuses,
+          id: parent.id,
+          name: parent.name ?? parent.id,
+        };
+      })
+      .filter((parent): parent is PendingParentTask => parent !== null);
   });
   const lockedBefore = computed(() => pendingParentTasks.value.length);
-  const displayedPendingParents = computed(() => pendingParentTasks.value.slice(0, 2));
-  const extraPendingParentsCount = computed(() => {
-    return Math.max(0, pendingParentTasks.value.length - displayedPendingParents.value.length);
+  const useCompactRequires = computed(
+    () => pendingParentTasks.value.length > COMPACT_REQUIRES_THRESHOLD
+  );
+  const totalParentCount = computed(() => parentTasks.value.length);
+  const completedParentCount = computed(
+    () => totalParentCount.value - pendingParentTasks.value.length
+  );
+  const compactRequiresTooltip = computed(() => {
+    const preview = pendingParentTasks.value.slice(0, COMPACT_TOOLTIP_PREVIEW).map((p) => p.name);
+    const remaining = pendingParentTasks.value.length - preview.length;
+    if (remaining > 0) {
+      return t(
+        'page.tasks.questcard.requires_progress_tooltip_overflow',
+        { tasks: preview.join(', '), count: remaining },
+        `Next: ${preview.join(', ')}, and ${remaining} more`
+      );
+    }
+    return t(
+      'page.tasks.questcard.requires_progress_tooltip',
+      { tasks: preview.join(', ') },
+      `Next: ${preview.join(', ')}`
+    );
   });
+  const displayedPendingParents = computed(() =>
+    pendingParentTasks.value.slice(0, COMPACT_REQUIRES_THRESHOLD)
+  );
+  const extraPendingParentsCount = computed(() =>
+    Math.max(0, pendingParentTasks.value.length - displayedPendingParents.value.length)
+  );
   const childTasks = computed(() => {
     if (!props.task.children?.length) return [];
     return props.task.children
