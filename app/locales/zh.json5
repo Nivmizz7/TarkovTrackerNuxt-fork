@@ -480,6 +480,8 @@
       clear_search: '清除搜索',
       items: '物品',
       empty: '没有符合搜索的物品。',
+      error: 'Unable to load needed items.',
+      retry: 'Try again',
       filters: {
         label: '筛选',
         sections: {
@@ -524,6 +526,8 @@
           open_api_documentation: 'OpenAPI接口文档',
           create_token_success: 'API令牌创建成功',
           create_token_error: 'API令牌创建失败',
+          copy_failed: 'Failed to copy token.',
+          copy_token: 'Copy token',
           token_created: '令牌已生成',
           token_created_description: '请立即复制并妥善保存，此令牌仅显示一次',
           token_created_close: '完成',
@@ -533,6 +537,12 @@
           no_tokens: '你暂无Tarkov Tracker API令牌',
           not_logged_in: '需登录后才能创建API令牌',
           default_note: '未命名令牌',
+          show_token: 'Show token',
+          token_value_hidden: 'Token value hidden by server configuration',
+          token_value_missing: 'Token value unavailable',
+          token_value_unavailable: 'Token value display unavailable',
+          token_value_unavailable_desc: 'Your current API does not expose token values for existing tokens.',
+          hide_token: 'Hide token',
           revoke_button: '撤销',
           list: {
             created: '创建时间',
@@ -556,10 +566,6 @@
         title: '队伍',
         description: '与队友协作推进《逃离塔科夫》进度。分享任务完成情况、藏身处状态，并协调物品收集。',
       },
-      warning: {
-        title: '队伍功能开发中',
-        description: '队伍功能尚未完全更新或修复，部分功能可能无法正常工作。',
-      },
       card: {
         manageteam: {
           title: '队伍成员',
@@ -574,16 +580,14 @@
         },
         teamoptions: {
           title: '队伍联动设置',
-          task_hide_all: '隐藏所有队友的任务',
-          task_show_all: '显示所有队友的任务',
-          items_hide_all: '隐藏所有队友的所需物品',
-          items_show_all: '显示所有队友的所需物品',
-          items_show_non_fir: '显示所有队友所需物品(含非战局拾取)',
-          items_hide_non_fir: '隐藏队友非战局拾取的所需物品',
-          items_hide_hideout: '隐藏队友藏身处所需物品',
-          items_show_hideout: '显示队友藏身处所需物品',
-          map_hide_all: '隐藏所有队友的地图任务目标',
-          map_show_all: '显示所有队友的地图任务目标',
+          section_tasks: 'Tasks',
+          section_items: 'Items',
+          section_maps: 'Maps',
+          toggle_tasks: "Hide team members' tasks",
+          toggle_items: "Hide team members' needed items",
+          toggle_non_fir: 'Hide non-FIR needed items',
+          toggle_hideout: 'Hide hideout needed items',
+          toggle_maps: "Hide team members' map objectives",
         },
         myteam: {
           title: '我的队伍',
@@ -640,6 +644,8 @@
       terms_of_service: '服务条款',
       popup_blocked_title: '弹出窗口被阻止',
       popup_blocked_description: '你的浏览器阻止了登录窗口。正在为你重定向...',
+      error_title: 'Sign-in failed',
+      error_description: 'Authentication was canceled or failed. Please try again.',
       login_options: '登录选项',
     },
     not_found: {
@@ -667,6 +673,7 @@
   },
   navigation_drawer: {
     main_navigation: '主导航',
+    close_menu: 'Close menu',
     toggle: '切换菜单',
     brand_name: 'TarkovTracker.org',
     home: '总览面板',
@@ -693,6 +700,7 @@
     mode_manual: '手动',
     level_display_auto: '等级 {level}（已启用自动计算）',
     level_display_editable: '等级 {level}，点击或按回车编辑',
+    auto_level_enabled: 'Automatic level calculation is enabled',
     increment_level: '提升等级',
     decrement_level: '降低等级',
   },
@@ -749,6 +757,7 @@
     game_settings: {
       title: '游戏设置',
       switch_mode_failed: '切换游戏模式失败，请重试',
+      switch_mode_fetch_failed: 'Game mode switched but failed to refresh data, please retry',
     },
     data_management: {
       reset_pvp_title: '重置 PvP 数据',
@@ -978,6 +987,11 @@
     not_collected: '未收集',
     click_to_collect: '点击收藏',
     click_to_uncollect: '点击取消收集',
+    modal: {
+      smart_fill_error: 'Unable to apply smart fill',
+      reset_error: 'Unable to reset item progress',
+      unknown_error: 'An unexpected error occurred',
+    },
   },
   skills: {
     req: '要求',

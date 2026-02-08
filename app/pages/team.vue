@@ -6,18 +6,10 @@
       </div>
       <div class="relative mx-auto max-w-6xl">
         <div class="space-y-6">
-          <UAlert
-            icon="i-mdi-alert"
-            color="warning"
-            variant="soft"
-            :title="t('page.team.warning.title')"
-          >
-            <template #description>
-              {{ t('page.team.warning.description') }}
-            </template>
-          </UAlert>
-          <div class="grid gap-4 lg:grid-cols-2">
-            <MyTeam />
+          <div class="grid gap-4 lg:grid-cols-3">
+            <div class="lg:col-span-2">
+              <MyTeam />
+            </div>
             <TeamOptions />
           </div>
           <TeamMembers v-if="userHasTeam" />

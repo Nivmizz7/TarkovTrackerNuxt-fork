@@ -100,10 +100,8 @@ vi.mock('@/utils/logger', () => ({
     debug: vi.fn(),
   },
 }));
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key,
-  }),
+mockNuxtImport('useI18n', () => () => ({
+  t: (key: string) => key,
 }));
 const UButtonStub = {
   props: ['disabled', 'loading'],

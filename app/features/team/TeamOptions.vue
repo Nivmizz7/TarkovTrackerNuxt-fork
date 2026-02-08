@@ -4,74 +4,89 @@
       {{ $t('page.team.card.teamoptions.title') }}
     </template>
     <template #content>
-      <div class="space-y-4 p-4">
-        <div class="flex items-center justify-between">
-          <div class="text-sm font-medium" data-testid="task-toggle">
-            {{ $t(taskHideAllLabel) }}
+      <div class="space-y-6 px-4 py-4">
+        <div class="space-y-3">
+          <h3 class="text-surface-200 text-sm font-semibold tracking-wider uppercase">
+            {{ $t('page.team.card.teamoptions.section_tasks') }}
+          </h3>
+          <div
+            class="bg-surface-800/50 border-surface-700 flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+          >
+            <p class="text-surface-200 text-sm font-medium" data-testid="task-toggle">
+              {{ $t('page.team.card.teamoptions.toggle_tasks') }}
+            </p>
+            <USwitch
+              :model-value="taskHideAll"
+              data-testid="task-switch"
+              @update:model-value="(v: boolean) => preferencesStore.setQuestTeamHideAll(v)"
+            />
           </div>
-          <label class="relative inline-flex cursor-pointer items-center">
-            <input
-              v-model="taskHideAll"
-              type="checkbox"
-              class="peer sr-only"
-              data-testid="task-checkbox"
-            />
-            <div :class="TOGGLE_CLASSES"></div>
-          </label>
         </div>
-        <div class="flex items-center justify-between">
-          <div class="text-sm font-medium">{{ $t(itemsHideAllLabel) }}</div>
-          <label class="relative inline-flex cursor-pointer items-center">
-            <input
-              v-model="itemsHideAll"
-              type="checkbox"
-              class="peer sr-only"
-              data-testid="items-checkbox"
-            />
-            <div :class="TOGGLE_CLASSES"></div>
-          </label>
-        </div>
-        <div class="flex items-center justify-between">
-          <div class="text-sm font-medium" :class="{ 'opacity-50': itemsHideAll }">
-            {{ $t(itemsHideNonFIRLabel) }}
+        <USeparator />
+        <div class="space-y-3">
+          <h3 class="text-surface-200 text-sm font-semibold tracking-wider uppercase">
+            {{ $t('page.team.card.teamoptions.section_items') }}
+          </h3>
+          <div class="space-y-2">
+            <div
+              class="bg-surface-800/50 border-surface-700 flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+            >
+              <p class="text-surface-200 text-sm font-medium">
+                {{ $t('page.team.card.teamoptions.toggle_items') }}
+              </p>
+              <USwitch
+                :model-value="itemsHideAll"
+                data-testid="items-switch"
+                @update:model-value="(v: boolean) => preferencesStore.setItemsTeamHideAll(v)"
+              />
+            </div>
+            <div
+              class="bg-surface-800/50 border-surface-700 flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+              :class="{ 'opacity-50': itemsHideAll }"
+            >
+              <p class="text-surface-200 text-sm font-medium">
+                {{ $t('page.team.card.teamoptions.toggle_non_fir') }}
+              </p>
+              <USwitch
+                :model-value="itemsHideNonFIR"
+                :disabled="itemsHideAll"
+                data-testid="nonfir-switch"
+                @update:model-value="(v: boolean) => preferencesStore.setItemsTeamHideNonFIR(v)"
+              />
+            </div>
+            <div
+              class="bg-surface-800/50 border-surface-700 flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+              :class="{ 'opacity-50': itemsHideAll }"
+            >
+              <p class="text-surface-200 text-sm font-medium">
+                {{ $t('page.team.card.teamoptions.toggle_hideout') }}
+              </p>
+              <USwitch
+                :model-value="itemsHideHideout"
+                :disabled="itemsHideAll"
+                data-testid="hideout-switch"
+                @update:model-value="(v: boolean) => preferencesStore.setItemsTeamHideHideout(v)"
+              />
+            </div>
           </div>
-          <label class="relative inline-flex cursor-pointer items-center">
-            <input
-              v-model="itemsHideNonFIR"
-              type="checkbox"
-              :disabled="itemsHideAll"
-              class="peer sr-only"
-              data-testid="nonfir-checkbox"
-            />
-            <div :class="TOGGLE_CLASSES_DISABLED"></div>
-          </label>
         </div>
-        <div class="flex items-center justify-between">
-          <div class="text-sm font-medium" :class="{ 'opacity-50': itemsHideAll }">
-            {{ $t(itemsHideHideoutLabel) }}
+        <USeparator />
+        <div class="space-y-3">
+          <h3 class="text-surface-200 text-sm font-semibold tracking-wider uppercase">
+            {{ $t('page.team.card.teamoptions.section_maps') }}
+          </h3>
+          <div
+            class="bg-surface-800/50 border-surface-700 flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+          >
+            <p class="text-surface-200 text-sm font-medium">
+              {{ $t('page.team.card.teamoptions.toggle_maps') }}
+            </p>
+            <USwitch
+              :model-value="mapHideAll"
+              data-testid="map-switch"
+              @update:model-value="(v: boolean) => preferencesStore.setMapTeamHideAll(v)"
+            />
           </div>
-          <label class="relative inline-flex cursor-pointer items-center">
-            <input
-              v-model="itemsHideHideout"
-              type="checkbox"
-              :disabled="itemsHideAll"
-              class="peer sr-only"
-              data-testid="hideout-checkbox"
-            />
-            <div :class="TOGGLE_CLASSES_DISABLED"></div>
-          </label>
-        </div>
-        <div class="flex items-center justify-between">
-          <div class="text-sm font-medium">{{ $t(mapHideAllLabel) }}</div>
-          <label class="relative inline-flex cursor-pointer items-center">
-            <input
-              v-model="mapHideAll"
-              type="checkbox"
-              class="peer sr-only"
-              data-testid="map-checkbox"
-            />
-            <div :class="TOGGLE_CLASSES"></div>
-          </label>
         </div>
       </div>
     </template>
@@ -80,53 +95,10 @@
 <script setup lang="ts">
   import GenericCard from '@/components/ui/GenericCard.vue';
   import { usePreferencesStore } from '@/stores/usePreferences';
-  const TOGGLE_CLASSES =
-    "peer bg-surface-700 peer-checked:bg-error-600 peer-focus:ring-error-300 after:border-surface-300 h-6 w-11 rounded-full peer-focus:ring-2 peer-focus:outline-none after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:border after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white";
-  const TOGGLE_CLASSES_DISABLED = `${TOGGLE_CLASSES} peer-disabled:cursor-not-allowed peer-disabled:opacity-50`;
   const preferencesStore = usePreferencesStore();
-  const taskHideAll = computed({
-    get: () => preferencesStore.taskTeamAllHidden,
-    set: (value) => preferencesStore.setQuestTeamHideAll(value),
-  });
-  const taskHideAllLabel = computed(() =>
-    preferencesStore.taskTeamAllHidden
-      ? 'page.team.card.teamoptions.task_hide_all'
-      : 'page.team.card.teamoptions.task_show_all'
-  );
-  const itemsHideAll = computed({
-    get: () => preferencesStore.itemsTeamAllHidden,
-    set: (value) => preferencesStore.setItemsTeamHideAll(value),
-  });
-  const itemsHideAllLabel = computed(() =>
-    preferencesStore.itemsTeamAllHidden
-      ? 'page.team.card.teamoptions.items_hide_all'
-      : 'page.team.card.teamoptions.items_show_all'
-  );
-  const itemsHideNonFIR = computed({
-    get: () => preferencesStore.itemsTeamNonFIRHidden,
-    set: (value) => preferencesStore.setItemsTeamHideNonFIR(value),
-  });
-  const itemsHideNonFIRLabel = computed(() =>
-    preferencesStore.itemsTeamNonFIRHidden
-      ? 'page.team.card.teamoptions.items_hide_non_fir'
-      : 'page.team.card.teamoptions.items_show_non_fir'
-  );
-  const itemsHideHideout = computed({
-    get: () => preferencesStore.itemsTeamHideoutHidden,
-    set: (value) => preferencesStore.setItemsTeamHideHideout(value),
-  });
-  const itemsHideHideoutLabel = computed(() =>
-    preferencesStore.itemsTeamHideoutHidden
-      ? 'page.team.card.teamoptions.items_hide_hideout'
-      : 'page.team.card.teamoptions.items_show_hideout'
-  );
-  const mapHideAll = computed({
-    get: () => preferencesStore.mapTeamAllHidden,
-    set: (value) => preferencesStore.setMapTeamHideAll(value),
-  });
-  const mapHideAllLabel = computed(() =>
-    preferencesStore.mapTeamAllHidden
-      ? 'page.team.card.teamoptions.map_hide_all'
-      : 'page.team.card.teamoptions.map_show_all'
-  );
+  const taskHideAll = computed(() => preferencesStore.taskTeamAllHidden);
+  const itemsHideAll = computed(() => preferencesStore.itemsTeamAllHidden);
+  const itemsHideNonFIR = computed(() => preferencesStore.itemsTeamNonFIRHidden);
+  const itemsHideHideout = computed(() => preferencesStore.itemsTeamHideoutHidden);
+  const mapHideAll = computed(() => preferencesStore.mapTeamAllHidden);
 </script>

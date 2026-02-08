@@ -480,6 +480,8 @@
       clear_search: 'Effacer la recherche',
       items: 'articles',
       empty: 'Aucun objet ne correspond à votre recherche.',
+      error: 'Unable to load needed items.',
+      retry: 'Try again',
       filters: {
         label: 'Filtres',
         sections: {
@@ -524,6 +526,8 @@
           open_api_documentation: 'Documentation OpenAPI',
           create_token_success: 'Nouveau token créé avec succès.',
           create_token_error: 'Échec de la création du nouveau token.',
+          copy_failed: 'Failed to copy token.',
+          copy_token: 'Copy token',
           token_created: 'Token créé',
           token_created_description: 'Copiez et conservez ce token maintenant. Vous ne pourrez plus le consulter ensuite.',
           token_created_close: 'Terminé',
@@ -533,6 +537,12 @@
           no_tokens: 'Aucun token trouvé.',
           not_logged_in: 'Vous devez être connecté pour créer un token API.',
           default_note: 'Token sans titre',
+          show_token: 'Show token',
+          token_value_hidden: 'Token value hidden by server configuration',
+          token_value_missing: 'Token value unavailable',
+          token_value_unavailable: 'Token value display unavailable',
+          token_value_unavailable_desc: 'Your current API does not expose token values for existing tokens.',
+          hide_token: 'Hide token',
           revoke_button: 'Révoquer',
           list: {
             created: 'Créé le',
@@ -556,10 +566,6 @@
         title: 'Équipe',
         description: "Collaborez avec vos coéquipiers sur la progression d'Escape from Tarkov. Partagez les quêtes terminées, l'état du refuge et coordonnez la collecte d'objets.",
       },
-      warning: {
-        title: 'Équipes en cours de développement',
-        description: "Les équipes n'ont pas encore été entièrement mises à jour ou corrigées, donc certaines fonctionnalités peuvent ne pas fonctionner correctement.",
-      },
       card: {
         manageteam: {
           title: 'Membre de l’équipe',
@@ -573,17 +579,15 @@
           },
         },
         teamoptions: {
-          title: 'Options de l’équipe',
-          task_hide_all: 'Masquer les tâches de tous les membres de l’équipe',
-          task_show_all: 'Afficher les tâches de tous les membres de l’équipe',
-          items_hide_all: 'Masquer les objets requis de tous les membres de l’équipe',
-          items_show_all: 'Afficher les objets requis de tous les membres de l’équipe',
-          items_show_non_fir: 'Afficher tous les objets requis des membres de l’équipe (y compris non-FIR)',
-          items_hide_non_fir: "Masquer tous les objets requis des membres de l'équipe non-FIR",
-          items_hide_hideout: 'Masquer les objets requis de la planque de tous les membres de l’équipe',
-          items_show_hideout: 'Afficher les objets requis de la planque de tous les membres de l’équipe',
-          map_hide_all: 'Masquer les objectifs de carte de tous les membres de l’équipe',
-          map_show_all: 'Afficher les objectifs de carte de tous les membres de l’équipe',
+          title: "Options de l'équipe",
+          section_tasks: 'Tasks',
+          section_items: 'Items',
+          section_maps: 'Maps',
+          toggle_tasks: "Hide team members' tasks",
+          toggle_items: "Hide team members' needed items",
+          toggle_non_fir: 'Hide non-FIR needed items',
+          toggle_hideout: 'Hide hideout needed items',
+          toggle_maps: "Hide team members' map objectives",
         },
         myteam: {
           title: 'Mon équipe',
@@ -640,6 +644,8 @@
       terms_of_service: "Conditions d'utilisation",
       popup_blocked_title: 'Popup bloqué',
       popup_blocked_description: 'Votre navigateur a bloqué la fenêtre de connexion. Redirection en cours...',
+      error_title: 'Sign-in failed',
+      error_description: 'Authentication was canceled or failed. Please try again.',
       login_options: 'Options de connexion',
     },
     not_found: {
@@ -667,6 +673,7 @@
   },
   navigation_drawer: {
     main_navigation: 'Navigation principale',
+    close_menu: 'Close menu',
     toggle: 'Basculer le menu',
     brand_name: 'TarkovTracker.org',
     home: 'Tableau de bord',
@@ -693,6 +700,7 @@
     mode_manual: 'Manuel',
     level_display_auto: 'Niveau {level} (calcul automatique activé)',
     level_display_editable: 'Niveau {level}, cliquez ou appuyez sur Entrée pour modifier',
+    auto_level_enabled: 'Automatic level calculation is enabled',
     increment_level: 'Augmenter le niveau',
     decrement_level: 'Diminuer le niveau',
   },
@@ -749,6 +757,7 @@
     game_settings: {
       title: 'Paramètres du jeu',
       switch_mode_failed: 'Échec du changement de mode de jeu, veuillez réessayer',
+      switch_mode_fetch_failed: 'Game mode switched but failed to refresh data, please retry',
     },
     data_management: {
       reset_pvp_title: 'Réinitialiser les données PvP',
@@ -978,6 +987,11 @@
     not_collected: 'Non collecté',
     click_to_collect: 'Cliquez pour collecter',
     click_to_uncollect: 'Cliquez pour annuler la collecte',
+    modal: {
+      smart_fill_error: 'Unable to apply smart fill',
+      reset_error: 'Unable to reset item progress',
+      unknown_error: 'An unexpected error occurred',
+    },
   },
   skills: {
     req: 'Demande',

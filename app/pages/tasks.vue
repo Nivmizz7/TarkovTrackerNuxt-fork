@@ -307,13 +307,30 @@
     if (!selectedMapData.value) return [];
     const mapId = selectedMapData.value.id;
     const marks: MapObjectiveMark[] = [];
+    const objCompletions = progressStore.objectiveCompletions;
+    const taskCompletions = progressStore.tasksCompletions;
+    const includeTeammates = !preferencesStore.mapTeamAllHidden;
+    const teammateIds = includeTeammates
+      ? Object.keys(progressStore.visibleTeamStores).filter((id) => id !== 'self')
+      : [];
     visibleTasks.value.forEach((task) => {
       if (!task.objectives) return;
       const objectiveMaps = metadataStore.objectiveMaps?.[task.id] ?? [];
       const objectiveGps = metadataStore.objectiveGPS?.[task.id] ?? [];
       task.objectives.forEach((obj) => {
-        if (tarkovStore.isTaskObjectiveComplete(obj.id) && !shouldShowCompletedObjectives.value)
-          return;
+        const selfComplete = tarkovStore.isTaskObjectiveComplete(obj.id);
+        const users: string[] = [];
+        if (!selfComplete || shouldShowCompletedObjectives.value) {
+          users.push('self');
+        }
+        for (const tmId of teammateIds) {
+          const objDone = objCompletions[obj.id]?.[tmId];
+          const taskDone = taskCompletions[task.id]?.[tmId];
+          if (!objDone && !taskDone) {
+            users.push(tmId);
+          }
+        }
+        if (users.length === 0) return;
         const zones: MapObjectiveZone[] = [];
         const possibleLocations: MapObjectiveLocation[] = [];
         if (Array.isArray(obj.zones)) {
@@ -361,7 +378,7 @@
             id: obj.id,
             zones,
             possibleLocations,
-            users: ['self'],
+            users,
           });
         }
       });
