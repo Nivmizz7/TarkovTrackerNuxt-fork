@@ -105,9 +105,13 @@
       pmc: 'PMC',
       scav: 'Scav',
     },
+    layers: {
+      pmc_spawns: 'PMC出生点',
+    },
     legend: {
       your_objectives: '你的目标',
       team_objectives: '团队目标',
+      pmc_spawn: 'PMC出生点',
       pmc_extract: 'PMC撤离点',
       scav_extract: 'Scav撤离点',
       shared_extract: '共享撤离点（任一阵营）',

@@ -105,9 +105,13 @@
       pmc: 'PMC',
       scav: 'Scav',
     },
+    layers: {
+      pmc_spawns: 'PMC-Spawns',
+    },
     legend: {
       your_objectives: 'Deine Ziele',
       team_objectives: 'Teamziele',
+      pmc_spawn: 'PMC-Spawn',
       pmc_extract: 'PMC-Extrakt',
       scav_extract: 'Scav-Extrakt',
       shared_extract: 'Gemeinsamer Extrakt (beide Fraktionen)',
