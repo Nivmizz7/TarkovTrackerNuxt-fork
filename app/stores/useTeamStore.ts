@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
-import { useToast } from '#imports';
 import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
 import { useSupabaseListener } from '@/composables/supabase/useSupabaseListener';
+import { useSafeToast } from '@/composables/useSafeToast';
 import { actions, defaultState, getters, type UserState } from '@/stores/progressState';
 import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
 import { useTarkovStore } from '@/stores/useTarkov';
@@ -416,6 +416,7 @@ export function useTeammateStores() {
   const { teamStore } = useTeamStoreWithSupabase();
   const teammateStores = ref<Record<string, Store<string, UserState>>>({});
   const teammateUnsubscribes = ref<Record<string, () => void>>({});
+  const toast = useSafeToast();
   // Track pending retry timeouts for cleanup
   const pendingRetryTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
   // Watch team state changes to manage teammate stores
@@ -448,8 +449,7 @@ export function useTeammateStores() {
         }
       } catch (error) {
         logger.error('Error managing teammate stores:', error);
-        const toast = useToast();
-        toast.add({ title: 'Failed to load teammate data. Retrying…', color: 'warning' });
+        toast?.add({ title: 'Failed to load teammate data. Retrying…', color: 'warning' });
         // Clear any existing retry timeout before setting a new one
         if (pendingRetryTimeout.value) {
           clearTimeout(pendingRetryTimeout.value);
@@ -463,10 +463,10 @@ export function useTeammateStores() {
                 createTeammateStore(teammate);
               }
             }
-            toast.add({ title: 'Teammate data loaded on retry', color: 'primary' });
+            toast?.add({ title: 'Teammate data loaded on retry', color: 'primary' });
           } catch (e) {
             logger.error('Retry failed for teammate stores:', e);
-            toast.add({ title: 'Could not load teammate data', color: 'error' });
+            toast?.add({ title: 'Could not load teammate data', color: 'error' });
           }
         }, 1500);
       }
