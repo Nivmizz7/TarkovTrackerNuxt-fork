@@ -93,6 +93,9 @@ export function useTaskNotification(): TaskNotificationReturn {
   ) => {
     if (!Array.isArray(alternatives)) return;
     alternatives.forEach((a: string) => {
+      const preserveCompletedAlternative =
+        taskAction === 'setTaskFailed' && tarkovStore.isTaskComplete(a);
+      if (preserveCompletedAlternative) return;
       if (taskAction === 'setTaskComplete') {
         tarkovStore.setTaskComplete(a);
       } else if (taskAction === 'setTaskUncompleted') {

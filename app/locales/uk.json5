@@ -328,17 +328,6 @@
         reset: 'Скинути',
         apply: 'Застосувати',
         level_option: 'Рівень {level}',
-        type_option: {
-          pick_up: 'Підібрати',
-          elimination: 'Усунення',
-          completion: 'Завершення',
-          exploration: 'Розвідка',
-          standing: 'Репутація',
-          skill: 'Навичка',
-          multi: 'Мульти',
-          weapon_assembly: 'Зброяр',
-          merchant: 'Торговець',
-        },
       },
       settings: {
         title: 'Параметри завдання',

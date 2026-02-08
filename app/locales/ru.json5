@@ -328,17 +328,6 @@
         reset: 'Сбросить',
         apply: 'Применить',
         level_option: 'Уровень {level}',
-        type_option: {
-          pick_up: 'Подобрать',
-          elimination: 'Устранение',
-          completion: 'Завершение',
-          exploration: 'Разведка',
-          standing: 'Репутация',
-          skill: 'Навык',
-          multi: 'Мульти',
-          weapon_assembly: 'Оружейник',
-          merchant: 'Торговец',
-        },
       },
       settings: {
         title: 'Настройки задачи',

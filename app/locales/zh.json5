@@ -328,17 +328,6 @@
         reset: '重置筛选',
         apply: '应用筛选',
         level_option: '等级 {level}',
-        type_option: {
-          pick_up: '收集类',
-          elimination: '清除类',
-          completion: '完成类',
-          exploration: '探索类',
-          standing: '声望类',
-          skill: '技能类',
-          multi: '综合类',
-          weapon_assembly: '改枪类',
-          merchant: '商人类',
-        },
       },
       settings: {
         title: '任务设置',

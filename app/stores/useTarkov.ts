@@ -826,32 +826,28 @@ const tarkovActions = {
           repairedCount += this.markTaskAsFailed(altTaskId, gameModeData, tasksMap);
           continue;
         }
+        const altTask = tasksMap.get(altTaskId);
+        const shouldFailAlt = shouldFailWhenOtherCompleted(altTask, taskId);
+        const shouldFailTask = shouldFailWhenOtherCompleted(task, altTaskId);
+        if (!shouldFailAlt || !shouldFailTask) {
+          continue;
+        }
         const taskTimestamp = completion.timestamp ?? 0;
         const altTimestamp = altCompletion.timestamp ?? 0;
-        if (taskTimestamp === 0 && altTimestamp === 0) {
-          const altTask = tasksMap.get(altTaskId);
-          const shouldFailAlt = shouldFailWhenOtherCompleted(altTask, taskId);
-          const shouldFailTask = shouldFailWhenOtherCompleted(task, altTaskId);
-          if (shouldFailAlt && !shouldFailTask) {
-            repairedCount += this.markTaskAsFailed(altTaskId, gameModeData, tasksMap);
-            continue;
-          }
-          if (shouldFailTask && !shouldFailAlt) {
-            repairedCount += this.markTaskAsFailed(taskId, gameModeData, tasksMap);
-            continue;
-          }
+        if (taskTimestamp === altTimestamp) {
           const deterministicFail = taskId > altTaskId ? taskId : altTaskId;
           logger.warn(
             `[TarkovStore] Both "${taskId}" and alternative "${altTaskId}" are complete ` +
-              `with no timestamps - applying deterministic fallback (failing "${deterministicFail}").`
+              `${taskTimestamp === 0 ? 'with no timestamps' : 'with identical timestamps'} - ` +
+              `applying deterministic fallback (failing "${deterministicFail}").`
           );
           repairedCount += this.markTaskAsFailed(deterministicFail, gameModeData, tasksMap);
           continue;
         }
-        if (taskTimestamp >= altTimestamp && altTimestamp > 0) {
-          repairedCount += this.markTaskAsFailed(taskId, gameModeData, tasksMap);
-        } else {
+        if (taskTimestamp > altTimestamp) {
           repairedCount += this.markTaskAsFailed(altTaskId, gameModeData, tasksMap);
+        } else {
+          repairedCount += this.markTaskAsFailed(taskId, gameModeData, tasksMap);
         }
       }
     }
@@ -869,9 +865,22 @@ const tarkovActions = {
         alternativeSourcesByTask.get(alternativeId)!.push(taskId);
       });
     }
+    const wasCompletedBeforeTrigger = (
+      task: Task | undefined,
+      taskTimestamp: number | undefined,
+      triggerTaskId: string
+    ) => {
+      const ts = taskTimestamp ?? 0;
+      const triggerTs = completions[triggerTaskId]?.timestamp ?? 0;
+      if (ts <= 0 || triggerTs <= 0 || ts >= triggerTs) return false;
+      if (shouldFailWhenOtherCompleted(tasksMap.get(triggerTaskId), task?.id ?? '')) return false;
+      return true;
+    };
     const shouldRemainFailed = (
       task: Task | undefined,
-      completion: { complete?: boolean; failed?: boolean; manual?: boolean } | undefined
+      completion:
+        | { complete?: boolean; failed?: boolean; manual?: boolean; timestamp?: number }
+        | undefined
     ) => {
       if (completion?.manual === true) return true;
       if (!task) return true;
@@ -881,13 +890,18 @@ const tarkovActions = {
           (objective) =>
             objective?.task?.id &&
             hasCompleteStatus(objective.status) &&
-            isTaskSuccessful(objective.task.id)
+            isTaskSuccessful(objective.task.id) &&
+            !wasCompletedBeforeTrigger(task, completion?.timestamp, objective.task.id)
         )
       ) {
         return true;
       }
       const alternativeSources = alternativeSourcesByTask.get(task.id) ?? [];
-      const failedByAlternative = alternativeSources.some((sourceId) => isTaskSuccessful(sourceId));
+      const failedByAlternative = alternativeSources.some(
+        (sourceId) =>
+          isTaskSuccessful(sourceId) &&
+          !wasCompletedBeforeTrigger(task, completion?.timestamp, sourceId)
+      );
       if (failedByAlternative) {
         return true;
       }

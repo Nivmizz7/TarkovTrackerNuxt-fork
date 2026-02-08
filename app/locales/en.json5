@@ -334,17 +334,6 @@
         reset: 'Reset',
         apply: 'Apply',
         level_option: 'Level {level}',
-        type_option: {
-          pick_up: 'Pick Up',
-          elimination: 'Elimination',
-          completion: 'Completion',
-          exploration: 'Exploration',
-          standing: 'Standing',
-          skill: 'Skill',
-          multi: 'Multi',
-          weapon_assembly: 'Gunsmith',
-          merchant: 'Merchant',
-        },
       },
       settings: {
         title: 'Task Settings',
