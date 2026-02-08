@@ -257,27 +257,38 @@
               {{ t('page.tasks.user_views.yourself').toUpperCase() }}
             </UBadge>
           </UButton>
+          <template v-for="teamId in teammates" :key="teamId">
+            <UButton
+              variant="ghost"
+              color="neutral"
+              size="sm"
+              :aria-pressed="preferencesStore.getTaskUserView === teamId"
+              :class="[
+                preferencesStore.getTaskUserView === teamId
+                  ? 'bg-white/10 text-white'
+                  : 'text-surface-400',
+                isTeammateHidden(teamId) ? 'opacity-50' : '',
+              ]"
+              @click="onUserViewSelect({ label: getTeammateDisplayName(teamId), value: teamId })"
+            >
+              <UIcon name="i-mdi-account" class="h-4 w-4 sm:mr-1" />
+              <span class="text-xs sm:text-sm">
+                {{ getTeammateDisplayName(teamId).toUpperCase() }}
+              </span>
+            </UButton>
+            <UButton
+              variant="ghost"
+              size="sm"
+              :color="isTeammateHidden(teamId) ? 'error' : 'success'"
+              :icon="isTeammateHidden(teamId) ? 'i-mdi-eye-off' : 'i-mdi-eye'"
+              :disabled="preferencesStore.taskTeamAllHidden"
+              :aria-label="getTeammateVisibilityLabel(teamId)"
+              :aria-pressed="!isTeammateHidden(teamId)"
+              @click="toggleTeammateVisibility(teamId)"
+            />
+          </template>
           <UButton
-            v-for="teamId in visibleTeammates"
-            :key="teamId"
-            variant="ghost"
-            color="neutral"
-            size="sm"
-            :aria-pressed="preferencesStore.getTaskUserView === teamId"
-            :class="
-              preferencesStore.getTaskUserView === teamId
-                ? 'bg-white/10 text-white'
-                : 'text-surface-400'
-            "
-            @click="onUserViewSelect({ label: getTeammateDisplayName(teamId), value: teamId })"
-          >
-            <UIcon name="i-mdi-account" class="h-4 w-4 sm:mr-1" />
-            <span class="text-xs sm:text-sm">
-              {{ getTeammateDisplayName(teamId).toUpperCase() }}
-            </span>
-          </UButton>
-          <UButton
-            v-if="visibleTeammates.length > 0"
+            v-if="teammates.length > 0"
             variant="ghost"
             color="neutral"
             size="sm"
@@ -388,6 +399,7 @@
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
+  import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
   import { useTeamStore } from '@/stores/useTeamStore';
   import { TASK_SORT_MODES } from '@/types/taskSort';
   import { normalizeSecondaryView, normalizeSortMode } from '@/utils/taskFilterNormalization';
@@ -405,6 +417,7 @@
   const metadataStore = useMetadataStore();
   const progressStore = useProgressStore();
   const teamStore = useTeamStore();
+  const { hasInitiallyLoaded: hasSystemInitiallyLoaded, hasTeam } = useSystemStoreWithSupabase();
   const { isOpen: isDrawerOpen, toggle: toggleDrawer } = useTaskSettingsDrawer();
   const { calculateMapTaskTotals, calculateStatusCounts, calculateTraderCounts } =
     useTaskFiltering();
@@ -421,9 +434,14 @@
   const currentUserDisplayName = computed(() => {
     return progressStore.getDisplayName('self');
   });
-  // Get visible teammates (excluding self)
-  const visibleTeammates = computed(() => {
+  const teammates = computed(() => {
     return teamStore.teammates || [];
+  });
+  const canValidateSelectedTeammateView = computed(() => {
+    if (teammates.value.length > 0) return true;
+    if (teamStore.teamMembers.length > 0) return true;
+    if (!hasSystemInitiallyLoaded.value) return false;
+    return !hasTeam();
   });
   const showStatusAllDivider = computed(() => {
     return (
@@ -437,6 +455,28 @@
   // Helper to get teammate display name
   const getTeammateDisplayName = (teamId: string): string => {
     return progressStore.getDisplayName(teamId);
+  };
+  const isTeammateHidden = (teamId: string): boolean => {
+    return preferencesStore.teamIsHidden(teamId);
+  };
+  const isTeammateIndividuallyHidden = (teamId: string): boolean => {
+    return preferencesStore.teamHide?.[teamId] === true;
+  };
+  const getTeammateVisibilityLabel = (teamId: string): string => {
+    const actionLabel = isTeammateHidden(teamId)
+      ? t('settings.account_data.action_show')
+      : t('settings.account_data.action_hide');
+    return `${actionLabel} ${getTeammateDisplayName(teamId)}`;
+  };
+  const toggleTeammateVisibility = (teamId: string) => {
+    if (preferencesStore.taskTeamAllHidden) {
+      return;
+    }
+    const wasHidden = isTeammateHidden(teamId);
+    preferencesStore.toggleHidden(teamId);
+    if (!wasHidden && preferencesStore.getTaskUserView === teamId) {
+      preferencesStore.setTaskUserView('all');
+    }
   };
   // Calculate task counts for badges
   const statusCounts = computed(() => {
@@ -573,7 +613,16 @@
   // User view selection (yourself / all team members)
   const onUserViewSelect = (selected: { label: string; value: string }) => {
     if (selected?.value) {
-      preferencesStore.setTaskUserView(selected.value);
+      const selectedUserView = selected.value;
+      if (
+        selectedUserView !== 'self' &&
+        selectedUserView !== 'all' &&
+        !preferencesStore.taskTeamAllHidden &&
+        isTeammateIndividuallyHidden(selectedUserView)
+      ) {
+        preferencesStore.toggleHidden(selectedUserView);
+      }
+      preferencesStore.setTaskUserView(selectedUserView);
     }
   };
   watch(
@@ -582,6 +631,17 @@
       if (view !== 'traders' && view !== 'graph') return;
       if (visibleTraders.some((trader) => trader.id === selectedTrader)) return;
       ensureSelectedTrader(visibleTraders);
+    },
+    { immediate: true }
+  );
+  watch(
+    [() => preferencesStore.getTaskUserView, teammates, canValidateSelectedTeammateView],
+    ([selectedUserView, currentTeammates, canValidate]) => {
+      if (selectedUserView === 'self' || selectedUserView === 'all') return;
+      if (!canValidate) return;
+      if (!currentTeammates.includes(selectedUserView) || isTeammateHidden(selectedUserView)) {
+        preferencesStore.setTaskUserView('all');
+      }
     },
     { immediate: true }
   );

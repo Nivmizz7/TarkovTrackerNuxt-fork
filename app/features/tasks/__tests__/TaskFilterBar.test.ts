@@ -23,11 +23,19 @@ type SetupOptions = {
     getTaskUserView: string;
     getTaskMapView: string;
     getTaskTraderView: string;
+    taskTeamAllHidden: boolean;
   }>;
   sortedTraders?: Array<{ id: string; name: string }>;
   traderCounts?: Record<string, number>;
+  teammates?: string[];
+  teamMembers?: string[];
+  hiddenTeammates?: Record<string, boolean>;
+  displayNames?: Record<string, string>;
+  hasSystemInitiallyLoaded?: boolean;
+  hasTeam?: boolean;
 };
 const setup = async (options: SetupOptions = {}) => {
+  const hiddenTeammates = { ...(options.hiddenTeammates ?? {}) };
   const preferencesStore = {
     getTaskPrimaryView: 'all',
     getTaskSecondaryView: 'available',
@@ -44,6 +52,13 @@ const setup = async (options: SetupOptions = {}) => {
     getHideGlobalTasks: false,
     getHideNonKappaTasks: false,
     getTaskSharedByAllOnly: false,
+    taskTeamAllHidden: false,
+    teamHide: hiddenTeammates,
+    teamIsHidden: vi.fn(
+      (teamId: string) =>
+        teamId !== 'self' &&
+        (preferencesStore.taskTeamAllHidden || preferencesStore.teamHide?.[teamId] === true)
+    ),
     setTaskPrimaryView: vi.fn(),
     setTaskSecondaryView: vi.fn(),
     setTaskUserView: vi.fn(),
@@ -51,10 +66,19 @@ const setup = async (options: SetupOptions = {}) => {
     setTaskTraderView: vi.fn(),
     setTaskSortMode: vi.fn(),
     setTaskSortDirection: vi.fn(),
+    toggleHidden: vi.fn((teamId: string) => {
+      preferencesStore.teamHide[teamId] = !preferencesStore.teamHide[teamId];
+    }),
   };
   Object.assign(preferencesStore, options.preferencesStore ?? {});
   const sortedTraders = options.sortedTraders ?? [{ id: 'trader-1', name: 'Trader One' }];
   const traderCounts = options.traderCounts ?? { 'trader-1': 2 };
+  const displayNames: Record<string, string> = {
+    self: 'Self',
+    ...(options.displayNames ?? {}),
+  };
+  const teammates = options.teammates ?? [];
+  const teamMembers = options.teamMembers ?? ['self', ...teammates];
   vi.resetModules();
   vi.doMock('@/composables/useTaskFiltering', () => ({
     useTaskFiltering: () => ({
@@ -81,12 +105,19 @@ const setup = async (options: SetupOptions = {}) => {
   }));
   vi.doMock('@/stores/useProgress', () => ({
     useProgressStore: () => ({
-      getDisplayName: () => 'Self',
+      getDisplayName: (teamId: string) => displayNames[teamId] ?? teamId,
     }),
   }));
   vi.doMock('@/stores/useTeamStore', () => ({
     useTeamStore: () => ({
-      teammates: [],
+      teammates,
+      teamMembers,
+    }),
+  }));
+  vi.doMock('@/stores/useSystemStore', () => ({
+    useSystemStoreWithSupabase: () => ({
+      hasInitiallyLoaded: { value: options.hasSystemInitiallyLoaded ?? true },
+      hasTeam: () => options.hasTeam ?? false,
     }),
   }));
   vi.doMock('vue-i18n', () => ({
@@ -211,5 +242,103 @@ describe('TaskFilterBar', () => {
     expect(availableButton).toBeTruthy();
     expect(availableButton!.text()).toContain('0');
     expect(availableButton!.text()).not.toContain('1');
+  });
+  it('keeps persisted teammate view while roster is still loading', async () => {
+    const { TaskFilterBar, preferencesStore } = await setup({
+      preferencesStore: {
+        getTaskUserView: 'teammate-1',
+      },
+      teammates: [],
+      teamMembers: [],
+      hasSystemInitiallyLoaded: true,
+      hasTeam: true,
+    });
+    mountTaskFilterBar(TaskFilterBar);
+    expect(preferencesStore.setTaskUserView).not.toHaveBeenCalledWith('all');
+  });
+  it('falls back to all view when persisted teammate is missing after roster loads', async () => {
+    const { TaskFilterBar, preferencesStore } = await setup({
+      preferencesStore: {
+        getTaskUserView: 'teammate-1',
+      },
+      teammates: [],
+      teamMembers: ['self'],
+      hasSystemInitiallyLoaded: true,
+      hasTeam: true,
+    });
+    mountTaskFilterBar(TaskFilterBar);
+    expect(preferencesStore.setTaskUserView).toHaveBeenCalledWith('all');
+  });
+  it('toggles teammate visibility from the task filter bar', async () => {
+    const { TaskFilterBar, preferencesStore } = await setup({
+      teammates: ['teammate-1'],
+      displayNames: { 'teammate-1': 'Alpha' },
+      preferencesStore: {
+        getTaskUserView: 'all',
+      },
+    });
+    const wrapper = mountTaskFilterBar(TaskFilterBar);
+    await wrapper.find('button[data-icon="i-mdi-eye"]').trigger('click');
+    expect(preferencesStore.toggleHidden).toHaveBeenCalledWith('teammate-1');
+  });
+  it('does not toggle teammate visibility from the task filter bar under hide-all', async () => {
+    const { TaskFilterBar, preferencesStore } = await setup({
+      teammates: ['teammate-1'],
+      displayNames: { 'teammate-1': 'Alpha' },
+      preferencesStore: {
+        getTaskUserView: 'all',
+        taskTeamAllHidden: true,
+      },
+    });
+    const wrapper = mountTaskFilterBar(TaskFilterBar);
+    await wrapper.find('button[data-icon="i-mdi-eye-off"]').trigger('click');
+    expect(preferencesStore.toggleHidden).not.toHaveBeenCalled();
+  });
+  it('falls back to all view when hiding the selected teammate', async () => {
+    const { TaskFilterBar, preferencesStore } = await setup({
+      teammates: ['teammate-1'],
+      displayNames: { 'teammate-1': 'Alpha' },
+      preferencesStore: {
+        getTaskUserView: 'teammate-1',
+      },
+    });
+    const wrapper = mountTaskFilterBar(TaskFilterBar);
+    await wrapper.find('button[data-icon="i-mdi-eye"]').trigger('click');
+    expect(preferencesStore.setTaskUserView).toHaveBeenCalledWith('all');
+  });
+  it('unhides teammate when selecting them from user view buttons', async () => {
+    const { TaskFilterBar, preferencesStore } = await setup({
+      teammates: ['teammate-1'],
+      hiddenTeammates: { 'teammate-1': true },
+      displayNames: { 'teammate-1': 'Alpha' },
+      preferencesStore: {
+        getTaskUserView: 'all',
+      },
+    });
+    const wrapper = mountTaskFilterBar(TaskFilterBar);
+    const teammateButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('ALPHA'));
+    expect(teammateButton).toBeTruthy();
+    await teammateButton!.trigger('click');
+    expect(preferencesStore.toggleHidden).toHaveBeenCalledWith('teammate-1');
+    expect(preferencesStore.setTaskUserView).toHaveBeenCalledWith('teammate-1');
+  });
+  it('does not toggle individual hide when selecting teammate under hide-all', async () => {
+    const { TaskFilterBar, preferencesStore } = await setup({
+      teammates: ['teammate-1'],
+      preferencesStore: {
+        getTaskUserView: 'all',
+        taskTeamAllHidden: true,
+      },
+    });
+    const wrapper = mountTaskFilterBar(TaskFilterBar);
+    const teammateButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('TEAMMATE-1'));
+    expect(teammateButton).toBeTruthy();
+    await teammateButton!.trigger('click');
+    expect(preferencesStore.toggleHidden).not.toHaveBeenCalled();
+    expect(preferencesStore.setTaskUserView).toHaveBeenCalledWith('teammate-1');
   });
 });
