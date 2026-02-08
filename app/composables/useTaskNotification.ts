@@ -102,8 +102,10 @@ export function useTaskNotification(): TaskNotificationReturn {
       if (alternativeTask?.objectives) {
         if (taskAction === 'setTaskFailed') {
           clearTaskObjectives(alternativeTask.objectives);
-        } else if (objectiveAction) {
-          handleTaskObjectives(alternativeTask.objectives, objectiveAction);
+        } else {
+          if (objectiveAction) {
+            handleTaskObjectives(alternativeTask.objectives, objectiveAction);
+          }
         }
       }
     });

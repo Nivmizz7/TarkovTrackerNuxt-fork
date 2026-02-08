@@ -100,7 +100,11 @@ export function useTaskActions(
   ) => {
     if (!Array.isArray(alternatives)) return;
     alternatives.forEach((alternativeTaskId) => {
-      tarkovStore[taskAction](alternativeTaskId);
+      if (taskAction === 'setTaskFailed') {
+        tarkovStore.setTaskFailed(alternativeTaskId);
+      } else {
+        tarkovStore.setTaskUncompleted(alternativeTaskId);
+      }
       const alternativeTask = tasksMap.value.get(alternativeTaskId);
       if (alternativeTask?.objectives) {
         if (taskAction === 'setTaskFailed') {

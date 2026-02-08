@@ -18,6 +18,7 @@ export interface UseTaskRepairReturn {
   repairFailedTasks: () => Promise<void>;
   buildAlternativeSources: () => Map<string, string[]>;
   shouldTaskBeFailed: (task: RepairableTask, alternativeSources: Map<string, string[]>) => boolean;
+  getRepairableFailedTasks: () => RepairableTask[];
 }
 export function useTaskRepair({ requestRepairConfirm }: UseTaskRepairOptions): UseTaskRepairReturn {
   const { t } = useI18n({ useScope: 'global' });
@@ -56,34 +57,32 @@ export function useTaskRepair({ requestRepairConfirm }: UseTaskRepairOptions): U
     if (!sources?.length) return false;
     return sources.some((sourceId) => isTaskSuccessful(sourceId));
   };
-  const failedTasksCount = computed(
-    () => metadataStore.tasks.filter((task) => tarkovStore.isTaskFailed(task.id)).length
-  );
+  const getRepairableFailedTasks = () => {
+    const alternativeSources = buildAlternativeSources();
+    return metadataStore.tasks.filter(
+      (task) => tarkovStore.isTaskFailed(task.id) && !shouldTaskBeFailed(task, alternativeSources)
+    );
+  };
+  const failedTasksCount = computed(() => getRepairableFailedTasks().length);
   const repairFailedTasks = async () => {
     if (failedTasksCount.value === 0) return;
     try {
       const confirmed = await requestRepairConfirm();
       if (!confirmed) return;
-      const alternativeSources = buildAlternativeSources();
-      let repaired = 0;
-      const taskIds: string[] = [];
+      const repairableTasks = getRepairableFailedTasks();
+      if (repairableTasks.length === 0) return;
       const objectiveIds: string[] = [];
-      metadataStore.tasks.forEach((task) => {
-        if (!tarkovStore.isTaskFailed(task.id)) return;
-        if (shouldTaskBeFailed(task, alternativeSources)) return;
-        taskIds.push(task.id);
+      const taskIds = repairableTasks.map((task) => task.id);
+      repairableTasks.forEach((task) => {
         task.objectives?.forEach((objective) => {
-          if (objective?.id) {
-            objectiveIds.push(objective.id);
-          }
+          if (objective?.id) objectiveIds.push(objective.id);
         });
-        repaired += 1;
       });
       if (taskIds.length || objectiveIds.length) {
         tarkovStore.setTasksAndObjectivesUncompleted(taskIds, objectiveIds);
       }
       toast.add({
-        title: t('page.tasks.settings.advanced.repair_failed_done', { count: repaired }),
+        title: t('page.tasks.settings.advanced.repair_failed_done', { count: taskIds.length }),
         color: 'success',
       });
     } catch (error) {
@@ -101,5 +100,6 @@ export function useTaskRepair({ requestRepairConfirm }: UseTaskRepairOptions): U
     repairFailedTasks,
     buildAlternativeSources,
     shouldTaskBeFailed,
+    getRepairableFailedTasks,
   };
 }
