@@ -148,27 +148,35 @@ export function useSupabaseSync({
       }
       const upsert = async (payload: Record<string, unknown>) =>
         $supabase.client.from(table).upsert(payload);
-      const { error } = await upsert(dataToSave);
-      let synced = !error;
-      if (!synced && error && table === 'user_preferences' && isMissingColumnError(error)) {
-        const missingColumn = getMissingColumnName(error);
-        if (missingColumn) {
-          const fallbackPayload = getFallbackPreferencesPayload(dataToSave, missingColumn);
-          if (fallbackPayload) {
-            const { error: fallbackError } = await upsert(fallbackPayload);
-            if (fallbackError) {
-              logger.error(
-                `[Sync] Fallback sync failed for ${table}:`,
-                formatSupabaseError(fallbackError)
-              );
-            } else {
-              synced = true;
-              logger.warn(
-                `[Sync] ${table} fallback sync succeeded after removing missing column '${missingColumn}'`
-              );
-            }
-          }
+      let payloadToSync: Record<string, unknown> | null = dataToSave;
+      let error: SupabaseErrorLike | null = null;
+      let synced = false;
+      const removedMissingColumns = new Set<string>();
+      while (payloadToSync) {
+        const { error: syncError } = await upsert(payloadToSync);
+        if (!syncError) {
+          synced = true;
+          break;
         }
+        error = syncError;
+        if (table !== 'user_preferences' || !isMissingColumnError(syncError)) {
+          break;
+        }
+        const missingColumn = getMissingColumnName(syncError);
+        if (!missingColumn || removedMissingColumns.has(missingColumn)) {
+          break;
+        }
+        const fallbackPayload = getFallbackPreferencesPayload(payloadToSync, missingColumn);
+        if (!fallbackPayload) {
+          break;
+        }
+        removedMissingColumns.add(missingColumn);
+        payloadToSync = fallbackPayload;
+      }
+      if (synced && removedMissingColumns.size) {
+        logger.warn(
+          `[Sync] ${table} fallback sync succeeded after removing missing columns: ${Array.from(removedMissingColumns).join(', ')}`
+        );
       }
       if (!synced && error) {
         logger.error(`[Sync] Error syncing to ${table}:`, formatSupabaseError(error));
