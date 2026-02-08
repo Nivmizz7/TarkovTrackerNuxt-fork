@@ -60,6 +60,12 @@ const buildViewQuery = (
     nextQuery.map = undefined;
     return nextQuery;
   }
+  if (primaryView === 'graph') {
+    nextQuery.view = 'graph';
+    nextQuery.trader = traderView !== 'all' ? traderView : undefined;
+    nextQuery.map = undefined;
+    return nextQuery;
+  }
   nextQuery.view = 'all';
   nextQuery.map = undefined;
   nextQuery.trader = undefined;
@@ -150,7 +156,7 @@ export function useTaskRouteSync({
         }
       }
     }
-    if (targetView === 'traders') {
+    if (targetView === 'traders' || targetView === 'graph') {
       if (traders.value.length === 0) {
         logger.debug(
           '[useTaskRouteSync] Delaying trader preference sync until traders are loaded.',
@@ -209,7 +215,7 @@ export function useTaskRouteSync({
         maps.value.length === 0 &&
         !!getQueryString(route.query.map);
       const shouldDelayTraderRouteSync =
-        normalizedPrimary === 'traders' &&
+        (normalizedPrimary === 'traders' || normalizedPrimary === 'graph') &&
         traders.value.length === 0 &&
         !!getQueryString(route.query.trader);
       if (shouldDelayMapRouteSync || shouldDelayTraderRouteSync) {
