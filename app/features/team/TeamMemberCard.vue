@@ -1,7 +1,6 @@
 <template>
-  <UCard :ui="{ body: 'p-4 sm:p-6' }">
+  <div class="bg-surface-850 rounded-lg border border-white/10 p-4 shadow-md sm:p-6">
     <div class="space-y-4">
-      <!-- Header with name, badge, and level -->
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
@@ -12,7 +11,7 @@
               {{ $t('page.team.card.manageteam.membercard.owner') }}
             </UBadge>
           </div>
-          <div v-if="props.teammember == $supabase.user.id" class="mt-1">
+          <div v-if="props.teammember === $supabase.user.id" class="mt-1">
             <span class="text-primary text-sm font-medium">
               {{ $t('page.team.card.manageteam.membercard.this_is_you') }}
             </span>
@@ -25,7 +24,7 @@
             alt="Level badge"
           />
           <div class="text-center">
-            <div class="text-surface-500 dark:text-surface-400 text-xs tracking-wide uppercase">
+            <div class="text-surface-400 text-xs tracking-wide uppercase">
               {{ $t('navigation_drawer.level') }}
             </div>
             <div class="mt-1 text-3xl leading-none font-bold sm:text-4xl">
@@ -34,10 +33,7 @@
           </div>
         </div>
       </div>
-      <!-- Task progress and actions -->
-      <div
-        class="border-surface-200 dark:border-surface-700 flex items-center justify-between border-t pt-2"
-      >
+      <div class="border-surface-700 flex items-center justify-between border-t pt-2">
         <div class="text-sm">
           <i18n-t
             v-if="!preferencesStore.teamIsHidden(props.teammember)"
@@ -58,16 +54,16 @@
         </div>
         <div class="flex gap-2">
           <UButton
-            :disabled="props.teammember == $supabase.user.id || preferencesStore.taskTeamAllHidden"
+            :disabled="props.teammember === $supabase.user.id || preferencesStore.taskTeamAllHidden"
             variant="outline"
             :icon="
-              props.teammember != $supabase.user.id &&
+              props.teammember !== $supabase.user.id &&
               preferencesStore.teamIsHidden(props.teammember)
                 ? 'i-mdi-eye-off'
                 : 'i-mdi-eye'
             "
             :color="
-              props.teammember != $supabase.user.id &&
+              props.teammember !== $supabase.user.id &&
               preferencesStore.teamIsHidden(props.teammember)
                 ? 'error'
                 : 'success'
@@ -76,7 +72,7 @@
             @click="preferencesStore.toggleHidden(props.teammember)"
           />
           <UButton
-            v-if="props.teammember != $supabase.user.id && isTeamOwnerView"
+            v-if="props.teammember !== $supabase.user.id && isTeamOwnerView"
             variant="outline"
             icon="i-mdi-account-minus"
             color="error"
@@ -88,56 +84,57 @@
         </div>
       </div>
     </div>
-  </UCard>
+  </div>
 </template>
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n';
   import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
-  import { useSystemStoreWithSupabase } from '@/stores/useSystemStore';
+  import { getTeamIdFromState, useSystemStoreWithSupabase } from '@/stores/useSystemStore';
+  import { useTarkovStore } from '@/stores/useTarkov';
   import { useTeamStoreWithSupabase } from '@/stores/useTeamStore';
+  import { GAME_MODES } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   const { $supabase } = useNuxtApp();
   const toast = useToast();
+  const { t } = useI18n({ useScope: 'global' });
   const { teamStore } = useTeamStoreWithSupabase();
   const { systemStore } = useSystemStoreWithSupabase();
+  const tarkovStore = useTarkovStore();
   const { kickTeamMember } = useEdgeFunctions();
-  // Define the props for the component
   const props = defineProps<{
     teammember: string;
     isTeamOwnerView: boolean;
   }>();
-  // Check if this member is the team owner
   const isOwner = computed(() => {
     const currentTeamOwner = teamStore.owner;
     return currentTeamOwner === props.teammember;
   });
   const teamStoreId = computed(() => {
-    if (props.teammember == $supabase.user.id) {
+    if (props.teammember === $supabase.user.id) {
       return 'self';
     } else {
       return props.teammember;
     }
   });
+  function getCurrentGameMode(): 'pvp' | 'pve' {
+    return (tarkovStore.getCurrentGameMode?.() as 'pvp' | 'pve') || GAME_MODES.PVP;
+  }
   const progressStore = useProgressStore();
   const preferencesStore = usePreferencesStore();
   const metadataStore = useMetadataStore();
   const tasks = computed(() => metadataStore.tasks);
   const playerLevels = computed(() => metadataStore.playerLevels);
-  const { t } = useI18n({ useScope: 'global' });
   const displayName = computed(() => {
     const fromProfile = teamStore.memberProfiles?.[props.teammember]?.displayName;
     const fromProgress = progressStore.getDisplayName(props.teammember);
     return fromProfile || fromProgress || props.teammember;
   });
   const level = computed(() => {
-    // For the current user, always use progressStore which respects automatic calculation
     if (props.teammember === $supabase.user.id) {
       return progressStore.getLevel(props.teammember);
     }
-    // For teammates, prefer server-side profile data, fallback to progress store
     const fromProfile = teamStore.memberProfiles?.[props.teammember]?.level;
     const fromProgress = progressStore.getLevel(props.teammember);
     return fromProfile ?? fromProgress;
@@ -146,7 +143,7 @@
     const profileCount = teamStore.memberProfiles?.[props.teammember]?.tasksCompleted;
     if (profileCount != null) return profileCount;
     return tasks.value.filter(
-      (task) => progressStore.tasksCompletions?.[task.id]?.[teamStoreId.value] == true
+      (task) => progressStore.tasksCompletions?.[task.id]?.[teamStoreId.value] === true
     ).length;
   });
   const groupIcon = computed(() => {
@@ -156,7 +153,7 @@
   const kickingTeammate = ref(false);
   const kickTeammate = async () => {
     if (!props.teammember) return;
-    const teamId = (teamStore.$state as { id?: string })?.id || systemStore.$state?.team;
+    const teamId = getTeamIdFromState(systemStore.$state, getCurrentGameMode());
     if (!teamId) {
       toast.add({
         title: t('page.team.card.manageteam.membercard.kick_error'),

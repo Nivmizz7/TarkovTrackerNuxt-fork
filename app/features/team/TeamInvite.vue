@@ -31,25 +31,27 @@
 </template>
 <script setup lang="ts">
   import { useEdgeFunctions } from '@/composables/api/useEdgeFunctions';
-  import { useSystemStore } from '@/stores/useSystemStore';
+  import { getTeamIdFromState, useSystemStoreWithSupabase } from '@/stores/useSystemStore';
+  import { useTarkovStore } from '@/stores/useTarkov';
+  import { GAME_MODES } from '@/utils/constants';
   import { logger } from '@/utils/logger';
   import type { SystemState } from '@/types/tarkov';
-  const systemStore = useSystemStore();
+  const { systemStore } = useSystemStoreWithSupabase();
+  const tarkovStore = useTarkovStore();
   const route = useRoute();
   const toast = useToast();
   const { joinTeam } = useEdgeFunctions();
+  function getCurrentGameMode(): 'pvp' | 'pve' {
+    return (tarkovStore.getCurrentGameMode?.() as 'pvp' | 'pve') || GAME_MODES.PVP;
+  }
   const hasInviteInUrl = computed(() => {
     return !!(route.query.team && route.query.code);
   });
   const inInviteTeam = computed(() => {
-    // Access state directly for reactivity
-    const systemState = systemStore.$state;
-    const currentTeamId = systemState.team ?? systemState.team_id;
+    const currentTeamId = getTeamIdFromState(systemStore.$state, getCurrentGameMode());
     const queryTeam = route.query.team;
-    // Normalize query param: if array, take first; if null/undefined, bail
     const inviteTeamId = Array.isArray(queryTeam) ? queryTeam[0] : queryTeam;
     if (!inviteTeamId || !currentTeamId) return false;
-    // Strict comparison after ensuring both are strings
     return String(currentTeamId) === String(inviteTeamId);
   });
   const declined = ref(false);
@@ -66,7 +68,9 @@
           title: 'Joined team successfully!',
           color: 'success',
         });
-        systemStore.$patch({ team: teamId, team_id: teamId } as Partial<SystemState>);
+        const gameMode = getCurrentGameMode();
+        const teamIdColumn = gameMode === 'pve' ? 'pve_team_id' : 'pvp_team_id';
+        systemStore.$patch({ [teamIdColumn]: teamId } as Partial<SystemState>);
         declined.value = false;
       } else {
         throw new Error((result as { message?: string })?.message || 'Failed to join team');

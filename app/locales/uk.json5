@@ -480,6 +480,8 @@
       clear_search: 'Очистити пошук',
       items: 'предмети',
       empty: 'Немає предметів, що відповідають вашому пошуку.',
+      error: 'Unable to load needed items.',
+      retry: 'Try again',
       filters: {
         label: 'Фільтри',
         sections: {
@@ -524,6 +526,8 @@
           open_api_documentation: 'OpenAPI документація',
           create_token_success: 'Успішно створено новий API токен.',
           create_token_error: 'Не вдалося створити новий API токен.',
+          copy_failed: 'Failed to copy token.',
+          copy_token: 'Copy token',
           token_created: 'Токен створено',
           token_created_description: 'Скопіюйте й збережіть цей токен зараз. Пізніше ви не зможете його переглянути.',
           token_created_close: 'Готово',
@@ -533,6 +537,12 @@
           no_tokens: 'У вас поки що немає API токенів TarkovTracker.',
           not_logged_in: 'Потрібно увійти, щоб створити API токен.',
           default_note: 'Токен без назви',
+          show_token: 'Show token',
+          token_value_hidden: 'Token value hidden by server configuration',
+          token_value_missing: 'Token value unavailable',
+          token_value_unavailable: 'Token value display unavailable',
+          token_value_unavailable_desc: 'Your current API does not expose token values for existing tokens.',
+          hide_token: 'Hide token',
           revoke_button: 'Відкликати',
           list: {
             created: 'Створено',
@@ -556,10 +566,6 @@
         title: 'Команда',
         description: 'Співпрацюйте з товаришами по команді в прогресі Escape from Tarkov. Діліться виконаними завданнями, станом сховища та координуйте збір предметів.',
       },
-      warning: {
-        title: 'Команди в розробці',
-        description: 'Команди ще не повністю оновлені або виправлені, тому деякі функції можуть працювати некоректно.',
-      },
       card: {
         manageteam: {
           title: 'Члени Команди',
@@ -574,16 +580,14 @@
         },
         teamoptions: {
           title: 'Варіанти Інтеграції Команди',
-          task_hide_all: 'Приховати завдання всіх членів команди',
-          task_show_all: 'Показати завдання всіх членів команди',
-          items_hide_all: 'Приховати необхідні предмети всіх членів команди',
-          items_show_all: 'Показати необхідні предмети всіх членів команди',
-          items_show_non_fir: 'Показати необхідні предмети всіх членів команди (включно з не знайденими в рейді)',
-          items_hide_non_fir: 'Приховати необхідні предмети, не знайдені в рейді, для всіх членів команди',
-          items_hide_hideout: 'Приховати необхідні предмети притулку членів команди',
-          items_show_hideout: 'Показати необхідні предмети сховища членів команди',
-          map_hide_all: 'Приховати цілі карти членів команди',
-          map_show_all: 'Показати цілі карти членів команди',
+          section_tasks: 'Tasks',
+          section_items: 'Items',
+          section_maps: 'Maps',
+          toggle_tasks: "Hide team members' tasks",
+          toggle_items: "Hide team members' needed items",
+          toggle_non_fir: 'Hide non-FIR needed items',
+          toggle_hideout: 'Hide hideout needed items',
+          toggle_maps: "Hide team members' map objectives",
         },
         myteam: {
           title: 'Моя Команда',
@@ -640,6 +644,8 @@
       terms_of_service: 'Умови використання',
       popup_blocked_title: 'Спливаюче вікно заблоковано',
       popup_blocked_description: 'Ваш браузер заблокував вікно входу. Перенаправляємо...',
+      error_title: 'Sign-in failed',
+      error_description: 'Authentication was canceled or failed. Please try again.',
       login_options: 'Параметри входу',
     },
     not_found: {
@@ -667,6 +673,7 @@
   },
   navigation_drawer: {
     main_navigation: 'Головна навігація',
+    close_menu: 'Close menu',
     toggle: 'Перемкнути меню',
     brand_name: 'TarkovTracker.org',
     home: 'Головна',
@@ -693,6 +700,7 @@
     mode_manual: 'Вручну',
     level_display_auto: 'Рівень {level} (автоматичний розрахунок увімкнено)',
     level_display_editable: 'Рівень {level}, натисніть для редагування',
+    auto_level_enabled: 'Automatic level calculation is enabled',
     increment_level: 'Підвищити рівень',
     decrement_level: 'Знизити рівень',
   },
@@ -749,6 +757,7 @@
     game_settings: {
       title: 'Налаштування гри',
       switch_mode_failed: 'Не вдалося змінити режим гри, спробуйте ще раз',
+      switch_mode_fetch_failed: 'Game mode switched but failed to refresh data, please retry',
     },
     data_management: {
       reset_pvp_title: 'Скинути дані PvP',
@@ -978,6 +987,11 @@
     not_collected: 'Не зібрано',
     click_to_collect: 'Натисніть, щоб забрати',
     click_to_uncollect: 'Натисніть, щоб скасувати збір',
+    modal: {
+      smart_fill_error: 'Unable to apply smart fill',
+      reset_error: 'Unable to reset item progress',
+      unknown_error: 'An unexpected error occurred',
+    },
   },
   skills: {
     req: 'Req',
