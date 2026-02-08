@@ -1,3 +1,4 @@
+import { isMapObjectiveType } from '@/features/tasks/taskObjectiveTypes';
 import { useMetadataStore } from '@/stores/useMetadata';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import { useProgressStore } from '@/stores/useProgress';
@@ -55,17 +56,6 @@ export function useTaskFiltering() {
   // Cached trader order map to avoid rebuilding on every sort
   let cachedTraderOrderMap: Map<string, number> | null = null;
   let cachedTradersRef: typeof metadataStore.traders | null = null;
-  const mapObjectiveTypes = [
-    'mark',
-    'zone',
-    'extract',
-    'visit',
-    'findItem',
-    'findQuestItem',
-    'plantItem',
-    'plantQuestItem',
-    'shoot',
-  ];
   const isRaidRelevantObjective = (obj: TaskObjective): boolean => {
     if (RAID_RELEVANT_OBJECTIVE_TYPES.includes(obj.type || '')) return true;
     if (obj.type === 'giveItem' && obj.foundInRaid) return true;
@@ -75,8 +65,7 @@ export function useTaskFiltering() {
     const hasMap = task.map?.id != null;
     const hasLocations = Array.isArray(task.locations) && task.locations.length > 0;
     const hasMapObjectives = task.objectives?.some(
-      (obj) =>
-        Array.isArray(obj.maps) && obj.maps.length > 0 && mapObjectiveTypes.includes(obj.type || '')
+      (obj) => Array.isArray(obj.maps) && obj.maps.length > 0 && isMapObjectiveType(obj.type)
     );
     const isMapless = !hasMap && !hasLocations && !hasMapObjectives;
     const hasRaidRelevantObjectives = task.objectives?.some(isRaidRelevantObjective) ?? false;
@@ -111,7 +100,7 @@ export function useTaskFiltering() {
             (obj) =>
               Array.isArray(obj.maps) &&
               obj.maps.some((map) => ids.includes(map.id)) &&
-              mapObjectiveTypes.includes(obj.type || '')
+              isMapObjectiveType(obj.type)
           );
         }
         return hasMap;
@@ -119,9 +108,7 @@ export function useTaskFiltering() {
     } else {
       mapSpecificTasks = taskList.filter((task) =>
         task.objectives?.some(
-          (obj) =>
-            obj.maps?.some((map) => map.id === mapView) &&
-            mapObjectiveTypes.includes(obj.type || '')
+          (obj) => obj.maps?.some((map) => map.id === mapView) && isMapObjectiveType(obj.type)
         )
       );
     }
@@ -943,7 +930,6 @@ export function useTaskFiltering() {
     calculateTraderCounts,
     updateVisibleTasks,
     resetTraderOrderMapCache,
-    mapObjectiveTypes,
     disabledTasks: [] as string[],
     RAID_RELEVANT_OBJECTIVE_TYPES,
     isRaidRelevantObjective,

@@ -259,6 +259,7 @@
   import TaskCardBackground from '@/features/tasks/TaskCardBackground.vue';
   import TaskCardBadges from '@/features/tasks/TaskCardBadges.vue';
   import TaskCardHeader from '@/features/tasks/TaskCardHeader.vue';
+  import { isMapObjectiveType } from '@/features/tasks/taskObjectiveTypes';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useProgressStore } from '@/stores/useProgress';
@@ -272,17 +273,6 @@
   type ContextMenuRef = { open: (event: MouseEvent) => void };
   // Module-level constants (moved from reactive scope)
   const MAX_DISPLAYED_NAMES = 3;
-  const MAP_OBJECTIVE_TYPES = new Set([
-    'mark',
-    'zone',
-    'extract',
-    'visit',
-    'findItem',
-    'findQuestItem',
-    'plantItem',
-    'plantQuestItem',
-    'shoot',
-  ]);
   const EDITION_SHORT_NAMES: Record<string, string> = {
     'Edge of Darkness': 'EOD',
     'Unheard Edition': 'Unheard',
@@ -318,18 +308,11 @@
   const isGlobalTask = computed(() => isGlobalTaskFn(props.task));
   const taskContextMenu = ref<ContextMenuRef | null>(null);
   const itemContextMenu = ref<ContextMenuRef | null>(null);
-  const {
-    copyTaskLink,
-    openTaskWiki,
-    openTaskOnTarkovDev,
-    openTaskDataIssue,
-    setSelectedItem,
-    openItemOnTarkovDev,
-    openItemOnWiki,
-  } = useTaskCardLinks({
-    task: () => props.task,
-    objectives: () => taskObjectives.value,
-  });
+  const { copyTaskLink, openTaskDataIssue, setSelectedItem, openItemOnTarkovDev, openItemOnWiki } =
+    useTaskCardLinks({
+      task: () => props.task,
+      objectives: () => taskObjectives.value,
+    });
   const { isComplete, isFailed, isLocked, isInvalid } = useTaskState(() => props.task.id);
   const objectivesExpanded = ref(true);
   const objectivesVisible = computed(() => {
@@ -583,7 +566,7 @@
     for (const objective of objectives) {
       const hasMaps = Array.isArray(objective.maps) && objective.maps.length > 0;
       const onSelectedMap = hasMaps && objective.maps!.some((map) => map.id === selectedMapId);
-      const isMapType = MAP_OBJECTIVE_TYPES.has(objective.type ?? '');
+      const isMapType = isMapObjectiveType(objective.type);
       // Objective is relevant if it has no maps, or is on selected map AND is a map type
       const isRelevant = !hasMaps || (onSelectedMap && isMapType);
       if (isRelevant) {

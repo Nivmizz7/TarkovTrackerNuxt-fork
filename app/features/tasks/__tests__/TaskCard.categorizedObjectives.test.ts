@@ -1,20 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { MAP_OBJECTIVE_TYPES, isMapObjectiveType } from '@/features/tasks/taskObjectiveTypes';
 import type { TaskObjective } from '@/types/tarkov';
-/**
- * Tests for TaskCard's categorizedObjectives computed property.
- * These tests verify the filtering logic for objectives based on map view mode.
- */
-const MAP_OBJECTIVE_TYPES = new Set([
-  'mark',
-  'zone',
-  'extract',
-  'visit',
-  'findItem',
-  'findQuestItem',
-  'plantItem',
-  'plantQuestItem',
-  'shoot',
-]);
 /**
  * Factory to create mock objectives for testing
  */
@@ -54,7 +40,7 @@ const computeCategorizedObjectives = (options: CategorizedObjectivesOptions) => 
     const hasMaps = Array.isArray(objective.maps) && objective.maps.length > 0;
     const onSelectedMap =
       hasMaps && selectedMapId && objective.maps!.some((map) => map.id === selectedMapId);
-    const isMapType = MAP_OBJECTIVE_TYPES.has(objective.type ?? '');
+    const isMapType = isMapObjectiveType(objective.type);
     // Objective is relevant if it has no maps, or is on selected map AND is a map type
     const isRelevant = !hasMaps || (onSelectedMap && isMapType);
     if (isRelevant) {
@@ -185,18 +171,7 @@ describe('TaskCard categorizedObjectives', () => {
       expect(result.irrelevant).toContainEqual(expect.objectContaining({ id: 'obj-4' }));
     });
     it('handles all MAP_OBJECTIVE_TYPES correctly', () => {
-      const mapTypes = [
-        'mark',
-        'zone',
-        'extract',
-        'visit',
-        'findItem',
-        'findQuestItem',
-        'plantItem',
-        'plantQuestItem',
-        'shoot',
-      ];
-      const objectives = mapTypes.map((type, i) =>
+      const objectives = MAP_OBJECTIVE_TYPES.map((type, i) =>
         createObjective(`obj-${i}`, type, [{ id: 'map-customs' }])
       );
       const result = computeCategorizedObjectives({
@@ -205,7 +180,18 @@ describe('TaskCard categorizedObjectives', () => {
         selectedMapId: 'map-customs',
         completedObjectiveIds: new Set(),
       });
-      expect(result.relevant).toHaveLength(mapTypes.length);
+      expect(result.relevant).toHaveLength(MAP_OBJECTIVE_TYPES.length);
+      expect(result.irrelevant).toHaveLength(0);
+    });
+    it('treats useItem objectives on selected map as relevant', () => {
+      const objectives = [createObjective('obj-1', 'useItem', [{ id: 'map-customs' }])];
+      const result = computeCategorizedObjectives({
+        objectives,
+        onMapView: true,
+        selectedMapId: 'map-customs',
+        completedObjectiveIds: new Set(),
+      });
+      expect(result.relevant).toContainEqual(expect.objectContaining({ id: 'obj-1' }));
       expect(result.irrelevant).toHaveLength(0);
     });
     it('treats non-map-type objectives with maps as irrelevant', () => {

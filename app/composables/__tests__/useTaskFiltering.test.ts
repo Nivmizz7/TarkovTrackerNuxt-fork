@@ -206,6 +206,30 @@ describe('useTaskFiltering', () => {
     const result = taskFiltering.filterTasksByView(tasks, 'maps', 'map-1b', 'all', mergedMaps);
     expect(result.map((task) => task.id)).toEqual(['task-map']);
   });
+  it('includes useItem objectives in map filtering', async () => {
+    const { taskFiltering } = await setup();
+    const useItemTask: Task = {
+      id: 'task-use-item',
+      name: 'Use Item Task',
+      factionName: 'Any',
+      objectives: [
+        {
+          id: 'obj-use-item',
+          maps: [{ id: 'map-woods' }],
+          type: 'useItem',
+        },
+      ],
+    };
+    const mergedMaps = [{ id: 'map-woods', mergedIds: ['map-woods'] }];
+    const result = taskFiltering.filterTasksByView(
+      [useItemTask],
+      'maps',
+      'map-woods',
+      'all',
+      mergedMaps
+    );
+    expect(result.map((task) => task.id)).toEqual(['task-use-item']);
+  });
   it('filters tasks by trader view', async () => {
     const { taskFiltering, tasks } = await setup();
     const mergedMaps = [{ id: 'map-1', mergedIds: ['map-1'] }];
