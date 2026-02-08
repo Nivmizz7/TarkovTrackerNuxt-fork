@@ -32,6 +32,7 @@ const ESTIMATED_QUOTA_BYTES = 5 * 1024 * 1024;
 const QUOTA_SAFETY_BUFFER_BYTES = 512 * 1024;
 const SYNC_DEBOUNCE_MS = 5000;
 const SELF_ORIGIN_THRESHOLD_MS = 3000;
+const RECENT_LOCAL_SYNC_HISTORY_SIZE = 20;
 const SYNC_RESUME_DELAY_MS = 1000;
 const RESET_SETTLE_DELAY_MS = 100;
 const API_UPDATE_FRESHNESS_MS = 30000;
@@ -531,7 +532,7 @@ const tarkovActions = {
           pvp_data: this.pvp,
           pve_data: this.pve,
         };
-        lastLocalSyncTime = Date.now(); // Track for self-origin filtering
+        recordLocalSyncTime(); // Track for self-origin filtering
         await $supabase.client.from('user_progress').upsert(completeState);
       } catch (error) {
         logger.error('Error syncing gamemode to backend:', error);
@@ -555,7 +556,7 @@ const tarkovActions = {
       const { $supabase } = useNuxtApp();
       if ($supabase.user.loggedIn && $supabase.user.id) {
         try {
-          lastLocalSyncTime = Date.now(); // Track for self-origin filtering
+          recordLocalSyncTime(); // Track for self-origin filtering
           $supabase.client.from('user_progress').upsert({
             user_id: $supabase.user.id,
             current_game_mode: this.currentGameMode,
@@ -571,7 +572,7 @@ const tarkovActions = {
       const { $supabase } = useNuxtApp();
       if ($supabase.user.loggedIn && $supabase.user.id) {
         try {
-          lastLocalSyncTime = Date.now();
+          recordLocalSyncTime();
           $supabase.client.from('user_progress').upsert({
             user_id: $supabase.user.id,
             current_game_mode: this.currentGameMode,
@@ -1387,7 +1388,7 @@ export async function initializeTarkovSync() {
             localScore,
             remoteScore,
           });
-          lastLocalSyncTime = Date.now(); // Track for self-origin filtering
+          recordLocalSyncTime(); // Track for self-origin filtering
           const { error: upsertError } = await $supabase.client.from('user_progress').upsert({
             user_id: $supabase.user.id,
             current_game_mode: localState.currentGameMode || GAME_MODES.PVP,
@@ -1416,7 +1417,7 @@ export async function initializeTarkovSync() {
           pvp_data: localState.pvp || defaultState.pvp,
           pve_data: localState.pve || defaultState.pve,
         };
-        lastLocalSyncTime = Date.now(); // Track for self-origin filtering
+        recordLocalSyncTime(); // Track for self-origin filtering
         const { error: upsertError } = await $supabase.client
           .from('user_progress')
           .upsert(migrateData);
@@ -1486,7 +1487,7 @@ export async function initializeTarkovSync() {
       completedObjectivesRepairResult.pveRepaired > 0;
     if (hasCompletionSchemaMigration || hasRepairChanges) {
       try {
-        lastLocalSyncTime = Date.now();
+        recordLocalSyncTime();
         await $supabase.client.from('user_progress').upsert({
           user_id: $supabase.user.id,
           current_game_mode: tarkovStore.currentGameMode,
@@ -1521,7 +1522,7 @@ export async function initializeTarkovSync() {
             return null; // Returning null prevents the sync
           }
           // Track sync time for self-origin filtering in realtime listener
-          lastLocalSyncTime = Date.now();
+          recordLocalSyncTime();
           return {
             user_id: $supabase.user.id,
             current_game_mode: userState.currentGameMode || GAME_MODES.PVP,
@@ -1559,6 +1560,21 @@ export async function initializeTarkovSync() {
 // Realtime channel for multi-device sync
 let realtimeChannel: unknown = null;
 let lastLocalSyncTime = 0; // Track when we last synced locally to filter self-origin updates
+const recentLocalSyncTimes: number[] = [];
+const recordLocalSyncTime = () => {
+  const now = Date.now();
+  lastLocalSyncTime = now;
+  recentLocalSyncTimes.push(now);
+  if (recentLocalSyncTimes.length > RECENT_LOCAL_SYNC_HISTORY_SIZE) {
+    recentLocalSyncTimes.shift();
+  }
+};
+const isLikelySelfOriginUpdate = (updateTime: number) => {
+  if (!Number.isFinite(updateTime)) return false;
+  return recentLocalSyncTimes.some((syncTime) => {
+    return Math.abs(updateTime - syncTime) < SELF_ORIGIN_THRESHOLD_MS;
+  });
+};
 const lastApiUpdateIds: { pvp: string | null; pve: string | null } = { pvp: null, pve: null };
 const API_TASK_STATES = ['completed', 'failed', 'uncompleted'] as const;
 const isApiTaskState = (state: unknown): state is ApiTaskUpdate['state'] => {
@@ -1753,8 +1769,7 @@ function setupRealtimeListener() {
           pve: merged.pve ?? localState.pve,
         };
         const stateUnchanged = deepEqual(nextState, localState);
-        const isLikelySelfOrigin =
-          timeSinceLastSync < SELF_ORIGIN_THRESHOLD_MS && timeSinceLastSync >= 0;
+        const isLikelySelfOrigin = isLikelySelfOriginUpdate(updateTime);
         if (isLikelySelfOrigin && stateUnchanged) {
           logger.debug('[TarkovStore] Ignoring realtime update - likely self-origin', {
             timeSinceLastSync,
@@ -1794,7 +1809,7 @@ function setupRealtimeListener() {
         }, SYNC_RESUME_DELAY_MS);
         // Only notify user if there was an actual data conflict that required merging
         // Silent sync for API updates or other-device updates that don't conflict
-        if (hasRealConflict && !apiUpdateHandled) {
+        if (hasRealConflict && !apiUpdateHandled && !isLikelySelfOrigin) {
           const toast = useToast();
           toast.add({
             title: 'Progress merged',
