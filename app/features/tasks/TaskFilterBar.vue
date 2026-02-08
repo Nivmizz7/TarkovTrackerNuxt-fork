@@ -640,7 +640,8 @@
       if (selectedUserView === 'self' || selectedUserView === 'all') return;
       if (!canValidate) return;
       if (!currentTeammates.includes(selectedUserView) || isTeammateHidden(selectedUserView)) {
-        preferencesStore.setTaskUserView('all');
+        const canShowAllOption = currentTeammates.length > 0;
+        preferencesStore.setTaskUserView(canShowAllOption ? 'all' : 'self');
       }
     },
     { immediate: true }

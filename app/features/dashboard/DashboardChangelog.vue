@@ -296,7 +296,7 @@
         total += 1;
       }
     }
-    return sortByDateDesc(Array.from(grouped.values()));
+    return Array.from(grouped.values());
   };
   const logError = (message: string, err: unknown, context: Record<string, unknown> = {}) => {
     if (err instanceof Error) {
