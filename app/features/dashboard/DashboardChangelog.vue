@@ -118,6 +118,9 @@
   const pending = ref(false);
   const error = ref(false);
   const showEmpty = computed(() => !pending.value && !error.value && entries.value.length === 0);
+  const sortByDateDesc = (items: ChangelogItem[]): ChangelogItem[] => {
+    return [...items].sort((a, b) => b.date.localeCompare(a.date));
+  };
   type GitHubPayload = Array<Record<string, unknown>>;
   type GitHubRateLimitState = {
     remaining: number | null;
@@ -256,7 +259,7 @@
     logger.error(`[DashboardChangelog] fetchGithubItems ${source} failed.`, details);
   };
   const buildReleaseItems = (releases: Array<Record<string, unknown>>): ChangelogItem[] => {
-    return releases
+    const items = releases
       .filter((release) => release && release.draft !== true)
       .slice(0, 3)
       .map((release) => {
@@ -270,6 +273,7 @@
         return { date, label: label || undefined, bullets };
       })
       .filter((item) => item.date && item.bullets.length);
+    return sortByDateDesc(items);
   };
   const buildCommitItems = (commits: Array<Record<string, unknown>>): ChangelogItem[] => {
     const grouped = new Map<string, ChangelogItem>();
@@ -292,7 +296,7 @@
         total += 1;
       }
     }
-    return Array.from(grouped.values());
+    return sortByDateDesc(Array.from(grouped.values()));
   };
   const logError = (message: string, err: unknown, context: Record<string, unknown> = {}) => {
     if (err instanceof Error) {
@@ -457,14 +461,14 @@
     hasRequested.value = true;
     let newEntries = await fetchServerItems();
     if (newEntries?.length) {
-      entries.value = newEntries;
+      entries.value = sortByDateDesc(newEntries);
       pending.value = false;
       return;
     }
     if (ENABLE_CLIENT_GITHUB_FALLBACK) {
       newEntries = await fetchGithubItems();
       if (newEntries?.length) {
-        entries.value = newEntries;
+        entries.value = sortByDateDesc(newEntries);
         pending.value = false;
         return;
       }

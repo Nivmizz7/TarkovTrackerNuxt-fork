@@ -508,12 +508,14 @@ const buildReleaseItems = async (
       : Promise.resolve(null)
   );
   const statsResults = await Promise.all(statsPromises);
-  return releaseData.map((data, i) => ({
-    date: data.date,
-    label: data.label || undefined,
-    bullets: data.bullets,
-    stats: statsResults[i] ?? undefined,
-  }));
+  return sortByDateDesc(
+    releaseData.map((data, i) => ({
+      date: data.date,
+      label: data.label || undefined,
+      bullets: data.bullets,
+      stats: statsResults[i] ?? undefined,
+    }))
+  );
 };
 type ProcessedCommit = {
   sha: string;
@@ -527,6 +529,9 @@ type CommitBullet = {
 type GroupedCommitItem = {
   date: string;
   bullets: CommitBullet[];
+};
+const sortByDateDesc = <T extends { date: string }>(items: T[]): T[] => {
+  return [...items].sort((a, b) => b.date.localeCompare(a.date));
 };
 const toProcessedCommit = (commit: GitHubCommitListItem): ProcessedCommit | null => {
   const bullet = normalizeCommitMessage(commit.commit?.message ?? '');
@@ -579,7 +584,8 @@ const buildCommitItems = async (
     if (existing.bullets.length >= changelogConfig.MAX_BULLETS_PER_GROUP) continue;
     existing.bullets.push({ sha, text: bullet });
   }
-  const statsToFetch = Array.from(grouped.values()).flatMap((item) => item.bullets);
+  const groupedItems = sortByDateDesc(Array.from(grouped.values()));
+  const statsToFetch = groupedItems.flatMap((item) => item.bullets);
   const statsMap = new Map<string, ChangelogStats>();
   const settledResults = await Promise.allSettled(
     statsToFetch.map(async ({ sha }) => {
@@ -592,7 +598,7 @@ const buildCommitItems = async (
       statsMap.set(result.value.sha, result.value.stats);
     }
   }
-  return Array.from(grouped.values()).map((item) => {
+  return groupedItems.map((item) => {
     let additions = 0;
     let deletions = 0;
     const bullets = item.bullets.map((bullet) => {

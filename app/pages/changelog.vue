@@ -172,7 +172,8 @@
       year: 'numeric',
       timeZone: 'UTC',
     });
-    for (const entry of entries.value) {
+    const sortedEntries = [...entries.value].sort((a, b) => b.date.localeCompare(a.date));
+    for (const entry of sortedEntries) {
       const date = new Date(`${entry.date}T00:00:00Z`);
       const monthKey = dateFormatter.format(date);
       const existing = groups.get(monthKey) ?? [];
