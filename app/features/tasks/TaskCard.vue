@@ -127,7 +127,7 @@
           </template>
         </div>
         <div
-          v-if="isFailed || (isInvalid && blockedSources.length > 0)"
+          v-if="isFailed || isInvalid"
           class="text-xs"
           :class="isFailed ? 'text-error-300' : 'text-surface-300'"
         >
@@ -656,12 +656,13 @@
         );
         const existing = sources.get(id);
         if (existing) {
-          existing.triggerStatuses = Array.from(
-            new Set([
-              ...existing.triggerStatuses,
-              ...(triggerStatuses.length ? triggerStatuses : ['completed']),
-            ])
-          );
+          const mergedStatuses: RequirementExpectedStatus[] = [
+            ...existing.triggerStatuses,
+            ...(triggerStatuses.length
+              ? triggerStatuses
+              : (['completed'] as RequirementExpectedStatus[])),
+          ];
+          existing.triggerStatuses = Array.from(new Set<RequirementExpectedStatus>(mergedStatuses));
           return;
         }
         sources.set(id, {
