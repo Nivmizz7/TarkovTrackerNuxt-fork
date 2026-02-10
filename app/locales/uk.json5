@@ -9,6 +9,16 @@
     user_label: 'Користувач',
     user_avatar_alt: 'Аватар користувача',
   },
+  loading_screen: {
+    title: 'Завантаження Tarkov Tracker',
+    title_error: 'Проблема завантаження',
+    subtitle: 'Завантажуємо необхідні ігрові дані...',
+    subtitle_error: 'Не вдалося завантажити частину даних',
+    first_load_info: 'Під час першого завантаження це може зайняти трохи часу. Дані буде кешовано для наступних відвідувань.',
+    partial_data_info: 'Застосунок може працювати і з частковими даними. Ви можете повторити спробу або продовжити.',
+    retry: 'Повторити',
+    continue_anyway: 'Все одно продовжити',
+  },
   toast: {
     hideout_updated: {
       title: 'Схрон оновлено',
@@ -107,9 +117,6 @@
       title: 'Приладова Панель',
     },
     dashboard: {
-      hero: {
-        overall: 'Загальний',
-      },
       notice: {
         message: 'UI/UX щойно оновлено та вдосконалюється; повідомляйте про проблеми в Discord або GitHub. Підтримайте безкоштовну розробку через посилання Ko-fi у нижньому колонтитулі.',
         dismiss: 'Закрити',
@@ -200,10 +207,7 @@
         clear_focus: 'Скинути фокус',
         no_tasks: 'Завдань для цього торговця не знайдено.',
         mobile_unavailable: 'Граф краще виглядає на ширшому екрані.',
-        navigate_to_task: 'Деталі завдання',
         node_level: 'Рів. {level}',
-        node_start: 'Початок',
-        node_end: 'Кінець',
         completed: 'Виконано',
         available: 'Доступно',
         locked: 'Заблоковано',
@@ -301,6 +305,7 @@
         resize_handle: 'Змінити висоту карти',
       },
       pinned_tasks_section: 'Закріплені завдання',
+      global_tasks_section: 'Глобальні завдання',
       questcard: {
         pin_task: 'Закріпити завдання',
         unpin_task: 'Відкріпити завдання',
@@ -354,11 +359,9 @@
         mark_failed_confirm: 'Позначити це завдання як провалене? Це лише для проблем з даними, не рекомендується і може заблокувати ланцюжки завдань.',
         failed_because: 'Провалено через',
         failed_because_unknown: 'Провалено вручну або дані відсутні',
-        failed_because_trigger: 'спричинено {status}',
         failed_because_was: 'було {status}',
         failed_because_status_tooltip: 'Автоматично провалено, коли "{name}" було {status}',
         blocked_because: 'Заблоковано через',
-        blocked_because_trigger: 'заблоковано через {status}',
         blocked_because_was: 'було {status}',
         blocked_because_status_tooltip: 'Назавжди заблоковано — "{name}" було {status}',
         blocked_because_unknown: 'Заблоковано через передумови',
@@ -376,8 +379,6 @@
         requirement_status_completed: 'завершено',
         requirement_status_failed: 'провалено',
         requirement_status_not_started: 'не розпочато',
-        requires_current_status: 'зараз {status}',
-        requires_expected_status: 'потрібно {status}',
         requires_must_be: 'має бути {status}',
         requires_currently: 'зараз {status}',
         requires_action_complete: 'Завершити',
@@ -772,7 +773,6 @@
       },
       misc: {
         title: 'Різне',
-        holiday_effects: 'Увімкнути святкові ефекти',
       },
     },
     game_profile: {

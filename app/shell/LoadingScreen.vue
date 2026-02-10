@@ -5,10 +5,10 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="loading-screen-title"
+    aria-describedby="loading-screen-description"
     class="bg-surface-950 fixed inset-x-0 top-11 bottom-0 z-50 flex items-center justify-center"
   >
     <div class="flex flex-col items-center gap-6 px-4">
-      <!-- Loading Spinner or Error Icon -->
       <div class="relative">
         <UIcon
           v-if="!hasErrors"
@@ -17,29 +17,37 @@
         />
         <UIcon v-else name="i-heroicons-exclamation-triangle" class="text-warning-500 h-16 w-16" />
       </div>
-      <!-- Loading/Error Message -->
       <div class="flex flex-col items-center gap-2 text-center">
         <h2
           id="loading-screen-title"
+          data-loading-screen-title
           class="focus-visible:ring-primary-500 text-surface-100 focus-visible:ring-offset-surface-950 rounded-sm text-xl font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
-          {{ hasErrors ? 'Loading Issue' : 'Loading Tarkov Tracker' }}
+          {{ hasErrors ? $t('loading_screen.title_error') : $t('loading_screen.title') }}
         </h2>
-        <p class="text-surface-400 text-sm">
-          {{ hasErrors ? 'Some data failed to load' : 'Downloading required game data...' }}
+        <p id="loading-screen-description" class="text-surface-400 text-sm">
+          {{ hasErrors ? $t('loading_screen.subtitle_error') : $t('loading_screen.subtitle') }}
         </p>
       </div>
       <div v-if="!hasErrors" class="text-surface-600 mt-4 max-w-md text-center text-xs">
-        This may take a moment on first load. Data will be cached for future visits.
+        {{ $t('loading_screen.first_load_info') }}
       </div>
       <div v-else class="mt-4 flex flex-col items-center gap-3">
         <p class="text-surface-500 max-w-md text-center text-xs">
-          The app can still work with partial data. You can retry or continue anyway.
+          {{ $t('loading_screen.partial_data_info') }}
         </p>
         <div class="flex gap-3">
-          <UButton color="primary" variant="solid" @click="handleRetry">Retry</UButton>
-          <UButton color="neutral" variant="outline" @click="handleContinue">
-            Continue Anyway
+          <UButton
+            color="primary"
+            variant="solid"
+            :disabled="isRetrying"
+            :loading="isRetrying"
+            @click="handleRetry"
+          >
+            {{ $t('loading_screen.retry') }}
+          </UButton>
+          <UButton color="neutral" variant="outline" :disabled="isRetrying" @click="handleContinue">
+            {{ $t('loading_screen.continue_anyway') }}
           </UButton>
         </div>
       </div>
@@ -48,13 +56,18 @@
 </template>
 <script setup lang="ts">
   import { useMetadataStore } from '@/stores/useMetadata';
+  type InertElementState = {
+    ariaHidden: string | null;
+    element: Element;
+    hadInert: boolean;
+  };
   const metadataStore = useMetadataStore();
+  const isRetrying = ref(false);
   const userDismissed = ref(false);
+  const visibilityRunId = ref(0);
   const overlay = ref<HTMLElement | null>(null);
   const previousActiveElement = ref<HTMLElement | null>(null);
-  const inertElements = ref<Element[]>([]);
-  // Block until tasks, hideout, prestige, and editions data have all finished loading.
-  // If already initialized from cache, never block.
+  const inertElements = ref<InertElementState[]>([]);
   const isLoading = computed(() => {
     if (metadataStore.hasInitialized) return false;
     return (
@@ -64,7 +77,6 @@
       metadataStore.editionsLoading
     );
   });
-  // Check if there are any errors
   const hasErrors = computed(() => {
     return !!(
       metadataStore.error ||
@@ -73,20 +85,26 @@
       metadataStore.editionsError
     );
   });
-  // Show loading screen if loading or has errors (unless user dismissed)
   const shouldShow = computed(() => {
     if (userDismissed.value || metadataStore.hasInitialized) return false;
     return isLoading.value || hasErrors.value;
   });
-  // Handle accessibility and focus management
   function trapFocus(e: KeyboardEvent) {
     if (!overlay.value || e.key !== 'Tab') return;
     const focusableElements = overlay.value.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-    if (focusableElements.length === 0) return;
+    if (focusableElements.length === 0) {
+      e.preventDefault();
+      return;
+    }
     const firstFocusable = focusableElements[0] as HTMLElement;
     const lastFocusable = focusableElements[focusableElements.length - 1] as HTMLElement;
+    if (!overlay.value.contains(document.activeElement)) {
+      firstFocusable.focus();
+      e.preventDefault();
+      return;
+    }
     if (e.shiftKey) {
       if (document.activeElement === firstFocusable) {
         lastFocusable.focus();
@@ -106,24 +124,37 @@
       if (!parent) return;
       Array.from(parent.children).forEach((child) => {
         if (child !== overlay.value && child.nodeType === 1) {
+          inertElements.value.push({
+            ariaHidden: child.getAttribute('aria-hidden'),
+            element: child,
+            hadInert: child.hasAttribute('inert'),
+          });
           child.setAttribute('inert', '');
           child.setAttribute('aria-hidden', 'true');
-          inertElements.value.push(child);
         }
       });
     } else {
-      inertElements.value.forEach((el) => {
-        el.removeAttribute('inert');
-        el.removeAttribute('aria-hidden');
+      inertElements.value.forEach(({ element, hadInert, ariaHidden }) => {
+        if (!hadInert) {
+          element.removeAttribute('inert');
+        }
+        if (ariaHidden === null) {
+          element.removeAttribute('aria-hidden');
+        } else {
+          element.setAttribute('aria-hidden', ariaHidden);
+        }
       });
       inertElements.value = [];
     }
   }
   const handleVisibilityChange = async (isVisible: boolean) => {
+    const currentRun = ++visibilityRunId.value;
     if (isVisible) {
-      previousActiveElement.value = document.activeElement as HTMLElement;
+      previousActiveElement.value =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
       await nextTick();
-      const title = document.getElementById('loading-screen-title');
+      if (currentRun !== visibilityRunId.value || !overlay.value || !shouldShow.value) return;
+      const title = overlay.value.querySelector<HTMLElement>('[data-loading-screen-title]');
       if (title) {
         title.setAttribute('tabindex', '-1');
         title.focus();
@@ -133,31 +164,37 @@
     } else {
       window.removeEventListener('keydown', trapFocus);
       setSiblingsInert(false);
-      if (previousActiveElement.value) {
+      if (previousActiveElement.value && document.contains(previousActiveElement.value)) {
         previousActiveElement.value.focus();
       }
+      previousActiveElement.value = null;
     }
   };
   watch(shouldShow, (newVal) => {
-    handleVisibilityChange(newVal);
+    void handleVisibilityChange(newVal);
   });
   onMounted(() => {
     if (shouldShow.value) {
-      handleVisibilityChange(true);
+      void handleVisibilityChange(true);
     }
   });
   onUnmounted(() => {
+    visibilityRunId.value += 1;
     window.removeEventListener('keydown', trapFocus);
     setSiblingsInert(false);
   });
-  function handleRetry() {
-    // Reset dismissal status so the loading screen can appear again if retry fails
+  async function handleRetry() {
+    if (isRetrying.value) return;
     userDismissed.value = false;
-    // Refresh all data
-    metadataStore.fetchAllData(true);
+    isRetrying.value = true;
+    try {
+      await metadataStore.fetchAllData(true);
+    } finally {
+      isRetrying.value = false;
+    }
   }
   function handleContinue() {
-    // Dismiss the loading screen and let user proceed with partial data
+    if (isRetrying.value) return;
     userDismissed.value = true;
   }
 </script>

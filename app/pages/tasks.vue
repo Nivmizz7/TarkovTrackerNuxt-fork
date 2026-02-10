@@ -81,11 +81,27 @@
                 </div>
               </div>
               <div
-                v-for="task in unpinnedTasksInSlice"
+                v-for="task in mapSpecificTasksInSlice"
                 :key="`task-${task.id}`"
                 class="content-visibility-auto-280 pb-4"
               >
                 <TaskCard :task="task" @on-task-action="handleTaskAction" />
+              </div>
+              <div v-if="globalTasksInSlice.length > 0" class="mt-2 mb-6">
+                <div class="mb-3 flex items-center gap-2">
+                  <UIcon name="i-mdi-earth" class="text-primary-400 h-4 w-4" />
+                  <h3 class="text-surface-200 text-sm font-medium">
+                    {{ t('page.tasks.global_tasks_section') }}
+                  </h3>
+                  <div class="bg-surface-700 h-px flex-1" />
+                </div>
+                <div
+                  v-for="task in globalTasksInSlice"
+                  :key="`global-${task.id}`"
+                  class="content-visibility-auto-280 pb-4"
+                >
+                  <TaskCard :task="task" @on-task-action="handleTaskAction" />
+                </div>
               </div>
               <div
                 v-if="visibleTaskCount < filteredTasks.length"
@@ -235,7 +251,7 @@
   const editions = computed(() => metadataStore.editions);
   const progressStore = useProgressStore();
   const { tasksCompletions, unlockedTasks, tasksFailed } = storeToRefs(progressStore);
-  const { visibleTasks, updateVisibleTasks } = useTaskFiltering();
+  const { visibleTasks, updateVisibleTasks, isGlobalTask: isGlobalTaskFn } = useTaskFiltering();
   const tarkovStore = useTarkovStore();
   const userGameEdition = computed(() => tarkovStore.getGameEdition());
   const { tarkovTime } = useTarkovTime();
@@ -554,6 +570,17 @@
     if (!pinnedIds.length) return visibleTasksSlice.value;
     const pinnedIdSet = new Set(pinnedIds);
     return visibleTasksSlice.value.filter((task) => !pinnedIdSet.has(task.id));
+  });
+  const isInMapViewWithGlobalTasks = computed(() => {
+    return showMapDisplay.value && !getHideGlobalTasks.value;
+  });
+  const mapSpecificTasksInSlice = computed(() => {
+    if (!isInMapViewWithGlobalTasks.value) return unpinnedTasksInSlice.value;
+    return unpinnedTasksInSlice.value.filter((task) => !isGlobalTaskFn(task));
+  });
+  const globalTasksInSlice = computed(() => {
+    if (!isInMapViewWithGlobalTasks.value) return [];
+    return unpinnedTasksInSlice.value.filter((task) => isGlobalTaskFn(task));
   });
   const hasMoreTasks = computed(() => visibleTaskCount.value < filteredTasks.value.length);
   const loadMoreTasks = () => {
