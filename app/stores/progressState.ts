@@ -94,8 +94,8 @@ const defaultProgressData: UserProgressData = {
 export const defaultState: UserState = {
   currentGameMode: GAME_MODES.PVP,
   gameEdition: 1,
-  pvp: JSON.parse(JSON.stringify(defaultProgressData)),
-  pve: JSON.parse(JSON.stringify(defaultProgressData)),
+  pvp: structuredClone(defaultProgressData),
+  pve: structuredClone(defaultProgressData),
 };
 // Migration function to convert legacy data structure to new gamemode-aware structure
 export function migrateToGameModeStructure(legacyData: unknown): UserState {
@@ -151,7 +151,7 @@ export function migrateToGameModeStructure(legacyData: unknown): UserState {
       currentGameMode: data.currentGameMode as GameMode,
       gameEdition: (data.gameEdition as number) || defaultState.gameEdition,
       pvp: migratedProgressData,
-      pve: JSON.parse(JSON.stringify(defaultProgressData)),
+      pve: structuredClone(defaultProgressData),
     };
   }
   // Create new structure with migrated data from legacy format
@@ -174,7 +174,7 @@ export function migrateToGameModeStructure(legacyData: unknown): UserState {
     currentGameMode: GAME_MODES.PVP, // Default to PvP for existing users
     gameEdition: (data.gameEdition as number) || defaultState.gameEdition,
     pvp: migratedProgressData,
-    pve: JSON.parse(JSON.stringify(defaultProgressData)), // Fresh PvE data
+    pve: structuredClone(defaultProgressData),
   };
 }
 // Helper to get current gamemode data
