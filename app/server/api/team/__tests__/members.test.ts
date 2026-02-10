@@ -50,7 +50,7 @@ describe('Team Members API', () => {
       context: {
         auth: {
           user: {
-            id: 'user-123',
+            id: '11111111-1111-4111-8111-111111111111',
           },
         },
         ...BASE_SITE_CONTEXT,
@@ -61,7 +61,7 @@ describe('Team Members API', () => {
     it('should throw error when supabaseUrl is missing', async () => {
       runtimeConfig.supabaseUrl = '';
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow(
         'Missing required environment variables'
       );
@@ -76,31 +76,31 @@ describe('Team Members API', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => [{ user_id: 'user-123' }],
+          json: async () => [{ user_id: '11111111-1111-4111-8111-111111111111' }],
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => [{ user_id: 'user-123' }],
+          json: async () => [{ user_id: '11111111-1111-4111-8111-111111111111' }],
         })
         .mockResolvedValueOnce({
           ok: true,
           json: async () => [],
         });
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       const result = await handler(mockEvent as H3Event);
-      expect(result.members).toEqual(['user-123']);
+      expect(result.members).toEqual(['11111111-1111-4111-8111-111111111111']);
     });
     it('should require auth token when supabaseServiceKey is missing', async () => {
       runtimeConfig.supabaseServiceKey = '';
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockReturnValue(undefined);
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing auth token');
     });
     it('should throw error when supabaseAnonKey is missing', async () => {
       runtimeConfig.supabaseAnonKey = '';
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow(
         'Missing required environment variables'
       );
@@ -109,7 +109,7 @@ describe('Team Members API', () => {
   describe('Team membership validation', () => {
     it('should require teamId query parameter', async () => {
       mockGetQuery.mockReturnValue({});
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('teamId is required');
     });
     it('should require user to be team member', async () => {
@@ -119,7 +119,7 @@ describe('Team Members API', () => {
         ok: true,
         json: async () => [],
       });
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Not a team member');
     });
     it('should handle failed membership check', async () => {
@@ -129,7 +129,7 @@ describe('Team Members API', () => {
         ok: false,
         status: 500,
       });
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Failed membership check');
     });
     it('should handle failed members fetch', async () => {
@@ -138,14 +138,14 @@ describe('Team Members API', () => {
         // Mock successful membership check
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => [{ user_id: 'user-123' }],
+          json: async () => [{ user_id: '11111111-1111-4111-8111-111111111111' }],
         })
         // Mock failed fetch all members
         .mockResolvedValueOnce({
           ok: false,
           status: 500,
         });
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Failed to load members');
     });
     it('should return members when user is valid team member', async () => {
@@ -154,26 +154,29 @@ describe('Team Members API', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => [{ user_id: 'user-123' }],
+          json: async () => [{ user_id: '11111111-1111-4111-8111-111111111111' }],
         })
         // Mock fetch all members
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => [{ user_id: 'user-123' }, { user_id: 'user-789' }],
+          json: async () => [
+            { user_id: '11111111-1111-4111-8111-111111111111' },
+            { user_id: '22222222-2222-4222-8222-222222222222' },
+          ],
         })
         // Mock profiles fetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => [
             {
-              user_id: 'user-123',
+              user_id: '11111111-1111-4111-8111-111111111111',
               current_game_mode: 'pvp',
               pvp_display_name: 'Player1',
               pvp_level: 15,
               pvp_tasks_completed: 10,
             },
             {
-              user_id: 'user-789',
+              user_id: '22222222-2222-4222-8222-222222222222',
               current_game_mode: 'pve',
               pve_display_name: 'Player2',
               pve_level: 20,
@@ -181,17 +184,17 @@ describe('Team Members API', () => {
             },
           ],
         });
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       const result = await handler(mockEvent as H3Event);
       expect(result).toEqual({
-        members: ['user-123', 'user-789'],
+        members: ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'],
         profiles: {
-          'user-123': {
+          '11111111-1111-4111-8111-111111111111': {
             displayName: 'Player1',
             level: 15,
             tasksCompleted: 10,
           },
-          'user-789': {
+          '22222222-2222-4222-8222-222222222222': {
             displayName: 'Player2',
             level: 20,
             tasksCompleted: 15,
@@ -209,12 +212,12 @@ describe('Team Members API', () => {
           // Mock successful membership check
           .mockResolvedValueOnce({
             ok: true,
-            json: async () => [{ user_id: 'user-123' }],
+            json: async () => [{ user_id: '11111111-1111-4111-8111-111111111111' }],
           })
           // Mock fetch all members
           .mockResolvedValueOnce({
             ok: true,
-            json: async () => [{ user_id: 'user-123' }],
+            json: async () => [{ user_id: '11111111-1111-4111-8111-111111111111' }],
           })
           // Mock profiles bulk fetch FAILS
           .mockResolvedValueOnce({
@@ -227,7 +230,7 @@ describe('Team Members API', () => {
             ok: true,
             json: async () => [
               {
-                user_id: 'user-123',
+                user_id: '11111111-1111-4111-8111-111111111111',
                 current_game_mode: 'pvp',
                 pvp_display_name: 'Player1',
                 pvp_level: 10,
@@ -235,15 +238,16 @@ describe('Team Members API', () => {
               },
             ],
           });
-        const { default: handler } = await import('../members');
+        const { default: handler } = await import('@/server/api/team/members');
         const result = await handler(mockEvent as H3Event);
-        expect(result.profiles['user-123']).toEqual({
+        expect(result.profiles['11111111-1111-4111-8111-111111111111']).toEqual({
           displayName: 'Player1',
           level: 10,
           tasksCompleted: 5,
         });
         expect(errorSpy).toHaveBeenCalledWith(
-          '[team/members] Profiles fetch error (500):',
+          '[TeamMembers]',
+          'Profiles fetch error (500):',
           'Internal server error'
         );
       } finally {
@@ -263,32 +267,32 @@ describe('Team Members API', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ id: 'user-123' }),
+          json: async () => ({ id: '11111111-1111-4111-8111-111111111111' }),
         })
         // Mock membership check
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => [{ user_id: 'user-123' }],
+          json: async () => [{ user_id: '11111111-1111-4111-8111-111111111111' }],
         })
         // Mock fetch all members
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => [{ user_id: 'user-123' }],
+          json: async () => [{ user_id: '11111111-1111-4111-8111-111111111111' }],
         })
         // Mock profiles fetch
         .mockResolvedValueOnce({
           ok: true,
           json: async () => [],
         });
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       const result = await handler(mockEvent as H3Event);
-      expect(result.members).toEqual(['user-123']);
+      expect(result.members).toEqual(['11111111-1111-4111-8111-111111111111']);
     });
     it('should reject requests without auth token or context', async () => {
       mockEvent.context = { ...BASE_SITE_CONTEXT };
       mockGetQuery.mockReturnValue({ teamId: 'team-456' });
       mockGetRequestHeader.mockReturnValue(undefined); // No auth header
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing auth token');
     });
     it('should reject requests with invalid auth token format', async () => {
@@ -298,7 +302,7 @@ describe('Team Members API', () => {
         if (header === 'authorization') return 'InvalidFormat token123';
         return undefined;
       });
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Missing auth token');
     });
     it('should reject requests when token validation fails', async () => {
@@ -313,7 +317,7 @@ describe('Team Members API', () => {
         ok: false,
         status: 401,
       });
-      const { default: handler } = await import('../members');
+      const { default: handler } = await import('@/server/api/team/members');
       await expect(handler(mockEvent as H3Event)).rejects.toThrow('Invalid token');
     });
   });
