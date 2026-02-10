@@ -41,7 +41,7 @@ export default defineNuxtConfig({
       VITE_LOG_LEVEL: process.env.VITE_LOG_LEVEL || '',
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
       appVersion: process.env.NUXT_PUBLIC_APP_VERSION || appVersion,
-      tarkovVersion: process.env.NUXT_PUBLIC_TARKOV_VERSION || '1.0.1.1.42751',
+      tarkovVersion: process.env.NUXT_PUBLIC_TARKOV_VERSION || '1.0.2.0',
       teamGatewayUrl: process.env.NUXT_PUBLIC_TEAM_GATEWAY_URL || '',
       tokenGatewayUrl: process.env.NUXT_PUBLIC_TOKEN_GATEWAY_URL || '',
       adminWatchTimeoutMs: Number(process.env.ADMIN_WATCH_TIMEOUT_MS || '5000') || 5000,

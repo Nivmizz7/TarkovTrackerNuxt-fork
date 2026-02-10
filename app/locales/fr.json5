@@ -9,6 +9,16 @@
     user_label: 'Utilisateur',
     user_avatar_alt: "Avatar de l'utilisateur",
   },
+  loading_screen: {
+    title: 'Chargement de Tarkov Tracker',
+    title_error: 'Problème de chargement',
+    subtitle: 'Téléchargement des données de jeu requises...',
+    subtitle_error: 'Certaines données n’ont pas pu être chargées',
+    first_load_info: 'Cela peut prendre un moment lors du premier chargement. Les données seront mises en cache pour les prochaines visites.',
+    partial_data_info: 'L’application peut fonctionner avec des données partielles. Vous pouvez réessayer ou continuer quand même.',
+    retry: 'Réessayer',
+    continue_anyway: 'Continuer quand même',
+  },
   toast: {
     hideout_updated: {
       title: 'Planque mise à jour',
@@ -107,9 +117,6 @@
       title: 'Tableau de bord',
     },
     dashboard: {
-      hero: {
-        overall: 'Global',
-      },
       notice: {
         message: "L'UI/UX vient d'être mise à jour et est en cours de perfectionnement ; signalez les problèmes sur Discord ou GitHub. Soutenez le développement gratuit via le lien Ko-fi dans le pied de page.",
         dismiss: 'Ignorer',
@@ -200,10 +207,7 @@
         clear_focus: 'Effacer le focus',
         no_tasks: 'Aucune quête trouvée pour ce marchand.',
         mobile_unavailable: 'La vue graphe est optimisée pour un écran plus large.',
-        navigate_to_task: 'Voir les détails de la quête',
         node_level: 'Nvl {level}',
-        node_start: 'Début',
-        node_end: 'Fin',
         completed: 'Terminée',
         available: 'Disponible',
         locked: 'Verrouillée',
@@ -355,11 +359,9 @@
         mark_failed_confirm: 'Marquer cette quête comme échouée ? Ceci est uniquement pour les problèmes de données, non recommandé et peut bloquer les chaînes de quêtes.',
         failed_because: 'Échouée car',
         failed_because_unknown: 'Échouée manuellement ou données manquantes',
-        failed_because_trigger: 'triggered by {status}',
         failed_because_was: 'was {status}',
         failed_because_status_tooltip: 'Auto-failed when "{name}" was {status}',
         blocked_because: 'Blocked because',
-        blocked_because_trigger: 'blocked by {status}',
         blocked_because_was: 'was {status}',
         blocked_because_status_tooltip: 'Permanently blocked — "{name}" was {status}',
         blocked_because_unknown: 'Blocked by prerequisites',
@@ -377,8 +379,6 @@
         requirement_status_completed: 'completed',
         requirement_status_failed: 'failed',
         requirement_status_not_started: 'not started',
-        requires_current_status: 'now {status}',
-        requires_expected_status: 'needs {status}',
         requires_must_be: 'must be {status}',
         requires_currently: 'currently {status}',
         requires_action_complete: 'Complete',
@@ -773,7 +773,6 @@
       },
       misc: {
         title: 'Divers',
-        holiday_effects: 'Activer les effets de fête',
       },
     },
     game_profile: {

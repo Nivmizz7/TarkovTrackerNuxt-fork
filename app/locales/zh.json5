@@ -9,6 +9,16 @@
     user_label: '用户',
     user_avatar_alt: '用户头像',
   },
+  loading_screen: {
+    title: '正在加载 Tarkov Tracker',
+    title_error: '加载问题',
+    subtitle: '正在下载所需的游戏数据...',
+    subtitle_error: '部分数据加载失败',
+    first_load_info: '首次加载可能需要一些时间。数据会被缓存，供后续访问使用。',
+    partial_data_info: '应用在部分数据缺失时仍可运行。你可以重试或继续。',
+    retry: '重试',
+    continue_anyway: '仍然继续',
+  },
   toast: {
     hideout_updated: {
       title: '藏身处已更新',
@@ -107,9 +117,6 @@
       title: '总览面板',
     },
     dashboard: {
-      hero: {
-        overall: '全局概况',
-      },
       notice: {
         message: 'UI/UX 刚刚更新并正在完善中；请在 Discord 或 GitHub 上报告问题。通过页脚的 Ko-fi 链接支持免费开发。',
         dismiss: '关闭',
@@ -200,10 +207,7 @@
         clear_focus: '清除焦点',
         no_tasks: '未找到该商人的任务。',
         mobile_unavailable: '图表视图在更宽的屏幕上效果更好。',
-        navigate_to_task: '查看任务详情',
         node_level: 'Lv.{level}',
-        node_start: '开始',
-        node_end: '结束',
         completed: '已完成',
         available: '可接取',
         locked: '未解锁',
@@ -355,11 +359,9 @@
         mark_failed_confirm: '是否要将此任务标记为失败? 此操作仅用于解决数据问题，不建议使用并可能会导致任务线阻塞',
         failed_because: '失败原因',
         failed_because_unknown: '手动标记为失败或数据丢失',
-        failed_because_trigger: '由 {status} 触发',
         failed_because_was: '为 {status}',
         failed_because_status_tooltip: '当 "{name}" 为 {status} 时自动判定失败',
         blocked_because: '被阻止，因为',
-        blocked_because_trigger: '被 {status} 阻止',
         blocked_because_was: '为 {status}',
         blocked_because_status_tooltip: '永久阻止 — "{name}" 为 {status}',
         blocked_because_unknown: '被前置条件阻止',
@@ -377,8 +379,6 @@
         requirement_status_completed: '已完成',
         requirement_status_failed: '已失败',
         requirement_status_not_started: '未开始',
-        requires_current_status: '当前 {status}',
-        requires_expected_status: '需要 {status}',
         requires_must_be: '必须为 {status}',
         requires_currently: '目前 {status}',
         requires_action_complete: '完成',
@@ -773,7 +773,6 @@
       },
       misc: {
         title: '杂项',
-        holiday_effects: '启用节日效果',
       },
     },
     game_profile: {

@@ -1,6 +1,5 @@
 import { defineEventHandler, getQuery, setResponseHeaders } from 'h3';
 import { LRUCache } from 'lru-cache';
-import { useRuntimeConfig } from '#imports';
 import { createLogger } from '@/server/utils/logger';
 import {
   cleanText,

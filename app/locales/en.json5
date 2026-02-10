@@ -9,6 +9,16 @@
     user_label: 'User',
     user_avatar_alt: 'User avatar',
   },
+  loading_screen: {
+    title: 'Loading Tarkov Tracker',
+    title_error: 'Loading Issue',
+    subtitle: 'Downloading required game data...',
+    subtitle_error: 'Some data failed to load',
+    first_load_info: 'This may take a moment on first load. Data will be cached for future visits.',
+    partial_data_info: 'The app can still work with partial data. You can retry or continue anyway.',
+    retry: 'Retry',
+    continue_anyway: 'Continue Anyway',
+  },
   toast: {
     hideout_updated: {
       title: 'Hideout updated',
@@ -107,9 +117,6 @@
       title: 'Dashboard',
     },
     dashboard: {
-      hero: {
-        overall: 'Overall',
-      },
       notice: {
         message: 'UI/UX just updated and being polished; report issues on Discord or GitHub. Support free development via the Ko-fi link in the footer.',
         dismiss: 'Dismiss',
@@ -200,10 +207,7 @@
         clear_focus: 'Clear focus',
         no_tasks: 'No tasks found for this trader.',
         mobile_unavailable: 'Graph view is best experienced on a wider screen.',
-        navigate_to_task: 'View task details',
         node_level: 'Lvl {level}',
-        node_start: 'Start',
-        node_end: 'End',
         completed: 'Completed',
         available: 'Available',
         locked: 'Locked',
@@ -354,12 +358,10 @@
         undo_unknown: 'Unable to undo action for {name}',
         mark_failed_confirm: "Mark this task as failed? This is only for data issues, isn't recommended, and may block task chains.",
         failed_because: 'Failed because',
-        failed_because_trigger: 'triggered by {status}',
         failed_because_was: 'was {status}',
         failed_because_status_tooltip: 'Auto-failed when "{name}" was {status}',
         failed_because_unknown: 'Failed manually or data missing',
         blocked_because: 'Blocked because',
-        blocked_because_trigger: 'blocked by {status}',
         blocked_because_was: 'was {status}',
         blocked_because_status_tooltip: 'Permanently blocked — "{name}" was {status}',
         blocked_because_unknown: 'Blocked by prerequisites',
@@ -377,8 +379,6 @@
         requirement_status_completed: 'completed',
         requirement_status_failed: 'failed',
         requirement_status_not_started: 'not started',
-        requires_current_status: 'now {status}',
-        requires_expected_status: 'needs {status}',
         requires_must_be: 'must be {status}',
         requires_currently: 'currently {status}',
         requires_action_complete: 'Complete',
@@ -773,7 +773,6 @@
       },
       misc: {
         title: 'Miscellaneous',
-        holiday_effects: 'Enable Holiday Effects',
       },
     },
     game_profile: {

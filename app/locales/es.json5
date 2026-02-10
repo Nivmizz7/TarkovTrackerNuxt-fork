@@ -9,6 +9,16 @@
     user_label: 'Usuario',
     user_avatar_alt: 'Avatar de usuario',
   },
+  loading_screen: {
+    title: 'Cargando Tarkov Tracker',
+    title_error: 'Problema de carga',
+    subtitle: 'Descargando los datos del juego requeridos...',
+    subtitle_error: 'No se pudieron cargar algunos datos',
+    first_load_info: 'Esto puede tardar un momento en la primera carga. Los datos se guardarán en caché para futuras visitas.',
+    partial_data_info: 'La app puede seguir funcionando con datos parciales. Puedes reintentar o continuar de todos modos.',
+    retry: 'Reintentar',
+    continue_anyway: 'Continuar de todos modos',
+  },
   toast: {
     hideout_updated: {
       title: 'Escondite actualizado',
@@ -107,9 +117,6 @@
       title: 'Panel',
     },
     dashboard: {
-      hero: {
-        overall: 'General',
-      },
       notice: {
         message: 'La interfaz UI/UX acaba de actualizarse y está siendo pulida; reporta problemas en Discord o GitHub. Apoya el desarrollo gratuito a través del enlace de Ko-fi en el pie de página.',
         dismiss: 'Descartar',
@@ -200,10 +207,7 @@
         clear_focus: 'Limpiar enfoque',
         no_tasks: 'No se encontraron misiones para este comerciante.',
         mobile_unavailable: 'La vista de grafo se ve mejor en una pantalla más ancha.',
-        navigate_to_task: 'Ver detalles de la misión',
         node_level: 'Nvl {level}',
-        node_start: 'Inicio',
-        node_end: 'Fin',
         completed: 'Completada',
         available: 'Disponible',
         locked: 'Bloqueada',
@@ -355,11 +359,9 @@
         mark_failed_confirm: '¿Marcar esta misión como fallida? Esto es solo para problemas de datos, no se recomienda y puede bloquear cadenas de misiones.',
         failed_because: 'Falló porque',
         failed_because_unknown: 'Marcado como fallido manualmente o faltan datos',
-        failed_because_trigger: 'activado por {status}',
         failed_because_was: 'estaba {status}',
         failed_because_status_tooltip: 'Falló automáticamente cuando "{name}" estaba {status}',
         blocked_because: 'Bloqueada porque',
-        blocked_because_trigger: 'bloqueada por {status}',
         blocked_because_was: 'estaba {status}',
         blocked_because_status_tooltip: 'Bloqueada permanentemente — "{name}" estaba {status}',
         blocked_because_unknown: 'Bloqueada por requisitos previos',
@@ -377,8 +379,6 @@
         requirement_status_completed: 'completada',
         requirement_status_failed: 'fallida',
         requirement_status_not_started: 'sin empezar',
-        requires_current_status: 'ahora {status}',
-        requires_expected_status: 'requiere {status}',
         requires_must_be: 'debe estar {status}',
         requires_currently: 'actualmente {status}',
         requires_action_complete: 'Completar',
@@ -773,7 +773,6 @@
       },
       misc: {
         title: 'Misceláneo',
-        holiday_effects: 'Habilitar efectos festivos',
       },
     },
     game_profile: {

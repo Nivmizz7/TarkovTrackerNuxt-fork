@@ -1,5 +1,4 @@
 import { defineEventHandler, setResponseHeaders } from 'h3';
-import { useRuntimeConfig } from '#imports';
 import { createLogger } from '~/server/utils/logger';
 const logger = createLogger('TarkovCacheMeta');
 export default defineEventHandler(async (event) => {
@@ -13,7 +12,7 @@ export default defineEventHandler(async (event) => {
     typeof supabaseServiceKey !== 'string' ||
     !supabaseServiceKey.trim()
   ) {
-    logger.warn('[CacheMeta] Supabase not configured - skipping cache meta lookup');
+    logger.warn('Supabase not configured - skipping cache meta lookup');
     return { data: { lastPurgeAt: null } };
   }
   const supabaseUrlValue = supabaseUrl.trim();
@@ -22,7 +21,7 @@ export default defineEventHandler(async (event) => {
   try {
     url = new URL(`${supabaseUrlValue}/rest/v1/admin_audit_log`);
   } catch (error) {
-    logger.error('[CacheMeta] Invalid Supabase URL for cache meta lookup.', {
+    logger.error('Invalid Supabase URL for cache meta lookup.', {
       supabaseUrl: supabaseUrlValue,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -50,13 +49,15 @@ export default defineEventHandler(async (event) => {
       (error instanceof Error && error.name === 'AbortError') ||
       (error instanceof DOMException && error.name === 'TimeoutError')
     ) {
-      logger.warn(`[CacheMeta] Cache meta request timed out after ${requestTimeoutMs}ms.`, error);
+      logger.warn(`Cache meta request timed out after ${requestTimeoutMs}ms.`, {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return {
         data: { lastPurgeAt: null },
         error: `Cache meta request timed out after ${requestTimeoutMs}ms.`,
       };
     }
-    logger.error('[CacheMeta] Network error fetching cache meta.', {
+    logger.error('Network error fetching cache meta.', {
       url: url.toString(),
       error: error instanceof Error ? error.message : String(error),
     });
@@ -72,7 +73,7 @@ export default defineEventHandler(async (event) => {
     } catch {
       bodySnippet = '[unable to read response body]';
     }
-    logger.error('[CacheMeta] Non-OK response from Supabase.', {
+    logger.error('Non-OK response from Supabase.', {
       url: url.toString(),
       status: response.status,
       body: bodySnippet,
@@ -83,14 +84,14 @@ export default defineEventHandler(async (event) => {
   try {
     parsed = await response.json();
   } catch (error) {
-    logger.error('[CacheMeta] Failed to parse JSON response.', {
+    logger.error('Failed to parse JSON response.', {
       url: url.toString(),
       error: error instanceof Error ? error.message : String(error),
     });
     return { data: { lastPurgeAt: null } };
   }
   if (!Array.isArray(parsed)) {
-    logger.error('[CacheMeta] Expected array response but got non-array.', {
+    logger.error('Expected array response but got non-array.', {
       url: url.toString(),
       type: typeof parsed,
     });

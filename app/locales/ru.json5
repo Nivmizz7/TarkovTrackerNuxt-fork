@@ -9,6 +9,16 @@
     user_label: 'Пользователь',
     user_avatar_alt: 'Аватар пользователя',
   },
+  loading_screen: {
+    title: 'Загрузка Tarkov Tracker',
+    title_error: 'Проблема загрузки',
+    subtitle: 'Загружаем необходимые игровые данные...',
+    subtitle_error: 'Некоторые данные не удалось загрузить',
+    first_load_info: 'При первой загрузке это может занять некоторое время. Данные будут кэшированы для будущих посещений.',
+    partial_data_info: 'Приложение может работать и с частичными данными. Вы можете повторить попытку или продолжить.',
+    retry: 'Повторить',
+    continue_anyway: 'Продолжить в любом случае',
+  },
   toast: {
     hideout_updated: {
       title: 'Убежище обновлено',
@@ -107,9 +117,6 @@
       title: 'Приборная панель',
     },
     dashboard: {
-      hero: {
-        overall: 'Общий',
-      },
       notice: {
         message: 'UI/UX только что обновлён и дорабатывается; сообщайте о проблемах в Discord или GitHub. Поддержите бесплатную разработку через ссылку Ko-fi в подвале сайта.',
         dismiss: 'Закрыть',
@@ -200,10 +207,7 @@
         clear_focus: 'Сбросить фокус',
         no_tasks: 'Задания для этого торговца не найдены.',
         mobile_unavailable: 'Граф лучше отображается на широком экране.',
-        navigate_to_task: 'Подробности задания',
         node_level: 'Ур. {level}',
-        node_start: 'Начало',
-        node_end: 'Конец',
         completed: 'Выполнено',
         available: 'Доступно',
         locked: 'Заблокировано',
@@ -355,11 +359,9 @@
         mark_failed_confirm: 'Отметить это задание как проваленное? Это только для проблем с данными, не рекомендуется и может заблокировать цепочки заданий.',
         failed_because: 'Провалено из-за',
         failed_because_unknown: 'Провалено вручную или данные отсутствуют',
-        failed_because_trigger: 'вызвано {status}',
         failed_because_was: 'было {status}',
         failed_because_status_tooltip: 'Автоматически провалено, когда «{name}» было {status}',
         blocked_because: 'Заблокировано',
-        blocked_because_trigger: 'заблокировано {status}',
         blocked_because_was: 'было {status}',
         blocked_because_status_tooltip: 'Навсегда заблокировано — «{name}» было {status}',
         blocked_because_unknown: 'Заблокировано из-за зависимостей',
@@ -377,8 +379,6 @@
         requirement_status_completed: 'завершено',
         requirement_status_failed: 'провалено',
         requirement_status_not_started: 'не начато',
-        requires_current_status: 'сейчас {status}',
-        requires_expected_status: 'нужно {status}',
         requires_must_be: 'должно быть {status}',
         requires_currently: 'сейчас {status}',
         requires_action_complete: 'Завершить',
@@ -773,7 +773,6 @@
       },
       misc: {
         title: 'Разное',
-        holiday_effects: 'Включить праздничные эффекты',
       },
     },
     game_profile: {
