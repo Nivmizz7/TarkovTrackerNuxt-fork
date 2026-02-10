@@ -106,7 +106,11 @@
                   :key="`task-${task.id}`"
                   class="content-visibility-auto-280 pb-4"
                 >
-                  <TaskCard :task="task" @on-task-action="handleTaskAction" />
+                  <TaskCard
+                    accent-variant="global"
+                    :task="task"
+                    @on-task-action="handleTaskAction"
+                  />
                 </div>
               </template>
               <div
