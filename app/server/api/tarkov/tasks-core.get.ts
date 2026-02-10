@@ -12,15 +12,11 @@ export default defineEventHandler(async (event) => {
   const bypassOverlayCache = shouldBypassCache(event);
   const lang = getValidatedLanguage(query);
   const gameMode = validateGameMode(query.gameMode);
-  // Create cache key from parameters
   const cacheKey = `tasks-core-${lang}-${gameMode}`;
   const baseFetcher = createTarkovFetcher(TARKOV_TASKS_CORE_QUERY, { lang, gameMode });
   const fetcherWithOverlay = async () => {
     const rawResponse = await baseFetcher();
-    // Validate GraphQL response has basic structure and data field
-    // Allow partial data with errors
     validateAndThrow<TarkovTasksCoreQueryResult>(rawResponse, logger, true);
-    // Apply community overlay corrections
     try {
       return await applyOverlay(rawResponse, { bypassCache: bypassOverlayCache });
     } catch (overlayError) {
@@ -28,7 +24,6 @@ export default defineEventHandler(async (event) => {
       throw overlayError;
     }
   };
-  // Use the shared edge cache utility
   return await edgeCache(event, cacheKey, fetcherWithOverlay, CACHE_TTL_DEFAULT, {
     cacheKeyPrefix: 'tarkov',
   });
