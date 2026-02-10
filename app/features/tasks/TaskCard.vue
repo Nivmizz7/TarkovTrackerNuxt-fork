@@ -589,7 +589,7 @@
   });
   const accentClasses = computed(() => {
     if (props.accentVariant === 'global') {
-      return 'border-info-400 bg-info-500/5 border-l-4';
+      return 'border-l-4 border-l-info-400 bg-info-500/5';
     }
     return '';
   });
