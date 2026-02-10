@@ -4,6 +4,7 @@
  * Extracts sorting logic from useTaskFiltering.ts for better testability
  * and reusability across the application.
  */
+import { buildTaskImpactScores } from '@/utils/taskImpact';
 import type { Task } from '@/types/tarkov';
 import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
 /**
@@ -57,39 +58,8 @@ function getTeamIds(data: { visibleTeamStores?: Record<string, unknown> }): stri
  * Derives teamIds from data.visibleTeamStores for consistency with buildTeammateAvailableCounts.
  */
 export function buildImpactScores(tasks: Task[], data: ImpactScoreData): Map<string, number> {
-  const impactScores = new Map<string, number>();
-  // Return early if no tasks
-  if (!tasks.length) {
-    return impactScores;
-  }
   const teamIds = getTeamIds(data);
-  // If no team members, set all scores to 0
-  if (!teamIds.length) {
-    tasks.forEach((task) => impactScores.set(task.id, 0));
-    return impactScores;
-  }
-  const { tasksCompletions, tasksFailed } = data;
-  tasks.forEach((task) => {
-    const successors = task.successors ?? [];
-    if (!successors.length) {
-      impactScores.set(task.id, 0);
-      return;
-    }
-    let impact = 0;
-    successors.forEach((successorId) => {
-      // A successor is incomplete only when it is not completed AND not failed
-      const isIncomplete = teamIds.some(
-        (teamId) =>
-          tasksCompletions?.[successorId]?.[teamId] !== true &&
-          tasksFailed?.[successorId]?.[teamId] !== true
-      );
-      if (isIncomplete) {
-        impact += 1;
-      }
-    });
-    impactScores.set(task.id, impact);
-  });
-  return impactScores;
+  return buildTaskImpactScores(tasks, teamIds, data);
 }
 /**
  * Build teammate availability counts for tasks

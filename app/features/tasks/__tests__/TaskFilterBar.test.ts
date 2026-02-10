@@ -256,7 +256,7 @@ describe('TaskFilterBar', () => {
     mountTaskFilterBar(TaskFilterBar);
     expect(preferencesStore.setTaskUserView).not.toHaveBeenCalledWith('all');
   });
-  it('falls back to all view when persisted teammate is missing after roster loads', async () => {
+  it('falls back to self view when persisted teammate is missing and no teammates remain', async () => {
     const { TaskFilterBar, preferencesStore } = await setup({
       preferencesStore: {
         getTaskUserView: 'teammate-1',
@@ -267,7 +267,7 @@ describe('TaskFilterBar', () => {
       hasTeam: true,
     });
     mountTaskFilterBar(TaskFilterBar);
-    expect(preferencesStore.setTaskUserView).toHaveBeenCalledWith('all');
+    expect(preferencesStore.setTaskUserView).toHaveBeenCalledWith('self');
   });
   it('toggles teammate visibility from the task filter bar', async () => {
     const { TaskFilterBar, preferencesStore } = await setup({

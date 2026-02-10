@@ -36,7 +36,7 @@ describe('taskSorter', () => {
       const scores = buildImpactScores(tasks, data);
       expect(scores.get('task1')).toBe(1); // task3 is incomplete
     });
-    it('treats failed tasks as complete for impact', () => {
+    it('treats failed tasks as incomplete for impact', () => {
       const tasks = [createTask({ id: 'task1', successors: ['task2'] })];
       const data = {
         tasksCompletions: {},
@@ -44,7 +44,7 @@ describe('taskSorter', () => {
         visibleTeamStores: { user1: {} },
       };
       const scores = buildImpactScores(tasks, data);
-      expect(scores.get('task1')).toBe(0);
+      expect(scores.get('task1')).toBe(1);
     });
     it('returns 0 for all tasks when no team members', () => {
       const tasks = [createTask({ id: 'task1', successors: ['task2'] })];
