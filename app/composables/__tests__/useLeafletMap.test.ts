@@ -58,6 +58,30 @@ vi.mock('leaflet', () => ({
     control: {
       zoom: vi.fn(() => ({ addTo: vi.fn() })),
     },
+    Control: {
+      Zoom: Object.assign(vi.fn(), {
+        extend: vi.fn(() => {
+          const Ctor = vi.fn();
+          Ctor.prototype.addTo = vi.fn();
+          return Ctor;
+        }),
+        prototype: {
+          onAdd: vi.fn(() => document.createElement('div')),
+        },
+      }),
+    },
+    DomUtil: {
+      create: vi.fn((_tag: string, _className: string, container?: HTMLElement) => {
+        const el = document.createElement('a');
+        if (container) container.appendChild(el);
+        return el;
+      }),
+    },
+    DomEvent: {
+      disableClickPropagation: vi.fn(),
+      on: vi.fn(),
+      preventDefault: vi.fn(),
+    },
     CRS: {
       Simple: {},
     },

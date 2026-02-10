@@ -77,6 +77,7 @@ const createProgressStore = () => ({
     'obj-a': { self: true },
     'obj-b': { self: false },
   } as Record<string, { self: boolean }>,
+  moduleCompletions: undefined as Record<string, Record<string, boolean>> | undefined,
 });
 const createTarkovStore = (
   overrides: {
@@ -120,7 +121,7 @@ interface SetupOverrides {
   neededItemTaskObjectives?: NeededItemTaskObjective[];
   neededItemHideoutModules?: NeededItemHideoutModule[];
   traders?: Trader[];
-  progressStore?: ReturnType<typeof createProgressStore>;
+  progressStore?: Partial<ReturnType<typeof createProgressStore>>;
   tarkovStore?: ReturnType<typeof createTarkovStore>;
   preferencesStore?: PreferencesStoreMock;
 }
@@ -154,7 +155,7 @@ const setup = async (overrides: SetupOverrides = {}) => {
     prestigeTaskMap: new Map<string, number>(),
     getExcludedTaskIdsForEdition: () => new Set<string>(),
   };
-  const progressStore = overrides.progressStore ?? createProgressStore();
+  const progressStore = { ...createProgressStore(), ...overrides.progressStore };
   const tarkovStore = overrides.tarkovStore ?? createTarkovStore();
   const preferencesStore = overrides.preferencesStore ?? createPreferencesStore();
   vi.resetModules();
@@ -549,6 +550,136 @@ describe('useDashboardStats', () => {
     hideoutCounts['hideout-req-a'] = 4;
     await nextTick();
     expect(dashboardStats.completedHideoutItems.value).toBe(4);
+  });
+  it('counts completed module items as fully collected while keeping them in totals', async () => {
+    const neededItemHideoutModules: NeededItemHideoutModule[] = [
+      {
+        id: 'hideout-req-a',
+        needType: 'hideoutModule',
+        hideoutModule: {
+          id: 'hideout-module-a',
+          stationId: 'station-a',
+          level: 1,
+          constructionTime: 0,
+          itemRequirements: [],
+          stationLevelRequirements: [],
+          skillRequirements: [],
+          traderRequirements: [],
+          crafts: [],
+          predecessors: [],
+          successors: [],
+          parents: [],
+          children: [],
+        },
+        item: { id: 'hideout-item-a', name: 'Hideout Item A' },
+        count: 4,
+        foundInRaid: false,
+      },
+      {
+        id: 'hideout-req-b',
+        needType: 'hideoutModule',
+        hideoutModule: {
+          id: 'hideout-module-b',
+          stationId: 'station-b',
+          level: 1,
+          constructionTime: 0,
+          itemRequirements: [],
+          stationLevelRequirements: [],
+          skillRequirements: [],
+          traderRequirements: [],
+          crafts: [],
+          predecessors: [],
+          successors: [],
+          parents: [],
+          children: [],
+        },
+        item: { id: 'hideout-item-b', name: 'Hideout Item B' },
+        count: 3,
+        foundInRaid: false,
+      },
+    ];
+    const { dashboardStats } = await setup({
+      neededItemHideoutModules,
+      progressStore: {
+        invalidTasks: {},
+        objectiveCompletions: {},
+        moduleCompletions: {
+          'hideout-module-a': { self: true },
+          'hideout-module-b': { self: false },
+        },
+      },
+      tarkovStore: createTarkovStore({
+        completedTasks: new Set(),
+        failedTasks: new Set(),
+        completedObjectives: new Set(),
+        getHideoutPartCount: () => 0,
+      }),
+    });
+    expect(dashboardStats.totalHideoutItems.value).toBe(7);
+    expect(dashboardStats.completedHideoutItems.value).toBe(4);
+  });
+  it('excludes currency items from hideout item counts', async () => {
+    const neededItemHideoutModules: NeededItemHideoutModule[] = [
+      {
+        id: 'hideout-req-a',
+        needType: 'hideoutModule',
+        hideoutModule: {
+          id: 'hideout-module-a',
+          stationId: 'station-a',
+          level: 1,
+          constructionTime: 0,
+          itemRequirements: [],
+          stationLevelRequirements: [],
+          skillRequirements: [],
+          traderRequirements: [],
+          crafts: [],
+          predecessors: [],
+          successors: [],
+          parents: [],
+          children: [],
+        },
+        item: { id: '5449016a4bdc2d6f028b456f', name: 'Roubles' },
+        count: 100000,
+        foundInRaid: false,
+      },
+      {
+        id: 'hideout-req-b',
+        needType: 'hideoutModule',
+        hideoutModule: {
+          id: 'hideout-module-a',
+          stationId: 'station-a',
+          level: 1,
+          constructionTime: 0,
+          itemRequirements: [],
+          stationLevelRequirements: [],
+          skillRequirements: [],
+          traderRequirements: [],
+          crafts: [],
+          predecessors: [],
+          successors: [],
+          parents: [],
+          children: [],
+        },
+        item: { id: 'real-item', name: 'Bolts' },
+        count: 5,
+        foundInRaid: false,
+      },
+    ];
+    const { dashboardStats } = await setup({
+      neededItemHideoutModules,
+      progressStore: {
+        invalidTasks: {},
+        objectiveCompletions: {},
+      },
+      tarkovStore: createTarkovStore({
+        completedTasks: new Set(),
+        failedTasks: new Set(),
+        completedObjectives: new Set(),
+        getHideoutPartCount: () => 0,
+      }),
+    });
+    expect(dashboardStats.totalHideoutItems.value).toBe(5);
+    expect(dashboardStats.completedHideoutItems.value).toBe(0);
   });
   it('excludes tasks without assigned traders from traderStats but counts in totals', async () => {
     const tasks: Task[] = [

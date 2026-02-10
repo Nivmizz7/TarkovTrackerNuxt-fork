@@ -107,6 +107,8 @@ export function useDashboardStats(): {
   const neededItemHideoutModules = computed<NeededItemHideoutModule[]>(
     () => metadataStore.neededItemHideoutModules ?? []
   );
+  const isHideoutModuleCompleted = (moduleId: string): boolean =>
+    progressStore.moduleCompletions?.[moduleId]?.['self'] ?? false;
   const mergedNeededHideoutItems = computed<NeededItemHideoutModule[]>(() => {
     if (!neededItemHideoutModules.value.length) return [];
     const merged = new Map<string, NeededItemHideoutModule>();
@@ -115,6 +117,7 @@ export function useDashboardStats(): {
       if (!requirement?.id || !moduleId) continue;
       const itemId = getNeededItemId(requirement);
       if (!itemId) continue;
+      if (CURRENCY_ITEM_IDS.includes(itemId as (typeof CURRENCY_ITEM_IDS)[number])) continue;
       const key = `${moduleId}:${itemId}`;
       const normalizedCount = requirement.count || 1;
       const existing = merged.get(key);
@@ -256,6 +259,11 @@ export function useDashboardStats(): {
     mergedNeededHideoutItems.value.forEach((requirement) => {
       if (!requirement.id) return;
       const requiredCount = requirement.count || 1;
+      const moduleId = requirement.hideoutModule?.id;
+      if (moduleId && isHideoutModuleCompleted(moduleId)) {
+        total += requiredCount;
+        return;
+      }
       const currentCount = Math.min(requiredCount, tarkovStore.getHideoutPartCount(requirement.id));
       if (tarkovStore.isHideoutPartComplete(requirement.id) || requiredCount <= currentCount) {
         total += requiredCount;
