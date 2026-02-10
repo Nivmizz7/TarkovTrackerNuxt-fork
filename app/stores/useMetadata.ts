@@ -1157,20 +1157,6 @@ export const useMetadataStore = defineStore('metadata', {
       });
     },
     /**
-     * Backwards-compatible wrapper for legacy callers
-     */
-    async fetchTasksData(forceRefresh = false) {
-      await this.fetchTasksCoreData(forceRefresh);
-      if (!this.tasks.length) return;
-      await Promise.all([
-        this.fetchTaskObjectivesData(forceRefresh),
-        this.fetchTaskRewardsData(forceRefresh),
-      ]);
-      this.fetchItemsFullData(forceRefresh).catch((err) =>
-        logger.error('[MetadataStore] Error fetching full items data:', err)
-      );
-    },
-    /**
      * Fetch hideout data
      */
     async fetchHideoutData(forceRefresh = false) {
@@ -1257,12 +1243,6 @@ export const useMetadataStore = defineStore('metadata', {
         forceRefresh,
         promiseKey: 'itemsFullPromise',
       });
-    },
-    /**
-     * Backwards-compatible wrapper for legacy callers
-     */
-    async fetchItemsData(forceRefresh = false) {
-      return this.fetchItemsFullData(forceRefresh);
     },
     /**
      * Ensure full items data is loaded (safe to call multiple times)
