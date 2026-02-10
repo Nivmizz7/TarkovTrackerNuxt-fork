@@ -91,7 +91,7 @@
               </div>
               <div
                 v-for="task in groupedUnpinnedTasksInSlice.mapSpecific"
-                :key="`task-${task.id}`"
+                :key="`map-${task.id}`"
                 class="content-visibility-auto-280 pb-4"
               >
                 <TaskCard :task="task" @on-task-action="handleTaskAction" />
@@ -109,7 +109,7 @@
                 </div>
                 <div
                   v-for="task in groupedUnpinnedTasksInSlice.global"
-                  :key="`task-${task.id}`"
+                  :key="`global-${task.id}`"
                   class="content-visibility-auto-280 pb-4"
                 >
                   <TaskCard
