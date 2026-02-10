@@ -46,5 +46,3 @@ function createDevLogger(method: 'debug' | 'warn' | 'error') {
   };
 }
 export const devLog = createDevLogger('debug');
-export const devWarn = createDevLogger('warn');
-export const devError = createDevLogger('error');
