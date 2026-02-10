@@ -305,7 +305,7 @@ export default class DataMigrationService {
         return null;
       }
       // Return a deep copy to prevent mutations to the cached data
-      return JSON.parse(JSON.stringify(parsedData)) as ProgressData;
+      return structuredClone(parsedData);
     } catch (error) {
       logger.warn('[DataMigrationService] Error in getLocalData:', error);
       return null;

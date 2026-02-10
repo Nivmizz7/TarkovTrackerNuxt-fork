@@ -21,17 +21,8 @@ import type { TaskSortDirection, TaskSortMode } from '@/types/taskSort';
 const NEEDED_ITEMS_CARD_STYLES = ['compact', 'expanded'] as const;
 const NEEDED_ITEMS_SORT_DIRECTIONS = ['asc', 'desc'] as const;
 const NEEDED_ITEMS_SORT_FIELDS = ['priority', 'name', 'category', 'count'] as const;
-function normalizeNeededItemsCardStyle(value: PreferencesState['neededItemsCardStyle']) {
-  return value && NEEDED_ITEMS_CARD_STYLES.includes(value) ? value : null;
-}
-function normalizeNeededItemsSortBy(value: PreferencesState['neededItemsSortBy']) {
-  return value && NEEDED_ITEMS_SORT_FIELDS.includes(value) ? value : null;
-}
-function normalizeNeededItemsSortDirection(value: PreferencesState['neededItemsSortDirection']) {
-  return value && NEEDED_ITEMS_SORT_DIRECTIONS.includes(value) ? value : null;
-}
-function normalizeSkillSortMode(value: PreferencesState['skillSortMode']) {
-  return value && SKILL_SORT_MODES.includes(value) ? value : null;
+function normalizeEnum<T>(value: T, allowed: readonly T[]): T | null {
+  return value && allowed.includes(value) ? value : null;
 }
 export type TaskFilterSettings = {
   taskPrimaryView: TaskPrimaryView | null;
@@ -222,7 +213,7 @@ const initialSavingState = {
 };
 export const usePreferencesStore = defineStore('preferences', {
   state: (): PreferencesState => {
-    const state = JSON.parse(JSON.stringify(preferencesDefaultState));
+    const state = structuredClone(preferencesDefaultState);
     if (import.meta.client) {
       try {
         const rawPersistedState = localStorage.getItem(STORAGE_KEYS.preferences);
@@ -913,15 +904,18 @@ if (shouldInitPreferencesWatchers) {
                       show_failed_filter: preferencesState.showFailedFilter,
                       use_automatic_level_calculation:
                         preferencesState.useAutomaticLevelCalculation,
-                      needed_items_sort_by: normalizeNeededItemsSortBy(
-                        preferencesState.neededItemsSortBy
+                      needed_items_sort_by: normalizeEnum(
+                        preferencesState.neededItemsSortBy,
+                        NEEDED_ITEMS_SORT_FIELDS
                       ),
-                      needed_items_sort_direction: normalizeNeededItemsSortDirection(
-                        preferencesState.neededItemsSortDirection
+                      needed_items_sort_direction: normalizeEnum(
+                        preferencesState.neededItemsSortDirection,
+                        NEEDED_ITEMS_SORT_DIRECTIONS
                       ),
                       needed_items_hide_owned: preferencesState.neededItemsHideOwned,
-                      needed_items_card_style: normalizeNeededItemsCardStyle(
-                        preferencesState.neededItemsCardStyle
+                      needed_items_card_style: normalizeEnum(
+                        preferencesState.neededItemsCardStyle,
+                        NEEDED_ITEMS_CARD_STYLES
                       ),
                       map_zoom_speed: preferencesState.mapZoomSpeed,
                       map_pan_speed: preferencesState.mapPanSpeed,
@@ -934,7 +928,10 @@ if (shouldInitPreferencesWatchers) {
                       task_filter_presets: Array.isArray(preferencesState.taskFilterPresets)
                         ? preferencesState.taskFilterPresets
                         : [],
-                      skill_sort_mode: normalizeSkillSortMode(preferencesState.skillSortMode),
+                      skill_sort_mode: normalizeEnum(
+                        preferencesState.skillSortMode,
+                        SKILL_SORT_MODES
+                      ),
                     };
                   },
                 });

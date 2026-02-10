@@ -15,6 +15,7 @@ import {
 } from '@/stores/progressState';
 import { useMetadataStore } from '@/stores/useMetadata';
 import { usePreferencesStore } from '@/stores/usePreferences';
+import { delay } from '@/utils/async';
 import {
   GAME_MODES,
   MANUAL_FAIL_TASK_IDS,
@@ -82,7 +83,6 @@ type TarkovStoreInstance = UserState & {
 // ============================================================================
 // Utility Functions
 // ============================================================================
-const deepClone = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
 const hasProgress = (data: unknown): boolean => {
   const state = data as UserState;
   if (!state) return false;
@@ -104,7 +104,14 @@ const buildUpsertPayload = (
   pvp_data: partial?.pvp_data ?? state.pvp ?? defaultState.pvp,
   pve_data: partial?.pve_data ?? state.pve ?? defaultState.pve,
 });
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const cloneStateSnapshot = <T>(value: T): T => {
+  const rawValue = value !== null && typeof value === 'object' ? toRaw(value) : value;
+  try {
+    return structuredClone(rawValue);
+  } catch {
+    return JSON.parse(JSON.stringify(rawValue)) as T;
+  }
+};
 type CountableEntry = { count?: number; complete?: boolean; timestamp?: number };
 const mergeCountableObjects = <T extends Record<string, CountableEntry>>(
   local: T | undefined,
@@ -161,18 +168,10 @@ const normalizeTaskCompletionsMap = (
   }
   return migrated;
 };
-const getToastTranslate = () => {
-  try {
-    const { $i18n } = useNuxtApp();
-    return $i18n?.t?.bind($i18n) ?? ((key: string) => key);
-  } catch {
-    return (key: string) => key;
-  }
-};
 const notifyHideoutPrereqEnforcement = (removedCount: number) => {
   if (!removedCount || !import.meta.client) return;
   try {
-    const toastI18n = useToastI18n(getToastTranslate());
+    const toastI18n = useToastI18n();
     toastI18n.showHideoutUpdated(removedCount);
   } catch (error) {
     logger.warn('[TarkovStore] Could not show hideout enforcement toast:', error);
@@ -448,7 +447,7 @@ const performReset = async (
   store: { $patch: (fn: (state: UserState) => void) => void }
 ): Promise<void> => {
   const { $supabase } = useNuxtApp();
-  const freshState = deepClone(defaultState);
+  const freshState = structuredClone(defaultState);
   if ($supabase.user.loggedIn && $supabase.user.id) {
     const payload =
       mode === 'all'
@@ -551,7 +550,7 @@ const tarkovActions = {
       taskCompletionMigration.pvpMigrated > 0 || taskCompletionMigration.pveMigrated > 0;
     if (needsMigration) {
       logger.debug('Migrating legacy data structure to gamemode-aware structure');
-      const migratedData = migrateToGameModeStructure(deepClone(this.$state));
+      const migratedData = migrateToGameModeStructure(cloneStateSnapshot(this.$state));
       this.$patch(migratedData);
       this.migrateTaskCompletionSchema();
       const { $supabase } = useNuxtApp();
@@ -604,7 +603,7 @@ const tarkovActions = {
       return;
     }
     try {
-      const freshState = deepClone(defaultState);
+      const freshState = structuredClone(defaultState);
       await $supabase.client
         .from('user_progress')
         .upsert(buildUpsertPayload($supabase.user.id, freshState));
@@ -1067,7 +1066,7 @@ const tarkovActions = {
 // Export type for external usage
 export type TarkovStoreActions = typeof tarkovActions;
 export const useTarkovStore = defineStore('swapTarkov', {
-  state: () => deepClone(defaultState),
+  state: () => structuredClone(defaultState),
   getters: tarkovGetters,
   actions: tarkovActions,
   // Enable automatic localStorage persistence with user scoping
@@ -1194,13 +1193,13 @@ export const useTarkovStore = defineStore('swapTarkov', {
                 logger.error('[TarkovStore] Error backing up/clearing localStorage:', e);
               }
             }
-            return deepClone(defaultState);
+            return structuredClone(defaultState);
           }
           // UserId matches or user not logged in - safe to restore
           return parsed.data as UserState;
         } catch (e) {
           logger.error('[TarkovStore] Error deserializing localStorage:', e);
-          return deepClone(defaultState);
+          return structuredClone(defaultState);
         }
       },
     },
@@ -1234,7 +1233,7 @@ export async function initializeTarkovSync() {
   const tarkovStore = useTarkovStore();
   const { $supabase } = useNuxtApp();
   if (import.meta.client && $supabase.user.loggedIn) {
-    const toastI18n = useToastI18n(getToastTranslate());
+    const toastI18n = useToastI18n();
     const currentUserId = $supabase.user.id;
     if (syncController) {
       if (syncUserId === currentUserId) {
@@ -1277,7 +1276,7 @@ export async function initializeTarkovSync() {
       }
     };
     const resetStoreToDefault = () => {
-      const freshState = deepClone(defaultState);
+      const freshState = structuredClone(defaultState);
       tarkovStore.$patch((state) => {
         state.currentGameMode = freshState.currentGameMode;
         state.gameEdition = freshState.gameEdition;
