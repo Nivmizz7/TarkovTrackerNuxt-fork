@@ -1,12 +1,42 @@
 import { createError, defineEventHandler, getQuery, getRequestHeader } from 'h3';
-import { useRuntimeConfig } from '#imports';
-import { logger } from '@/utils/logger';
+import { createLogger } from '~/server/utils/logger';
+const logger = createLogger('TeamMembers');
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isValidUuid = (value: string): boolean => UUID_REGEX.test(value);
+type ProfileRow = {
+  user_id: string;
+  current_game_mode?: string | null;
+  pvp_display_name?: string | null;
+  pvp_level?: number | null;
+  pvp_tasks_completed?: number | null;
+  pve_display_name?: string | null;
+  pve_level?: number | null;
+  pve_tasks_completed?: number | null;
+};
+type MemberProfile = {
+  displayName: string | null;
+  level: number | null;
+  tasksCompleted: number | null;
+};
+function mapProfile(p: ProfileRow): MemberProfile {
+  const isPve = ((p.current_game_mode as 'pvp' | 'pve' | null) || 'pvp') === 'pve';
+  return {
+    displayName: isPve ? (p.pve_display_name ?? null) : (p.pvp_display_name ?? null),
+    level: isPve ? (p.pve_level ?? null) : (p.pvp_level ?? null),
+    tasksCompleted: isPve ? (p.pve_tasks_completed ?? null) : (p.pvp_tasks_completed ?? null),
+  };
+}
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
-  const supabaseUrl = config.supabaseUrl as string;
-  const supabaseServiceKey = config.supabaseServiceKey as string;
-  const supabaseAnonKey = config.supabaseAnonKey as string;
-  if (!supabaseUrl || !supabaseAnonKey) {
+  const supabaseUrl = config.supabaseUrl;
+  const supabaseServiceKey = config.supabaseServiceKey;
+  const supabaseAnonKey = config.supabaseAnonKey;
+  if (
+    typeof supabaseUrl !== 'string' ||
+    !supabaseUrl ||
+    typeof supabaseAnonKey !== 'string' ||
+    !supabaseAnonKey
+  ) {
     throw createError({
       statusCode: 500,
       statusMessage:
@@ -72,63 +102,31 @@ export default defineEventHandler(async (event) => {
   }
   const membersJson = (await membersResp.json()) as Array<{ user_id: string }>;
   const memberIds = membersJson.map((m) => m.user_id);
-  const idsParam = memberIds.map((id) => `"${id}"`).join(',');
-  const profilesResp = await restFetch(
-    `team_member_summary?select=user_id,current_game_mode,pvp_display_name,pvp_level,pvp_tasks_completed,pve_display_name,pve_level,pve_tasks_completed&user_id=in.(${idsParam})`
-  );
-  if (!profilesResp.ok) {
-    const errorText = await profilesResp.text();
-    logger.error(`[team/members] Profiles fetch error (${profilesResp.status}):`, errorText);
-  }
-  const profileMap: Record<
-    string,
-    { displayName: string | null; level: number | null; tasksCompleted: number | null }
-  > = {};
-  if (profilesResp.ok) {
-    const profiles = (await profilesResp.json()) as Array<{
-      user_id: string;
-      current_game_mode?: string | null;
-      pvp_display_name?: string | null;
-      pvp_level?: number | null;
-      pvp_tasks_completed?: number | null;
-      pve_display_name?: string | null;
-      pve_level?: number | null;
-      pve_tasks_completed?: number | null;
-    }>;
-    profiles.forEach((p) => {
-      const mode = (p.current_game_mode as 'pvp' | 'pve' | null) || 'pvp';
-      const isPve = mode === 'pve';
-      profileMap[p.user_id] = {
-        displayName: isPve ? (p.pve_display_name ?? null) : (p.pvp_display_name ?? null),
-        level: isPve ? (p.pve_level ?? null) : (p.pvp_level ?? null),
-        tasksCompleted: isPve ? (p.pve_tasks_completed ?? null) : (p.pvp_tasks_completed ?? null),
-      };
-    });
-  } else {
-    for (const id of memberIds) {
-      const resp = await restFetch(
-        `team_member_summary?select=user_id,current_game_mode,pvp_display_name,pvp_level,pvp_tasks_completed,pve_display_name,pve_level,pve_tasks_completed&user_id=eq.${id}`
-      );
-      if (!resp.ok) continue;
-      const profiles = (await resp.json()) as Array<{
-        user_id: string;
-        current_game_mode?: string | null;
-        pvp_display_name?: string | null;
-        pvp_level?: number | null;
-        pvp_tasks_completed?: number | null;
-        pve_display_name?: string | null;
-        pve_level?: number | null;
-        pve_tasks_completed?: number | null;
-      }>;
-      profiles.forEach((p) => {
-        const mode = (p.current_game_mode as 'pvp' | 'pve' | null) || 'pvp';
-        const isPve = mode === 'pve';
-        profileMap[p.user_id] = {
-          displayName: isPve ? (p.pve_display_name ?? null) : (p.pvp_display_name ?? null),
-          level: isPve ? (p.pve_level ?? null) : (p.pvp_level ?? null),
-          tasksCompleted: isPve ? (p.pve_tasks_completed ?? null) : (p.pvp_tasks_completed ?? null),
-        };
-      });
+  const validMemberIds = memberIds.filter((id) => isValidUuid(id));
+  const profileMap: Record<string, MemberProfile> = {};
+  if (validMemberIds.length > 0) {
+    const idsParam = validMemberIds.map((id) => `"${id}"`).join(',');
+    const profilesResp = await restFetch(
+      `team_member_summary?select=user_id,current_game_mode,pvp_display_name,pvp_level,pvp_tasks_completed,pve_display_name,pve_level,pve_tasks_completed&user_id=in.(${idsParam})`
+    );
+    if (profilesResp.ok) {
+      const profiles = (await profilesResp.json()) as ProfileRow[];
+      for (const p of profiles) {
+        profileMap[p.user_id] = mapProfile(p);
+      }
+    } else {
+      const errorText = await profilesResp.text();
+      logger.error(`Profiles fetch error (${profilesResp.status}):`, errorText);
+      for (const id of validMemberIds) {
+        const resp = await restFetch(
+          `team_member_summary?select=user_id,current_game_mode,pvp_display_name,pvp_level,pvp_tasks_completed,pve_display_name,pve_level,pve_tasks_completed&user_id=eq.${id}`
+        );
+        if (!resp.ok) continue;
+        const profiles = (await resp.json()) as ProfileRow[];
+        for (const p of profiles) {
+          profileMap[p.user_id] = mapProfile(p);
+        }
+      }
     }
   }
   return { members: memberIds, profiles: profileMap };
