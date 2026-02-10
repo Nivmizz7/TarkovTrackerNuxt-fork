@@ -39,12 +39,14 @@
             ({{ t('page.tasks.questcard.objective_optional_badge') }})
           </span>
         </div>
-        <ObjectiveRequiredKeys
+        <ObjectiveRequiredItems
           v-if="objectiveRequiredKeys.length"
+          variant="keys"
           :required-keys="objectiveRequiredKeys"
         />
-        <ObjectiveRequiredEquipment
+        <ObjectiveRequiredItems
           v-if="objectiveEquipment.length"
+          variant="equipment"
           :equipment="objectiveEquipment"
         />
         <AppTooltip
@@ -113,8 +115,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
-  import ObjectiveRequiredEquipment from '@/features/tasks/ObjectiveRequiredEquipment.vue';
-  import ObjectiveRequiredKeys from '@/features/tasks/ObjectiveRequiredKeys.vue';
+  import ObjectiveRequiredItems from '@/features/tasks/ObjectiveRequiredItems.vue';
   import { OBJECTIVE_ICON_MAP } from '@/features/tasks/task-objective-constants';
   import { objectiveHasMapLocation } from '@/features/tasks/task-objective-helpers';
   import { useMetadataStore } from '@/stores/useMetadata';

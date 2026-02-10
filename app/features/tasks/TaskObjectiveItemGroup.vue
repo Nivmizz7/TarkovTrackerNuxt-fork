@@ -99,13 +99,15 @@
         </button>
       </div>
     </div>
-    <ObjectiveRequiredKeys
+    <ObjectiveRequiredItems
       v-if="groupRequiredKeys.length > 0"
+      variant="keys"
       :required-keys="groupRequiredKeys"
       class="ml-6"
     />
-    <ObjectiveRequiredEquipment
+    <ObjectiveRequiredItems
       v-if="groupEquipment.length > 0"
+      variant="equipment"
       :equipment="groupEquipment"
       class="ml-6"
     />
@@ -114,8 +116,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
   import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
-  import ObjectiveRequiredEquipment from '@/features/tasks/ObjectiveRequiredEquipment.vue';
-  import ObjectiveRequiredKeys from '@/features/tasks/ObjectiveRequiredKeys.vue';
+  import ObjectiveRequiredItems from '@/features/tasks/ObjectiveRequiredItems.vue';
   import { objectiveHasMapLocation } from '@/features/tasks/task-objective-helpers';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
