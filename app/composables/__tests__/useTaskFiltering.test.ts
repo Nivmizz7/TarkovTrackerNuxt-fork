@@ -461,24 +461,34 @@ describe('useTaskFiltering', () => {
       const globalTask = tasks.find((t) => t.id === 'task-global')!;
       expect(taskFiltering.isGlobalTask(globalTask)).toBe(true);
     });
-    it('returns false for task with map assignment', async () => {
+    it('returns false for task with mapped objective assignment', async () => {
       const { taskFiltering, tasks } = await setup();
       const mapTask = tasks.find((t) => t.id === 'task-map')!;
       expect(taskFiltering.isGlobalTask(mapTask)).toBe(false);
+    });
+    it('returns true for task with task.map assignment but no mapped objectives', async () => {
+      const { taskFiltering } = await setup();
+      const taskWithMapMetadataOnly: Task = {
+        id: 'task-with-map-metadata-only',
+        name: 'Task With Map Metadata Only',
+        factionName: 'Any',
+        map: { id: 'map-1' },
+        objectives: [{ id: 'obj', type: 'shoot' }],
+      };
+      expect(taskFiltering.isGlobalTask(taskWithMapMetadataOnly)).toBe(true);
     });
     it('returns false for mapless task with only non-raid objectives', async () => {
       const { taskFiltering, tasks } = await setup();
       const nonRaidTask = tasks.find((t) => t.id === 'task-non-raid')!;
       expect(taskFiltering.isGlobalTask(nonRaidTask)).toBe(false);
     });
-    it('returns false for task with locations array', async () => {
+    it('returns false for task with objective map assignments', async () => {
       const { taskFiltering } = await setup();
       const taskWithLocations: Task = {
         id: 'task-with-locations',
         name: 'Task With Locations',
         factionName: 'Any',
-        locations: ['map-1'],
-        objectives: [{ id: 'obj', type: 'shoot' }],
+        objectives: [{ id: 'obj', type: 'shoot', maps: [{ id: 'map-1' }] }],
       };
       expect(taskFiltering.isGlobalTask(taskWithLocations)).toBe(false);
     });

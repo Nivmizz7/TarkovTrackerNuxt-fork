@@ -62,12 +62,10 @@ export function useTaskFiltering() {
     return false;
   };
   const isGlobalTask = (task: Task): boolean => {
-    const hasMap = task.map?.id != null;
-    const hasLocations = Array.isArray(task.locations) && task.locations.length > 0;
     const hasMapObjectives = task.objectives?.some(
       (obj) => Array.isArray(obj.maps) && obj.maps.length > 0 && isMapObjectiveType(obj.type)
     );
-    const isMapless = !hasMap && !hasLocations && !hasMapObjectives;
+    const isMapless = !hasMapObjectives;
     const hasRaidRelevantObjectives = task.objectives?.some(isRaidRelevantObjective) ?? false;
     return isMapless && hasRaidRelevantObjectives;
   };
@@ -93,17 +91,12 @@ export function useTaskFiltering() {
     if (mergedMap && mergedMap.mergedIds) {
       const ids = mergedMap.mergedIds;
       mapSpecificTasks = taskList.filter((task) => {
-        const taskLocations = Array.isArray(task.locations) ? task.locations : [];
-        let hasMap = ids.some((id: string) => taskLocations.includes(id));
-        if (!hasMap && Array.isArray(task.objectives)) {
-          hasMap = task.objectives.some(
-            (obj) =>
-              Array.isArray(obj.maps) &&
-              obj.maps.some((map) => ids.includes(map.id)) &&
-              isMapObjectiveType(obj.type)
-          );
-        }
-        return hasMap;
+        return task.objectives?.some(
+          (obj) =>
+            Array.isArray(obj.maps) &&
+            obj.maps.some((map) => ids.includes(map.id)) &&
+            isMapObjectiveType(obj.type)
+        );
       });
     } else {
       mapSpecificTasks = taskList.filter((task) =>
@@ -313,7 +306,7 @@ export function useTaskFiltering() {
    * Helper to extract all map locations from a task
    */
   const extractTaskLocations = (task: Task): string[] => {
-    const locations = Array.isArray(task.locations) ? [...task.locations] : [];
+    const locations: string[] = [];
     if (Array.isArray(task.objectives)) {
       for (const obj of task.objectives) {
         if (Array.isArray(obj.maps)) {
@@ -929,7 +922,6 @@ export function useTaskFiltering() {
     updateVisibleTasks,
     resetTraderOrderMapCache,
     disabledTasks: [] as string[],
-    RAID_RELEVANT_OBJECTIVE_TYPES,
     isRaidRelevantObjective,
     isGlobalTask,
   };
