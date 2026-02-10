@@ -301,6 +301,7 @@
         resize_handle: '调整地图高度',
       },
       pinned_tasks_section: '已固定任务',
+      global_tasks_section: '全局任务',
       questcard: {
         pin_task: '固定任务',
         unpin_task: '取消固定任务',

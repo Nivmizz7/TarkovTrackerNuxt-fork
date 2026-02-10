@@ -301,6 +301,7 @@
         resize_handle: 'Ajustar altura del mapa',
       },
       pinned_tasks_section: 'Misiones fijadas',
+      global_tasks_section: 'Tareas globales',
       questcard: {
         pin_task: 'Fijar misión',
         unpin_task: 'Desfijar misión',

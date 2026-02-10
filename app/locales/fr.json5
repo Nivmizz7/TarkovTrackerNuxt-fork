@@ -301,6 +301,7 @@
         resize_handle: 'Ajuster la hauteur de la carte',
       },
       pinned_tasks_section: 'Quêtes épinglées',
+      global_tasks_section: 'Quêtes globales',
       questcard: {
         pin_task: 'Épingler la quête',
         unpin_task: 'Désépingler la quête',

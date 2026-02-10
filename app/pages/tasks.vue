@@ -66,10 +66,13 @@
             <div v-else ref="taskListRef" data-testid="task-list">
               <div v-if="pinnedTasksInSlice.length > 0" class="mb-6">
                 <div class="mb-3 flex items-center gap-2">
-                  <UIcon name="i-mdi-pin" class="text-primary-400 h-4 w-4" />
-                  <h3 class="text-surface-200 text-sm font-medium">
-                    {{ t('page.tasks.pinned_tasks_section') }}
-                  </h3>
+                  <div class="bg-surface-700 h-px flex-1" />
+                  <div class="flex items-center gap-2">
+                    <UIcon name="i-mdi-pin" class="text-primary-400 h-4 w-4" />
+                    <h3 class="text-surface-200 text-sm font-medium">
+                      {{ t('page.tasks.pinned_tasks_section') }}
+                    </h3>
+                  </div>
                   <div class="bg-surface-700 h-px flex-1" />
                 </div>
                 <div
@@ -81,12 +84,31 @@
                 </div>
               </div>
               <div
-                v-for="task in unpinnedTasksInSlice"
+                v-for="task in groupedUnpinnedTasksInSlice.mapSpecific"
                 :key="`task-${task.id}`"
                 class="content-visibility-auto-280 pb-4"
               >
                 <TaskCard :task="task" @on-task-action="handleTaskAction" />
               </div>
+              <template v-if="groupedUnpinnedTasksInSlice.global.length > 0">
+                <div class="mt-2 mb-3 flex items-center gap-2">
+                  <div class="bg-surface-700 h-px flex-1" />
+                  <div class="flex items-center gap-2">
+                    <UIcon name="i-mdi-earth" class="text-primary-400 h-4 w-4" />
+                    <h3 class="text-surface-200 text-sm font-medium">
+                      {{ t('page.tasks.global_tasks_section') }}
+                    </h3>
+                  </div>
+                  <div class="bg-surface-700 h-px flex-1" />
+                </div>
+                <div
+                  v-for="task in groupedUnpinnedTasksInSlice.global"
+                  :key="`task-${task.id}`"
+                  class="content-visibility-auto-280 pb-4"
+                >
+                  <TaskCard :task="task" @on-task-action="handleTaskAction" />
+                </div>
+              </template>
               <div
                 v-if="visibleTaskCount < filteredTasks.length"
                 ref="loadMoreSentinel"
@@ -235,7 +257,7 @@
   const editions = computed(() => metadataStore.editions);
   const progressStore = useProgressStore();
   const { tasksCompletions, unlockedTasks, tasksFailed } = storeToRefs(progressStore);
-  const { visibleTasks, updateVisibleTasks } = useTaskFiltering();
+  const { isGlobalTask, visibleTasks, updateVisibleTasks } = useTaskFiltering();
   const tarkovStore = useTarkovStore();
   const userGameEdition = computed(() => tarkovStore.getGameEdition());
   const { tarkovTime } = useTarkovTime();
@@ -554,6 +576,24 @@
     if (!pinnedIds.length) return visibleTasksSlice.value;
     const pinnedIdSet = new Set(pinnedIds);
     return visibleTasksSlice.value.filter((task) => !pinnedIdSet.has(task.id));
+  });
+  const shouldGroupGlobalTasks = computed(() => {
+    return showMapDisplay.value && !getHideGlobalTasks.value;
+  });
+  const groupedUnpinnedTasksInSlice = computed((): { mapSpecific: Task[]; global: Task[] } => {
+    if (!shouldGroupGlobalTasks.value) {
+      return { mapSpecific: unpinnedTasksInSlice.value, global: [] };
+    }
+    const mapSpecific: Task[] = [];
+    const global: Task[] = [];
+    unpinnedTasksInSlice.value.forEach((task) => {
+      if (isGlobalTask(task)) {
+        global.push(task);
+        return;
+      }
+      mapSpecific.push(task);
+    });
+    return { mapSpecific, global };
   });
   const hasMoreTasks = computed(() => visibleTaskCount.value < filteredTasks.value.length);
   const loadMoreTasks = () => {

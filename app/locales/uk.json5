@@ -301,6 +301,7 @@
         resize_handle: 'Змінити висоту карти',
       },
       pinned_tasks_section: 'Закріплені завдання',
+      global_tasks_section: 'Глобальні завдання',
       questcard: {
         pin_task: 'Закріпити завдання',
         unpin_task: 'Відкріпити завдання',

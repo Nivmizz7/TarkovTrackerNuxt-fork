@@ -301,6 +301,7 @@
         resize_handle: 'Resize map height',
       },
       pinned_tasks_section: 'Pinned Tasks',
+      global_tasks_section: 'Global Tasks',
       questcard: {
         pin_task: 'Pin task',
         unpin_task: 'Unpin task',

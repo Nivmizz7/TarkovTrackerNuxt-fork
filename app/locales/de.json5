@@ -301,6 +301,7 @@
         resize_handle: 'Kartenhöhe anpassen',
       },
       pinned_tasks_section: 'Angeheftete Aufgaben',
+      global_tasks_section: 'Globale Aufgaben',
       questcard: {
         pin_task: 'Aufgabe anheften',
         unpin_task: 'Aufgabe lösen',
