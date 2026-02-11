@@ -2,12 +2,10 @@
   "__pinnedNotes": {
     "@vueuse/core": "Previously pinned to 13.9.0 due to Nuxt/@nuxt/ui/reka-ui compatibility; updated to ^14.1.0 after upgrading Nuxt/@nuxt/ui."
   },
-  "version": "1.0.0",
   "dependencies": {
     "@iconify-json/mdi": "^1.2.3",
     "@intlify/unplugin-vue-i18n": "^11.0.3",
     "@mdi/font": "^7.4.47",
-    "@nuxt/eslint": "^1.13.0",
     "@nuxt/image": "^2.0.0",
     "@nuxt/ui": "^4.4.0",
     "@nuxtjs/i18n": "^10.2.1",
@@ -21,7 +19,6 @@
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "@vueuse/core": "^14.1.0",
     "d3": "^7.9.0",
-    "eslint": "^9.39.2",
     "graphology": "^0.26.0",
     "graphology-types": "^0.24.8",
     "ipaddr.js": "^2.3.0",
@@ -30,8 +27,6 @@
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "qrcode": "^1.5.4",
-    "sass": "^1.97.3",
-    "typescript": "^5.9.3",
     "vue": "^3.5.27",
     "vue-i18n": "^11.2.8",
     "vue-router": "^4.6.4"
@@ -40,6 +35,7 @@
     "@cloudflare/workers-types": "^4.20260129.0",
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
+    "@nuxt/eslint": "^1.13.0",
     "@nuxt/test-utils": "^4.0.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
@@ -50,6 +46,7 @@
     "@vitest/ui": "^4.0.18",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.23",
+    "eslint": "^9.39.2",
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "fake-indexeddb": "^6.2.5",
@@ -60,10 +57,12 @@
     "postcss": "^8.5.6",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
+    "sass": "^1.97.3",
     "semantic-release": "^25.0.3",
     "serve": "^14.2.5",
     "supabase": "^2.72.9",
     "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "wait-on": "^9.0.3",
     "wrangler": "4.64.0"
@@ -72,7 +71,40 @@
     "node": ">=24.12.0",
     "npm": ">=11.6.2"
   },
-  "name": "tarkovtracker-nuxt",
+  "lint-staged": {
+    "*.json": [
+      "prettier --write"
+    ],
+    "app/**/*.{js,ts,tsx,vue,scss}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "app/**/*.{json,json5,css,md}": [
+      "prettier --write"
+    ],
+    "app/app.config.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "app/locales/*.json5": [
+      "node scripts/lint-i18n.mjs"
+    ],
+    "docs/**/*.{md,markdown}": [
+      "prettier --write"
+    ],
+    "nuxt.config.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "tests/test-setup.ts": [
+      "prettier --write"
+    ],
+    "vitest*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ]
+  },
+  "name": "tarkovtracker",
   "overrides": {
     "@tiptap/core": "3.14.0",
     "@tiptap/pm": "3.14.0"
@@ -90,7 +122,6 @@
     "i18n:sync": "node scripts/sync-i18n.mjs",
     "i18n:translate": "node scripts/translate-i18n.mjs",
     "lint": "eslint app --max-warnings=0",
-    "typecheck": "nuxt typecheck",
     "lint:fix": "eslint app --fix",
     "postinstall": "nuxt prepare",
     "prepare": "husky || true",
@@ -98,41 +129,10 @@
     "setup": "bash scripts/setup-dev-environment.sh",
     "supabase:types": "supabase gen types typescript --linked > supabase/functions/_shared/database.types.ts",
     "test": "vitest run --dangerouslyIgnoreUnhandledErrors --reporter=default --maxWorkers=2",
+    "test:api-gateway": "vitest --config workers/api-gateway/vitest.config.ts",
     "test:watch": "vitest --watch",
-    "test:api-gateway": "vitest --config workers/api-gateway/vitest.config.ts"
+    "typecheck": "nuxt typecheck"
   },
   "type": "module",
-  "lint-staged": {
-    "app/**/*.{js,ts,tsx,vue,scss}": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "app/**/*.{json,json5,css,md}": [
-      "prettier --write"
-    ],
-    "app/locales/*.json5": [
-      "node scripts/lint-i18n.mjs"
-    ],
-    "docs/**/*.{md,markdown}": [
-      "prettier --write"
-    ],
-    "tests/test-setup.ts": [
-      "prettier --write"
-    ],
-    "nuxt.config.ts": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "app/app.config.ts": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "vitest*.ts": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "*.json": [
-      "prettier --write"
-    ]
-  }
+  "version": "1.0.0"
 }
