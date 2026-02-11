@@ -207,7 +207,7 @@ describe('useTaskFiltering', () => {
     const result = taskFiltering.filterTasksByView(tasks, 'maps', 'map-1b', 'all', mergedMaps);
     expect(result.map((task) => task.id)).toEqual(['task-map']);
   });
-  it('includes tasks that only define top-level map id in map filtering', async () => {
+  it('excludes tasks that only define top-level map id in map filtering', async () => {
     const { taskFiltering, preferencesStore } = await setup();
     preferencesStore.getHideGlobalTasks = true;
     const mergedMaps = [{ id: 'map-1', mergedIds: ['map-1'] }];
@@ -219,7 +219,7 @@ describe('useTaskFiltering', () => {
       objectives: [],
     };
     const result = taskFiltering.filterTasksByMap([mapOnlyTask], 'map-1', mergedMaps);
-    expect(result.map((task) => task.id)).toEqual(['task-top-level-map']);
+    expect(result.map((task) => task.id)).toEqual([]);
   });
   it('includes useItem objectives in map filtering', async () => {
     const { taskFiltering } = await setup();
@@ -430,6 +430,26 @@ describe('useTaskFiltering', () => {
       'task-lightkeeper',
     ]);
   });
+  it('prioritizes map-specific tasks ahead of global tasks in map view sorting', async () => {
+    const { taskFiltering } = await setup();
+    await taskFiltering.updateVisibleTasks(
+      {
+        primaryView: 'maps',
+        secondaryView: 'available',
+        userView: 'self',
+        mapView: 'map-1',
+        traderView: 'all',
+        mergedMaps: [{ id: 'map-1', mergedIds: ['map-1'] }],
+        sortMode: 'alphabetical',
+        sortDirection: 'asc',
+      },
+      false
+    );
+    expect(taskFiltering.visibleTasks.value.map((task) => task.id)).toEqual([
+      'task-map',
+      'task-global',
+    ]);
+  });
   describe('isRaidRelevantObjective', () => {
     it('returns true for all raid-relevant objective types', async () => {
       const { taskFiltering } = await setup();
@@ -440,7 +460,6 @@ describe('useTaskFiltering', () => {
         'visit',
         'findItem',
         'findQuestItem',
-        'giveQuestItem',
         'plantItem',
         'plantQuestItem',
         'useItem',
@@ -463,7 +482,13 @@ describe('useTaskFiltering', () => {
     });
     it('returns false for non-raid objective types', async () => {
       const { taskFiltering } = await setup();
-      const nonRaidTypes = ['traderLevel', 'traderStanding', 'skill', 'buildWeapon'];
+      const nonRaidTypes = [
+        'traderLevel',
+        'traderStanding',
+        'skill',
+        'buildWeapon',
+        'giveQuestItem',
+      ];
       for (const type of nonRaidTypes) {
         const obj: TaskObjective = { id: 'test', type };
         expect(taskFiltering.isRaidRelevantObjective(obj)).toBe(false);
@@ -476,10 +501,21 @@ describe('useTaskFiltering', () => {
       const globalTask = tasks.find((t) => t.id === 'task-global')!;
       expect(taskFiltering.isGlobalTask(globalTask)).toBe(true);
     });
-    it('returns false for task with map assignment', async () => {
+    it('returns false for task with mapped objective assignment', async () => {
       const { taskFiltering, tasks } = await setup();
       const mapTask = tasks.find((t) => t.id === 'task-map')!;
       expect(taskFiltering.isGlobalTask(mapTask)).toBe(false);
+    });
+    it('returns true for task with task.map assignment but no mapped objectives', async () => {
+      const { taskFiltering } = await setup();
+      const taskWithMapMetadataOnly: Task = {
+        id: 'task-with-map-metadata-only',
+        name: 'Task With Map Metadata Only',
+        factionName: 'Any',
+        map: { id: 'map-1' },
+        objectives: [{ id: 'obj', type: 'shoot' }],
+      };
+      expect(taskFiltering.isGlobalTask(taskWithMapMetadataOnly)).toBe(true);
     });
     it('returns false for map task with object-form objectives', async () => {
       const { taskFiltering } = await setup();
@@ -502,14 +538,13 @@ describe('useTaskFiltering', () => {
       const nonRaidTask = tasks.find((t) => t.id === 'task-non-raid')!;
       expect(taskFiltering.isGlobalTask(nonRaidTask)).toBe(false);
     });
-    it('returns false for task with locations array', async () => {
+    it('returns false for task with objective map assignments', async () => {
       const { taskFiltering } = await setup();
       const taskWithLocations: Task = {
         id: 'task-with-locations',
         name: 'Task With Locations',
         factionName: 'Any',
-        locations: ['map-1'],
-        objectives: [{ id: 'obj', type: 'shoot' }],
+        objectives: [{ id: 'obj', type: 'shoot', maps: [{ id: 'map-1' }] }],
       };
       expect(taskFiltering.isGlobalTask(taskWithLocations)).toBe(false);
     });
@@ -742,6 +777,23 @@ describe('useTaskFiltering', () => {
         'available'
       );
       expect(counts['map-other']).toBeGreaterThanOrEqual(1);
+    });
+    it('does not double-count global tasks with non-map objective map tags', async () => {
+      const { taskFiltering } = await setup();
+      const taskWithNonMapObjectiveMaps: Task = {
+        id: 'task-non-map-objective-maps',
+        name: 'Task Non-Map Objective Maps',
+        factionName: 'Any',
+        objectives: [{ id: 'obj-exp', type: 'experience', maps: [{ id: 'map-1' }] }],
+      };
+      const counts = taskFiltering.calculateMapTaskTotals(
+        [{ id: 'map-1', mergedIds: ['map-1'] }],
+        [taskWithNonMapObjectiveMaps],
+        false,
+        'self',
+        'all'
+      );
+      expect(counts['map-1']).toBe(1);
     });
     it('removes map-complete tasks from map totals when hiding is enabled', async () => {
       const { taskFiltering, metadataStore, progressStore } = await setup();

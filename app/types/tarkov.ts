@@ -231,7 +231,6 @@ export interface Task {
   lightkeeperRequired?: boolean;
   experience?: number;
   map?: { id: string; name?: string };
-  locations?: string[];
   trader?: { id: string; name?: string; normalizedName?: string; imageLink?: string };
   objectives?: TaskObjective[];
   taskRequirements?: TaskRequirement[];

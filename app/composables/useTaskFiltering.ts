@@ -28,7 +28,6 @@ const RAID_RELEVANT_OBJECTIVE_TYPES = [
   'visit',
   'findItem',
   'findQuestItem',
-  'giveQuestItem',
   'plantItem',
   'plantQuestItem',
   'useItem',
@@ -77,21 +76,16 @@ export function useTaskFiltering() {
     isMapObjectiveType(objective.type);
   const isGlobalTask = (task: Task): boolean => {
     const objectives = getTaskObjectives(task);
-    const hasMap = task.map?.id != null;
-    const hasLocations = Array.isArray(task.locations) && task.locations.length > 0;
     const hasMapObjectives = objectives.some(
       (obj) => Array.isArray(obj?.maps) && obj.maps.length > 0 && isMapObjectiveType(obj.type)
     );
-    const isMapless = !hasMap && !hasLocations && !hasMapObjectives;
+    const isMapless = !hasMapObjectives;
     const hasRaidRelevantObjectives = objectives.some(
       (objective) => objective != null && isRaidRelevantObjective(objective)
     );
     return isMapless && hasRaidRelevantObjectives;
   };
   const taskHasMap = (task: Task, mapIds: string[]): boolean => {
-    if (task.map?.id && mapIds.includes(task.map.id)) return true;
-    const taskLocations = Array.isArray(task.locations) ? task.locations : [];
-    if (mapIds.some((id) => taskLocations.includes(id))) return true;
     const objectives = getTaskObjectives(task);
     return objectives.some((objective) => isObjectiveOnMap(objective, mapIds));
   };
@@ -577,6 +571,24 @@ export function useTaskFiltering() {
       return nameA.localeCompare(nameB) * directionFactor;
     });
   };
+  const reorderMapViewTasks = (taskList: Task[]): Task[] => {
+    const pinnedIdSet = new Set(preferencesStore.getPinnedTaskIds);
+    const pinned: Task[] = [];
+    const mapSpecific: Task[] = [];
+    const global: Task[] = [];
+    taskList.forEach((task) => {
+      if (pinnedIdSet.has(task.id)) {
+        pinned.push(task);
+        return;
+      }
+      if (isGlobalTask(task)) {
+        global.push(task);
+        return;
+      }
+      mapSpecific.push(task);
+    });
+    return [...pinned, ...mapSpecific, ...global];
+  };
   const sortTasks = (
     taskList: Task[],
     userView: string,
@@ -750,10 +762,12 @@ export function useTaskFiltering() {
         () => sortTasks(visibleTaskList, userView, sortMode, sortDirection),
         perfOn
       );
-      visibleTasks.value = sorted;
+      const shouldPrioritizeMapSpecificTasks =
+        primaryView === 'maps' && mapView !== 'all' && !preferencesStore.getHideGlobalTasks;
+      visibleTasks.value = shouldPrioritizeMapSpecificTasks ? reorderMapViewTasks(sorted) : sorted;
       perfEnd(perfTimer, {
         tasksIn,
-        tasksOut: sorted.length,
+        tasksOut: visibleTasks.value.length,
         totalMs: perfOn ? roundMs(perfNow() - startOverall) : undefined,
         filterTypeMs: perfOn ? roundMs(filterTypeMs) : undefined,
         filterViewMs: perfOn ? roundMs(filterViewMs) : undefined,
@@ -1006,7 +1020,6 @@ export function useTaskFiltering() {
     updateVisibleTasks,
     resetTraderOrderMapCache,
     disabledTasks: [] as string[],
-    RAID_RELEVANT_OBJECTIVE_TYPES,
     isRaidRelevantObjective,
     isGlobalTask,
   };

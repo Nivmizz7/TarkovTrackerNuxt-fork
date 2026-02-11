@@ -2,7 +2,7 @@
   <UCard
     :id="`task-${task.id}`"
     class="card relative divide-none overflow-hidden shadow-md ring-0"
-    :class="[taskClasses, 'rounded-md']"
+    :class="[taskClasses, accentClasses, 'rounded-md']"
     :ui="{ body: 'p-0 sm:p-0 flex flex-col h-full', footer: 'p-0 sm:p-0 border-t-0' }"
     @contextmenu.prevent="openOverflowMenu"
   >
@@ -390,9 +390,16 @@
     loadingComponent: QuestObjectivesSkeleton,
     delay: 150,
   });
-  const props = defineProps<{
-    task: Task;
-  }>();
+  type TaskCardAccentVariant = 'default' | 'global';
+  const props = withDefaults(
+    defineProps<{
+      task: Task;
+      accentVariant?: TaskCardAccentVariant;
+    }>(),
+    {
+      accentVariant: 'default',
+    }
+  );
   const emit = defineEmits<{
     'on-task-action': [payload: TaskActionPayload];
   }>();
@@ -615,6 +622,16 @@
     if (isInvalid.value) return 'border-surface-700/40 bg-surface-900 opacity-60';
     if (isLocked.value) return 'border-surface-700/40 bg-surface-900';
     return 'border-surface-700/40 bg-surface-900';
+  });
+  const accentClasses = computed(() => {
+    if (props.accentVariant === 'global') {
+      const border = 'border-l-4 border-l-info-400';
+      if (isComplete.value || isFailed.value || isInvalid.value || isLocked.value) {
+        return border;
+      }
+      return `${border} bg-info-500/5`;
+    }
+    return '';
   });
   const isCompact = computed(() => preferencesStore.getTaskCardDensity === 'compact');
   const compactClasses = computed(() => ({
