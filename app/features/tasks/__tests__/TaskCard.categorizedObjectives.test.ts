@@ -153,7 +153,7 @@ describe('TaskCard categorizedObjectives', () => {
         createObjective('obj-1', 'mark', [{ id: 'map-customs' }]), // Map type
         createObjective('obj-2', 'zone', [{ id: 'map-customs' }]), // Map type
         createObjective('obj-3', 'giveItem', [{ id: 'map-customs' }]), // NOT map type (even though on map)
-        createObjective('obj-4', 'buildWeapon', [{ id: 'map-customs' }]), // NOT map type
+        createObjective('obj-4', 'buildWeapon', [{ id: 'map-customs' }]), // NOT map type (non-location)
       ];
       const result = computeCategorizedObjectives({
         objectives,
@@ -161,8 +161,8 @@ describe('TaskCard categorizedObjectives', () => {
         selectedMapId: 'map-customs',
         completedObjectiveIds: new Set(),
       });
-      // obj-1 and obj-2 are map types on selected map = relevant
-      // obj-3 and obj-4 have maps but are not map types = irrelevant
+      // obj-1, obj-2 are map types on selected map = relevant
+      // obj-3, obj-4 have maps but are not map types = irrelevant
       expect(result.relevant).toHaveLength(2);
       expect(result.relevant).toContainEqual(expect.objectContaining({ id: 'obj-1' }));
       expect(result.relevant).toContainEqual(expect.objectContaining({ id: 'obj-2' }));
@@ -195,7 +195,7 @@ describe('TaskCard categorizedObjectives', () => {
       expect(result.irrelevant).toHaveLength(0);
     });
     it('treats non-map-type objectives with maps as irrelevant', () => {
-      const nonMapTypes = ['giveItem', 'buildWeapon', 'level', 'skill', 'traderLevel'];
+      const nonMapTypes = ['giveItem', 'level', 'skill', 'traderLevel'];
       const objectives = nonMapTypes.map((type, i) =>
         createObjective(`obj-${i}`, type, [{ id: 'map-customs' }])
       );
