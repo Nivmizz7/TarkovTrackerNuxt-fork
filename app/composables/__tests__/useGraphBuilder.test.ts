@@ -46,4 +46,54 @@ describe('useGraphBuilder alternatives', () => {
     const result = processTaskData([source, failedBySourceCompletion]);
     expect(result.alternativeTasks['out-of-curiosity']).toEqual(['big-customer']);
   });
+  it('creates alternatives from object-form fail conditions in active requirements', () => {
+    const prerequisite: Task = {
+      id: 'out-of-curiosity',
+      name: 'Out of Curiosity',
+      failConditions: {
+        fail: {
+          id: 'obj-fail',
+          status: ['complete'],
+          task: { id: 'big-customer' },
+        },
+      } as unknown as Task['failConditions'],
+      objectives: [],
+      taskRequirements: [],
+    };
+    const dependentActiveOnly: Task = {
+      id: 'big-customer',
+      name: 'Big Customer',
+      failConditions: [],
+      objectives: [],
+      taskRequirements: [{ task: { id: 'out-of-curiosity' }, status: ['active'] }],
+    };
+    const { processTaskData } = useGraphBuilder();
+    const result = processTaskData([prerequisite, dependentActiveOnly]);
+    expect(result.alternativeTasks['out-of-curiosity']).toContain('big-customer');
+  });
+  it('handles sparse objective arrays when deriving required keys', () => {
+    const keyedTask: Task = {
+      id: 'keyed-task',
+      name: 'Keyed Task',
+      failConditions: [],
+      objectives: [
+        null as unknown as NonNullable<Task['objectives']>[number],
+        {
+          id: 'obj-key',
+          requiredKeys: [[{ id: 'item-key', name: 'Dorm Room 114 Key' }]],
+        },
+      ],
+      taskRequirements: [],
+    };
+    const { processTaskData } = useGraphBuilder();
+    const result = processTaskData([keyedTask]);
+    expect(result.tasks[0]?.requiredKeys).toEqual([
+      {
+        anyOf: false,
+        keys: [{ id: 'item-key', name: 'Dorm Room 114 Key' }],
+        maps: undefined,
+        optional: false,
+      },
+    ]);
+  });
 });
