@@ -67,6 +67,7 @@
   maps: {
     zoom_speed: 'Vitesse du zoom',
     pan_speed: 'Vitesse de déplacement',
+    map_settings: 'Paramètres de la carte',
     not_available_title: 'Carte indisponible',
     not_available_description: "La carte interactive de {mapName} n'est pas encore disponible. Nous attendons la création d'une carte compatible.",
     placeholder: 'cet endroit',
@@ -270,6 +271,7 @@
           has_required_keys: 'Uniquement les quêtes avec clés',
           show_global_tasks: 'Afficher les tâches globales sur la carte',
           impact_respects_filters: "L'impact respecte les filtres de tâches",
+          hide_completed_map_objectives: 'Masquer tâches terminées sur carte',
         },
         appearance: {
           hint: "Ajustez l'apparence des cartes de tâches.",
@@ -303,6 +305,10 @@
       loading: 'Chargement des quêtes',
       map: {
         resize_handle: 'Ajuster la hauteur de la carte',
+        map_complete_tasks_hidden: '{count} tâches terminées sur cette carte sont masquées.',
+        map_complete_tasks_showing: '{count} tâches terminées sur cette carte sont affichées.',
+        map_complete_tasks_toggle_show: 'Afficher masquées',
+        map_complete_tasks_toggle_hide: 'Masquer terminées carte',
       },
       pinned_tasks_section: 'Quêtes épinglées',
       global_tasks_section: 'Quêtes globales',

@@ -1,6 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { isRef, ref } from 'vue';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { isRef, nextTick, ref } from 'vue';
 import type { Task } from '@/types/tarkov';
 /**
  * Factory to create a default Task with all required properties.
@@ -22,9 +22,8 @@ function createDefaultTask(overrides: Partial<Task> = {}): Task {
 const defaultTask: Task = createDefaultTask();
 const mapTask: Task = createDefaultTask({ id: 'task-map', name: 'Map Task' });
 const globalTask: Task = createDefaultTask({ id: 'task-global', name: 'Global Task' });
-const mockVisibleTasks = ref([defaultTask]);
-const mockIsGlobalTask = vi.fn((task: Task) => task.id === 'task-global');
-const mockPreferencesStore = {
+const TASK_SEARCH_DEBOUNCE_MS = 180;
+const preferencesStoreMock = {
   getTaskPrimaryView: 'all',
   getTaskSecondaryView: 'available',
   getTaskUserView: 'self',
@@ -40,10 +39,29 @@ const mockPreferencesStore = {
   getOnlyTasksWithRequiredKeys: false,
   getRespectTaskFiltersForImpact: true,
   getPinnedTaskIds: [] as string[],
+  getHideCompletedMapObjectives: false,
   mapTeamAllHidden: false,
   togglePinnedTask: vi.fn(),
+  setHideCompletedMapObjectives: vi.fn(),
 };
-// Top-level mocks (auto-hoisted by vitest)
+const metadataStoreMock = {
+  tasks: [defaultTask],
+  loading: false,
+  hasInitialized: true,
+  mapsWithSvg: [] as Array<{ id: string; name: string }>,
+  sortedTraders: [],
+  editions: [],
+  objectiveMaps: {},
+  objectiveGPS: {},
+  fetchMapSpawnsData: vi.fn(() => Promise.resolve()),
+};
+const mapTaskCountsMock = {
+  withHide: 0,
+  withoutHide: 1,
+};
+const visibleTasksRef = ref<Task[]>([defaultTask]);
+const updateVisibleTasksMock = vi.fn();
+const isGlobalTaskMock = vi.fn((_task: Task) => false);
 vi.mock('pinia', async () => {
   const actual = await vi.importActual<typeof import('pinia')>('pinia');
   return {
@@ -59,10 +77,20 @@ vi.mock('pinia', async () => {
 });
 vi.mock('@/composables/useTaskFiltering', () => ({
   useTaskFiltering: () => ({
-    isGlobalTask: mockIsGlobalTask,
-    visibleTasks: mockVisibleTasks,
+    visibleTasks: visibleTasksRef,
     reloadingTasks: ref(false),
-    updateVisibleTasks: vi.fn(),
+    updateVisibleTasks: updateVisibleTasksMock,
+    isGlobalTask: isGlobalTaskMock,
+    calculateFilteredTasksForOptions: (...args: unknown[]) => {
+      const hideCompletedMapObjectives = args[2] === true;
+      const taskCount = hideCompletedMapObjectives
+        ? mapTaskCountsMock.withHide
+        : mapTaskCountsMock.withoutHide;
+      return Array.from({ length: taskCount }, (_value, index) => ({
+        ...defaultTask,
+        id: `task-${index + 1}`,
+      }));
+    },
   }),
 }));
 vi.mock('@/composables/useInfiniteScroll', () => ({
@@ -76,26 +104,18 @@ vi.mock('@/composables/useTarkovTime', () => ({
   }),
 }));
 vi.mock('@/stores/useMetadata', () => ({
-  useMetadataStore: () => ({
-    tasks: [defaultTask],
-    loading: false,
-    hasInitialized: true,
-    mapsWithSvg: [],
-    sortedTraders: [],
-    editions: [],
-    objectiveMaps: {},
-    objectiveGPS: {},
-    fetchMapSpawnsData: vi.fn(() => Promise.resolve()),
-  }),
+  useMetadataStore: () => metadataStoreMock,
 }));
 vi.mock('@/stores/usePreferences', () => ({
-  usePreferencesStore: () => mockPreferencesStore,
+  usePreferencesStore: () => preferencesStoreMock,
 }));
 vi.mock('@/stores/useProgress', () => ({
   useProgressStore: () => ({
+    visibleTeamStores: { self: {} },
     tasksCompletions: {},
     tasksFailed: {},
     unlockedTasks: {},
+    objectiveCompletions: {},
   }),
 }));
 vi.mock('@/stores/useTarkov', () => ({
@@ -117,20 +137,29 @@ vi.mock('vue-router', () => ({
   }),
 }));
 vi.mock('@/features/maps/LeafletMap.vue', () => ({
+  __esModule: true,
   default: { template: '<div data-testid="leaflet-map" />' },
 }));
+const UButtonStub = {
+  emits: ['click'],
+  template: '<button v-bind="$attrs" @click="$emit(\'click\')"><slot /></button>',
+};
 const defaultGlobalStubs = {
   TaskCard: {
     props: ['accentVariant', 'task'],
     template: '<div data-testid="task-card" :data-accent="accentVariant">{{ task.id }}</div>',
   },
-  TaskFilterBar: { template: '<div data-testid="task-filter" />' },
+  TaskFilterBar: {
+    emits: ['update:searchQuery'],
+    template:
+      '<div data-testid="task-filter"><input data-testid="task-search" @input="$emit(\'update:searchQuery\', $event.target.value)" /></div>',
+  },
   TaskEmptyState: true,
   TaskLoadingState: true,
   Teleport: true,
   Transition: false,
   UAlert: true,
-  UButton: true,
+  UButton: UButtonStub,
   UCard: true,
   UIcon: true,
 };
@@ -143,28 +172,95 @@ describe('tasks page', () => {
     });
   };
   beforeEach(async () => {
-    mockVisibleTasks.value = [defaultTask];
-    mockIsGlobalTask.mockImplementation((task: Task) => task.id === 'task-global');
-    mockPreferencesStore.getTaskPrimaryView = 'all';
-    mockPreferencesStore.getTaskMapView = 'all';
-    mockPreferencesStore.getHideGlobalTasks = false;
-    mockPreferencesStore.getPinnedTaskIds = [];
+    visibleTasksRef.value = [defaultTask];
+    updateVisibleTasksMock.mockReset();
+    isGlobalTaskMock.mockReset();
+    isGlobalTaskMock.mockImplementation((_task: Task) => false);
+    preferencesStoreMock.getTaskPrimaryView = 'all';
+    preferencesStoreMock.getTaskMapView = 'all';
+    preferencesStoreMock.getHideGlobalTasks = false;
+    preferencesStoreMock.getPinnedTaskIds = [];
+    preferencesStoreMock.getHideCompletedMapObjectives = false;
+    preferencesStoreMock.setHideCompletedMapObjectives.mockReset();
+    metadataStoreMock.mapsWithSvg = [];
+    metadataStoreMock.fetchMapSpawnsData.mockClear();
+    mapTaskCountsMock.withHide = 0;
+    mapTaskCountsMock.withoutHide = 1;
     const module = await import('@/pages/tasks.vue');
     TasksPage = module.default;
+    await mountPage();
   });
   it('renders task cards when tasks are available', async () => {
-    await mountPage();
     expect(wrapper.find('[data-testid="task-card"]').exists()).toBe(true);
   });
   it('renders task filter bar', async () => {
-    await mountPage();
     expect(wrapper.find('[data-testid="task-filter"]').exists()).toBe(true);
   });
+  it('keeps initial task slice when tasks arrive after mount', async () => {
+    visibleTasksRef.value = [];
+    await mountPage();
+    visibleTasksRef.value = Array.from({ length: 20 }, (_value, index) =>
+      createDefaultTask({
+        id: `task-${index + 1}`,
+        name: `Task ${index + 1}`,
+      })
+    );
+    await nextTick();
+    expect(wrapper.findAll('[data-testid="task-card"]')).toHaveLength(8);
+  });
+  it('shows hidden-tasks footer action in map section and can show hidden tasks', async () => {
+    preferencesStoreMock.getTaskPrimaryView = 'maps';
+    preferencesStoreMock.getTaskMapView = 'map-1';
+    preferencesStoreMock.getHideCompletedMapObjectives = true;
+    metadataStoreMock.mapsWithSvg = [{ id: 'map-1', name: 'Map One' }];
+    await mountPage();
+    const toggleButton = wrapper.find(
+      'button[aria-label="page.tasks.map.map_complete_tasks_toggle_show"]'
+    );
+    expect(toggleButton.exists()).toBe(true);
+    await toggleButton.trigger('click');
+    expect(preferencesStoreMock.setHideCompletedMapObjectives).toHaveBeenCalledWith(false);
+  });
+  it('shows re-hide footer action in map section when hidden tasks are visible', async () => {
+    preferencesStoreMock.getTaskPrimaryView = 'maps';
+    preferencesStoreMock.getTaskMapView = 'map-1';
+    preferencesStoreMock.getHideCompletedMapObjectives = false;
+    metadataStoreMock.mapsWithSvg = [{ id: 'map-1', name: 'Map One' }];
+    await mountPage();
+    const toggleButton = wrapper.find(
+      'button[aria-label="page.tasks.map.map_complete_tasks_toggle_hide"]'
+    );
+    expect(toggleButton.exists()).toBe(true);
+    await toggleButton.trigger('click');
+    expect(preferencesStoreMock.setHideCompletedMapObjectives).toHaveBeenCalledWith(true);
+  });
+  it('hides map hidden-count notice when search excludes hidden tasks', async () => {
+    preferencesStoreMock.getTaskPrimaryView = 'maps';
+    preferencesStoreMock.getTaskMapView = 'map-1';
+    preferencesStoreMock.getHideCompletedMapObjectives = true;
+    metadataStoreMock.mapsWithSvg = [{ id: 'map-1', name: 'Map One' }];
+    mapTaskCountsMock.withoutHide = 2;
+    mapTaskCountsMock.withHide = 1;
+    await mountPage();
+    const mapVisibilitySelector =
+      'button[aria-label="page.tasks.map.map_complete_tasks_toggle_show"]';
+    expect(wrapper.find(mapVisibilitySelector).exists()).toBe(true);
+    vi.useFakeTimers();
+    try {
+      await wrapper.find('[data-testid="task-search"]').setValue('no-match-query');
+      await vi.advanceTimersByTimeAsync(TASK_SEARCH_DEBOUNCE_MS);
+      await nextTick();
+      expect(wrapper.find(mapVisibilitySelector).exists()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('shows map tasks first and then global tasks in map view', async () => {
-    mockVisibleTasks.value = [mapTask, globalTask];
-    mockPreferencesStore.getTaskPrimaryView = 'maps';
-    mockPreferencesStore.getTaskMapView = 'map-1';
-    mockPreferencesStore.getHideGlobalTasks = false;
+    visibleTasksRef.value = [mapTask, globalTask];
+    preferencesStoreMock.getTaskPrimaryView = 'maps';
+    preferencesStoreMock.getTaskMapView = 'map-1';
+    preferencesStoreMock.getHideGlobalTasks = false;
+    isGlobalTaskMock.mockImplementation((task: Task) => task.id === 'task-global');
     await mountPage();
     expect(
       wrapper
@@ -174,19 +270,21 @@ describe('tasks page', () => {
     expect(wrapper.text()).toContain('page.tasks.global_tasks_section');
   });
   it('does not show global section when global tasks are disabled', async () => {
-    mockVisibleTasks.value = [mapTask];
-    mockPreferencesStore.getTaskPrimaryView = 'maps';
-    mockPreferencesStore.getTaskMapView = 'map-1';
-    mockPreferencesStore.getHideGlobalTasks = true;
+    visibleTasksRef.value = [mapTask];
+    preferencesStoreMock.getTaskPrimaryView = 'maps';
+    preferencesStoreMock.getTaskMapView = 'map-1';
+    preferencesStoreMock.getHideGlobalTasks = true;
+    isGlobalTaskMock.mockImplementation((task: Task) => task.id === 'task-global');
     await mountPage();
     expect(wrapper.text()).not.toContain('page.tasks.global_tasks_section');
   });
   it('keeps global accent for pinned global tasks in map view', async () => {
-    mockVisibleTasks.value = [globalTask];
-    mockPreferencesStore.getTaskPrimaryView = 'maps';
-    mockPreferencesStore.getTaskMapView = 'map-1';
-    mockPreferencesStore.getHideGlobalTasks = false;
-    mockPreferencesStore.getPinnedTaskIds = ['task-global'];
+    visibleTasksRef.value = [globalTask];
+    preferencesStoreMock.getTaskPrimaryView = 'maps';
+    preferencesStoreMock.getTaskMapView = 'map-1';
+    preferencesStoreMock.getHideGlobalTasks = false;
+    preferencesStoreMock.getPinnedTaskIds = ['task-global'];
+    isGlobalTaskMock.mockImplementation((task: Task) => task.id === 'task-global');
     await mountPage();
     expect(wrapper.find('[data-testid="task-card"]').attributes('data-accent')).toBe('global');
   });

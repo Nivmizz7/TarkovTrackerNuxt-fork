@@ -62,6 +62,13 @@
             </div>
             <div v-if="filteredTasks.length === 0" class="py-6">
               <TaskEmptyState />
+              <MapTaskVisibilityNotice
+                v-if="showMapTaskVisibilityNotice"
+                class="mt-4"
+                :count="mapCompleteTasksCountOnMap"
+                :is-hiding="getHideCompletedMapObjectives"
+                @toggle="toggleMapTaskVisibilityFilter"
+              />
             </div>
             <div v-else ref="taskListRef" data-testid="task-list">
               <div v-if="pinnedTasksInSlice.length > 0" class="mb-6">
@@ -75,9 +82,40 @@
                   </div>
                   <div class="bg-surface-700 h-px flex-1" />
                 </div>
+                <div>
+                  <div
+                    v-for="task in pinnedTasksInSlice"
+                    :key="`pinned-${task.id}`"
+                    class="content-visibility-auto-280 pb-4"
+                  >
+                    <TaskCard
+                      :accent-variant="
+                        shouldGroupGlobalTasks && isGlobalTask(task) ? 'global' : 'default'
+                      "
+                      :task="task"
+                      @on-task-action="handleTaskAction"
+                    />
+                  </div>
+                </div>
+              </div>
+              <MapTaskVisibilityNotice
+                v-if="
+                  showMapTaskVisibilityNotice &&
+                  (mapSpecificTasksInSlice.length > 0 ||
+                    (pinnedTasksInSlice.length > 0 &&
+                      globalTasksInSlice.length === 0 &&
+                      mapSpecificTasksInSlice.length === 0 &&
+                      mapCompleteTasksCountOnMap > 0))
+                "
+                class="mb-6"
+                :count="mapCompleteTasksCountOnMap"
+                :is-hiding="getHideCompletedMapObjectives"
+                @toggle="toggleMapTaskVisibilityFilter"
+              />
+              <div>
                 <div
-                  v-for="task in pinnedTasksInSlice"
-                  :key="`pinned-${task.id}`"
+                  v-for="task in mapSpecificTasksInSlice"
+                  :key="`task-${task.id}`"
                   class="content-visibility-auto-280 pb-4"
                 >
                   <TaskCard
@@ -89,15 +127,8 @@
                   />
                 </div>
               </div>
-              <div
-                v-for="task in groupedUnpinnedTasksInSlice.mapSpecific"
-                :key="`map-${task.id}`"
-                class="content-visibility-auto-280 pb-4"
-              >
-                <TaskCard :task="task" @on-task-action="handleTaskAction" />
-              </div>
-              <template v-if="groupedUnpinnedTasksInSlice.global.length > 0">
-                <div class="mt-2 mb-3 flex items-center gap-2">
+              <div v-if="globalTasksInSlice.length > 0" class="mt-2 mb-6">
+                <div class="mb-3 flex items-center gap-2">
                   <div class="bg-surface-700 h-px flex-1" />
                   <div class="flex items-center gap-2">
                     <UIcon name="i-mdi-earth" class="text-primary-400 h-4 w-4" />
@@ -107,18 +138,31 @@
                   </div>
                   <div class="bg-surface-700 h-px flex-1" />
                 </div>
-                <div
-                  v-for="task in groupedUnpinnedTasksInSlice.global"
-                  :key="`global-${task.id}`"
-                  class="content-visibility-auto-280 pb-4"
-                >
-                  <TaskCard
-                    accent-variant="global"
-                    :task="task"
-                    @on-task-action="handleTaskAction"
-                  />
+                <div>
+                  <div
+                    v-for="task in globalTasksInSlice"
+                    :key="`global-${task.id}`"
+                    class="content-visibility-auto-280 pb-4"
+                  >
+                    <TaskCard
+                      accent-variant="global"
+                      :task="task"
+                      @on-task-action="handleTaskAction"
+                    />
+                  </div>
                 </div>
-              </template>
+              </div>
+              <MapTaskVisibilityNotice
+                v-if="
+                  showMapTaskVisibilityNotice &&
+                  mapSpecificTasksInSlice.length === 0 &&
+                  globalTasksInSlice.length > 0
+                "
+                class="mb-6"
+                :count="mapCompleteTasksCountOnMap"
+                :is-hiding="getHideCompletedMapObjectives"
+                @toggle="toggleMapTaskVisibilityFilter"
+              />
               <div
                 v-if="visibleTaskCount < filteredTasks.length"
                 ref="loadMoreSentinel"
@@ -210,6 +254,7 @@
   import { useTaskNotification } from '@/composables/useTaskNotification';
   import { useTaskRouteSync } from '@/composables/useTaskRouteSync';
   import { useTaskSettingsDrawer } from '@/composables/useTaskSettingsDrawer';
+  import MapTaskVisibilityNotice from '@/features/tasks/MapTaskVisibilityNotice.vue';
   import TaskCard from '@/features/tasks/TaskCard.vue';
   import TaskEmptyState from '@/features/tasks/TaskEmptyState.vue';
   import TaskLoadingState from '@/features/tasks/TaskLoadingState.vue';
@@ -258,6 +303,7 @@
     getOnlyTasksWithRequiredKeys,
     getRespectTaskFiltersForImpact,
     getHideGlobalTasks,
+    getHideCompletedMapObjectives,
     getPinnedTaskIds,
   } = storeToRefs(preferencesStore);
   const metadataStore = useMetadataStore();
@@ -266,8 +312,10 @@
   const sortedTraders = computed(() => metadataStore.sortedTraders);
   const editions = computed(() => metadataStore.editions);
   const progressStore = useProgressStore();
-  const { tasksCompletions, unlockedTasks, tasksFailed } = storeToRefs(progressStore);
-  const { isGlobalTask, visibleTasks, updateVisibleTasks } = useTaskFiltering();
+  const { tasksCompletions, unlockedTasks, tasksFailed, objectiveCompletions } =
+    storeToRefs(progressStore);
+  const { isGlobalTask, visibleTasks, updateVisibleTasks, calculateFilteredTasksForOptions } =
+    useTaskFiltering();
   const tarkovStore = useTarkovStore();
   const userGameEdition = computed(() => tarkovStore.getGameEdition());
   const { tarkovTime } = useTarkovTime();
@@ -451,20 +499,23 @@
       mergedIds: (map as unknown as { mergedIds?: string[] }).mergedIds || [map.id],
     }));
   });
+  const mapTaskVisibilityFilterOptions = computed<TaskFilterAndSortOptions>(() => ({
+    primaryView: getTaskPrimaryView.value as TaskPrimaryView,
+    secondaryView: getTaskSecondaryView.value as TaskSecondaryView,
+    userView: getTaskUserView.value,
+    mapView: getTaskMapView.value,
+    traderView: getTaskTraderView.value,
+    mergedMaps: mergedMaps.value,
+    sortMode: getTaskSortMode.value,
+    sortDirection: getTaskSortDirection.value,
+  }));
+  const toggleMapTaskVisibilityFilter = () => {
+    preferencesStore.setHideCompletedMapObjectives(!getHideCompletedMapObjectives.value);
+  };
   useTaskRouteSync({ maps, traders: sortedTraders });
   const refreshVisibleTasks = () => {
-    const options: TaskFilterAndSortOptions = {
-      primaryView: getTaskPrimaryView.value as TaskPrimaryView,
-      secondaryView: getTaskSecondaryView.value as TaskSecondaryView,
-      userView: getTaskUserView.value,
-      mapView: getTaskMapView.value,
-      traderView: getTaskTraderView.value,
-      mergedMaps: mergedMaps.value,
-      sortMode: getTaskSortMode.value,
-      sortDirection: getTaskSortDirection.value,
-    };
     try {
-      updateVisibleTasks(options, tasksLoading.value);
+      updateVisibleTasks(mapTaskVisibilityFilterOptions.value, tasksLoading.value);
     } catch (error) {
       logger.error('[Tasks] Failed to refresh tasks:', error);
     }
@@ -474,9 +525,9 @@
   }, 50);
   const handleTaskAction = (payload: TaskActionPayload) => {
     onTaskAction(payload);
-    debouncedRefreshVisibleTasks.cancel();
     void nextTick(() => {
       refreshVisibleTasks();
+      debouncedRefreshVisibleTasks.cancel();
     });
   };
   watch(
@@ -495,6 +546,7 @@
       getOnlyTasksWithRequiredKeys,
       getRespectTaskFiltersForImpact,
       getHideGlobalTasks,
+      getHideCompletedMapObjectives,
       getPinnedTaskIds,
       tasksLoading,
       tasks,
@@ -502,6 +554,7 @@
       tasksCompletions,
       unlockedTasks,
       tasksFailed,
+      objectiveCompletions,
       userGameEdition,
       editions,
     ],
@@ -532,19 +585,38 @@
   });
   const normalizedSearch = computed(() => debouncedSearch.value.toLowerCase().trim());
   const isSearchActive = computed(() => normalizedSearch.value.length > 0);
-  const filteredTasks = computed((): Task[] => {
-    if (!normalizedSearch.value) {
-      return visibleTasks.value;
-    }
-    const query = normalizedSearch.value;
-    const scored = visibleTasks.value
+  const applySearchToTaskList = (taskList: Task[], query: string): Task[] => {
+    if (!query) return taskList;
+    return taskList
       .map((task) => ({
         task,
         score: fuzzyMatchScore(task.name ?? '', query),
       }))
       .filter(({ score }) => score > 0)
-      .sort((a, b) => b.score - a.score);
-    return scored.map(({ task }) => task);
+      .sort((a, b) => b.score - a.score)
+      .map(({ task }) => task);
+  };
+  const filteredTasks = computed((): Task[] => {
+    return applySearchToTaskList(visibleTasks.value, normalizedSearch.value);
+  });
+  const mapCompleteTasksCountOnMap = computed(() => {
+    if (!showMapDisplay.value) return 0;
+    if (!tasks.value.length || !mergedMaps.value.length) return 0;
+    const selectedMapId = getTaskMapView.value;
+    if (!selectedMapId || selectedMapId === 'all') return 0;
+    const query = normalizedSearch.value;
+    const tasksWithoutHiding = applySearchToTaskList(
+      calculateFilteredTasksForOptions(tasks.value, mapTaskVisibilityFilterOptions.value, false),
+      query
+    );
+    const tasksWithHiding = applySearchToTaskList(
+      calculateFilteredTasksForOptions(tasks.value, mapTaskVisibilityFilterOptions.value, true),
+      query
+    );
+    return Math.max(tasksWithoutHiding.length - tasksWithHiding.length, 0);
+  });
+  const showMapTaskVisibilityNotice = computed(() => {
+    return showMapDisplay.value && mapCompleteTasksCountOnMap.value > 0;
   });
   const graphVisibleTaskIds = computed(() => new Set(visibleTasks.value.map((task) => task.id)));
   const activeSearchCount = computed(() => filteredTasks.value.length);
@@ -562,10 +634,8 @@
   provide('isMapView', showMapDisplay);
   provide('impactEligibleTaskIds', impactEligibleTaskIds);
   provide('clearPinnedTask', clearPinnedTask);
-  const INITIAL_BATCH = 4;
-  const IDEAL_INITIAL_BATCH = 8;
-  const BATCH_SIZE = 6;
-  const visibleTaskCount = ref(INITIAL_BATCH);
+  const BATCH_SIZE = 8;
+  const visibleTaskCount = ref(BATCH_SIZE);
   const loadMoreSentinel = ref<HTMLElement | null>(null);
   const visibleTasksSlice = computed(() => {
     if (!pinnedTask.value) {
@@ -590,20 +660,13 @@
   const shouldGroupGlobalTasks = computed(() => {
     return showMapDisplay.value && !getHideGlobalTasks.value;
   });
-  const groupedUnpinnedTasksInSlice = computed((): { mapSpecific: Task[]; global: Task[] } => {
-    if (!shouldGroupGlobalTasks.value) {
-      return { mapSpecific: unpinnedTasksInSlice.value, global: [] };
-    }
-    const mapSpecific: Task[] = [];
-    const global: Task[] = [];
-    unpinnedTasksInSlice.value.forEach((task) => {
-      if (isGlobalTask(task)) {
-        global.push(task);
-        return;
-      }
-      mapSpecific.push(task);
-    });
-    return { mapSpecific, global };
+  const mapSpecificTasksInSlice = computed(() => {
+    if (!shouldGroupGlobalTasks.value) return unpinnedTasksInSlice.value;
+    return unpinnedTasksInSlice.value.filter((task) => !isGlobalTask(task));
+  });
+  const globalTasksInSlice = computed(() => {
+    if (!shouldGroupGlobalTasks.value) return [];
+    return unpinnedTasksInSlice.value.filter((task) => isGlobalTask(task));
   });
   const hasMoreTasks = computed(() => visibleTaskCount.value < filteredTasks.value.length);
   const loadMoreTasks = () => {
@@ -615,24 +678,11 @@
   };
   const { checkAndLoadMore } = useInfiniteScroll(loadMoreSentinel, loadMoreTasks, {
     enabled: hasMoreTasks,
-    useScrollFallback: true,
+    maxAutoLoads: 8,
+    rootMargin: '700px',
   });
-  onMounted(() => {
-    const expandInitialBatch = () => {
-      if (normalizedSearch.value || visibleTaskCount.value >= IDEAL_INITIAL_BATCH) return;
-      visibleTaskCount.value = Math.min(IDEAL_INITIAL_BATCH, filteredTasks.value.length);
-      nextTick(() => {
-        checkAndLoadMore();
-      });
-    };
-    if (typeof window.requestIdleCallback === 'function') {
-      window.requestIdleCallback(expandInitialBatch, { timeout: 3000 });
-    } else {
-      setTimeout(expandInitialBatch, 750);
-    }
-  });
-  watch(filteredTasks, () => {
-    visibleTaskCount.value = INITIAL_BATCH;
+  watch(filteredTasks, (newTasks) => {
+    visibleTaskCount.value = Math.min(BATCH_SIZE, newTasks.length);
     nextTick(() => {
       checkAndLoadMore();
     });

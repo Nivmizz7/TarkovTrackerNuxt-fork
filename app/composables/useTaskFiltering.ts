@@ -8,6 +8,7 @@ import { TRADER_ORDER } from '@/utils/constants';
 import { logger } from '@/utils/logger';
 import { perfEnabled, perfEnd, perfNow, perfStart } from '@/utils/perf';
 import { buildTaskImpactScores, resolveImpactTeamIds } from '@/utils/taskImpact';
+import { normalizeTaskObjectives } from '@/utils/taskNormalization';
 import {
   buildTaskTypeFilterOptions,
   filterTasksByTypeSettings as filterTasksByTypeSettingsUtil,
@@ -60,55 +61,128 @@ export function useTaskFiltering() {
     if (obj.type === 'giveItem' && obj.foundInRaid) return true;
     return false;
   };
+  const getTaskObjectives = (task: Task): TaskObjective[] => {
+    const objectives = task.objectives;
+    return Array.isArray(objectives)
+      ? objectives
+      : normalizeTaskObjectives<TaskObjective>(objectives);
+  };
+  const isObjectiveOnMap = (
+    objective: TaskObjective | null | undefined,
+    mapIds: string[]
+  ): boolean =>
+    Array.isArray(objective?.maps) &&
+    objective.maps.some((map) => mapIds.includes(map.id)) &&
+    isMapObjectiveType(objective.type);
   const isGlobalTask = (task: Task): boolean => {
-    const hasMapObjectives = task.objectives?.some(
-      (obj) => Array.isArray(obj.maps) && obj.maps.length > 0 && isMapObjectiveType(obj.type)
+    const objectives = getTaskObjectives(task);
+    const hasMapObjectives = objectives.some(
+      (obj) => Array.isArray(obj?.maps) && obj.maps.length > 0 && isMapObjectiveType(obj.type)
     );
     const isMapless = !hasMapObjectives;
-    const hasRaidRelevantObjectives = task.objectives?.some(isRaidRelevantObjective) ?? false;
+    const hasRaidRelevantObjectives = objectives.some(
+      (objective) => objective != null && isRaidRelevantObjective(objective)
+    );
     return isMapless && hasRaidRelevantObjectives;
+  };
+  const taskHasMap = (task: Task, mapIds: string[]): boolean => {
+    const objectives = getTaskObjectives(task);
+    return objectives.some((objective) => isObjectiveOnMap(objective, mapIds));
+  };
+  const areAllMapObjectivesComplete = (
+    task: Task,
+    mapIds: string[],
+    userView: string,
+    secondaryView: TaskSecondaryView = 'all'
+  ): boolean => {
+    const objectives = getTaskObjectives(task);
+    const mapObjectives = objectives.filter((objective) => isObjectiveOnMap(objective, mapIds));
+    if (mapObjectives.length === 0) return false;
+    if (isAllUsersView(userView)) {
+      const teamIds = Object.keys(progressStore.visibleTeamStores || {});
+      let relevantTeamIds = teamIds.filter((teamId) => {
+        const userFaction = progressStore.playerFaction[teamId];
+        const taskFaction = task.factionName;
+        return taskFaction === 'Any' || taskFaction === userFaction;
+      });
+      if (secondaryView === 'available') {
+        relevantTeamIds = relevantTeamIds.filter((teamId) => {
+          const isUnlocked = progressStore.unlockedTasks?.[task.id]?.[teamId] === true;
+          const isCompleted = progressStore.tasksCompletions?.[task.id]?.[teamId] === true;
+          const isFailed = progressStore.tasksFailed?.[task.id]?.[teamId] === true;
+          return isUnlocked && !isCompleted && !isFailed;
+        });
+      }
+      if (relevantTeamIds.length === 0) return false;
+      return mapObjectives.every((obj) => {
+        const completions = progressStore.objectiveCompletions[obj.id] || {};
+        return relevantTeamIds.every((teamId) => completions[teamId] === true);
+      });
+    }
+    return mapObjectives.every((obj) => {
+      const completions = progressStore.objectiveCompletions[obj.id] || {};
+      return completions[userView] === true;
+    });
   };
   const filterTasksByView = (
     taskList: Task[],
     primaryView: TaskPrimaryView,
     mapView: string,
     traderView: string,
-    mergedMaps: MergedMap[]
+    mergedMaps: MergedMap[],
+    options?: {
+      hideMapObjectiveCompleteTasks?: boolean;
+      hideGlobalTasksOverride?: boolean;
+      userView?: string;
+      secondaryView?: TaskSecondaryView;
+    }
   ): Task[] => {
     if (primaryView === 'maps') {
-      return filterTasksByMap(taskList, mapView, mergedMaps);
+      return filterTasksByMap(taskList, mapView, mergedMaps, options);
     }
     if (primaryView === 'traders') {
       return taskList.filter((task) => task.trader?.id === traderView);
     }
     return taskList;
   };
-  const filterTasksByMap = (taskList: Task[], mapView: string, mergedMaps: MergedMap[]) => {
-    const showGlobalTasks = !preferencesStore.getHideGlobalTasks;
-    let mapSpecificTasks: Task[];
+  const filterTasksByMap = (
+    taskList: Task[],
+    mapView: string,
+    mergedMaps: MergedMap[],
+    options?: {
+      hideMapObjectiveCompleteTasks?: boolean;
+      userView?: string;
+      secondaryView?: TaskSecondaryView;
+      hideGlobalTasksOverride?: boolean;
+    }
+  ): Task[] => {
+    const hideMapObjectiveCompleteTasks = options?.hideMapObjectiveCompleteTasks ?? false;
+    const userView = options?.userView ?? 'self';
+    const secondaryView = options?.secondaryView ?? 'all';
+    const hideGlobalTasks = options?.hideGlobalTasksOverride ?? preferencesStore.getHideGlobalTasks;
+    const showGlobalTasks = !hideGlobalTasks;
     const mergedMap = mergedMaps.find((m) => m.mergedIds && m.mergedIds.includes(mapView));
-    if (mergedMap && mergedMap.mergedIds) {
-      const ids = mergedMap.mergedIds;
-      mapSpecificTasks = taskList.filter((task) => {
-        return task.objectives?.some(
-          (obj) =>
-            Array.isArray(obj.maps) &&
-            obj.maps.some((map) => ids.includes(map.id)) &&
-            isMapObjectiveType(obj.type)
-        );
-      });
-    } else {
-      mapSpecificTasks = taskList.filter((task) =>
-        task.objectives?.some(
-          (obj) => obj.maps?.some((map) => map.id === mapView) && isMapObjectiveType(obj.type)
-        )
-      );
+    const mapIds = mergedMap?.mergedIds || [mapView];
+    const result: Task[] = [];
+    for (const task of taskList) {
+      if (!taskHasMap(task, mapIds)) continue;
+      if (
+        hideMapObjectiveCompleteTasks &&
+        areAllMapObjectivesComplete(task, mapIds, userView, secondaryView)
+      ) {
+        continue;
+      }
+      result.push(task);
     }
     if (showGlobalTasks) {
       const globalTasks = taskList.filter(isGlobalTask);
-      return [...mapSpecificTasks, ...globalTasks];
+      for (const task of globalTasks) {
+        if (!result.some((t) => t.id === task.id)) {
+          result.push(task);
+        }
+      }
     }
-    return mapSpecificTasks;
+    return result;
   };
   /**
    * Check if a task is invalid (permanently blocked) for a user
@@ -301,99 +375,53 @@ export function useTaskFiltering() {
     }
     return taskList.filter(taskHasRequiredKeys);
   };
-  /**
-   * Helper to extract map-objective locations from a task
-   */
-  const extractTaskLocations = (task: Task): string[] => {
-    const locations: string[] = [];
-    if (Array.isArray(task.objectives)) {
-      for (const obj of task.objectives) {
-        if (!isMapObjectiveType(obj.type)) continue;
-        if (Array.isArray(obj.maps)) {
-          for (const objMap of obj.maps) {
-            if (objMap?.id && !locations.includes(objMap.id)) {
-              locations.push(objMap.id);
-            }
-          }
-        }
-      }
-    }
-    return locations;
-  };
-  /**
-   * Helper to check if user has unlocked task
-   */
-  const isTaskUnlockedForUser = (taskId: string, activeUserView: string): boolean => {
-    if (activeUserView === 'all') {
-      return Object.values(progressStore.unlockedTasks[taskId] || {}).some(Boolean);
-    }
-    return progressStore.unlockedTasks[taskId]?.[activeUserView] === true;
-  };
-  /**
-   * Helper to check if any objectives remain incomplete
-   */
-  const hasIncompleteObjectives = (
-    task: Task,
-    mapIds: string[],
-    activeUserView: string
-  ): boolean => {
-    return (
-      task.objectives?.some((objective) => {
-        if (!isMapObjectiveType(objective.type)) return false;
-        if (!Array.isArray(objective.maps)) return false;
-        if (!objective.maps.some((m) => mapIds.includes(m.id))) return false;
-        const completions = progressStore.objectiveCompletions[objective.id] || {};
-        return activeUserView === 'all'
-          ? !Object.values(completions).every(Boolean)
-          : completions[activeUserView] !== true;
-      }) ?? false
-    );
-  };
   const calculateMapTaskTotals = (
     mergedMaps: MergedMap[],
     tasks: Task[],
     hideGlobalTasks: boolean,
     activeUserView: string,
-    secondaryView: TaskSecondaryView
+    secondaryView: TaskSecondaryView,
+    hideCompletedMapObjectives: boolean = false
   ): Record<string, number> => {
     const perfTimer = perfStart('[Tasks] calculateMapTaskTotals', {
       tasks: tasks.length,
       maps: mergedMaps.length,
+      hideCompletedMapObjectives,
+      hideGlobalTasks,
       secondaryView,
       userView: activeUserView,
     });
-    const mapTaskCounts: Record<string, number> = {};
-    const typedTasks = filterTasksByTypeSettings(tasks);
-    const keyFilteredTasks = filterTasksByRequiredKeysSetting(typedTasks);
+    const typeFilteredTasks = filterTasksByTypeSettings(tasks);
     const statusFilteredTasks = filterTasksByStatus(
-      keyFilteredTasks,
+      typeFilteredTasks,
       secondaryView,
       activeUserView
     );
+    const keyFilteredTasks = filterTasksByRequiredKeysSetting(statusFilteredTasks);
+    const baseTasks = filterSharedByAllTasks(keyFilteredTasks, activeUserView, secondaryView);
     let globalTaskCount = 0;
     if (!hideGlobalTasks) {
-      for (const task of statusFilteredTasks) {
-        if (!isGlobalTask(task)) continue;
-        if (secondaryView === 'available') {
-          if (!isTaskUnlockedForUser(task.id, activeUserView)) continue;
-        }
-        globalTaskCount++;
+      for (const task of baseTasks) {
+        if (isGlobalTask(task)) globalTaskCount++;
       }
     }
+    const mapTaskCounts: Record<string, number> = {};
     for (const map of mergedMaps) {
-      const ids = map.mergedIds || [map.id];
       const mapId = map.id;
       if (!mapId) continue;
-      mapTaskCounts[mapId] = globalTaskCount;
-      for (const task of statusFilteredTasks) {
-        const taskLocations = extractTaskLocations(task);
-        if (!ids.some((id: string) => taskLocations.includes(id))) continue;
-        if (secondaryView === 'available') {
-          if (!isTaskUnlockedForUser(task.id, activeUserView)) continue;
-          if (!hasIncompleteObjectives(task, ids, activeUserView)) continue;
+      const ids = map.mergedIds || [mapId];
+      let count = globalTaskCount;
+      for (const task of baseTasks) {
+        if (!taskHasMap(task, ids)) continue;
+        if (
+          hideCompletedMapObjectives &&
+          areAllMapObjectivesComplete(task, ids, activeUserView, secondaryView)
+        ) {
+          continue;
         }
-        mapTaskCounts[mapId]!++;
+        count++;
       }
+      mapTaskCounts[mapId] = count;
     }
     perfEnd(perfTimer, { mapsWithCounts: Object.keys(mapTaskCounts).length });
     return mapTaskCounts;
@@ -599,6 +627,54 @@ export function useTaskFiltering() {
     };
     return [...applySort(pinnedTasks), ...applySort(unpinnedTasks)];
   };
+  const filterSharedByAllTasks = (
+    taskList: Task[],
+    userView: string,
+    secondaryView: TaskSecondaryView
+  ): Task[] => {
+    if (
+      !preferencesStore.getTaskSharedByAllOnly ||
+      !isAllUsersView(userView) ||
+      secondaryView !== 'available'
+    ) {
+      return taskList;
+    }
+    const teamIds = Object.keys(progressStore.visibleTeamStores || {});
+    return taskList.filter((task) => {
+      const relevantTeamIds = getRelevantTeamIds(task, teamIds);
+      if (relevantTeamIds.length === 0) return false;
+      return relevantTeamIds.every((teamId) => {
+        const status = getTaskStatus(task.id, teamId);
+        return status.isUnlocked && !status.isCompleted && !status.isFailed;
+      });
+    });
+  };
+  const calculateFilteredTasksForOptions = (
+    taskList: Task[],
+    options: TaskFilterAndSortOptions,
+    hideMapObjectiveCompleteTasks: boolean,
+    overrides: { hideGlobalTasks?: boolean } = {}
+  ): Task[] => {
+    const { primaryView, secondaryView, userView, mapView, traderView, mergedMaps } = options;
+    const mapFilterOptions = {
+      hideMapObjectiveCompleteTasks,
+      hideGlobalTasksOverride: overrides.hideGlobalTasks,
+      userView,
+      secondaryView,
+    };
+    const typeFilteredTasks = filterTasksByTypeSettings(taskList);
+    const viewFilteredTasks = filterTasksByView(
+      typeFilteredTasks,
+      primaryView,
+      mapView,
+      traderView,
+      mergedMaps,
+      mapFilterOptions
+    );
+    const statusFilteredTasks = filterTasksByStatus(viewFilteredTasks, secondaryView, userView);
+    const requiredKeysFilteredTasks = filterTasksByRequiredKeysSetting(statusFilteredTasks);
+    return filterSharedByAllTasks(requiredKeysFilteredTasks, userView, secondaryView);
+  };
   /**
    * Main function to update visible tasks based on all filters.
    * Uses TaskFilterAndSortOptions parameter object for cleaner API.
@@ -645,8 +721,21 @@ export function useTaskFiltering() {
         perfOn
       );
       visibleTaskList = afterType;
+      const mapFilterOptions = {
+        hideMapObjectiveCompleteTasks: preferencesStore.getHideCompletedMapObjectives,
+        userView,
+        secondaryView,
+      };
       const [afterView, filterViewMs] = timed(
-        () => filterTasksByView(visibleTaskList, primaryView, mapView, traderView, mergedMaps),
+        () =>
+          filterTasksByView(
+            visibleTaskList,
+            primaryView,
+            mapView,
+            traderView,
+            mergedMaps,
+            mapFilterOptions
+          ),
         perfOn
       );
       visibleTaskList = afterView;
@@ -661,22 +750,9 @@ export function useTaskFiltering() {
       );
       visibleTaskList = afterRequiredKeys;
       let sharedFilterMs = 0;
-      if (
-        preferencesStore.getTaskSharedByAllOnly &&
-        isAllUsersView(userView) &&
-        secondaryView === 'available'
-      ) {
-        const teamIds = Object.keys(progressStore.visibleTeamStores || {});
+      if (preferencesStore.getTaskSharedByAllOnly && isAllUsersView(userView)) {
         const [afterShared, ms] = timed(
-          () =>
-            visibleTaskList.filter((task) => {
-              const relevantTeamIds = getRelevantTeamIds(task, teamIds);
-              if (relevantTeamIds.length === 0) return false;
-              return relevantTeamIds.every((teamId) => {
-                const status = getTaskStatus(task.id, teamId);
-                return status.isUnlocked && !status.isCompleted && !status.isFailed;
-              });
-            }),
+          () => filterSharedByAllTasks(visibleTaskList, userView, secondaryView),
           perfOn
         );
         visibleTaskList = afterShared;
@@ -938,6 +1014,7 @@ export function useTaskFiltering() {
     filterTasksForAllUsers,
     filterTasksForUser,
     calculateMapTaskTotals,
+    calculateFilteredTasksForOptions,
     calculateStatusCounts,
     calculateTraderCounts,
     updateVisibleTasks,
