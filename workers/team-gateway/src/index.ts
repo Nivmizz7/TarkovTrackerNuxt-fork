@@ -8,6 +8,7 @@ export interface Env {
 type TeamAction = 'team-create' | 'team-join' | 'team-leave' | 'team-kick';
 type TokenAction = 'token-create' | 'token-revoke';
 type Action = TeamAction | TokenAction;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const RATE_LIMITS: Record<Action, { limit: number; windowSec: number }> = {
   'team-create': { limit: 10, windowSec: 3600 }, // 10 creates/hour per ip+user
   'team-join': { limit: 30, windowSec: 600 }, // 30 joins/10min
@@ -247,8 +248,8 @@ async function handleAction(request: Request, env: Env, action: TeamAction) {
   // Fallback path for team-leave: perform the operation directly with service role to avoid edge-function reachability issues
   if (action === 'team-leave') {
     const { teamId } = body as { teamId?: string };
-    if (!teamId) {
-      return jsonResponse({ error: 'teamId required' }, 400, origin, reqOrigin);
+    if (!teamId || !UUID_RE.test(teamId)) {
+      return jsonResponse({ error: 'Invalid teamId' }, 400, origin, reqOrigin);
     }
     let userId = '';
     try {
@@ -271,13 +272,8 @@ async function handleAction(request: Request, env: Env, action: TeamAction) {
     const fetchTeam = async () => {
       const teamRes = await api(`teams?id=eq.${teamId}&select=id,game_mode&limit=1`);
       if (!teamRes.ok) {
-        const txt = await teamRes.text();
-        return jsonResponse(
-          { error: 'Failed to load team', details: txt },
-          teamRes.status,
-          origin,
-          reqOrigin
-        );
+        console.error('Failed to load team', await teamRes.text());
+        return jsonResponse({ error: 'Failed to load team' }, teamRes.status, origin, reqOrigin);
       }
       const teamData = (await teamRes.json()) as Array<{ game_mode?: string | null }>;
       const team = teamData[0];
@@ -300,9 +296,9 @@ async function handleAction(request: Request, env: Env, action: TeamAction) {
         headers: { Prefer: 'resolution=merge-duplicates' },
       });
       if (!res.ok) {
-        const txt = await res.text();
+        console.error('Failed to clear user system', await res.text());
         return jsonResponse(
-          { error: 'Failed to clear user system', details: txt },
+          { error: 'Failed to clear user system' },
           res.status,
           origin,
           reqOrigin
@@ -318,13 +314,8 @@ async function handleAction(request: Request, env: Env, action: TeamAction) {
       `team_memberships?team_id=eq.${teamId}&user_id=eq.${userId}&select=role,user_id&limit=1`
     );
     if (!membershipRes.ok) {
-      const txt = await membershipRes.text();
-      return jsonResponse(
-        { error: 'Failed to load membership', details: txt },
-        500,
-        origin,
-        reqOrigin
-      );
+      console.error('Failed to load membership', await membershipRes.text());
+      return jsonResponse({ error: 'Failed to load membership' }, 500, origin, reqOrigin);
     }
     const membershipData = (await membershipRes.json()) as Array<{ role?: string }>;
     const membership = membershipData[0];
@@ -337,13 +328,8 @@ async function handleAction(request: Request, env: Env, action: TeamAction) {
         `team_memberships?team_id=eq.${teamId}&user_id=neq.${userId}&select=user_id&limit=1`
       );
       if (!othersRes.ok) {
-        const txt = await othersRes.text();
-        return jsonResponse(
-          { error: 'Failed to check team members', details: txt },
-          500,
-          origin,
-          reqOrigin
-        );
+        console.error('Failed to check team members', await othersRes.text());
+        return jsonResponse({ error: 'Failed to check team members' }, 500, origin, reqOrigin);
       }
       const others = await othersRes.json();
       if (Array.isArray(others) && others.length > 0) {
@@ -362,9 +348,9 @@ async function handleAction(request: Request, env: Env, action: TeamAction) {
         method: 'DELETE',
       });
       if (!delMemberships.ok) {
-        const txt = await delMemberships.text();
+        console.error('Failed to delete memberships', await delMemberships.text());
         return jsonResponse(
-          { error: 'Failed to delete memberships', details: txt },
+          { error: 'Failed to delete memberships' },
           delMemberships.status,
           origin,
           reqOrigin
@@ -373,13 +359,8 @@ async function handleAction(request: Request, env: Env, action: TeamAction) {
       // 3. Delete the team
       const delTeam = await api(`teams?id=eq.${teamId}`, { method: 'DELETE' });
       if (!delTeam.ok) {
-        const txt = await delTeam.text();
-        return jsonResponse(
-          { error: 'Failed to delete team', details: txt },
-          delTeam.status,
-          origin,
-          reqOrigin
-        );
+        console.error('Failed to delete team', await delTeam.text());
+        return jsonResponse({ error: 'Failed to delete team' }, delTeam.status, origin, reqOrigin);
       }
     } else {
       // Regular member: delete membership
@@ -387,13 +368,8 @@ async function handleAction(request: Request, env: Env, action: TeamAction) {
         method: 'DELETE',
       });
       if (!delMem.ok) {
-        const txt = await delMem.text();
-        return jsonResponse(
-          { error: 'Failed to leave team', details: txt },
-          delMem.status,
-          origin,
-          reqOrigin
-        );
+        console.error('Failed to leave team', await delMem.text());
+        return jsonResponse({ error: 'Failed to leave team' }, delMem.status, origin, reqOrigin);
       }
       // Update user_system
       const clearError = await clearUserSystem(gameMode);
@@ -468,7 +444,9 @@ async function handleTokenAction(request: Request, env: Env, action: TokenAction
   }
   if (action === 'token-revoke') {
     const tokenId = body.tokenId as string;
-    if (!tokenId) return jsonResponse({ error: 'tokenId required' }, 400, origin, reqOrigin);
+    if (!tokenId || !UUID_RE.test(tokenId)) {
+      return jsonResponse({ error: 'Invalid tokenId' }, 400, origin, reqOrigin);
+    }
     const url = `${env.SUPABASE_URL}/rest/v1/api_tokens?token_id=eq.${tokenId}&user_id=eq.${userId}`;
     const resp = await fetch(url, {
       method: 'DELETE',
@@ -478,13 +456,8 @@ async function handleTokenAction(request: Request, env: Env, action: TokenAction
       },
     });
     if (!resp.ok) {
-      const text = await resp.text();
-      return jsonResponse(
-        { error: 'Failed to revoke', details: text },
-        resp.status,
-        origin,
-        reqOrigin
-      );
+      console.error('Failed to revoke token', await resp.text());
+      return jsonResponse({ error: 'Failed to revoke' }, resp.status, origin, reqOrigin);
     }
     return jsonResponse({ success: true }, 200, origin, reqOrigin);
   }
@@ -550,8 +523,9 @@ async function handleTokenAction(request: Request, env: Env, action: TokenAction
           });
           text = await retry.text();
           if (!retry.ok) {
+            console.error('Failed to create token (retry)', text);
             return jsonResponse(
-              { error: 'Failed to create token', details: text },
+              { error: 'Failed to create token' },
               retry.status,
               origin,
               reqOrigin
@@ -568,12 +542,8 @@ async function handleTokenAction(request: Request, env: Env, action: TokenAction
       } catch {
         // fall through
       }
-      return jsonResponse(
-        { error: 'Failed to create token', details: text },
-        resp.status,
-        origin,
-        reqOrigin
-      );
+      console.error('Failed to create token', text);
+      return jsonResponse({ error: 'Failed to create token' }, resp.status, origin, reqOrigin);
     }
     let created: { token_id?: string } | undefined;
     try {
