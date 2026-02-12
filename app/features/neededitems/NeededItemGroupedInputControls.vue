@@ -16,7 +16,7 @@
                 : 'hover:bg-surface-600 active:bg-surface-500 hover:text-white',
             ]"
             :aria-label="$t('needed_items.aria.decrease_fir')"
-            @click="handleDecreaseFir"
+            @click="decreaseFir"
           >
             <UIcon name="i-mdi-minus" class="h-4 w-4" />
           </button>
@@ -53,7 +53,7 @@
                 : 'hover:bg-surface-600 active:bg-surface-500 hover:text-white',
             ]"
             :aria-label="$t('needed_items.aria.increase_fir')"
-            @click="handleIncreaseFir"
+            @click="increaseFir"
           >
             <UIcon name="i-mdi-plus" class="h-4 w-4" />
           </button>
@@ -79,7 +79,7 @@
                 : 'hover:bg-surface-600 active:bg-surface-500 hover:text-white',
             ]"
             :aria-label="$t('needed_items.aria.decrease_non_fir')"
-            @click="handleDecreaseNonFir"
+            @click="decreaseNonFir"
           >
             <UIcon name="i-mdi-minus" class="h-4 w-4" />
           </button>
@@ -116,7 +116,7 @@
                 : 'hover:bg-surface-600 active:bg-surface-500 hover:text-white',
             ]"
             :aria-label="$t('needed_items.aria.increase_non_fir')"
-            @click="handleIncreaseNonFir"
+            @click="increaseNonFir"
           >
             <UIcon name="i-mdi-plus" class="h-4 w-4" />
           </button>
@@ -129,7 +129,6 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n';
   import { useCountEditController } from '@/composables/useCountEditController';
   const props = defineProps<{
     firNeeded: number;
@@ -155,7 +154,7 @@
   const {
     isEditing: isEditingFir,
     editValue: firEditValue,
-    startEdit: startFirEditBase,
+    startEdit: startFirEditRaw,
     commitEdit: submitFirEdit,
     cancelEdit: cancelFirEdit,
     increase: increaseFir,
@@ -169,7 +168,7 @@
   const {
     isEditing: isEditingNonFir,
     editValue: nonFirEditValue,
-    startEdit: startNonFirEditBase,
+    startEdit: startNonFirEditRaw,
     commitEdit: submitNonFirEdit,
     cancelEdit: cancelNonFirEdit,
     increase: increaseNonFir,
@@ -184,24 +183,12 @@
   const isFirIncreaseDisabled = computed(() => props.firCurrent >= props.firNeeded);
   const isNonFirDecreaseDisabled = computed(() => props.nonFirCurrent <= 0);
   const isNonFirIncreaseDisabled = computed(() => props.nonFirCurrent >= props.nonFirNeeded);
-  const handleDecreaseFir = () => {
-    decreaseFir();
-  };
-  const handleIncreaseFir = () => {
-    increaseFir();
-  };
-  const handleDecreaseNonFir = () => {
-    decreaseNonFir();
-  };
-  const handleIncreaseNonFir = () => {
-    increaseNonFir();
-  };
   const startFirEdit = () => {
-    startFirEditBase();
+    startFirEditRaw();
     nextTick(() => firInputRef.value?.focus());
   };
   const startNonFirEdit = () => {
-    startNonFirEditBase();
+    startNonFirEditRaw();
     nextTick(() => nonFirInputRef.value?.focus());
   };
 </script>

@@ -23,6 +23,12 @@ import {
   type GameMode,
 } from '@/utils/constants';
 import { logger } from '@/utils/logger';
+import {
+  buildSkillKeyAliases,
+  collapseSkillOffsets,
+  getCanonicalSkillKey,
+  resolveSkillKey,
+} from '@/utils/skillHelpers';
 import { STORAGE_KEYS } from '@/utils/storageKeys';
 import { getCompletionFlags, type RawTaskCompletion } from '@/utils/taskStatus';
 import type { GameEdition, HideoutStation, Task } from '@/types/tarkov';
@@ -218,6 +224,7 @@ type HideoutCheckOptions = {
   requireSkillLevels: boolean;
   requireTraderLoyalty: boolean;
   skills: Record<string, number>;
+  skillKeyAliases: ReadonlyMap<string, string>;
   traders: Record<string, { level?: number }>;
 };
 const checkStationReqsMet = (
@@ -238,7 +245,8 @@ const checkSkillReqsMet = (module: HideoutModuleMeta, options: HideoutCheckOptio
   return (
     module.skillRequirements?.every((req) => {
       if (!req?.name || typeof req?.level !== 'number') return true;
-      const playerSkillLevel = options.skills?.[req.name] ?? 0;
+      const skillKey = resolveSkillKey(req.name, options.skillKeyAliases);
+      const playerSkillLevel = options.skills?.[skillKey] ?? 0;
       return playerSkillLevel >= req.level;
     }) ?? true
   );
@@ -346,7 +354,8 @@ const resolveValidHideoutModules = (
 };
 const computeTotalSkills = (
   currentData: UserProgressData,
-  tasks: Task[]
+  tasks: Task[],
+  skillKeyAliases: ReadonlyMap<string, string>
 ): Record<string, number> => {
   const result: Record<string, number> = {};
   const completions = currentData.taskCompletions ?? {};
@@ -354,14 +363,18 @@ const computeTotalSkills = (
     if (!completions[task.id]?.complete || completions[task.id]?.failed) continue;
     const skillRewards = task.finishRewards?.skillLevelReward ?? [];
     for (const reward of skillRewards) {
-      if (!reward?.name) continue;
-      result[reward.name] = (result[reward.name] ?? 0) + (reward.level ?? 0);
+      const skillKey = getCanonicalSkillKey(reward?.name, reward?.skill?.id);
+      if (!skillKey) continue;
+      result[skillKey] = (result[skillKey] ?? 0) + (reward.level ?? 0);
     }
   }
   const offsets = currentData.skillOffsets ?? {};
-  for (const [skillName, offset] of Object.entries(offsets)) {
-    result[skillName] = (result[skillName] ?? 0) + offset;
-  }
+  const collapsedOffsets = collapseSkillOffsets(offsets, (skillName) =>
+    resolveSkillKey(skillName, skillKeyAliases)
+  );
+  collapsedOffsets.forEach((entry, skillKey) => {
+    result[skillKey] = (result[skillKey] ?? 0) + entry.offset;
+  });
   return result;
 };
 const enforceHideoutPrereqs = (store: TarkovStoreInstance): string[] => {
@@ -385,11 +398,13 @@ const enforceHideoutPrereqs = (store: TarkovStoreInstance): string[] => {
   const modules = buildHideoutModuleMeta(stations);
   if (!modules.length) return [];
   const edition = metadataStore.editions.find((entry) => entry.value === store.gameEdition);
+  const skillKeyAliases = buildSkillKeyAliases(metadataStore.tasks);
   const validModules = resolveValidHideoutModules(modules, stations, completedModuleIds, edition, {
     requireStationLevels,
     requireSkillLevels,
     requireTraderLoyalty,
-    skills: computeTotalSkills(currentData, metadataStore.tasks),
+    skills: computeTotalSkills(currentData, metadataStore.tasks, skillKeyAliases),
+    skillKeyAliases,
     traders: currentData.traders ?? {},
   });
   const removedModules = new Set<string>();

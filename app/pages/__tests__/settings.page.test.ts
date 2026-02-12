@@ -114,8 +114,6 @@ const defaultGlobalStubs = {
     template:
       '<div data-testid="interface-settings-card"><input type="checkbox" data-testid="interface-settings-card-switch" /></div>',
   },
-  ImportConfirmDialog: true,
-  MigrationSteps: true,
   SkillsCard: true,
   UAlert: true,
   UBadge: true,

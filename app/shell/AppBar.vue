@@ -130,6 +130,7 @@
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
   const tarkovStore = useTarkovStore();
+  const skillCalculation = useSkillCalculation();
   const route = useRoute();
   const { $supabase } = useNuxtApp();
   const toast = useToast();
@@ -229,6 +230,7 @@
       metadataStore
         .fetchAllData(false)
         .then(() => {
+          skillCalculation.migrateLegacySkillOffsets();
           dataError.value = false;
         })
         .catch((err) => {

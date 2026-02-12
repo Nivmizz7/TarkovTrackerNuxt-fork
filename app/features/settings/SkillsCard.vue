@@ -41,7 +41,7 @@
         >
           <div
             v-for="skill in visibleSkills"
-            :key="skill.name"
+            :key="skill.key"
             class="border-surface-700 rounded-lg border p-3"
           >
             <div class="mb-2 flex items-center gap-2">
@@ -101,47 +101,47 @@
               <span
                 class="shrink-0 text-lg font-bold"
                 :class="
-                  getSkillLevel(skill.name) >= MAX_SKILL_LEVEL
+                  getSkillLevel(skill.key) >= MAX_SKILL_LEVEL
                     ? 'text-warning-500'
                     : 'text-primary-400'
                 "
               >
-                {{ getDisplayLevel(skill.name) }}
+                {{ getDisplayLevel(skill.key) }}
               </span>
             </div>
             <div class="mb-2 flex gap-3 text-xs">
               <div class="text-surface-400 flex-1">
                 {{ $t('settings.skills.quest') }}
                 <span class="text-surface-200 font-medium">
-                  {{ getQuestSkillLevel(skill.name) }}
+                  {{ getQuestSkillLevel(skill.key) }}
                 </span>
               </div>
               <div class="text-surface-400 flex-1">
                 {{ $t('settings.skills.offset') }}
-                <span class="text-surface-200 font-medium">{{ getSkillOffset(skill.name) }}</span>
+                <span class="text-surface-200 font-medium">{{ getSkillOffset(skill.key) }}</span>
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <label :for="`skill-input-${skill.name}`" class="sr-only">
+              <label :for="getSkillInputId(skill.key)" class="sr-only">
                 {{ formatSkillName(skill.name) }} {{ $t('settings.skills.level') }}
               </label>
               <UInput
-                :id="`skill-input-${skill.name}`"
-                :model-value="getSkillLevel(skill.name)"
+                :id="getSkillInputId(skill.key)"
+                :model-value="getSkillLevel(skill.key)"
                 type="text"
                 inputmode="decimal"
                 :min="0"
                 placeholder="0"
                 size="sm"
                 class="flex-1"
-                :aria-describedby="`skill-range-${skill.name}`"
+                :aria-describedby="getSkillRangeId(skill.key)"
                 @keydown="preventInvalidInput"
-                @paste="(event: ClipboardEvent) => onPaste(event, skill.name)"
+                @paste="(event: ClipboardEvent) => onPaste(event, skill.key)"
                 @focus="resetSkillLimitToast"
                 @blur="resetSkillLimitToast"
-                @update:model-value="(value) => updateSkillLevel(skill.name, value)"
+                @update:model-value="(value) => updateSkillLevel(skill.key, value)"
               />
-              <span :id="`skill-range-${skill.name}`" class="sr-only">
+              <span :id="getSkillRangeId(skill.key)" class="sr-only">
                 {{ $t('settings.skills.valid_range', `Valid range: 0 to ${MAX_SKILL_LEVEL}`) }}
               </span>
               <UButton
@@ -149,8 +149,8 @@
                 size="sm"
                 variant="soft"
                 color="neutral"
-                :disabled="getSkillOffset(skill.name) === 0"
-                @click="resetOffset(skill.name)"
+                :disabled="getSkillOffset(skill.key) === 0"
+                @click="resetOffset(skill.key)"
               />
             </div>
           </div>
@@ -214,6 +214,15 @@
     if (showAllSkills.value) return allGameSkills.value;
     return allGameSkills.value.slice(0, collapsedVisibleCount.value);
   });
+  const skillAliasesForMigration = computed(() => {
+    return Array.from(
+      new Set(
+        allGameSkills.value.flatMap((skill) =>
+          [skill.key, skill.id, skill.name].filter((alias): alias is string => Boolean(alias))
+        )
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  });
   const formatSkillName = (skillName: string): string => {
     return skillName
       .split(/(?=[A-Z])/)
@@ -225,11 +234,15 @@
     if (levels.length === 1) return String(levels[0]);
     return levels.join(',');
   };
-  const getSkillLevel = (skillName: string) => skillCalculation.getSkillLevel(skillName);
-  const getQuestSkillLevel = (skillName: string) => skillCalculation.getQuestSkillLevel(skillName);
-  const getSkillOffset = (skillName: string) => skillCalculation.getSkillOffset(skillName);
-  const getDisplayLevel = (skillName: string) => {
-    const level = getSkillLevel(skillName);
+  const getSkillInputId = (skillKey: string): string =>
+    `skill-input-${skillKey.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  const getSkillRangeId = (skillKey: string): string =>
+    `skill-range-${skillKey.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  const getSkillLevel = (skillKey: string) => skillCalculation.getSkillLevel(skillKey);
+  const getQuestSkillLevel = (skillKey: string) => skillCalculation.getQuestSkillLevel(skillKey);
+  const getSkillOffset = (skillKey: string) => skillCalculation.getSkillOffset(skillKey);
+  const getDisplayLevel = (skillKey: string) => {
+    const level = getSkillLevel(skillKey);
     return level >= MAX_SKILL_LEVEL ? t('skills.elite_level') : level;
   };
   const showInvalidSkillValueToast = () => {
@@ -333,4 +346,12 @@
   const resetOffset = (skillName: string) => {
     skillCalculation.resetSkillOffset(skillName);
   };
+  watch(
+    skillAliasesForMigration,
+    (aliases) => {
+      if (aliases.length === 0) return;
+      skillCalculation.migrateLegacySkillOffsets();
+    },
+    { immediate: true }
+  );
 </script>
