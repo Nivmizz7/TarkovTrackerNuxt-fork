@@ -22,12 +22,19 @@ function getInitialLocale(): SupportedLocale {
   const resolved = (navLang || 'en').split(/[-_]/)[0] || 'en';
   return isSupportedLocale(resolved) ? resolved : 'en';
 }
-function setI18nLocale(i18n: I18n | Composer, locale: SupportedLocale): boolean {
-  const target = 'global' in i18n ? i18n.global : i18n;
+type ComposerWithSetLocale = Composer & {
+  setLocale?: (locale: SupportedLocale) => Promise<void> | void;
+};
+async function setI18nLocale(i18n: I18n | Composer, locale: SupportedLocale): Promise<boolean> {
+  const target = ('global' in i18n ? i18n.global : i18n) as ComposerWithSetLocale;
+  if (typeof target.setLocale === 'function') {
+    await target.setLocale(locale);
+    return true;
+  }
   if (!('locale' in target)) return false;
   const localeValue = target.locale as unknown;
   if (typeof localeValue === 'string') {
-    (target as { locale: string }).locale = locale;
+    (target as unknown as { locale: string }).locale = locale;
     return true;
   }
   if (localeValue && typeof localeValue === 'object' && 'value' in localeValue) {
@@ -39,7 +46,7 @@ function setI18nLocale(i18n: I18n | Composer, locale: SupportedLocale): boolean 
 export default defineNuxtPlugin({
   name: 'i18n-ready',
   enforce: 'post',
-  setup(nuxtApp) {
+  async setup(nuxtApp) {
     const i18n = (nuxtApp as { $i18n?: I18n | Composer }).$i18n;
     if (!i18n) {
       logger.warn('[i18n] Missing i18n instance on nuxtApp; skipping locale init.');
@@ -47,8 +54,12 @@ export default defineNuxtPlugin({
       return;
     }
     const initialLocale = getInitialLocale();
-    if (!setI18nLocale(i18n, initialLocale)) {
-      logger.warn('[i18n] Failed to set locale on i18n instance; skipping locale init.');
+    try {
+      if (!(await setI18nLocale(i18n, initialLocale))) {
+        logger.warn('[i18n] Failed to set locale on i18n instance; skipping locale init.');
+      }
+    } catch (error) {
+      logger.warn('[i18n] Failed to initialize locale on i18n instance:', error);
     }
     markI18nReady();
   },

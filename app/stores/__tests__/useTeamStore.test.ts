@@ -11,7 +11,8 @@ const patchTeamState = (store: ReturnType<typeof useTeamStore>, patch: TeamPatch
     if ('owner' in patch) state.owner = patch.owner;
     if ('joinCode' in patch) state.joinCode = patch.joinCode;
     if ('members' in patch) {
-      (state as TeamState & { members?: TeamState['members'] | null }).members = patch.members;
+      (state as Omit<TeamState, 'members'> & { members?: TeamState['members'] | null }).members =
+        patch.members;
     }
     if ('memberProfiles' in patch) state.memberProfiles = patch.memberProfiles;
     if ('join_code' in patch) {

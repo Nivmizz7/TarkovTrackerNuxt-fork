@@ -125,7 +125,7 @@
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { useTarkovStore } from '@/stores/useTarkov';
   import { logger } from '@/utils/logger';
-  const { availableLocales, locale, t, te } = useI18n({ useScope: 'global' });
+  const { availableLocales, locale, setLocale, t, te } = useI18n({ useScope: 'global' });
   const appStore = useAppStore();
   const metadataStore = useMetadataStore();
   const preferencesStore = usePreferencesStore();
@@ -215,28 +215,49 @@
       value: localeCode,
     }));
   });
+  let latestLocaleSwitchRequestId = 0;
+  async function applyLocaleSelection(newLocale: string) {
+    if (!isAvailableLocale(newLocale) || newLocale === locale.value) return;
+    const requestId = ++latestLocaleSwitchRequestId;
+    logger.debug('[AppBar] Setting locale to:', newLocale);
+    const previousLocale = locale.value;
+    const previousLocaleOverride = preferencesStore.getLocaleOverride;
+    let localeStateApplied = false;
+    try {
+      await setLocale(newLocale);
+      if (requestId !== latestLocaleSwitchRequestId) return;
+      preferencesStore.setLocaleOverride(newLocale);
+      metadataStore.updateLanguageAndGameMode(newLocale);
+      localeStateApplied = true;
+      await metadataStore.fetchAllData(false);
+      if (requestId !== latestLocaleSwitchRequestId) return;
+      skillCalculation.migrateLegacySkillOffsets();
+      dataError.value = false;
+    } catch (err) {
+      if (requestId !== latestLocaleSwitchRequestId) return;
+      logger.error('[AppBar] Error switching locale:', err);
+      if (localeStateApplied) {
+        if (locale.value !== previousLocale) {
+          await setLocale(previousLocale).catch((rollbackError) => {
+            logger.debug('[AppBar] rollback to previousLocale failed', {
+              previousLocale,
+              rollbackError,
+            });
+          });
+        }
+        preferencesStore.setLocaleOverride(previousLocaleOverride);
+        metadataStore.updateLanguageAndGameMode(previousLocaleOverride ?? previousLocale);
+      }
+      dataError.value = true;
+    }
+  }
   const selectedLocale = computed({
     get() {
       return locale.value;
     },
     set(newValue: string) {
       if (!newValue) return;
-      const newLocale = newValue;
-      if (!isAvailableLocale(newLocale) || newLocale === locale.value) return;
-      locale.value = newLocale;
-      preferencesStore.localeOverride = newLocale;
-      logger.debug('[AppBar] Setting locale to:', newLocale);
-      metadataStore.updateLanguageAndGameMode(newLocale);
-      metadataStore
-        .fetchAllData(false)
-        .then(() => {
-          skillCalculation.migrateLegacySkillOffsets();
-          dataError.value = false;
-        })
-        .catch((err) => {
-          logger.error('[AppBar] Error fetching data:', err);
-          dataError.value = true;
-        });
+      void applyLocaleSelection(newValue);
     },
   });
 </script>
