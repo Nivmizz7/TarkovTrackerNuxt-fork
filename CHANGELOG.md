@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.0.0...v1.0.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* **team-gateway:** validate UUID inputs and stop leaking DB errors to clients ([f573492](https://github.com/tarkovtracker-org/TarkovTracker/commit/f573492faea2a7f23ce7d028e15b3bf7c128caa0))
+
 # 1.0.0 (2026-02-11)
 
 
