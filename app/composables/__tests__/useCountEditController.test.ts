@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ref, nextTick } from 'vue';
 import { useCountEditController } from '@/composables/useCountEditController';
 describe('useCountEditController', () => {
-  let mockOnUpdate: ReturnType<typeof vi.fn>;
+  const mockOnUpdate = vi.fn((_value: number) => {});
   beforeEach(() => {
-    mockOnUpdate = vi.fn();
+    mockOnUpdate.mockClear();
   });
   it('initializes with isEditing false', () => {
     const controller = useCountEditController({

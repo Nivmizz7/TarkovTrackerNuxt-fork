@@ -14,6 +14,12 @@ import { usePreferencesStore } from '@/stores/usePreferences';
 import { useTarkovStore } from '@/stores/useTarkov';
 import { MAX_SKILL_LEVEL, sortSkillsByGameOrder } from '@/utils/constants';
 import { logger } from '@/utils/logger';
+import {
+  buildSkillKeyAliases,
+  collapseSkillOffsets,
+  getCanonicalSkillKey,
+  resolveSkillKey as resolveSkillAliasKey,
+} from '@/utils/skillHelpers';
 import type { Skill, SkillRequirement, TaskObjective } from '@/types/tarkov';
 /**
  * Extended TaskObjective with GraphQL __typename discriminator
@@ -39,6 +45,7 @@ function isTaskObjectiveSkill(
   return objective.__typename === 'TaskObjectiveSkill';
 }
 export interface SkillMetadata {
+  key: string;
   id?: string;
   name: string;
   requiredByTasks: string[];
@@ -52,138 +59,67 @@ export function useSkillCalculation() {
   const preferencesStore = usePreferencesStore();
   const isTaskSuccessful = (taskId: string) =>
     tarkovStore.isTaskComplete(taskId) && !tarkovStore.isTaskFailed(taskId);
-  // Computed: Skills from completed quest rewards
-  const calculatedQuestSkills = computed(() => {
-    const skills: { [skillName: string]: number } = {};
-    metadataStore.tasks
-      .filter((task) => isTaskSuccessful(task.id))
-      .forEach((task) => {
-        const skillRewards = task.finishRewards?.skillLevelReward || [];
-        skillRewards.forEach((reward) => {
-          // Skip null/undefined rewards (sparse array data from API)
-          if (!reward?.name) return;
-          const skillName = reward.name;
-          const level = reward.level || 0;
-          // Accumulate skill levels from all completed tasks
-          skills[skillName] = (skills[skillName] || 0) + level;
-        });
-      });
-    return skills;
-  });
-  // Computed: Total skills (calculated + offsets)
-  const totalSkills = computed(() => {
-    const result: { [skillName: string]: number } = {};
-    const offsets = tarkovStore.getAllSkillOffsets();
-    // Start with quest-derived skills
-    Object.entries(calculatedQuestSkills.value).forEach(([skillName, level]) => {
-      result[skillName] = level;
-    });
-    // Add or update with manual offsets
-    Object.entries(offsets).forEach(([skillName, offset]) => {
-      result[skillName] = (result[skillName] || 0) + offset;
-    });
-    return result;
-  });
-  // Helper: Get total skill level for a specific skill
-  const getSkillLevel = (skillName: string): number => {
-    return totalSkills.value[skillName] || 0;
-  };
-  // Helper: Get quest-derived level for a specific skill
-  const getQuestSkillLevel = (skillName: string): number => {
-    return calculatedQuestSkills.value[skillName] || 0;
-  };
-  // Helper: Get offset for a specific skill
-  const getSkillOffset = (skillName: string): number => {
-    return tarkovStore.getSkillOffset(skillName);
-  };
-  // Action: Set skill offset
-  const setSkillOffset = (skillName: string, offset: number) => {
-    tarkovStore.setSkillOffset(skillName, offset);
-  };
-  // Action: Set total skill level (calculates and stores offset)
-  // This mirrors the XP pattern - user enters their actual game value
-  const setTotalSkillLevel = (skillName: string, totalLevel: number): boolean => {
-    // Validation: Ensure totalLevel is a finite number and >= 0
-    if (typeof totalLevel !== 'number' || !Number.isFinite(totalLevel)) {
-      logger.error(
-        `[useSkillCalculation] Invalid totalLevel "${totalLevel}" for skill "${skillName}"`
-      );
-      return false;
-    }
-    const validatedLevel = Math.min(MAX_SKILL_LEVEL, Math.max(0, totalLevel));
-    const normalizedLevel = Number(validatedLevel.toFixed(2));
-    const questLevel = calculatedQuestSkills.value[skillName] || 0;
-    const offset = Number((normalizedLevel - questLevel).toFixed(2));
-    tarkovStore.setSkillOffset(skillName, offset);
-    return true;
-  };
-  // Action: Reset skill offset to 0
-  const resetSkillOffset = (skillName: string) => {
-    tarkovStore.resetSkillOffset(skillName);
-  };
-  // Computed: ALL skills from game data (requirements + rewards)
   const allGameSkills = computed<SkillMetadata[]>(() => {
     const skillsMap = new Map<string, SkillMetadata>();
     metadataStore.tasks.forEach((task) => {
       const taskName = task.name;
       if (!taskName) return;
-      // Extract skills from task objectives (requirements)
       task.objectives?.forEach((objective) => {
         const objectiveWithType = objective as TaskObjectiveWithTypename;
-        if (isTaskObjectiveSkill(objectiveWithType) && objectiveWithType.skillLevel?.name) {
-          const skillName = objectiveWithType.skillLevel.name;
-          const skillId = objectiveWithType.skillLevel.skill?.id;
-          const requiredLevel = objectiveWithType.skillLevel.level || 0;
-          const imageLink = objectiveWithType.skillLevel?.skill?.imageLink;
-          if (!skillsMap.has(skillName)) {
-            skillsMap.set(skillName, {
-              id: skillId,
-              name: skillName,
-              requiredByTasks: [],
-              requiredLevels: [],
-              rewardedByTasks: [],
-              imageLink,
-            });
-          } else if (imageLink && !skillsMap.get(skillName)!.imageLink) {
-            skillsMap.get(skillName)!.imageLink = imageLink;
-          }
-          if (!skillsMap.get(skillName)!.id && skillId) {
-            skillsMap.get(skillName)!.id = skillId;
-          }
-          skillsMap.get(skillName)!.requiredByTasks.push(taskName);
-          if (
-            requiredLevel > 0 &&
-            !skillsMap.get(skillName)!.requiredLevels.includes(requiredLevel)
-          ) {
-            skillsMap.get(skillName)!.requiredLevels.push(requiredLevel);
-          }
+        if (!isTaskObjectiveSkill(objectiveWithType) || !objectiveWithType.skillLevel?.name) return;
+        const skillName = objectiveWithType.skillLevel.name;
+        const skillId = objectiveWithType.skillLevel.skill?.id;
+        const skillKey = getCanonicalSkillKey(skillName, skillId);
+        if (!skillKey) return;
+        const requiredLevel = objectiveWithType.skillLevel.level || 0;
+        const imageLink = objectiveWithType.skillLevel?.skill?.imageLink;
+        if (!skillsMap.has(skillKey)) {
+          skillsMap.set(skillKey, {
+            key: skillKey,
+            id: skillId,
+            name: skillName,
+            requiredByTasks: [],
+            requiredLevels: [],
+            rewardedByTasks: [],
+            imageLink,
+          });
+        } else if (imageLink && !skillsMap.get(skillKey)!.imageLink) {
+          skillsMap.get(skillKey)!.imageLink = imageLink;
+        }
+        if (!skillsMap.get(skillKey)!.id && skillId) {
+          skillsMap.get(skillKey)!.id = skillId;
+        }
+        skillsMap.get(skillKey)!.requiredByTasks.push(taskName);
+        if (requiredLevel > 0 && !skillsMap.get(skillKey)!.requiredLevels.includes(requiredLevel)) {
+          skillsMap.get(skillKey)!.requiredLevels.push(requiredLevel);
         }
       });
       task.finishRewards?.skillLevelReward?.forEach((reward) => {
-        if (reward?.name) {
-          const skillName = reward.name;
-          const skillId = reward.skill?.id;
-          const imageLink = reward.skill?.imageLink;
-          if (!skillsMap.has(skillName)) {
-            skillsMap.set(skillName, {
-              id: skillId,
-              name: skillName,
-              requiredByTasks: [],
-              requiredLevels: [],
-              rewardedByTasks: [],
-              imageLink,
-            });
-          } else if (imageLink && !skillsMap.get(skillName)!.imageLink) {
-            skillsMap.get(skillName)!.imageLink = imageLink;
-          }
-          if (!skillsMap.get(skillName)!.id && skillId) {
-            skillsMap.get(skillName)!.id = skillId;
-          }
-          skillsMap.get(skillName)!.rewardedByTasks.push(taskName);
+        if (!reward?.name) return;
+        const skillName = reward.name;
+        const skillId = reward.skill?.id;
+        const skillKey = getCanonicalSkillKey(skillName, skillId);
+        if (!skillKey) return;
+        const imageLink = reward.skill?.imageLink;
+        if (!skillsMap.has(skillKey)) {
+          skillsMap.set(skillKey, {
+            key: skillKey,
+            id: skillId,
+            name: skillName,
+            requiredByTasks: [],
+            requiredLevels: [],
+            rewardedByTasks: [],
+            imageLink,
+          });
+        } else if (imageLink && !skillsMap.get(skillKey)!.imageLink) {
+          skillsMap.get(skillKey)!.imageLink = imageLink;
         }
+        if (!skillsMap.get(skillKey)!.id && skillId) {
+          skillsMap.get(skillKey)!.id = skillId;
+        }
+        skillsMap.get(skillKey)!.rewardedByTasks.push(taskName);
       });
     });
-    // Sort required levels for each skill
     skillsMap.forEach((skill) => {
       skill.requiredLevels.sort((a, b) => a - b);
     });
@@ -199,33 +135,136 @@ export function useSkillCalculation() {
       return a.name.localeCompare(b.name);
     });
   });
-  // Computed: List of all known skills (from game data + manual offsets)
+  const skillKeyAliases = computed(() => {
+    return buildSkillKeyAliases(metadataStore.tasks);
+  });
+  const resolveSkillKey = (skillKeyOrName: string): string => {
+    return resolveSkillAliasKey(skillKeyOrName, skillKeyAliases.value);
+  };
+  const calculatedQuestSkills = computed(() => {
+    const skills: { [skillName: string]: number } = {};
+    metadataStore.tasks
+      .filter((task) => isTaskSuccessful(task.id))
+      .forEach((task) => {
+        const skillRewards = task.finishRewards?.skillLevelReward || [];
+        skillRewards.forEach((reward) => {
+          const skillKey = getCanonicalSkillKey(reward?.name, reward?.skill?.id);
+          if (!skillKey) return;
+          const level = reward.level || 0;
+          skills[skillKey] = (skills[skillKey] || 0) + level;
+        });
+      });
+    return skills;
+  });
+  const totalSkills = computed(() => {
+    const result: { [skillName: string]: number } = {};
+    const offsets = tarkovStore.getAllSkillOffsets();
+    Object.entries(calculatedQuestSkills.value).forEach(([skillName, level]) => {
+      result[skillName] = level;
+    });
+    const collapsedOffsets = collapseSkillOffsets(offsets, resolveSkillKey);
+    collapsedOffsets.forEach((entry, skillName) => {
+      result[skillName] = (result[skillName] || 0) + entry.offset;
+    });
+    return result;
+  });
+  const getSkillLevel = (skillName: string): number => {
+    const resolvedSkillKey = resolveSkillKey(skillName);
+    return totalSkills.value[resolvedSkillKey] || 0;
+  };
+  const getQuestSkillLevel = (skillName: string): number => {
+    const resolvedSkillKey = resolveSkillKey(skillName);
+    return calculatedQuestSkills.value[resolvedSkillKey] || 0;
+  };
+  const getSkillOffset = (skillName: string): number => {
+    const resolvedSkillKey = resolveSkillKey(skillName);
+    return tarkovStore.getSkillOffset(resolvedSkillKey);
+  };
+  const setSkillOffset = (skillName: string, offset: number) => {
+    const resolvedSkillKey = resolveSkillKey(skillName);
+    tarkovStore.setSkillOffset(resolvedSkillKey, offset);
+  };
+  const setTotalSkillLevel = (skillName: string, totalLevel: number): boolean => {
+    if (typeof totalLevel !== 'number' || !Number.isFinite(totalLevel)) {
+      logger.error(
+        `[useSkillCalculation] Invalid totalLevel "${totalLevel}" for skill "${skillName}"`
+      );
+      return false;
+    }
+    const validatedLevel = Math.min(MAX_SKILL_LEVEL, Math.max(0, totalLevel));
+    const normalizedLevel = Number(validatedLevel.toFixed(2));
+    const resolvedSkillKey = resolveSkillKey(skillName);
+    const questLevel = calculatedQuestSkills.value[resolvedSkillKey] || 0;
+    const offset = Number((normalizedLevel - questLevel).toFixed(2));
+    tarkovStore.setSkillOffset(resolvedSkillKey, offset);
+    return true;
+  };
+  const resetSkillOffset = (skillName: string) => {
+    const resolvedSkillKey = resolveSkillKey(skillName);
+    if (resolvedSkillKey !== skillName && tarkovStore.getSkillOffset(skillName) !== 0) {
+      tarkovStore.resetSkillOffset(skillName);
+    }
+    tarkovStore.resetSkillOffset(resolvedSkillKey);
+  };
+  const migrateLegacySkillOffsets = (): boolean => {
+    const offsets = tarkovStore.getAllSkillOffsets();
+    const entries = Object.entries(offsets);
+    if (!entries.length) return false;
+    const migrated = collapseSkillOffsets(offsets, resolveSkillKey);
+    const hasChanges = entries.some(([skillKey]) => {
+      const resolvedSkillKey = resolveSkillKey(skillKey);
+      return (
+        resolvedSkillKey !== skillKey || migrated.get(resolvedSkillKey)?.sourceKey !== skillKey
+      );
+    });
+    if (!hasChanges) return false;
+    const snapshot = { ...offsets };
+    try {
+      entries.forEach(([skillKey]) => {
+        tarkovStore.resetSkillOffset(skillKey);
+      });
+      migrated.forEach((entry, skillKey) => {
+        tarkovStore.setSkillOffset(skillKey, entry.offset);
+      });
+      return true;
+    } catch (error) {
+      logger.error('[useSkillCalculation] Skill offset migration failed, restoring:', error);
+      try {
+        Object.entries(snapshot).forEach(([key, value]) => {
+          tarkovStore.setSkillOffset(key, value);
+        });
+      } catch (rollbackError) {
+        logger.error('[useSkillCalculation] Rollback also failed:', rollbackError);
+      }
+      return false;
+    }
+  };
   const allSkillNames = computed(() => {
     const names = new Set<string>();
-    // Add all skills from game data
     allGameSkills.value.forEach((skill) => names.add(skill.name));
-    // Add skills that have manual offsets (in case user tracks skills not in game data)
-    Object.keys(tarkovStore.getAllSkillOffsets()).forEach((name) => names.add(name));
+    const skillNameByKey = new Map(allGameSkills.value.map((skill) => [skill.key, skill.name]));
+    Object.keys(tarkovStore.getAllSkillOffsets()).forEach((name) => {
+      const resolvedSkillKey = resolveSkillKey(name);
+      names.add(skillNameByKey.get(resolvedSkillKey) ?? name);
+    });
     return Array.from(names).sort();
   });
-  // Helper: Get skill metadata (requirements and rewards)
   const getSkillMetadata = (skillName: string) => {
-    return allGameSkills.value.find((skill) => skill.name === skillName) || null;
+    const resolvedSkillKey = resolveSkillKey(skillName);
+    return allGameSkills.value.find((skill) => skill.key === resolvedSkillKey) || null;
   };
   return {
-    // Computed values
     calculatedQuestSkills,
     totalSkills,
     allSkillNames,
     allGameSkills,
-    // Helper functions
     getSkillLevel,
     getQuestSkillLevel,
     getSkillOffset,
     getSkillMetadata,
-    // Actions
     setSkillOffset,
     setTotalSkillLevel,
     resetSkillOffset,
+    migrateLegacySkillOffsets,
   };
 }

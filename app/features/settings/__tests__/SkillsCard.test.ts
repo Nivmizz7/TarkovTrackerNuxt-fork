@@ -1,7 +1,7 @@
 import { mockNuxtImport } from '@nuxt/test-utils/runtime';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { createI18n } from 'vue-i18n';
 import { useSkillCalculation } from '@/composables/useSkillCalculation';
 import SkillsCard from '@/features/settings/SkillsCard.vue';
@@ -59,6 +59,7 @@ const createWrapper = (overrides: Partial<UseSkillCalculationMock> = {}) => {
     allSkillNames: computed(() => []),
     allGameSkills: computed(() => [
       {
+        key: 'Strength',
         name: 'Strength',
         requiredByTasks: [],
         requiredLevels: [],
@@ -72,6 +73,7 @@ const createWrapper = (overrides: Partial<UseSkillCalculationMock> = {}) => {
     setSkillOffset: vi.fn(),
     setTotalSkillLevel: vi.fn(() => true),
     resetSkillOffset: vi.fn(),
+    migrateLegacySkillOffsets: vi.fn(() => false),
   };
   vi.mocked(useSkillCalculation).mockReturnValue({ ...defaultMock, ...overrides });
   return mount(SkillsCard, {
@@ -95,6 +97,59 @@ const createWrapper = (overrides: Partial<UseSkillCalculationMock> = {}) => {
   });
 };
 describe('SkillsCard', () => {
+  it('runs legacy offset migration when aliases are already available', () => {
+    const migrateLegacySkillOffsets = vi.fn(() => false);
+    createWrapper({ migrateLegacySkillOffsets });
+    expect(migrateLegacySkillOffsets).toHaveBeenCalledTimes(1);
+  });
+  it('waits for aliases before running legacy offset migration', async () => {
+    const allGameSkills = ref<UseSkillCalculationMock['allGameSkills']['value']>([]);
+    const migrateLegacySkillOffsets = vi.fn(() => false);
+    createWrapper({
+      allGameSkills: computed(() => allGameSkills.value),
+      migrateLegacySkillOffsets,
+    });
+    expect(migrateLegacySkillOffsets).not.toHaveBeenCalled();
+    allGameSkills.value = [
+      {
+        key: 'Strength',
+        name: 'Strength',
+        requiredByTasks: [],
+        requiredLevels: [],
+        rewardedByTasks: [],
+      },
+    ];
+    await nextTick();
+    expect(migrateLegacySkillOffsets).toHaveBeenCalledTimes(1);
+  });
+  it('reruns legacy offset migration when aliases change without count changes', async () => {
+    const allGameSkills = ref<UseSkillCalculationMock['allGameSkills']['value']>([
+      {
+        key: 'Strength',
+        name: 'Strength',
+        requiredByTasks: [],
+        requiredLevels: [],
+        rewardedByTasks: [],
+      },
+    ]);
+    const migrateLegacySkillOffsets = vi.fn(() => false);
+    createWrapper({
+      allGameSkills: computed(() => allGameSkills.value),
+      migrateLegacySkillOffsets,
+    });
+    expect(migrateLegacySkillOffsets).toHaveBeenCalledTimes(1);
+    allGameSkills.value = [
+      {
+        key: 'Strength',
+        name: 'Sila',
+        requiredByTasks: [],
+        requiredLevels: [],
+        rewardedByTasks: [],
+      },
+    ];
+    await nextTick();
+    expect(migrateLegacySkillOffsets).toHaveBeenCalledTimes(2);
+  });
   it('prevents invalid characters on keydown', async () => {
     const setTotalSkillLevel = vi.fn(() => true);
     const wrapper = createWrapper({ setTotalSkillLevel });

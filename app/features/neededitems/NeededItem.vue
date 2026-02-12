@@ -24,6 +24,7 @@
   </template>
 </template>
 <script setup lang="ts">
+  import { useCraftableItem } from '@/composables/useCraftableItem';
   import { neededItemKey, type NeededItemTeamNeed } from '@/features/neededitems/neededitem-keys';
   import { useMetadataStore } from '@/stores/useMetadata';
   import { usePreferencesStore } from '@/stores/usePreferences';
@@ -158,74 +159,9 @@
     }
     return item.value;
   });
-  const craftSources = computed(() => {
-    const currentItemId = item.value?.id;
-    if (!currentItemId) {
-      return [];
-    }
-    return metadataStore.craftSourcesByItemId.get(currentItemId) ?? [];
-  });
-  const isCraftable = computed(() => {
-    return craftSources.value.length > 0;
-  });
-  const craftSourceStatuses = computed(() => {
-    return craftSources.value.map((source) => {
-      const currentLevel = progressStore.hideoutLevels?.[source.stationId]?.self ?? 0;
-      return {
-        ...source,
-        currentLevel,
-        isAvailable: currentLevel >= source.stationLevel,
-        missingLevels: Math.max(0, source.stationLevel - currentLevel),
-      };
-    });
-  });
-  const isCraftableAvailable = computed(() => {
-    return craftSourceStatuses.value.some((source) => source.isAvailable);
-  });
-  const craftStationTargetId = computed(() => {
-    if (!isCraftable.value) {
-      return '';
-    }
-    const available = craftSourceStatuses.value
-      .filter((source) => source.isAvailable)
-      .sort((a, b) => a.stationLevel - b.stationLevel);
-    if (available.length > 0) {
-      return available[0]!.stationId;
-    }
-    const closest = [...craftSourceStatuses.value].sort((a, b) => {
-      if (a.missingLevels !== b.missingLevels) {
-        return a.missingLevels - b.missingLevels;
-      }
-      return a.stationLevel - b.stationLevel;
-    });
-    return closest[0]?.stationId ?? craftSources.value[0]?.stationId ?? '';
-  });
-  const craftableIconClass = computed(() => {
-    return isCraftableAvailable.value ? 'text-success-400' : 'text-error-500';
-  });
-  const goToCraftStation = async () => {
-    if (!craftStationTargetId.value) {
-      return;
-    }
-    await navigateTo({
-      path: '/hideout',
-      query: { station: craftStationTargetId.value },
-    });
-  };
-  const craftableTitle = computed(() => {
-    if (!isCraftable.value) {
-      return '';
-    }
-    const prefix = isCraftableAvailable.value
-      ? 'Craftable now'
-      : 'Craftable (station level too low)';
-    const preview = craftSourceStatuses.value
-      .slice(0, 3)
-      .map((source) => `${source.stationName} ${source.stationLevel} (you ${source.currentLevel})`);
-    const remainingCount = craftSourceStatuses.value.length - preview.length;
-    const remainingText = remainingCount > 0 ? ` +${remainingCount} more` : '';
-    return `${prefix}: ${preview.join(', ')}${remainingText}`;
-  });
+  const itemId = computed(() => item.value?.id);
+  const { isCraftable, craftableIconClass, craftableTitle, goToCraftStation } =
+    useCraftableItem(itemId);
   // Helper functions and data to calculate the item's progress
   // These are passed to the child components via provide/inject
   const currentCount = computed(() => {

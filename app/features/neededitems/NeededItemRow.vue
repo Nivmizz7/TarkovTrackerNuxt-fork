@@ -183,8 +183,8 @@
                                 : $t('needed_items.mark_collected')
                             "
                           >
-                            <CollectedToggleButton
-                              :is-collected="isCollected"
+                            <button
+                              type="button"
                               class="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors"
                               :class="
                                 isCollected
@@ -196,9 +196,15 @@
                                   ? $t('needed_items.collected')
                                   : $t('needed_items.mark_collected')
                               "
-                              icon-class="h-6 w-6"
-                              @toggle="$emit('toggleCount')"
-                            />
+                              @click="$emit('toggleCount')"
+                            >
+                              <UIcon
+                                :name="
+                                  isCollected ? 'i-mdi-check-circle' : 'i-mdi-check-circle-outline'
+                                "
+                                :class="['h-6 w-6', isCollected ? 'opacity-100' : 'opacity-60']"
+                              />
+                            </button>
                           </AppTooltip>
                         </template>
                         <!-- Show team needs alongside controls -->
@@ -262,8 +268,8 @@
                       isCollected ? $t('needed_items.collected') : $t('needed_items.mark_collected')
                     "
                   >
-                    <CollectedToggleButton
-                      :is-collected="isCollected"
+                    <button
+                      type="button"
                       class="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors"
                       :class="
                         isCollected
@@ -275,9 +281,13 @@
                           ? $t('needed_items.collected')
                           : $t('needed_items.mark_collected')
                       "
-                      icon-class="h-6 w-6"
-                      @toggle="$emit('toggleCount')"
-                    />
+                      @click="$emit('toggleCount')"
+                    >
+                      <UIcon
+                        :name="isCollected ? 'i-mdi-check-circle' : 'i-mdi-check-circle-outline'"
+                        :class="['h-6 w-6', isCollected ? 'opacity-100' : 'opacity-60']"
+                      />
+                    </button>
                   </AppTooltip>
                 </template>
                 <!-- Show team needs alongside controls -->
