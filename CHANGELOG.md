@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.0.1...v1.0.2) (2026-02-12)
+
+
+### Bug Fixes
+
+* use setLocale API for locale switching and add test coverage ([2348a0a](https://github.com/tarkovtracker-org/TarkovTracker/commit/2348a0a063b223492fa57b568ca9a80eeb931919))
+
 ## [1.0.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.0.0...v1.0.1) (2026-02-12)
 
 
