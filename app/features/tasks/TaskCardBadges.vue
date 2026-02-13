@@ -18,25 +18,6 @@
       />
     </AppTooltip>
     <AppTooltip
-      v-if="(task.minPlayerLevel ?? 0) > 0"
-      :text="
-        t(
-          'page.tasks.questcard.level_badge_tooltip',
-          { level: task.minPlayerLevel },
-          `Minimum player level ${task.minPlayerLevel} required to unlock this quest`
-        )
-      "
-    >
-      <UBadge
-        size="xs"
-        :color="meetsLevelRequirement ? 'success' : 'error'"
-        variant="soft"
-        class="shrink-0 cursor-help text-[11px]"
-      >
-        {{ t('page.tasks.questcard.level_badge', { count: task.minPlayerLevel }) }}
-      </UBadge>
-    </AppTooltip>
-    <AppTooltip
       v-if="props.fenceRepRequirement"
       :text="
         t(
@@ -97,10 +78,21 @@
         </span>
       </UBadge>
     </AppTooltip>
-    <UBadge size="xs" color="neutral" variant="soft" class="shrink-0 cursor-help text-[11px]">
+    <UBadge
+      v-if="hasProgress"
+      size="xs"
+      color="neutral"
+      variant="soft"
+      class="shrink-0 cursor-help text-[11px]"
+    >
       <UIcon name="i-mdi-check-circle-outline" aria-hidden="true" class="h-3 w-3" />
       <span class="truncate">
-        {{ t('page.tasks.questcard.progress', { completed: completed, total: total }) }}
+        {{
+          t('page.tasks.questcard.progress', {
+            completed: props.progressCompleted,
+            total: props.progressTotal,
+          })
+        }}
       </span>
     </UBadge>
     <UBadge v-if="isFailed" size="xs" color="error" variant="soft" class="shrink-0 text-[11px]">
@@ -154,7 +146,7 @@
           variant="ghost"
           class="shrink-0"
           :aria-label="t('page.tasks.questcard.more')"
-          @click="emit('openMenu', $event)"
+          @click.stop="emit('openMenu', $event)"
         >
           <UIcon name="i-mdi-dots-horizontal" aria-hidden="true" class="h-5 w-5" />
         </UButton>
@@ -164,14 +156,11 @@
 </template>
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
-  import { useTarkovStore } from '@/stores/useTarkov';
   import type { Task, TraderRequirement, TraderLevelRequirementWithMet } from '@/types/tarkov';
-  const tarkovStore = useTarkovStore();
   const props = defineProps<{
     task: Task;
     isPinned: boolean;
     isOurFaction: boolean;
-    meetsLevelRequirement: boolean;
     fenceRepRequirement: TraderRequirement | null;
     meetsFenceRepRequirement: boolean;
     traderLevelReqs: TraderLevelRequirementWithMet[];
@@ -180,21 +169,15 @@
     isInvalid: boolean;
     showRequiredLabels: boolean;
     exclusiveEditionBadge?: string;
+    progressCompleted: number;
+    progressTotal: number;
   }>();
-  const nonOptionalObjectives = computed(
-    () => props.task?.objectives?.filter((obj) => !obj.optional) || []
-  );
-  const completed = computed(
-    () =>
-      nonOptionalObjectives.value.filter((obj) => tarkovStore.isTaskObjectiveComplete(obj.id))
-        .length || 0
-  );
-  const total = computed(() => nonOptionalObjectives.value.length || 0);
   const emit = defineEmits<{
     togglePin: [];
     openMenu: [event: MouseEvent];
   }>();
   const { t } = useI18n({ useScope: 'global' });
+  const hasProgress = computed(() => props.progressTotal > 0);
   const formattedFenceRep = computed(() => {
     if (!props.fenceRepRequirement) return '';
     return props.fenceRepRequirement.value >= 0

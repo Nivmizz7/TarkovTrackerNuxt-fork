@@ -223,6 +223,21 @@ describe('tasks page', () => {
     await toggleButton.trigger('click');
     expect(preferencesStoreMock.setHideCompletedMapObjectives).toHaveBeenCalledWith(false);
   });
+  it('collapses and expands the map panel from the map header toggle', async () => {
+    preferencesStoreMock.getTaskPrimaryView = 'maps';
+    preferencesStoreMock.getTaskMapView = 'map-1';
+    metadataStoreMock.mapsWithSvg = [{ id: 'map-1', name: 'Map One' }];
+    await mountPage();
+    const toggleButton = wrapper.find('[data-testid="map-panel-toggle"]');
+    expect(toggleButton.exists()).toBe(true);
+    expect(toggleButton.attributes('aria-expanded')).toBe('true');
+    await toggleButton.trigger('click');
+    await nextTick();
+    expect(toggleButton.attributes('aria-expanded')).toBe('false');
+    await toggleButton.trigger('click');
+    await nextTick();
+    expect(toggleButton.attributes('aria-expanded')).toBe('true');
+  });
   it('shows re-hide footer action in map section when hidden tasks are visible', async () => {
     preferencesStoreMock.getTaskPrimaryView = 'maps';
     preferencesStoreMock.getTaskMapView = 'map-1';

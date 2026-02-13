@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { defineComponent, nextTick, ref, type Ref } from 'vue';
 import { logger } from '@/utils/logger';
 import type { TarkovMap } from '@/types/tarkov';
+type UseLeafletMapFn = typeof import('@/composables/useLeafletMap').useLeafletMap;
 const mockMapInstance = {
   on: vi.fn(),
   off: vi.fn(),
@@ -87,7 +88,8 @@ vi.mock('leaflet', () => ({
     },
   },
 }));
-vi.mock('@vueuse/core', () => ({
+vi.mock('@vueuse/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@vueuse/core')>()),
   useDebounceFn: vi.fn((fn) => fn),
 }));
 vi.mock('@/utils/logger', () => ({
@@ -136,14 +138,47 @@ const createDeferred = <T>() => {
   });
   return { promise, resolve, reject };
 };
+let useLeafletMapForTest: UseLeafletMapFn;
+let containerRefForTest: Ref<HTMLElement | null>;
+const mountUseLeafletMap = async (
+  mapValue: TarkovMap | null,
+  initialFloor?: string
+): Promise<{
+  result: ReturnType<UseLeafletMapFn>;
+  wrapper: ReturnType<typeof mount>;
+  mapRef: Ref<TarkovMap | null>;
+}> => {
+  let result: ReturnType<UseLeafletMapFn> | null = null;
+  let mapRef: Ref<TarkovMap | null> | null = null;
+  const wrapper = mount(
+    defineComponent({
+      setup() {
+        mapRef = ref(mapValue) as Ref<TarkovMap | null>;
+        result = useLeafletMapForTest({
+          containerRef: containerRefForTest,
+          map: mapRef,
+          initialFloor,
+          enableIdleDetection: false,
+        });
+        return () => null;
+      },
+    })
+  );
+  await nextTick();
+  await vi.advanceTimersByTimeAsync(1000);
+  await nextTick();
+  if (!result || !mapRef) {
+    throw new Error('useLeafletMap did not initialize - result is null after mounting');
+  }
+  await waitFor(() => result?.objectiveLayer.value !== null);
+  return { result, wrapper, mapRef };
+};
 describe('useLeafletMap', () => {
-  let useLeafletMap: typeof import('@/composables/useLeafletMap').useLeafletMap;
-  let containerRef: Ref<HTMLElement | null>;
   beforeEach(async () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     lastSvgElement = null;
-    containerRef = ref(document.createElement('div')) as Ref<HTMLElement | null>;
+    containerRefForTest = ref(document.createElement('div')) as Ref<HTMLElement | null>;
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({
@@ -152,46 +187,13 @@ describe('useLeafletMap', () => {
       }))
     );
     const module = await import('@/composables/useLeafletMap');
-    useLeafletMap = module.useLeafletMap;
+    useLeafletMapForTest = module.useLeafletMap;
   });
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.resetModules();
   });
-  const mountUseLeafletMap = async (
-    mapValue: TarkovMap | null,
-    initialFloor?: string
-  ): Promise<{
-    result: ReturnType<typeof useLeafletMap>;
-    wrapper: ReturnType<typeof mount>;
-    mapRef: Ref<TarkovMap | null>;
-  }> => {
-    let result: ReturnType<typeof useLeafletMap> | null = null;
-    let mapRef: Ref<TarkovMap | null> | null = null;
-    const wrapper = mount(
-      defineComponent({
-        setup() {
-          mapRef = ref(mapValue) as Ref<TarkovMap | null>;
-          result = useLeafletMap({
-            containerRef,
-            map: mapRef,
-            initialFloor,
-            enableIdleDetection: false,
-          });
-          return () => null;
-        },
-      })
-    );
-    await nextTick();
-    await vi.advanceTimersByTimeAsync(1000);
-    await nextTick();
-    if (!result || !mapRef) {
-      throw new Error('useLeafletMap did not initialize - result is null after mounting');
-    }
-    await waitFor(() => result?.objectiveLayer.value !== null);
-    return { result, wrapper, mapRef };
-  };
   describe('initialization', () => {
     it('creates map instance with correct options on mount', async () => {
       const leafletModule = await import('leaflet');
@@ -218,7 +220,7 @@ describe('useLeafletMap', () => {
         leafletModule.default,
         typeof svgConfig === 'string' ? undefined : svgConfig
       );
-      expect(mapSpy).toHaveBeenCalledWith(containerRef.value, expectedOptions);
+      expect(mapSpy).toHaveBeenCalledWith(containerRefForTest.value, expectedOptions);
       expect(result.isLoading.value).toBe(false);
       expect(result.selectedFloor.value).toBe('ground');
       wrapper.unmount();
@@ -265,7 +267,7 @@ describe('useLeafletMap', () => {
       } as TarkovMap;
       const mountedState: {
         mapRef: Ref<TarkovMap | null> | null;
-        result: ReturnType<typeof useLeafletMap> | null;
+        result: ReturnType<UseLeafletMapFn> | null;
       } = {
         mapRef: null,
         result: null,
@@ -274,8 +276,8 @@ describe('useLeafletMap', () => {
         defineComponent({
           setup() {
             mountedState.mapRef = ref(mapData) as Ref<TarkovMap | null>;
-            mountedState.result = useLeafletMap({
-              containerRef,
+            mountedState.result = useLeafletMapForTest({
+              containerRef: containerRefForTest,
               map: mountedState.mapRef,
               enableIdleDetection: false,
             });

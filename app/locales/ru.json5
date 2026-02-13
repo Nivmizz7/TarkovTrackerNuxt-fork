@@ -2,6 +2,9 @@
   admin: {
     title: 'Панель администратора',
   },
+  alerts: {
+    no_map_data: 'Для этого выбора нет данных карты.',
+  },
   app_bar: {
     error_loading: 'Ошибка загрузки данных EFT',
     loading: 'Загрузка данных EFT',
@@ -305,6 +308,14 @@
       loading: 'Загружаем задания',
       map: {
         resize_handle: 'Изменить высоту карты',
+        toggle_panel: 'Показать или скрыть панель карты',
+        time_period: {
+          dawn: 'Рассвет',
+          day: 'День',
+          dusk: 'Закат',
+          night: 'Ночь',
+          default: 'Время',
+        },
         map_complete_tasks_hidden: '{count} заданий скрыто на этой карте.',
         map_complete_tasks_showing: '{count} выполненных заданий показано на этой карте.',
         map_complete_tasks_toggle_show: 'Показать скрытые',

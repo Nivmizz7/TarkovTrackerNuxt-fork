@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { effectScope } from 'vue';
 import type { Task } from '@/types/tarkov';
 const createTarkovStore = (options: {
   isTaskComplete?: (taskId: string) => boolean;
@@ -30,14 +31,19 @@ const setup = async (tasks: Task[], options: Parameters<typeof createTarkovStore
   vi.doMock('@/stores/useMetadata', () => ({
     useMetadataStore: () => metadataStore,
   }));
-  vi.doMock('vue-i18n', () => ({
+  vi.doMock('vue-i18n', async () => ({
+    ...(await vi.importActual<typeof import('vue-i18n')>('vue-i18n')),
     useI18n: () => ({
       t: (key: string) => key,
     }),
   }));
   const { useTaskNotification } = await import('@/composables/useTaskNotification');
-  const notification = useTaskNotification();
-  return { notification, tarkovStore };
+  const scope = effectScope();
+  const notification = scope.run(() => useTaskNotification());
+  if (!notification) {
+    throw new Error('useTaskNotification failed to initialize');
+  }
+  return { notification, tarkovStore, stop: () => scope.stop() };
 };
 describe('useTaskNotification', () => {
   it('does not fail already completed alternatives when undoing uncomplete', async () => {
@@ -52,7 +58,7 @@ describe('useTaskNotification', () => {
       name: 'Completed Alt',
       objectives: [{ id: 'obj-alt-done', count: 1 }],
     };
-    const { notification, tarkovStore } = await setup([task, alternative], {
+    const { notification, tarkovStore, stop } = await setup([task, alternative], {
       isTaskComplete: (taskId) => taskId === 'task-alt-done',
       objectiveCounts: { 'obj-alt-done': 1 },
     });
@@ -67,5 +73,6 @@ describe('useTaskNotification', () => {
     expect(tarkovStore.setTaskFailed).not.toHaveBeenCalledWith('task-alt-done');
     expect(tarkovStore.setTaskObjectiveUncomplete).not.toHaveBeenCalledWith('obj-alt-done');
     expect(tarkovStore.setObjectiveCount).not.toHaveBeenCalledWith('obj-alt-done', 0);
+    stop();
   });
 });

@@ -133,7 +133,8 @@ const setup = async (options: SetupOptions = {}) => {
       hasTeam: () => options.hasTeam ?? false,
     }),
   }));
-  vi.doMock('vue-i18n', () => ({
+  vi.doMock('vue-i18n', async () => ({
+    ...(await vi.importActual<typeof import('vue-i18n')>('vue-i18n')),
     useI18n: () => ({
       t: (key: string, fallback?: string) => fallback ?? key.split('.').pop() ?? key,
     }),

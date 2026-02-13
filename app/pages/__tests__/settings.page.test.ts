@@ -46,6 +46,9 @@ mockNuxtImport('useToast', () => () => ({
 mockNuxtImport('useRouter', () => () => ({
   replace: vi.fn(),
   resolve: vi.fn(() => ({ href: '/' })),
+  beforeEach: vi.fn(),
+  beforeResolve: vi.fn(),
+  onError: vi.fn(),
   afterEach: vi.fn(),
 }));
 mockNuxtImport('useSeoMeta', () => () => {});

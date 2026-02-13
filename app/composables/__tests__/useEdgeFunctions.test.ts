@@ -11,7 +11,12 @@ const mockSupabaseClient = {
     invoke: vi.fn(),
   },
 };
-mockNuxtImport('useRouter', () => () => ({ afterEach: vi.fn() }));
+mockNuxtImport('useRouter', () => () => ({
+  beforeEach: vi.fn(),
+  beforeResolve: vi.fn(),
+  onError: vi.fn(),
+  afterEach: vi.fn(),
+}));
 mockNuxtImport('useNuxtApp', () => () => ({
   $supabase: {
     client: mockSupabaseClient,
