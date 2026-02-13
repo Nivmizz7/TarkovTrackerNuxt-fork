@@ -1,3 +1,18 @@
+# [1.1.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.0.4...v1.1.0) (2026-02-13)
+
+
+### Bug Fixes
+
+* **tasks:** catch map objective jump errors ([b0df877](https://github.com/tarkovtracker-org/TarkovTracker/commit/b0df877b64e44a47abf79d66c6a00d83b652a3ef))
+* **tasks:** re-expand map panel on objective jump ([6ce11d3](https://github.com/tarkovtracker-org/TarkovTracker/commit/6ce11d3c7e5db4101c561bb0cd1c75b26f1ba392))
+
+
+### Features
+
+* **tasks:** add collapsible map panel and map time badges ([bae249f](https://github.com/tarkovtracker-org/TarkovTracker/commit/bae249f214c6ecc9b48aaa301053e1d66b3981b4))
+* **app:** allow collapsing tasks in map view ([590fc84](https://github.com/tarkovtracker-org/TarkovTracker/commit/590fc84785eee633fc9c0f9d02fc505979f80c2a))
+* **app:** allow collapsing tasks in map view ([bee55eb](https://github.com/tarkovtracker-org/TarkovTracker/commit/bee55eb9ddd71e2b7c01c7b4a850b04ee1cd3226))
+
 ## [1.0.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.0.3...v1.0.4) (2026-02-13)
 
 
