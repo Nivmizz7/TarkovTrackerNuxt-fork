@@ -155,6 +155,37 @@ describe('usePreferencesStore', () => {
       const store = usePreferencesStore();
       expect(store.onlyTasksWithRequiredKeys).toBe(false);
     });
+    it('should migrate untouched legacy map marker defaults', () => {
+      const legacyMapMarkerColors = {
+        ...MAP_MARKER_COLORS,
+        SELF_OBJECTIVE: '#ef4444',
+      };
+      const persistedState = {
+        mapMarkerColors: legacyMapMarkerColors,
+      };
+      localStorageMock.getItem.mockReturnValue(JSON.stringify(persistedState));
+      const newPinia = createPinia();
+      setActivePinia(newPinia);
+      const store = usePreferencesStore();
+      expect(store.mapMarkerColors.SELF_OBJECTIVE).toBe(MAP_MARKER_COLORS.SELF_OBJECTIVE);
+      expect(store.mapMarkerColors.SELF_OBJECTIVE).not.toBe(legacyMapMarkerColors.SELF_OBJECTIVE);
+      expect(localStorageMock.setItem).toHaveBeenCalled();
+    });
+    it('should not migrate map marker colors when user has customized them', () => {
+      const persistedState = {
+        mapMarkerColors: {
+          ...MAP_MARKER_COLORS,
+          SELF_OBJECTIVE: '#ef4444',
+          TEAM_OBJECTIVE: '#123456',
+        },
+      };
+      localStorageMock.getItem.mockReturnValue(JSON.stringify(persistedState));
+      const newPinia = createPinia();
+      setActivePinia(newPinia);
+      const store = usePreferencesStore();
+      expect(store.mapMarkerColors.SELF_OBJECTIVE).toBe('#ef4444');
+      expect(store.mapMarkerColors.TEAM_OBJECTIVE).toBe('#123456');
+    });
     it('should handle corrupted localStorage gracefully', () => {
       localStorageMock.getItem.mockReturnValue('invalid json {{{');
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
