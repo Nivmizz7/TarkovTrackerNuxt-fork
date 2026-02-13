@@ -189,7 +189,7 @@
       nonOptionalObjectives.value.filter((obj) => tarkovStore.isTaskObjectiveComplete(obj.id))
         .length || 0
   );
-  const total = computed(() => props.task?.objectives?.filter((obj) => !obj.optional).length || 0);
+  const total = computed(() => nonOptionalObjectives.value.length || 0);
   const emit = defineEmits<{
     togglePin: [];
     openMenu: [event: MouseEvent];
