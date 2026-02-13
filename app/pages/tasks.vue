@@ -28,7 +28,7 @@
                         />
                       </span>
                       <h3 class="text-surface-100 truncate text-lg leading-tight font-semibold">
-                        {{ selectedMapData?.name || 'Map' }}
+                        {{ selectedMapData?.name || t('tasks.view.map') }}
                       </h3>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
@@ -621,6 +621,10 @@
     leafletMapRef,
     mapContainerRef,
   });
+  const handleJumpToMapObjective = (objectiveId: string) => {
+    isMapPanelExpanded.value = true;
+    void jumpToMapObjective(objectiveId);
+  };
   const {
     taskStatusUpdated,
     taskStatus,
@@ -768,7 +772,7 @@
     filteredTasks,
     leafletMapRef,
   });
-  provide('jumpToMapObjective', jumpToMapObjective);
+  provide('jumpToMapObjective', handleJumpToMapObjective);
   provide('isMapView', showMapDisplay);
   provide('impactEligibleTaskIds', impactEligibleTaskIds);
   provide('clearPinnedTask', clearPinnedTask);
