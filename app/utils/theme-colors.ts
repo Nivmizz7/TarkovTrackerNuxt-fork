@@ -80,8 +80,8 @@ export const THEME_COLORS = {
  * theme-aligned values for use when constructing markers programmatically.
  */
 export const MAP_MARKER_COLORS = {
-  /** Self objectives - matches --color-error-500 */
-  SELF_OBJECTIVE: '#ef4444',
+  /** Self objectives - matches --color-warning-500 */
+  SELF_OBJECTIVE: '#f59e0b',
   /** Team objectives - matches --color-info-400 */
   TEAM_OBJECTIVE: '#3c9add',
   /** Selected/pinned marker - matches --color-selection-500 */
@@ -102,6 +102,10 @@ export const MAP_MARKER_COLORS = {
   MARKER_BORDER: '#ffffff',
   /** Extract dot border - near black */
   EXTRACT_DOT_BORDER: '#0a0a0b',
+} as const;
+export const LEGACY_MAP_MARKER_COLORS = {
+  ...MAP_MARKER_COLORS,
+  SELF_OBJECTIVE: '#ef4444',
 } as const;
 export type MapMarkerColorKey = keyof typeof MAP_MARKER_COLORS;
 export type MapMarkerColors = Record<MapMarkerColorKey, string>;
@@ -131,4 +135,21 @@ export const normalizeMapMarkerColors = (value: unknown): MapMarkerColors => {
     }
   }
   return defaults;
+};
+const normalizeHex = (value: string): string => value.trim().toLowerCase();
+const hasExactLegacyDefaults = (value: unknown): value is MapMarkerColors => {
+  if (!value || typeof value !== 'object') return false;
+  const candidateColors = value as Record<string, unknown>;
+  for (const key of MAP_MARKER_COLOR_KEYS) {
+    const rawCandidate = candidateColors[key];
+    if (typeof rawCandidate !== 'string') return false;
+    if (normalizeHex(rawCandidate) !== normalizeHex(LEGACY_MAP_MARKER_COLORS[key])) {
+      return false;
+    }
+  }
+  return true;
+};
+export const migrateLegacyMapMarkerColors = (value: unknown): MapMarkerColors | null => {
+  if (!hasExactLegacyDefaults(value)) return null;
+  return { ...MAP_MARKER_COLORS };
 };

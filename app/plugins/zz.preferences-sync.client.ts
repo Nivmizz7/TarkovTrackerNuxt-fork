@@ -2,7 +2,7 @@ import { useSupabaseSync } from '@/composables/supabase/useSupabaseSync';
 import { usePreferencesStore, type PreferencesState } from '@/stores/usePreferences';
 import { SKILL_SORT_MODES } from '@/utils/constants';
 import { logger } from '@/utils/logger';
-import { normalizeMapMarkerColors } from '@/utils/theme-colors';
+import { migrateLegacyMapMarkerColors, normalizeMapMarkerColors } from '@/utils/theme-colors';
 import type { Pinia } from 'pinia';
 const NEEDED_ITEMS_CARD_STYLES = ['compact', 'expanded'] as const;
 const NEEDED_ITEMS_SORT_DIRECTIONS = ['asc', 'desc'] as const;
@@ -73,6 +73,12 @@ const applyPreferencesRow = (
       letter.toUpperCase()
     );
     if (camelKey in preferencesStore.$state) {
+      if (camelKey === 'mapMarkerColors') {
+        const migratedMapColors = migrateLegacyMapMarkerColors(value);
+        (preferencesStore.$state as unknown as Record<string, unknown>)[camelKey] =
+          migratedMapColors ?? normalizeMapMarkerColors(value);
+        continue;
+      }
       (preferencesStore.$state as unknown as Record<string, unknown>)[camelKey] = value;
     }
   }

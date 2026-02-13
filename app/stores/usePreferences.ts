@@ -5,6 +5,7 @@ import { STORAGE_KEYS } from '@/utils/storageKeys';
 import { normalizeSecondaryView, normalizeSortMode } from '@/utils/taskFilterNormalization';
 import {
   MAP_MARKER_COLORS,
+  migrateLegacyMapMarkerColors,
   normalizeMapMarkerColors,
   type MapMarkerColorKey,
   type MapMarkerColors,
@@ -218,9 +219,19 @@ export const usePreferencesStore = defineStore('preferences', {
           ) {
             state.onlyTasksWithRequiredKeys = persistedState.onlyTasksWithSuggestedKeys;
           }
+          if ('mapMarkerColors' in persistedState) {
+            const migratedMapColors = migrateLegacyMapMarkerColors(persistedState.mapMarkerColors);
+            if (migratedMapColors) {
+              state.mapMarkerColors = migratedMapColors;
+              persistedState.mapMarkerColors = migratedMapColors;
+              localStorage.setItem(STORAGE_KEYS.preferences, JSON.stringify(persistedState));
+            } else {
+              state.mapMarkerColors = normalizeMapMarkerColors(persistedState.mapMarkerColors);
+            }
+          }
         }
       } catch (_error) {
-        logger.warn('[PreferencesStore] Failed to migrate local required keys preference:', _error);
+        logger.warn('[PreferencesStore] Failed to migrate local preferences:', _error);
       }
     }
     // Always reset saving state on store creation
