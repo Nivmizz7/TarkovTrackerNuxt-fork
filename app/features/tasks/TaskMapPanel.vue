@@ -1,6 +1,9 @@
 <template>
   <div v-if="show" class="my-1 w-full">
-    <UAccordion :items="[{ label: 'Objective Locations', slot: 'content' }]" class="w-full">
+    <UAccordion
+      :items="[{ label: t('page.tasks.questcard.objectives'), slot: 'content' }]"
+      class="w-full"
+    >
       <template #default="{ item, open }">
         <UButton
           color="neutral"
@@ -33,7 +36,7 @@
             icon="i-mdi-alert-circle"
             color="error"
             variant="soft"
-            title="No map data available for this selection."
+            :title="t('alerts.no_map_data')"
           />
         </div>
       </template>
@@ -41,6 +44,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useI18n } from 'vue-i18n';
   import { useTarkovTime } from '@/composables/useTarkovTime';
   import { usePreferencesStore } from '@/stores/usePreferences';
   import { STATIC_TIME_MAPS, resolveStaticDisplayTime } from '@/utils/mapTime';
@@ -58,6 +62,7 @@
     activeMapView: string;
   }
   const props = defineProps<Props>();
+  const { t } = useI18n({ useScope: 'global' });
   const preferencesStore = usePreferencesStore();
   const { tarkovTime } = useTarkovTime();
   const displayTime = computed(() => {
