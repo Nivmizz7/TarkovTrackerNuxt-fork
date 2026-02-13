@@ -19,25 +19,26 @@
       <!-- 1) Identity + Header (Padded) -->
       <div
         class="hover:bg-surface-700/20 flex flex-col"
-        :class="compactClasses.header"
+        :class="[
+          compactClasses.header,
+          onMapView
+            ? 'focus-visible:ring-primary-500/40 focus-visible:ring-offset-surface-900 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2'
+            : '',
+        ]"
         :aria-expanded="taskExpanded"
         :aria-controls="`task-content-${task.id}`"
-        @click="toggleTaskVisibility"
-        @keydown.enter.prevent="toggleTaskVisibility"
-        @keydown.space.prevent="toggleTaskVisibility"
+        :role="onMapView ? 'button' : undefined"
+        :tabindex="onMapView ? 0 : undefined"
+        @click="onTaskHeaderClick"
+        @keydown="onTaskHeaderKeydown"
       >
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-          <div class="flex min-w-0 items-start justify-between gap-2">
-            <UButton
-              v-if="onMapView"
-              icon="i-mdi-chevron-down"
-              variant="ghost"
-              color="neutral"
-              size="xs"
-              :class="{ 'rotate-180': taskExpanded }"
-              class="pointer-events-none transition-transform duration-200"
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div class="flex min-w-0 items-center justify-between gap-2 sm:flex-1">
+            <TaskCardHeader
+              :task="task"
+              :meets-level-requirement="meetsLevelRequirement"
+              class="min-w-0"
             />
-            <TaskCardHeader :task="task" class="min-w-0" />
             <UButton
               v-if="isOurFaction"
               size="xs"
@@ -50,34 +51,44 @@
               <UIcon name="i-mdi-dots-horizontal" aria-hidden="true" class="h-5 w-5" />
             </UButton>
           </div>
-          <TaskCardBadges
-            :task="task"
-            :is-pinned="isPinned"
-            :is-our-faction="isOurFaction"
-            :meets-level-requirement="meetsLevelRequirement"
-            :fence-rep-requirement="fenceRepRequirement"
-            :meets-fence-rep-requirement="meetsFenceRepRequirement"
-            :trader-level-reqs="traderLevelReqs"
-            :location-tooltip="locationTooltip"
-            :is-failed="isFailed"
-            :is-invalid="isInvalid"
-            :show-required-labels="preferencesStore.getShowRequiredLabels"
-            :exclusive-edition-badge="exclusiveEditionBadge"
-            @toggle-pin="togglePin"
-            @open-menu="openOverflowMenu"
-          >
-            <template #actions>
-              <TaskCardActions
-                :state="actionButtonState"
-                :size="actionButtonSize"
-                :is-failed="isFailed"
-                @complete="markTaskComplete"
-                @uncomplete="markTaskUncomplete"
-                @available="markTaskAvailable"
-                @failed="markTaskFailed"
-              />
-            </template>
-          </TaskCardBadges>
+          <div class="flex items-center justify-between gap-2 sm:ml-auto sm:justify-end">
+            <TaskCardBadges
+              :task="task"
+              :is-pinned="isPinned"
+              :is-our-faction="isOurFaction"
+              :fence-rep-requirement="fenceRepRequirement"
+              :meets-fence-rep-requirement="meetsFenceRepRequirement"
+              :trader-level-reqs="traderLevelReqs"
+              :location-tooltip="locationTooltip"
+              :is-failed="isFailed"
+              :is-invalid="isInvalid"
+              :show-required-labels="preferencesStore.getShowRequiredLabels"
+              :exclusive-edition-badge="exclusiveEditionBadge"
+              :progress-completed="taskProgressCompleted"
+              :progress-total="taskProgressTotal"
+              @toggle-pin="togglePin"
+              @open-menu="openOverflowMenu"
+            >
+              <template #actions>
+                <TaskCardActions
+                  :state="actionButtonState"
+                  :size="actionButtonSize"
+                  :is-failed="isFailed"
+                  @complete="markTaskComplete"
+                  @uncomplete="markTaskUncomplete"
+                  @available="markTaskAvailable"
+                  @failed="markTaskFailed"
+                />
+              </template>
+            </TaskCardBadges>
+            <UIcon
+              v-if="onMapView"
+              name="i-mdi-chevron-down"
+              aria-hidden="true"
+              class="pointer-events-none h-4 w-4 shrink-0 self-center transition-transform duration-200"
+              :class="{ 'rotate-180': taskExpanded }"
+            />
+          </div>
         </div>
         <!-- Extra Info Strips (padded area) -->
         <div v-if="lockedBefore > 0" class="text-surface-400 text-xs">
@@ -230,7 +241,11 @@
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 -translate-y-1"
       >
-        <div v-if="taskExpanded" class="border-surface-700/50 border-t">
+        <div
+          v-if="taskExpanded"
+          :id="`task-content-${task.id}`"
+          class="border-surface-700/50 border-t"
+        >
           <div
             class="hover:bg-surface-700/20 focus-visible:ring-primary-500/40 focus-visible:ring-offset-surface-900 flex cursor-pointer items-center justify-between rounded-sm transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             :class="compactClasses.objectivesToggle"
@@ -245,13 +260,11 @@
             <div class="text-surface-400 text-[10px] font-bold tracking-wider uppercase">
               {{ t('page.tasks.questcard.objectives') }}
             </div>
-            <UButton
-              icon="i-mdi-chevron-down"
-              variant="ghost"
-              color="neutral"
-              size="xs"
+            <UIcon
+              name="i-mdi-chevron-down"
+              aria-hidden="true"
+              class="pointer-events-none h-4 w-4 transition-transform duration-200"
               :class="{ 'rotate-180': objectivesVisible }"
-              class="pointer-events-none transition-transform duration-200"
             />
           </div>
           <Transition
@@ -464,9 +477,25 @@
   const taskExpanded = computed(() => {
     return !onMapView.value || taskToggle.value;
   });
+  const shouldIgnoreTaskHeaderToggle = (event: MouseEvent): boolean => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return false;
+    const interactiveAncestor = target.closest('a,button,input,select,textarea,[role="button"]');
+    return Boolean(interactiveAncestor && interactiveAncestor !== event.currentTarget);
+  };
   const toggleTaskVisibility = () => {
     if (!onMapView.value) return;
     taskToggle.value = !taskToggle.value;
+  };
+  const onTaskHeaderClick = (event: MouseEvent) => {
+    if (shouldIgnoreTaskHeaderToggle(event)) return;
+    toggleTaskVisibility();
+  };
+  const onTaskHeaderKeydown = (event: KeyboardEvent) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleTaskVisibility();
   };
   const OBJECTIVES_ENTER_MS = 150;
   const OBJECTIVES_LEAVE_MS = 120;
@@ -902,6 +931,16 @@
     const storeTask = metadataStore.getTaskById(props.task.id);
     return storeTask?.objectives ?? [];
   });
+  const nonOptionalTaskObjectives = computed(() =>
+    taskObjectives.value.filter((objective) => !objective.optional)
+  );
+  const taskProgressCompleted = computed(
+    () =>
+      nonOptionalTaskObjectives.value.filter((objective) =>
+        tarkovStore.isTaskObjectiveComplete(objective.id)
+      ).length
+  );
+  const taskProgressTotal = computed(() => nonOptionalTaskObjectives.value.length);
   /**
    * Consolidated objective categorization - single pass through objectives array.
    * Categorizes objectives into relevant, irrelevant, and uncompleted irrelevant.

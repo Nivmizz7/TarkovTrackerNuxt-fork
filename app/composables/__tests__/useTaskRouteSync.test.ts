@@ -27,7 +27,14 @@ const replace = vi.fn(async ({ query }: { query: QueryRecord }) => {
   applyRouteQuery(query);
 });
 mockNuxtImport('useRoute', () => () => routeState);
-mockNuxtImport('useRouter', () => () => ({ push, replace, afterEach: vi.fn() }));
+mockNuxtImport('useRouter', () => () => ({
+  push,
+  replace,
+  beforeEach: vi.fn(),
+  beforeResolve: vi.fn(),
+  onError: vi.fn(),
+  afterEach: vi.fn(),
+}));
 const storeState = reactive({
   taskMapView: 'all',
   taskPrimaryView: 'all',
@@ -48,7 +55,7 @@ const loggerMock = {
   warn: vi.fn(),
 };
 const flushRouteSync = async () => {
-  await vi.runAllTimersAsync();
+  await vi.advanceTimersByTimeAsync(200);
   await nextTick();
 };
 describe('useTaskRouteSync', () => {

@@ -61,7 +61,12 @@ vi.mock('h3', async () => {
 });
 global.fetch = mockFetch as typeof fetch;
 mockNuxtImport('useRuntimeConfig', () => () => runtimeConfig);
-mockNuxtImport('useRouter', () => () => ({ afterEach: vi.fn() }));
+mockNuxtImport('useRouter', () => () => ({
+  beforeEach: vi.fn(),
+  beforeResolve: vi.fn(),
+  onError: vi.fn(),
+  afterEach: vi.fn(),
+}));
 describe('API Protection Middleware', () => {
   let mockEvent: Partial<H3Event>;
   type NodeContext = NonNullable<H3Event['node']>;

@@ -2,6 +2,9 @@
   admin: {
     title: '管理面板',
   },
+  alerts: {
+    no_map_data: '此选择没有可用地图数据。',
+  },
   app_bar: {
     error_loading: '加载塔科夫数据时出错',
     loading: '正在加载塔科夫数据',
@@ -305,6 +308,14 @@
       loading: '加载任务中',
       map: {
         resize_handle: '调整地图高度',
+        toggle_panel: '显示或隐藏地图面板',
+        time_period: {
+          dawn: '黎明',
+          day: '白天',
+          dusk: '黄昏',
+          night: '夜晚',
+          default: '时间',
+        },
         map_complete_tasks_hidden: '该地图上有 {count} 个已完成任务被隐藏。',
         map_complete_tasks_showing: '该地图上有 {count} 个地图目标已完成任务正在显示。',
         map_complete_tasks_toggle_show: '显示隐藏项',

@@ -22,7 +22,6 @@
     "@vueuse/core": "^14.2.1",
     "d3": "^7.9.0",
     "eslint": "^9.39.2",
-    "exsolve": "^1.0.8",
     "graphology": "^0.26.0",
     "graphology-types": "^0.24.8",
     "ipaddr.js": "^2.3.0",
@@ -38,7 +37,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260212.0",
+    "@cloudflare/workers-types": "^4.20260213.0",
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
     "@nuxt/test-utils": "^4.0.0",
@@ -48,6 +47,7 @@
     "@types/d3": "^7.4.3",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^24.10.13",
+    "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.24",

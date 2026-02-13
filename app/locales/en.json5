@@ -2,6 +2,9 @@
   admin: {
     title: 'Admin Panel',
   },
+  alerts: {
+    no_map_data: 'No map data available for this selection.',
+  },
   app_bar: {
     error_loading: 'Error Loading Tarkov Data',
     loading: 'Loading Tarkov Data',
@@ -305,6 +308,14 @@
       loading: 'Loading tasks',
       map: {
         resize_handle: 'Resize map height',
+        toggle_panel: 'Toggle map panel',
+        time_period: {
+          dawn: 'Dawn',
+          day: 'Day',
+          dusk: 'Dusk',
+          night: 'Night',
+          default: 'Time',
+        },
         map_complete_tasks_hidden: '{count} tasks hidden on this map.',
         map_complete_tasks_showing: '{count} map-complete tasks shown on this map.',
         map_complete_tasks_toggle_show: 'Show hidden',

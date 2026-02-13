@@ -73,7 +73,8 @@ const setup = async (
   vi.doMock('@/stores/usePreferences', () => ({
     usePreferencesStore: () => preferencesStore,
   }));
-  vi.doMock('vue-i18n', () => ({
+  vi.doMock('vue-i18n', async () => ({
+    ...(await vi.importActual<typeof import('vue-i18n')>('vue-i18n')),
     useI18n: () => ({
       t: (_key: string, fallback?: string) => fallback ?? _key,
     }),

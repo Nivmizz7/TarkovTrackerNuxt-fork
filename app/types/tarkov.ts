@@ -255,7 +255,6 @@ export interface Task {
   alternatives?: string[];
   /** Flag indicating the task is disabled or removed from standard gameplay */
   disabled?: boolean;
-  collapsed?: boolean;
 }
 /**
  * 3D position coordinates used for map locations
