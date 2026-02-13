@@ -423,6 +423,7 @@
         objectives: '任务目标',
         open_item_on_tarkov_dev: '在 tarkov.dev 打开 {name}',
         previous_tasks: '前置任务：',
+        progress: '进步 {completed}/{total}',
         rewards: '奖励',
         task: '任务',
         unlocks_count: '{count} 项解锁',
