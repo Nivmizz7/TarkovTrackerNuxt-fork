@@ -2,6 +2,9 @@
   admin: {
     title: 'Panel de administración',
   },
+  alerts: {
+    no_map_data: 'No hay datos de mapa disponibles para esta selección.',
+  },
   app_bar: {
     error_loading: 'Error al cargar datos de Tarkov',
     loading: 'Cargando datos de Tarkov',
@@ -305,6 +308,14 @@
       loading: 'Cargando misiones',
       map: {
         resize_handle: 'Ajustar altura del mapa',
+        toggle_panel: 'Mostrar u ocultar panel del mapa',
+        time_period: {
+          dawn: 'Amanecer',
+          day: 'Día',
+          dusk: 'Atardecer',
+          night: 'Noche',
+          default: 'Hora',
+        },
         map_complete_tasks_hidden: '{count} tareas completadas en este mapa están ocultas.',
         map_complete_tasks_showing: '{count} tareas completadas en este mapa se están mostrando.',
         map_complete_tasks_toggle_show: 'Mostrar ocultas',
@@ -430,6 +441,7 @@
         objectives: 'Objetivos',
         open_item_on_tarkov_dev: 'Abrir {name} en tarkov.dev',
         previous_tasks: 'Misión(es) anterior(es):',
+        progress: 'Progreso {completed}/{total}',
         rewards: 'Recompensas',
         task: 'Misión',
         unlocks_count: '{count} desbloqueos',

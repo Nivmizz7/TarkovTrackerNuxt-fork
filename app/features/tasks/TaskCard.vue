@@ -17,10 +17,28 @@
       :class="{ 'opacity-80': isComplete && !isFailed }"
     >
       <!-- 1) Identity + Header (Padded) -->
-      <div class="flex flex-col" :class="compactClasses.header">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-          <div class="flex min-w-0 items-start justify-between gap-2">
-            <TaskCardHeader :task="task" class="min-w-0" />
+      <div
+        class="hover:bg-surface-700/20 flex flex-col"
+        :class="[
+          compactClasses.header,
+          onMapView
+            ? 'focus-visible:ring-primary-500/40 focus-visible:ring-offset-surface-900 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2'
+            : '',
+        ]"
+        :aria-expanded="taskExpanded"
+        :aria-controls="`task-content-${task.id}`"
+        :role="onMapView ? 'button' : undefined"
+        :tabindex="onMapView ? 0 : undefined"
+        @click="onTaskHeaderClick"
+        @keydown="onTaskHeaderKeydown"
+      >
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div class="flex min-w-0 items-center justify-between gap-2 sm:flex-1">
+            <TaskCardHeader
+              :task="task"
+              :meets-level-requirement="meetsLevelRequirement"
+              class="min-w-0"
+            />
             <UButton
               v-if="isOurFaction"
               size="xs"
@@ -33,34 +51,44 @@
               <UIcon name="i-mdi-dots-horizontal" aria-hidden="true" class="h-5 w-5" />
             </UButton>
           </div>
-          <TaskCardBadges
-            :task="task"
-            :is-pinned="isPinned"
-            :is-our-faction="isOurFaction"
-            :meets-level-requirement="meetsLevelRequirement"
-            :fence-rep-requirement="fenceRepRequirement"
-            :meets-fence-rep-requirement="meetsFenceRepRequirement"
-            :trader-level-reqs="traderLevelReqs"
-            :location-tooltip="locationTooltip"
-            :is-failed="isFailed"
-            :is-invalid="isInvalid"
-            :show-required-labels="preferencesStore.getShowRequiredLabels"
-            :exclusive-edition-badge="exclusiveEditionBadge"
-            @toggle-pin="togglePin"
-            @open-menu="openOverflowMenu"
-          >
-            <template #actions>
-              <TaskCardActions
-                :state="actionButtonState"
-                :size="actionButtonSize"
-                :is-failed="isFailed"
-                @complete="markTaskComplete"
-                @uncomplete="markTaskUncomplete"
-                @available="markTaskAvailable"
-                @failed="markTaskFailed"
-              />
-            </template>
-          </TaskCardBadges>
+          <div class="flex items-center justify-between gap-2 sm:ml-auto sm:justify-end">
+            <TaskCardBadges
+              :task="task"
+              :is-pinned="isPinned"
+              :is-our-faction="isOurFaction"
+              :fence-rep-requirement="fenceRepRequirement"
+              :meets-fence-rep-requirement="meetsFenceRepRequirement"
+              :trader-level-reqs="traderLevelReqs"
+              :location-tooltip="locationTooltip"
+              :is-failed="isFailed"
+              :is-invalid="isInvalid"
+              :show-required-labels="preferencesStore.getShowRequiredLabels"
+              :exclusive-edition-badge="exclusiveEditionBadge"
+              :progress-completed="taskProgressCompleted"
+              :progress-total="taskProgressTotal"
+              @toggle-pin="togglePin"
+              @open-menu="openOverflowMenu"
+            >
+              <template #actions>
+                <TaskCardActions
+                  :state="actionButtonState"
+                  :size="actionButtonSize"
+                  :is-failed="isFailed"
+                  @complete="markTaskComplete"
+                  @uncomplete="markTaskUncomplete"
+                  @available="markTaskAvailable"
+                  @failed="markTaskFailed"
+                />
+              </template>
+            </TaskCardBadges>
+            <UIcon
+              v-if="onMapView"
+              name="i-mdi-chevron-down"
+              aria-hidden="true"
+              class="pointer-events-none h-4 w-4 shrink-0 self-center transition-transform duration-200"
+              :class="{ 'rotate-180': taskExpanded }"
+            />
+          </div>
         </div>
         <!-- Extra Info Strips (padded area) -->
         <div v-if="lockedBefore > 0" class="text-surface-400 text-xs">
@@ -205,62 +233,74 @@
         </div>
       </div>
       <!-- 2) Body: objectives (Full Width) -->
-      <div class="border-surface-700/50 border-t">
+      <Transition
+        enter-active-class="transition duration-150 ease-out"
+        enter-from-class="opacity-0 -translate-y-1"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition duration-100 ease-in"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-1"
+      >
         <div
-          class="hover:bg-surface-700/20 focus-visible:ring-primary-500/40 focus-visible:ring-offset-surface-900 flex cursor-pointer items-center justify-between rounded-sm transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-          :class="compactClasses.objectivesToggle"
-          role="button"
-          tabindex="0"
-          :aria-expanded="objectivesVisible"
-          :aria-controls="`objectives-content-${task.id}`"
-          @click="toggleObjectivesVisibility"
-          @keydown.enter.prevent="toggleObjectivesVisibility"
-          @keydown.space.prevent="toggleObjectivesVisibility"
-        >
-          <div class="text-surface-400 text-[10px] font-bold tracking-wider uppercase">
-            {{ t('page.tasks.questcard.objectives') }}
-          </div>
-          <UButton
-            icon="i-mdi-chevron-down"
-            variant="ghost"
-            color="neutral"
-            size="xs"
-            :class="{ 'rotate-180': objectivesVisible }"
-            class="pointer-events-none transition-transform duration-200"
-          />
-        </div>
-        <Transition
-          :css="false"
-          @before-enter="onObjectivesBeforeEnter"
-          @enter="onObjectivesEnter"
-          @after-enter="onObjectivesAfterEnter"
-          @before-leave="onObjectivesBeforeLeave"
-          @leave="onObjectivesLeave"
+          v-if="taskExpanded"
+          :id="`task-content-${task.id}`"
+          class="border-surface-700/50 border-t"
         >
           <div
-            v-if="objectivesVisible"
-            :id="`objectives-content-${task.id}`"
-            :class="[isCompact ? 'space-y-1.5' : 'space-y-3', compactClasses.objectivesBody]"
+            class="hover:bg-surface-700/20 focus-visible:ring-primary-500/40 focus-visible:ring-offset-surface-900 flex cursor-pointer items-center justify-between rounded-sm transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            :class="compactClasses.objectivesToggle"
+            role="button"
+            tabindex="0"
+            :aria-expanded="objectivesVisible"
+            :aria-controls="`objectives-content-${task.id}`"
+            @click="toggleObjectivesVisibility"
+            @keydown.enter.prevent="toggleObjectivesVisibility"
+            @keydown.space.prevent="toggleObjectivesVisibility"
           >
-            <QuestObjectivesSkeleton
-              v-if="showObjectivesSkeleton"
-              :objectives="relevantViewObjectives"
-              :irrelevant-count="irrelevantObjectives.length"
-              :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
-            />
-            <QuestObjectives
-              v-else
-              :objectives="relevantViewObjectives"
-              :irrelevant-count="irrelevantObjectives.length"
-              :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
+            <div class="text-surface-400 text-[10px] font-bold tracking-wider uppercase">
+              {{ t('page.tasks.questcard.objectives') }}
+            </div>
+            <UIcon
+              name="i-mdi-chevron-down"
+              aria-hidden="true"
+              class="pointer-events-none h-4 w-4 transition-transform duration-200"
+              :class="{ 'rotate-180': objectivesVisible }"
             />
           </div>
-        </Transition>
-      </div>
+          <Transition
+            :css="false"
+            @before-enter="onObjectivesBeforeEnter"
+            @enter="onObjectivesEnter"
+            @after-enter="onObjectivesAfterEnter"
+            @before-leave="onObjectivesBeforeLeave"
+            @leave="onObjectivesLeave"
+          >
+            <div
+              v-if="objectivesVisible"
+              :id="`objectives-content-${task.id}`"
+              :class="[isCompact ? 'space-y-1.5' : 'space-y-3', compactClasses.objectivesBody]"
+            >
+              <QuestObjectivesSkeleton
+                v-if="showObjectivesSkeleton"
+                :objectives="relevantViewObjectives"
+                :irrelevant-count="irrelevantObjectives.length"
+                :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
+              />
+              <QuestObjectives
+                v-else
+                :objectives="relevantViewObjectives"
+                :irrelevant-count="irrelevantObjectives.length"
+                :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
+              />
+            </div>
+          </Transition>
+        </div>
+      </Transition>
     </div>
     <!-- 3) Rewards Summary Section (Fixed to bottom, Full Width) -->
     <template #footer>
       <TaskCardRewards
+        v-if="taskExpanded"
         :is-compact="isCompact"
         :task-id="task.id"
         :trader-standing-rewards="traderStandingRewards"
@@ -432,6 +472,30 @@
   });
   const toggleObjectivesVisibility = () => {
     objectivesExpanded.value = !objectivesExpanded.value;
+  };
+  const taskToggle = ref(true);
+  const taskExpanded = computed(() => {
+    return !onMapView.value || taskToggle.value;
+  });
+  const shouldIgnoreTaskHeaderToggle = (event: MouseEvent): boolean => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return false;
+    const interactiveAncestor = target.closest('a,button,input,select,textarea,[role="button"]');
+    return Boolean(interactiveAncestor && interactiveAncestor !== event.currentTarget);
+  };
+  const toggleTaskVisibility = () => {
+    if (!onMapView.value) return;
+    taskToggle.value = !taskToggle.value;
+  };
+  const onTaskHeaderClick = (event: MouseEvent) => {
+    if (shouldIgnoreTaskHeaderToggle(event)) return;
+    toggleTaskVisibility();
+  };
+  const onTaskHeaderKeydown = (event: KeyboardEvent) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleTaskVisibility();
   };
   const OBJECTIVES_ENTER_MS = 150;
   const OBJECTIVES_LEAVE_MS = 120;
@@ -867,6 +931,16 @@
     const storeTask = metadataStore.getTaskById(props.task.id);
     return storeTask?.objectives ?? [];
   });
+  const nonOptionalTaskObjectives = computed(() =>
+    taskObjectives.value.filter((objective) => !objective.optional)
+  );
+  const taskProgressCompleted = computed(
+    () =>
+      nonOptionalTaskObjectives.value.filter((objective) =>
+        tarkovStore.isTaskObjectiveComplete(objective.id)
+      ).length
+  );
+  const taskProgressTotal = computed(() => nonOptionalTaskObjectives.value.length);
   /**
    * Consolidated objective categorization - single pass through objectives array.
    * Categorizes objectives into relevant, irrelevant, and uncompleted irrelevant.

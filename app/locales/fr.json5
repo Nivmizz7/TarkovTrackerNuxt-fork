@@ -2,6 +2,9 @@
   admin: {
     title: "Panneau d'administration",
   },
+  alerts: {
+    no_map_data: 'Aucune donnée de carte disponible pour cette sélection.',
+  },
   app_bar: {
     error_loading: 'Erreur de chargement des données Tarkov',
     loading: 'Chargement des données Tarkov',
@@ -305,6 +308,14 @@
       loading: 'Chargement des quêtes',
       map: {
         resize_handle: 'Ajuster la hauteur de la carte',
+        toggle_panel: 'Afficher ou masquer le panneau de carte',
+        time_period: {
+          dawn: 'Aube',
+          day: 'Jour',
+          dusk: 'Crépuscule',
+          night: 'Nuit',
+          default: 'Heure',
+        },
         map_complete_tasks_hidden: '{count} tâches terminées sur cette carte sont masquées.',
         map_complete_tasks_showing: '{count} tâches terminées sur cette carte sont affichées.',
         map_complete_tasks_toggle_show: 'Afficher masquées',
@@ -430,6 +441,7 @@
         objectives: 'Objectifs',
         open_item_on_tarkov_dev: 'Ouvrir {name} sur tarkov.dev',
         previous_tasks: 'Quête(s) précédente(s) :',
+        progress: 'Progression {completed}/{total}',
         rewards: 'Récompenses',
         task: 'Quête',
         unlocks_count: '{count} déblocages',

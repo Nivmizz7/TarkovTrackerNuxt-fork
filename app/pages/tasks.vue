@@ -16,48 +16,97 @@
           <template v-else>
             <div v-if="showMapDisplay" ref="mapContainerRef" class="mb-6">
               <div class="bg-surface-800/50 rounded-lg p-4">
-                <div class="mb-3 flex items-center justify-between">
-                  <h3 class="text-surface-200 text-lg font-medium">
-                    {{ selectedMapData?.name || 'Map' }}
-                    <span class="text-surface-400 ml-2 text-sm font-normal">
-                      {{ displayTime }}
-                    </span>
-                  </h3>
-                </div>
-                <template v-if="selectedMapData">
-                  <LeafletMapComponent
-                    ref="leafletMapRef"
-                    :map="selectedMapData"
-                    :marks="mapObjectiveMarks"
-                    :show-extracts="true"
-                    :show-extract-toggle="true"
-                    :show-legend="true"
-                    :height="mapHeight"
-                  />
-                  <div
-                    ref="resizeHandleRef"
-                    role="separator"
-                    aria-orientation="horizontal"
-                    :aria-label="t('page.tasks.map.resize_handle')"
-                    :aria-valuemin="mapHeightMin"
-                    :aria-valuemax="mapHeightMax"
-                    :aria-valuenow="mapHeight"
-                    tabindex="0"
-                    class="bg-surface-900/60 border-surface-700 text-surface-400 hover:text-surface-200 focus-visible:ring-primary-500 mt-3 flex h-8 w-full cursor-row-resize touch-none items-center justify-center rounded-md border transition"
-                    :class="{ 'ring-primary-500 text-surface-200 ring-1': isResizing }"
-                    @pointerdown="startResize"
-                    @keydown="onResizeKeydown"
-                  >
-                    <UIcon name="i-mdi-drag-horizontal-variant" class="h-4 w-4" />
+                <div class="mb-3 flex items-start justify-between gap-3">
+                  <div class="min-w-0 space-y-2">
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span
+                        class="bg-primary-500/15 border-primary-500/25 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border"
+                      >
+                        <UIcon
+                          name="i-mdi-map-marker-radius-outline"
+                          class="text-primary-300 h-4 w-4"
+                        />
+                      </span>
+                      <h3 class="text-surface-100 truncate text-lg leading-tight font-semibold">
+                        {{ selectedMapData?.name || t('tasks.view.map') }}
+                      </h3>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span
+                        v-for="(entry, index) in mapTimeEntries"
+                        :key="`${entry.value}-${index}`"
+                        class="inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs font-semibold"
+                        :class="entry.badgeClass"
+                      >
+                        <UIcon :name="entry.icon" :class="['h-4 w-4 shrink-0', entry.iconClass]" />
+                        <span class="tracking-wide uppercase" :class="entry.labelClass">
+                          {{ getMapTimeLabel(entry.period) }}
+                        </span>
+                        <span class="tabular-nums" :class="entry.valueClass">
+                          {{ entry.value }}
+                        </span>
+                      </span>
+                    </div>
                   </div>
-                </template>
-                <UAlert
-                  v-else
-                  icon="i-mdi-alert-circle"
-                  color="warning"
-                  variant="soft"
-                  title="No map data available for this selection."
-                />
+                  <UButton
+                    data-testid="map-panel-toggle"
+                    icon="i-mdi-chevron-down"
+                    variant="ghost"
+                    color="neutral"
+                    size="xs"
+                    :aria-label="t('page.tasks.map.toggle_panel')"
+                    :aria-expanded="isMapPanelExpanded"
+                    aria-controls="tasks-map-panel-content"
+                    :class="{ 'rotate-180': isMapPanelExpanded }"
+                    class="mt-0.5 shrink-0 transition-transform duration-200"
+                    @click="toggleMapPanelVisibility"
+                  />
+                </div>
+                <Transition
+                  enter-active-class="transition duration-150 ease-out"
+                  enter-from-class="opacity-0 -translate-y-1"
+                  enter-to-class="opacity-100 translate-y-0"
+                  leave-active-class="transition duration-100 ease-in"
+                  leave-from-class="opacity-100 translate-y-0"
+                  leave-to-class="opacity-0 -translate-y-1"
+                >
+                  <div v-show="isMapPanelExpanded" id="tasks-map-panel-content">
+                    <template v-if="selectedMapData">
+                      <LeafletMapComponent
+                        ref="leafletMapRef"
+                        :map="selectedMapData"
+                        :marks="mapObjectiveMarks"
+                        :show-extracts="true"
+                        :show-extract-toggle="true"
+                        :show-legend="true"
+                        :height="mapHeight"
+                      />
+                      <div
+                        ref="resizeHandleRef"
+                        role="separator"
+                        aria-orientation="horizontal"
+                        :aria-label="t('page.tasks.map.resize_handle')"
+                        :aria-valuemin="mapHeightMin"
+                        :aria-valuemax="mapHeightMax"
+                        :aria-valuenow="mapHeight"
+                        tabindex="0"
+                        class="bg-surface-900/60 border-surface-700 text-surface-400 hover:text-surface-200 focus-visible:ring-primary-500 mt-3 flex h-8 w-full cursor-row-resize touch-none items-center justify-center rounded-md border transition"
+                        :class="{ 'ring-primary-500 text-surface-200 ring-1': isResizing }"
+                        @pointerdown="startResize"
+                        @keydown="onResizeKeydown"
+                      >
+                        <UIcon name="i-mdi-drag-horizontal-variant" class="h-4 w-4" />
+                      </div>
+                    </template>
+                    <UAlert
+                      v-else
+                      icon="i-mdi-alert-circle"
+                      color="warning"
+                      variant="soft"
+                      :title="t('alerts.no_map_data')"
+                    />
+                  </div>
+                </Transition>
               </div>
             </div>
             <div v-if="filteredTasks.length === 0" class="py-6">
@@ -265,6 +314,7 @@
   import { debounce, isDebounceRejection } from '@/utils/debounce';
   import { fuzzyMatchScore } from '@/utils/fuzzySearch';
   import { logger } from '@/utils/logger';
+  import { STATIC_TIME_MAPS, resolveStaticDisplayTime } from '@/utils/mapTime';
   import { buildTaskTypeFilterOptions, filterTasksByTypeSettings } from '@/utils/taskTypeFilters';
   import type { TaskActionPayload } from '@/composables/useTaskActions';
   import type { Task } from '@/types/tarkov';
@@ -322,10 +372,6 @@
   const { isOpen: isSettingsDrawerOpen } = useTaskSettingsDrawer();
   const breakpoints = useBreakpoints(breakpointsTailwind);
   const isLgAndUp = breakpoints.greaterOrEqual('lg');
-  const STATIC_TIME_MAPS: Record<string, string> = {
-    '55f2d3fd4bdc2d5f408b4567': '15:28 / 03:28',
-    '5b0fc42d86f7744a585f9105': '15:28 / 03:28',
-  };
   type MapObjectiveZone = { map: { id: string }; outline: { x: number; z: number }[] };
   type MapObjectiveLocation = {
     map: { id: string };
@@ -336,6 +382,58 @@
     zones: MapObjectiveZone[];
     possibleLocations?: MapObjectiveLocation[];
     users?: string[];
+  };
+  type MapTimePeriod = 'dawn' | 'day' | 'dusk' | 'night' | 'default';
+  type MapTimeStyle = {
+    badgeClass: string;
+    iconClass: string;
+    labelClass: string;
+    valueClass: string;
+  };
+  const MAP_TIME_ICONS: Record<MapTimePeriod, string> = {
+    dawn: 'i-mdi-weather-sunset-up',
+    day: 'i-mdi-weather-sunny',
+    dusk: 'i-mdi-weather-sunset-down',
+    night: 'i-mdi-moon-waxing-crescent',
+    default: 'i-mdi-clock-time-four-outline',
+  };
+  const MAP_TIME_STYLES: Record<MapTimePeriod, MapTimeStyle> = {
+    dawn: {
+      badgeClass: 'border-primary-500/35 bg-primary-500/10',
+      iconClass: 'text-primary-300',
+      labelClass: 'text-primary-200/90',
+      valueClass: 'text-primary-100',
+    },
+    day: {
+      badgeClass: 'border-warning-500/35 bg-warning-500/10',
+      iconClass: 'text-warning-300',
+      labelClass: 'text-warning-200/90',
+      valueClass: 'text-warning-100',
+    },
+    dusk: {
+      badgeClass: 'border-error-500/35 bg-error-500/10',
+      iconClass: 'text-error-300',
+      labelClass: 'text-error-200/90',
+      valueClass: 'text-error-100',
+    },
+    night: {
+      badgeClass: 'border-info-500/35 bg-info-500/10',
+      iconClass: 'text-info-300',
+      labelClass: 'text-info-200/90',
+      valueClass: 'text-info-100',
+    },
+    default: {
+      badgeClass: 'bg-surface-900/60 border-surface-700',
+      iconClass: 'text-surface-300',
+      labelClass: 'text-surface-300',
+      valueClass: 'text-surface-100',
+    },
+  };
+  const resolveMapTimePeriod = (hour: number): MapTimePeriod => {
+    if (hour >= 5 && hour < 7) return 'dawn';
+    if (hour >= 7 && hour < 18) return 'day';
+    if (hour >= 18 && hour < 20) return 'dusk';
+    return 'night';
   };
   const showMapDisplay = computed(() => {
     return getTaskPrimaryView.value === 'maps' && getTaskMapView.value !== 'all';
@@ -361,7 +459,34 @@
     const mapId = getTaskMapView.value;
     if (!mapId) return tarkovTime.value;
     const staticTime = STATIC_TIME_MAPS[mapId];
-    return staticTime ?? tarkovTime.value;
+    if (!staticTime) return tarkovTime.value;
+    return resolveStaticDisplayTime(staticTime, tarkovTime.value);
+  });
+  const getMapTimeLabel = (period: MapTimePeriod): string => {
+    return t(`page.tasks.map.time_period.${period}`);
+  };
+  const mapTimeEntries = computed(() => {
+    return displayTime.value
+      .split('/')
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0)
+      .map((value) => {
+        const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+        if (!match) {
+          return {
+            value,
+            period: 'default' as MapTimePeriod,
+            icon: MAP_TIME_ICONS.default,
+            ...MAP_TIME_STYLES.default,
+          };
+        }
+        const hour = Number(match[1]);
+        const period =
+          Number.isInteger(hour) && hour >= 0 && hour <= 23
+            ? resolveMapTimePeriod(hour)
+            : 'default';
+        return { value, period, icon: MAP_TIME_ICONS[period], ...MAP_TIME_STYLES[period] };
+      });
   });
   watch(
     [showMapDisplay, selectedMapData],
@@ -383,6 +508,19 @@
     stopResize,
     onResizeKeydown,
   } = useMapResize();
+  const isMapPanelExpanded = ref(true);
+  const toggleMapPanelVisibility = () => {
+    if (isMapPanelExpanded.value) {
+      stopResize();
+    }
+    isMapPanelExpanded.value = !isMapPanelExpanded.value;
+  };
+  watch(showMapDisplay, (isVisible) => {
+    if (!isVisible) {
+      isMapPanelExpanded.value = true;
+      stopResize();
+    }
+  });
   const mapObjectiveMarks = computed(() => {
     if (!selectedMapData.value) return [];
     const mapId = selectedMapData.value.id;
@@ -483,6 +621,14 @@
     leafletMapRef,
     mapContainerRef,
   });
+  const handleJumpToMapObjective = async (objectiveId: string) => {
+    isMapPanelExpanded.value = true;
+    try {
+      await jumpToMapObjective(objectiveId);
+    } catch (error) {
+      logger.error(`[Tasks] Failed to jump to map objective ${objectiveId}:`, error);
+    }
+  };
   const {
     taskStatusUpdated,
     taskStatus,
@@ -630,7 +776,7 @@
     filteredTasks,
     leafletMapRef,
   });
-  provide('jumpToMapObjective', jumpToMapObjective);
+  provide('jumpToMapObjective', handleJumpToMapObjective);
   provide('isMapView', showMapDisplay);
   provide('impactEligibleTaskIds', impactEligibleTaskIds);
   provide('clearPinnedTask', clearPinnedTask);

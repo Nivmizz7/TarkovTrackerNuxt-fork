@@ -1,6 +1,9 @@
 <template>
   <div v-if="show" class="my-1 w-full">
-    <UAccordion :items="[{ label: 'Objective Locations', slot: 'content' }]" class="w-full">
+    <UAccordion
+      :items="[{ label: t('page.tasks.questcard.objectives'), slot: 'content' }]"
+      class="w-full"
+    >
       <template #default="{ item, open }">
         <UButton
           color="neutral"
@@ -33,7 +36,7 @@
             icon="i-mdi-alert-circle"
             color="error"
             variant="soft"
-            title="No map data available for this selection."
+            :title="t('alerts.no_map_data')"
           />
         </div>
       </template>
@@ -41,11 +44,12 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useI18n } from 'vue-i18n';
   import { useTarkovTime } from '@/composables/useTarkovTime';
   import { usePreferencesStore } from '@/stores/usePreferences';
+  import { STATIC_TIME_MAPS, resolveStaticDisplayTime } from '@/utils/mapTime';
   import type { TarkovMap } from '@/types/tarkov';
   const LeafletMapComponent = defineAsyncComponent(() => import('@/features/maps/LeafletMap.vue'));
-  // Use structural types compatible with LeafletMap's expectations
   interface Props {
     show: boolean;
     selectedMap?: TarkovMap;
@@ -58,17 +62,13 @@
     activeMapView: string;
   }
   const props = defineProps<Props>();
+  const { t } = useI18n({ useScope: 'global' });
   const preferencesStore = usePreferencesStore();
   const { tarkovTime } = useTarkovTime();
-  // Maps with static/fixed raid times (don't follow normal day/night cycle)
-  const STATIC_TIME_MAPS: Record<string, string> = {
-    '55f2d3fd4bdc2d5f408b4567': '15:28 / 03:28', // Factory
-    '5b0fc42d86f7744a585f9105': '15:28 / 03:28', // The Lab
-  };
-  // Display time - use static time for certain maps, dynamic for others
   const displayTime = computed(() => {
     const staticTime = STATIC_TIME_MAPS[props.activeMapView];
-    return staticTime ?? tarkovTime.value;
+    if (!staticTime) return tarkovTime.value;
+    return resolveStaticDisplayTime(staticTime, tarkovTime.value);
   });
   // Get preference for showing extracts
   const showMapExtracts = computed(() => preferencesStore.showMapExtracts ?? true);

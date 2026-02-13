@@ -20,6 +20,17 @@ const patchTeamState = (store: ReturnType<typeof useTeamStore>, patch: TeamPatch
     }
   });
 };
+const setCurrentUser = (userId?: string) => {
+  const nuxtApp = useNuxtApp() as {
+    $supabase?: {
+      user?: { id?: string } | null;
+    };
+  };
+  if (!nuxtApp.$supabase) {
+    nuxtApp.$supabase = {};
+  }
+  nuxtApp.$supabase.user = userId ? { id: userId } : null;
+};
 describe('useTeamStore', () => {
   let pinia: ReturnType<typeof createPinia>;
   beforeEach(() => {
@@ -495,17 +506,6 @@ describe('useTeamStore', () => {
   });
 });
 describe('Team Store Getter Logic', () => {
-  const setCurrentUser = (userId?: string) => {
-    const nuxtApp = useNuxtApp() as {
-      $supabase?: {
-        user?: { id?: string } | null;
-      };
-    };
-    if (!nuxtApp.$supabase) {
-      nuxtApp.$supabase = {};
-    }
-    nuxtApp.$supabase.user = userId ? { id: userId } : null;
-  };
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();

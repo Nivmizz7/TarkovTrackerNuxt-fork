@@ -1,6 +1,7 @@
+import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { ref } from 'vue';
-import type { LeafletMapRef } from '@/composables/useMapObjectivePopup';
+import { defineComponent, nextTick, ref } from 'vue';
+import type { LeafletMapRef, UseMapObjectivePopupReturn } from '@/composables/useMapObjectivePopup';
 const createMetadataStore = (
   objectives: Array<{
     id: string;
@@ -49,6 +50,28 @@ const mockSetup = (options?: {
   const mapContainerRef = ref<HTMLElement | null>(document.createElement('div'));
   return { leafletMapRef, mapContainerRef, activateObjectivePopup, preferencesStore };
 };
+const setupComposable = async (
+  mocks: ReturnType<typeof mockSetup>
+): Promise<{ result: UseMapObjectivePopupReturn; wrapper: ReturnType<typeof mount> }> => {
+  const { useMapObjectivePopup } = await import('@/composables/useMapObjectivePopup');
+  let result: UseMapObjectivePopupReturn | null = null;
+  const wrapper = mount(
+    defineComponent({
+      setup() {
+        result = useMapObjectivePopup({
+          leafletMapRef: mocks.leafletMapRef,
+          mapContainerRef: mocks.mapContainerRef,
+        });
+        return () => null;
+      },
+    })
+  );
+  await nextTick();
+  if (!result) {
+    throw new Error('useMapObjectivePopup failed to initialize');
+  }
+  return { result, wrapper };
+};
 describe('useMapObjectivePopup', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -66,17 +89,14 @@ describe('useMapObjectivePopup', () => {
         objectiveMaps: { 'task-1': [{ objectiveID: 'obj-1', mapID: 'customs' }] },
         activateResult: true,
       });
-      const { useMapObjectivePopup } = await import('@/composables/useMapObjectivePopup');
-      const result = useMapObjectivePopup({
-        leafletMapRef: mocks.leafletMapRef,
-        mapContainerRef: mocks.mapContainerRef,
-      });
+      const { result, wrapper } = await setupComposable(mocks);
       result.jumpToMapObjective('obj-1');
       expect(mocks.activateObjectivePopup).toHaveBeenCalledTimes(1);
       expect(mocks.activateObjectivePopup).toHaveBeenCalledWith('obj-1');
       await vi.advanceTimersByTimeAsync(1000);
       expect(mocks.activateObjectivePopup).toHaveBeenCalledTimes(1);
       result.cleanup();
+      wrapper.unmount();
     });
     it('stops retrying after max attempts and warns', async () => {
       const mocks = mockSetup({
@@ -84,11 +104,7 @@ describe('useMapObjectivePopup', () => {
         objectiveMaps: { 'task-1': [{ objectiveID: 'obj-1', mapID: 'customs' }] },
         activateResult: false,
       });
-      const { useMapObjectivePopup } = await import('@/composables/useMapObjectivePopup');
-      const result = useMapObjectivePopup({
-        leafletMapRef: mocks.leafletMapRef,
-        mapContainerRef: mocks.mapContainerRef,
-      });
+      const { result, wrapper } = await setupComposable(mocks);
       result.jumpToMapObjective('obj-1');
       expect(mocks.activateObjectivePopup).toHaveBeenCalledTimes(1);
       for (let i = 0; i < 10; i++) {
@@ -100,6 +116,7 @@ describe('useMapObjectivePopup', () => {
         expect.stringContaining('Failed to activate popup for objective obj-1 after 6 attempts')
       );
       result.cleanup();
+      wrapper.unmount();
     });
     it('retries until success within max attempts', async () => {
       let callCount = 0;
@@ -111,11 +128,7 @@ describe('useMapObjectivePopup', () => {
           return callCount >= 3;
         },
       });
-      const { useMapObjectivePopup } = await import('@/composables/useMapObjectivePopup');
-      const result = useMapObjectivePopup({
-        leafletMapRef: mocks.leafletMapRef,
-        mapContainerRef: mocks.mapContainerRef,
-      });
+      const { result, wrapper } = await setupComposable(mocks);
       result.jumpToMapObjective('obj-2');
       expect(mocks.activateObjectivePopup).toHaveBeenCalledTimes(1);
       await vi.advanceTimersByTimeAsync(150);
@@ -125,6 +138,7 @@ describe('useMapObjectivePopup', () => {
       await vi.advanceTimersByTimeAsync(500);
       expect(mocks.activateObjectivePopup).toHaveBeenCalledTimes(3);
       result.cleanup();
+      wrapper.unmount();
     });
     it('clears all pending timers on cleanup', async () => {
       const mocks = mockSetup({
@@ -132,16 +146,13 @@ describe('useMapObjectivePopup', () => {
         objectiveMaps: { 'task-1': [{ objectiveID: 'obj-1', mapID: 'customs' }] },
         activateResult: false,
       });
-      const { useMapObjectivePopup } = await import('@/composables/useMapObjectivePopup');
-      const result = useMapObjectivePopup({
-        leafletMapRef: mocks.leafletMapRef,
-        mapContainerRef: mocks.mapContainerRef,
-      });
+      const { result, wrapper } = await setupComposable(mocks);
       result.jumpToMapObjective('obj-1');
       expect(mocks.activateObjectivePopup).toHaveBeenCalledTimes(1);
       result.cleanup();
       await vi.advanceTimersByTimeAsync(1500);
       expect(mocks.activateObjectivePopup).toHaveBeenCalledTimes(1);
+      wrapper.unmount();
     });
   });
   describe('jumpToMapObjective map resolution', () => {
@@ -158,14 +169,11 @@ describe('useMapObjectivePopup', () => {
         mapView: 'customs',
         activateResult: true,
       });
-      const { useMapObjectivePopup } = await import('@/composables/useMapObjectivePopup');
-      const result = useMapObjectivePopup({
-        leafletMapRef: mocks.leafletMapRef,
-        mapContainerRef: mocks.mapContainerRef,
-      });
+      const { result, wrapper } = await setupComposable(mocks);
       await result.jumpToMapObjective('obj-1');
       expect(mocks.preferencesStore.setTaskMapView).toHaveBeenCalledWith('woods');
       result.cleanup();
+      wrapper.unmount();
     });
     it('does not switch map when objective is on the current map', async () => {
       const mocks = mockSetup({
@@ -174,14 +182,11 @@ describe('useMapObjectivePopup', () => {
         mapView: 'customs',
         activateResult: true,
       });
-      const { useMapObjectivePopup } = await import('@/composables/useMapObjectivePopup');
-      const result = useMapObjectivePopup({
-        leafletMapRef: mocks.leafletMapRef,
-        mapContainerRef: mocks.mapContainerRef,
-      });
+      const { result, wrapper } = await setupComposable(mocks);
       await result.jumpToMapObjective('obj-1');
       expect(mocks.preferencesStore.setTaskMapView).not.toHaveBeenCalled();
       result.cleanup();
+      wrapper.unmount();
     });
     it('uses zone map ID when available', async () => {
       const mocks = mockSetup({
@@ -189,14 +194,11 @@ describe('useMapObjectivePopup', () => {
         mapView: 'customs',
         activateResult: true,
       });
-      const { useMapObjectivePopup } = await import('@/composables/useMapObjectivePopup');
-      const result = useMapObjectivePopup({
-        leafletMapRef: mocks.leafletMapRef,
-        mapContainerRef: mocks.mapContainerRef,
-      });
+      const { result, wrapper } = await setupComposable(mocks);
       await result.jumpToMapObjective('obj-z');
       expect(mocks.preferencesStore.setTaskMapView).toHaveBeenCalledWith('factory');
       result.cleanup();
+      wrapper.unmount();
     });
     it('uses possibleLocations map ID as fallback', async () => {
       const mocks = mockSetup({
@@ -211,14 +213,11 @@ describe('useMapObjectivePopup', () => {
         mapView: 'customs',
         activateResult: true,
       });
-      const { useMapObjectivePopup } = await import('@/composables/useMapObjectivePopup');
-      const result = useMapObjectivePopup({
-        leafletMapRef: mocks.leafletMapRef,
-        mapContainerRef: mocks.mapContainerRef,
-      });
+      const { result, wrapper } = await setupComposable(mocks);
       await result.jumpToMapObjective('obj-p');
       expect(mocks.preferencesStore.setTaskMapView).toHaveBeenCalledWith('interchange');
       result.cleanup();
+      wrapper.unmount();
     });
   });
 });
