@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.0.2...v1.0.3) (2026-02-13)
+
+
+### Bug Fixes
+
+* **app:** differentiate objective defaults and harden user_system admin writes ([64fa239](https://github.com/tarkovtracker-org/TarkovTracker/commit/64fa239c48fa1319ade3175b1261fb66da7d3f4f)), closes [#98](https://github.com/tarkovtracker-org/TarkovTracker/issues/98)
+
 ## [1.0.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.0.1...v1.0.2) (2026-02-12)
 
 
