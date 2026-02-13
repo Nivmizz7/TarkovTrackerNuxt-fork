@@ -17,9 +17,26 @@
       :class="{ 'opacity-80': isComplete && !isFailed }"
     >
       <!-- 1) Identity + Header (Padded) -->
-      <div class="flex flex-col" :class="compactClasses.header">
+      <div
+        class="hover:bg-surface-700/20 flex flex-col"
+        :class="compactClasses.header"
+        :aria-expanded="taskExpanded"
+        :aria-controls="`task-content-${task.id}`"
+        @click="toggleTaskVisibility"
+        @keydown.enter.prevent="toggleTaskVisibility"
+        @keydown.space.prevent="toggleTaskVisibility"
+      >
         <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <div class="flex min-w-0 items-start justify-between gap-2">
+            <UButton
+              v-if="onMapView"
+              icon="i-mdi-chevron-down"
+              variant="ghost"
+              color="neutral"
+              size="xs"
+              :class="{ 'rotate-180': taskExpanded }"
+              class="pointer-events-none transition-transform duration-200"
+            />
             <TaskCardHeader :task="task" class="min-w-0" />
             <UButton
               v-if="isOurFaction"
@@ -205,58 +222,67 @@
         </div>
       </div>
       <!-- 2) Body: objectives (Full Width) -->
-      <div class="border-surface-700/50 border-t">
-        <div
-          class="hover:bg-surface-700/20 focus-visible:ring-primary-500/40 focus-visible:ring-offset-surface-900 flex cursor-pointer items-center justify-between rounded-sm transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-          :class="compactClasses.objectivesToggle"
-          role="button"
-          tabindex="0"
-          :aria-expanded="objectivesVisible"
-          :aria-controls="`objectives-content-${task.id}`"
-          @click="toggleObjectivesVisibility"
-          @keydown.enter.prevent="toggleObjectivesVisibility"
-          @keydown.space.prevent="toggleObjectivesVisibility"
-        >
-          <div class="text-surface-400 text-[10px] font-bold tracking-wider uppercase">
-            {{ t('page.tasks.questcard.objectives') }}
-          </div>
-          <UButton
-            icon="i-mdi-chevron-down"
-            variant="ghost"
-            color="neutral"
-            size="xs"
-            :class="{ 'rotate-180': objectivesVisible }"
-            class="pointer-events-none transition-transform duration-200"
-          />
-        </div>
-        <Transition
-          :css="false"
-          @before-enter="onObjectivesBeforeEnter"
-          @enter="onObjectivesEnter"
-          @after-enter="onObjectivesAfterEnter"
-          @before-leave="onObjectivesBeforeLeave"
-          @leave="onObjectivesLeave"
-        >
+      <Transition
+        enter-active-class="transition duration-150 ease-out"
+        enter-from-class="opacity-0 -translate-y-1"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition duration-100 ease-in"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-1"
+      >
+        <div v-if="taskExpanded" class="border-surface-700/50 border-t">
           <div
-            v-if="objectivesVisible"
-            :id="`objectives-content-${task.id}`"
-            :class="[isCompact ? 'space-y-1.5' : 'space-y-3', compactClasses.objectivesBody]"
+            class="hover:bg-surface-700/20 focus-visible:ring-primary-500/40 focus-visible:ring-offset-surface-900 flex cursor-pointer items-center justify-between rounded-sm transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            :class="compactClasses.objectivesToggle"
+            role="button"
+            tabindex="0"
+            :aria-expanded="objectivesVisible"
+            :aria-controls="`objectives-content-${task.id}`"
+            @click="toggleObjectivesVisibility"
+            @keydown.enter.prevent="toggleObjectivesVisibility"
+            @keydown.space.prevent="toggleObjectivesVisibility"
           >
-            <QuestObjectivesSkeleton
-              v-if="showObjectivesSkeleton"
-              :objectives="relevantViewObjectives"
-              :irrelevant-count="irrelevantObjectives.length"
-              :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
-            />
-            <QuestObjectives
-              v-else
-              :objectives="relevantViewObjectives"
-              :irrelevant-count="irrelevantObjectives.length"
-              :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
+            <div class="text-surface-400 text-[10px] font-bold tracking-wider uppercase">
+              {{ t('page.tasks.questcard.objectives') }}
+            </div>
+            <UButton
+              icon="i-mdi-chevron-down"
+              variant="ghost"
+              color="neutral"
+              size="xs"
+              :class="{ 'rotate-180': objectivesVisible }"
+              class="pointer-events-none transition-transform duration-200"
             />
           </div>
-        </Transition>
-      </div>
+          <Transition
+            :css="false"
+            @before-enter="onObjectivesBeforeEnter"
+            @enter="onObjectivesEnter"
+            @after-enter="onObjectivesAfterEnter"
+            @before-leave="onObjectivesBeforeLeave"
+            @leave="onObjectivesLeave"
+          >
+            <div
+              v-if="objectivesVisible"
+              :id="`objectives-content-${task.id}`"
+              :class="[isCompact ? 'space-y-1.5' : 'space-y-3', compactClasses.objectivesBody]"
+            >
+              <QuestObjectivesSkeleton
+                v-if="showObjectivesSkeleton"
+                :objectives="relevantViewObjectives"
+                :irrelevant-count="irrelevantObjectives.length"
+                :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
+              />
+              <QuestObjectives
+                v-else
+                :objectives="relevantViewObjectives"
+                :irrelevant-count="irrelevantObjectives.length"
+                :uncompleted-irrelevant="uncompletedIrrelevantObjectives.length"
+              />
+            </div>
+          </Transition>
+        </div>
+      </Transition>
     </div>
     <!-- 3) Rewards Summary Section (Fixed to bottom, Full Width) -->
     <template #footer>
@@ -264,6 +290,7 @@
         :is-compact="isCompact"
         :task-id="task.id"
         :trader-standing-rewards="traderStandingRewards"
+        v-if="taskExpanded"
         :skill-rewards="skillRewards"
         :trader-unlock-reward="traderUnlockReward"
         :item-rewards="itemRewards"
@@ -432,6 +459,13 @@
   });
   const toggleObjectivesVisibility = () => {
     objectivesExpanded.value = !objectivesExpanded.value;
+  };
+  const taskToggle = ref(true);
+  const taskExpanded = computed(() => {
+    return !onMapView.value || taskToggle.value;
+  });
+  const toggleTaskVisibility = () => {
+    taskToggle.value = !taskToggle.value;
   };
   const OBJECTIVES_ENTER_MS = 150;
   const OBJECTIVES_LEAVE_MS = 120;

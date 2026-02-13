@@ -430,6 +430,7 @@
         objectives: 'Ziele',
         open_item_on_tarkov_dev: '{name} auf tarkov.dev öffnen',
         previous_tasks: 'Vorherige Aufgabe(n):',
+        progress: 'Fortschritt {completed}/{total}',
         rewards: 'Belohnungen',
         task: 'Aufgabe',
         unlocks_count: '{count} Freischaltungen',
