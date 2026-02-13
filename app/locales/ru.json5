@@ -430,6 +430,7 @@
         objectives: 'Цели',
         open_item_on_tarkov_dev: 'Открыть {name} на tarkov.dev',
         previous_tasks: 'Предыдущее(ие) задание(я):',
+        progress: 'Прогресс {completed}/{total}',
         rewards: 'Награды',
         task: 'Задание',
         unlocks_count: '{count} разблокировок',
