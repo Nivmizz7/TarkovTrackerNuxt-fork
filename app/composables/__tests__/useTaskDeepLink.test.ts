@@ -20,7 +20,13 @@ const replace = vi.fn(async ({ query }: { query: QueryRecord }) => {
   applyRouteQuery(query);
 });
 mockNuxtImport('useRoute', () => () => routeState);
-mockNuxtImport('useRouter', () => () => ({ replace, afterEach: vi.fn() }));
+mockNuxtImport('useRouter', () => () => ({
+  replace,
+  beforeEach: vi.fn(),
+  beforeResolve: vi.fn(),
+  onError: vi.fn(),
+  afterEach: vi.fn(),
+}));
 const metadataTasks = ref<Task[]>([]);
 const metadataState = reactive({
   tasksObjectivesHydrated: false,

@@ -28,7 +28,14 @@ const replace = vi.fn(async ({ query }: { query: QueryRecord }) => {
   applyRouteQuery(query);
 });
 mockNuxtImport('useRoute', () => () => routeState);
-mockNuxtImport('useRouter', () => () => ({ push, replace, afterEach: vi.fn() }));
+mockNuxtImport('useRouter', () => () => ({
+  push,
+  replace,
+  beforeEach: vi.fn(),
+  beforeResolve: vi.fn(),
+  onError: vi.fn(),
+  afterEach: vi.fn(),
+}));
 const flushRouteSync = async () => {
   await nextTick();
   await nextTick();

@@ -1,10 +1,12 @@
 import { mockNuxtImport } from '@nuxt/test-utils/runtime';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { defineComponent } from 'vue';
+import { defineComponent, ref } from 'vue';
 import ObjectiveCountControls from '@/features/tasks/ObjectiveCountControls.vue';
-vi.mock('vue-i18n', () => ({
+vi.mock('vue-i18n', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-i18n')>()),
   useI18n: () => ({
+    locale: ref('en'),
     t: (key: string, ...args: unknown[]) => {
       const lastArg = args[args.length - 1];
       return typeof lastArg === 'string' ? lastArg : key;

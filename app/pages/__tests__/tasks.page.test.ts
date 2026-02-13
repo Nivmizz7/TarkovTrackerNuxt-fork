@@ -1,6 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { isRef, nextTick, ref } from 'vue';
+import { defineComponent, inject, isRef, nextTick, ref } from 'vue';
 import type { Task } from '@/types/tarkov';
 /**
  * Factory to create a default Task with all required properties.
@@ -49,6 +49,7 @@ const metadataStoreMock = {
   loading: false,
   hasInitialized: true,
   mapsWithSvg: [] as Array<{ id: string; name: string }>,
+  objectives: [],
   sortedTraders: [],
   editions: [],
   objectiveMaps: {},
@@ -140,7 +141,16 @@ vi.mock('vue-router', async (importOriginal) => ({
 }));
 vi.mock('@/features/maps/LeafletMap.vue', () => ({
   __esModule: true,
-  default: { template: '<div data-testid="leaflet-map" />' },
+  default: defineComponent({
+    setup(_props, { expose }) {
+      expose({
+        activateObjectivePopup: () => true,
+        closeActivePopup: () => undefined,
+      });
+      return {};
+    },
+    template: '<div data-testid="leaflet-map" />',
+  }),
 }));
 const UButtonStub = {
   emits: ['click'],
@@ -222,6 +232,57 @@ describe('tasks page', () => {
     expect(toggleButton.exists()).toBe(true);
     await toggleButton.trigger('click');
     expect(preferencesStoreMock.setHideCompletedMapObjectives).toHaveBeenCalledWith(false);
+  });
+  it('collapses and expands the map panel from the map header toggle', async () => {
+    preferencesStoreMock.getTaskPrimaryView = 'maps';
+    preferencesStoreMock.getTaskMapView = 'map-1';
+    metadataStoreMock.mapsWithSvg = [{ id: 'map-1', name: 'Map One' }];
+    await mountPage();
+    const toggleButton = wrapper.find('[data-testid="map-panel-toggle"]');
+    expect(toggleButton.exists()).toBe(true);
+    expect(toggleButton.attributes('aria-expanded')).toBe('true');
+    await toggleButton.trigger('click');
+    await nextTick();
+    expect(toggleButton.attributes('aria-expanded')).toBe('false');
+    await toggleButton.trigger('click');
+    await nextTick();
+    expect(toggleButton.attributes('aria-expanded')).toBe('true');
+  });
+  it('expands the map panel when jumping to a map objective from a collapsed state', async () => {
+    const TaskCardJumpStub = defineComponent({
+      setup() {
+        const jumpToMapObjective = inject<((id: string) => void) | null>(
+          'jumpToMapObjective',
+          null
+        );
+        return {
+          jumpToMapObjective,
+        };
+      },
+      template:
+        '<button data-testid="jump-to-map-objective" @click="jumpToMapObjective?.(\'obj-1\')">Jump</button>',
+    });
+    preferencesStoreMock.getTaskPrimaryView = 'maps';
+    preferencesStoreMock.getTaskMapView = 'map-1';
+    metadataStoreMock.mapsWithSvg = [{ id: 'map-1', name: 'Map One' }];
+    wrapper = await mountSuspended(TasksPage, {
+      global: {
+        stubs: {
+          ...defaultGlobalStubs,
+          TaskCard: TaskCardJumpStub,
+        },
+      },
+    });
+    const toggleButton = wrapper.find('[data-testid="map-panel-toggle"]');
+    expect(toggleButton.attributes('aria-expanded')).toBe('true');
+    await toggleButton.trigger('click');
+    await nextTick();
+    expect(toggleButton.attributes('aria-expanded')).toBe('false');
+    const jumpButton = wrapper.find('[data-testid="jump-to-map-objective"]');
+    expect(jumpButton.exists()).toBe(true);
+    await jumpButton.trigger('click');
+    await nextTick();
+    expect(toggleButton.attributes('aria-expanded')).toBe('true');
   });
   it('shows re-hide footer action in map section when hidden tasks are visible', async () => {
     preferencesStoreMock.getTaskPrimaryView = 'maps';

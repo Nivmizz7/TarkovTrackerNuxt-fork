@@ -31,7 +31,12 @@ vi.mock('h3', async () => {
 });
 global.fetch = mockFetch as typeof fetch;
 mockNuxtImport('useRuntimeConfig', () => () => runtimeConfig);
-mockNuxtImport('useRouter', () => () => ({ afterEach: vi.fn() }));
+mockNuxtImport('useRouter', () => () => ({
+  beforeEach: vi.fn(),
+  beforeResolve: vi.fn(),
+  onError: vi.fn(),
+  afterEach: vi.fn(),
+}));
 describe('Team Members API', () => {
   let mockEvent: Partial<H3Event>;
   const BASE_SITE_CONTEXT: Pick<H3EventContext, 'siteConfig' | 'siteConfigNitroOrigin'> = {
