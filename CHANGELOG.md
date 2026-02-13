@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.0.3...v1.0.4) (2026-02-13)
+
+
+### Bug Fixes
+
+* **ci:** sync api-gateway lockfile with worker deps ([636e685](https://github.com/tarkovtracker-org/TarkovTracker/commit/636e685436c53a72f80c71a54ff2c510253eb11d))
+
 ## [1.0.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.0.2...v1.0.3) (2026-02-13)
 
 
