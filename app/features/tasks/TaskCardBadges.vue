@@ -97,6 +97,12 @@
         </span>
       </UBadge>
     </AppTooltip>
+    <UBadge size="xs" color="neutral" variant="soft" class="shrink-0 cursor-help text-[11px]">
+      <UIcon name="i-mdi-check-circle-outline" aria-hidden="true" class="h-3 w-3" />
+      <span class="truncate">
+        {{ t('page.tasks.questcard.progress', { completed: completed, total: total }) }}
+      </span>
+    </UBadge>
     <UBadge v-if="isFailed" size="xs" color="error" variant="soft" class="shrink-0 text-[11px]">
       {{ t('page.dashboard.stats.failed.stat') }}
     </UBadge>
@@ -158,7 +164,9 @@
 </template>
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
+  import { useTarkovStore } from '@/stores/useTarkov';
   import type { Task, TraderRequirement, TraderLevelRequirementWithMet } from '@/types/tarkov';
+  const tarkovStore = useTarkovStore();
   const props = defineProps<{
     task: Task;
     isPinned: boolean;
@@ -173,6 +181,15 @@
     showRequiredLabels: boolean;
     exclusiveEditionBadge?: string;
   }>();
+  const nonOptionalObjectives = computed(
+    () => props.task?.objectives?.filter((obj) => !obj.optional) || []
+  );
+  const completed = computed(
+    () =>
+      nonOptionalObjectives.value.filter((obj) => tarkovStore.isTaskObjectiveComplete(obj.id))
+        .length || 0
+  );
+  const total = computed(() => props.task?.objectives?.filter((obj) => !obj.optional).length || 0);
   const emit = defineEmits<{
     togglePin: [];
     openMenu: [event: MouseEvent];
