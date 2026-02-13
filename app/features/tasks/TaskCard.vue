@@ -287,10 +287,10 @@
     <!-- 3) Rewards Summary Section (Fixed to bottom, Full Width) -->
     <template #footer>
       <TaskCardRewards
+        v-if="taskExpanded"
         :is-compact="isCompact"
         :task-id="task.id"
         :trader-standing-rewards="traderStandingRewards"
-        v-if="taskExpanded"
         :skill-rewards="skillRewards"
         :trader-unlock-reward="traderUnlockReward"
         :item-rewards="itemRewards"
@@ -465,6 +465,7 @@
     return !onMapView.value || taskToggle.value;
   });
   const toggleTaskVisibility = () => {
+    if (!onMapView.value) return;
     taskToggle.value = !taskToggle.value;
   };
   const OBJECTIVES_ENTER_MS = 150;
