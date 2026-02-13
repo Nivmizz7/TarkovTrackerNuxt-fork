@@ -621,9 +621,13 @@
     leafletMapRef,
     mapContainerRef,
   });
-  const handleJumpToMapObjective = (objectiveId: string) => {
+  const handleJumpToMapObjective = async (objectiveId: string) => {
     isMapPanelExpanded.value = true;
-    void jumpToMapObjective(objectiveId);
+    try {
+      await jumpToMapObjective(objectiveId);
+    } catch (error) {
+      logger.error(`[Tasks] Failed to jump to map objective ${objectiveId}:`, error);
+    }
   };
   const {
     taskStatusUpdated,
