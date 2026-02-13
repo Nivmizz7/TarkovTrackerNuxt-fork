@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { defineComponent, nextTick, ref } from 'vue';
-import type { LeafletMapRef } from '@/composables/useMapObjectivePopup';
+import type { LeafletMapRef, UseMapObjectivePopupReturn } from '@/composables/useMapObjectivePopup';
 const createMetadataStore = (
   objectives: Array<{
     id: string;
@@ -50,9 +50,11 @@ const mockSetup = (options?: {
   const mapContainerRef = ref<HTMLElement | null>(document.createElement('div'));
   return { leafletMapRef, mapContainerRef, activateObjectivePopup, preferencesStore };
 };
-const setupComposable = async (mocks: ReturnType<typeof mockSetup>) => {
+const setupComposable = async (
+  mocks: ReturnType<typeof mockSetup>
+): Promise<{ result: UseMapObjectivePopupReturn; wrapper: ReturnType<typeof mount> }> => {
   const { useMapObjectivePopup } = await import('@/composables/useMapObjectivePopup');
-  let result: ReturnType<typeof useMapObjectivePopup> | null = null;
+  let result: UseMapObjectivePopupReturn | null = null;
   const wrapper = mount(
     defineComponent({
       setup() {
