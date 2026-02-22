@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.0...v1.13.1) (2026-02-22)
+
+
+### Bug Fixes
+
+* **tasks:** apply search filter to map markers ([2dd31c1](https://github.com/tarkovtracker-org/TarkovTracker/commit/2dd31c116b18f7b9c9e0a5f683113d812907ec80))
+
 # [1.13.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.12.7...v1.13.0) (2026-02-22)
 
 
