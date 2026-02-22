@@ -536,7 +536,8 @@
     const teammateIds = includeTeammates
       ? Object.keys(progressStore.visibleTeamStores).filter((id) => id !== 'self')
       : [];
-    visibleTasks.value.forEach((task) => {
+    const sourceTasks = isSearchActive.value ? filteredTasks.value : visibleTasks.value;
+    sourceTasks.forEach((task) => {
       if (!task.objectives) return;
       const objectiveMaps = metadataStore.objectiveMaps?.[task.id] ?? [];
       const objectiveGps = metadataStore.objectiveGPS?.[task.id] ?? [];
