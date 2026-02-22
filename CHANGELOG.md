@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.12.7...v1.13.0) (2026-02-22)
+
+
+### Features
+
+* **settings:** clarify EFT log import when logs are cleared ([1d935e8](https://github.com/tarkovtracker-org/TarkovTracker/commit/1d935e81ccceea417e55b19f14baff14d2622258))
+
 ## [1.12.7](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.12.6...v1.12.7) (2026-02-22)
 
 
