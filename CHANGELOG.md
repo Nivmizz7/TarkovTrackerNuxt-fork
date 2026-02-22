@@ -1,3 +1,10 @@
+## [1.12.7](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.12.6...v1.12.7) (2026-02-22)
+
+
+### Bug Fixes
+
+* **version:** use release app version and remove tarkov version config ([a71b361](https://github.com/tarkovtracker-org/TarkovTracker/commit/a71b3618f9ef92eedbc7d8737ea78be1cc25c813))
+
 ## [1.12.6](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.12.5...v1.12.6) (2026-02-22)
 
 
