@@ -22,7 +22,7 @@
           : t('page.tasks.questcard.uncomplete_button')
       }}
     </UButton>
-    <div v-else-if="state === 'hotwheels'" class="flex flex-col gap-1">
+    <div v-else-if="state === 'hotwheels' && !isFailed" class="flex flex-col gap-1">
       <UButton
         :size="size"
         color="success"
@@ -37,7 +37,7 @@
       </UButton>
     </div>
     <UButton
-      v-else-if="state === 'available'"
+      v-else-if="state === 'available' && !isFailed"
       :size="size"
       color="success"
       variant="soft"

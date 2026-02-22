@@ -120,6 +120,76 @@ describe('Shared Profile API', () => {
       visibility: 'public',
     });
   });
+  it('derives failed branch tasks from task failure metadata', async () => {
+    mockGetRouterParam.mockImplementation((_, key: string) => {
+      if (key === 'userId') return '11111111-1111-4111-8111-111111111111';
+      if (key === 'mode') return 'pve';
+      return undefined;
+    });
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            game_edition: 4,
+            pve_data: {
+              level: 33,
+              taskCompletions: {
+                '597a0f5686f774273b74f676': { complete: false, failed: false },
+                '597a160786f77477531d39d2': { complete: true, failed: false, timestamp: 2000 },
+              },
+            },
+            pvp_data: { level: 1 },
+            user_id: '11111111-1111-4111-8111-111111111111',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            profile_share_pvp_public: false,
+            profile_share_pve_public: true,
+            streamer_mode: false,
+          },
+        ],
+      })
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              tasks: [
+                {
+                  id: '597a0f5686f774273b74f676',
+                  failConditions: [
+                    {
+                      __typename: 'TaskObjectiveTaskStatus',
+                      status: ['complete'],
+                      task: { id: '597a160786f77477531d39d2' },
+                    },
+                  ],
+                },
+                {
+                  id: '597a160786f77477531d39d2',
+                  failConditions: [],
+                },
+              ],
+            },
+          }),
+          {
+            headers: { 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        )
+      );
+    const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
+    const result = await handler(mockEvent as H3Event);
+    expect(result.mode).toBe('pve');
+    expect(result.data?.taskCompletions).toMatchObject({
+      '597a0f5686f774273b74f676': { complete: true, failed: true },
+      '597a160786f77477531d39d2': { complete: true, failed: false },
+    });
+  });
   it('removes non-progress fields from shared profile payload', async () => {
     mockFetch
       .mockResolvedValueOnce({

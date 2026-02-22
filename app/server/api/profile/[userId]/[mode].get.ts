@@ -6,6 +6,7 @@ import {
   setResponseHeader,
   type H3Event,
 } from 'h3';
+import { createTarkovFetcher } from '@/server/utils/edgeCache';
 import { createLogger } from '@/server/utils/logger';
 import {
   consumeSharedRateLimit,
@@ -14,7 +15,7 @@ import {
   writeSharedCache,
   type SharedCacheHandle,
 } from '@/server/utils/sharedEdgeStore';
-import { GAME_MODES, type GameMode } from '@/utils/constants';
+import { API_GAME_MODES, GAME_MODES, type GameMode } from '@/utils/constants';
 import {
   isRecord,
   sanitizeDisplayName,
@@ -34,8 +35,37 @@ const DEFAULT_SHARED_PROFILE_RATE_LIMIT_PER_MINUTE = 120;
 const DEFAULT_SHARED_PROFILE_CACHE_TTL_MS = 5000;
 const SHARED_PROFILE_CACHE_PREFIX = 'shared-profile';
 const SHARED_PROFILE_RATE_LIMIT_PREFIX = 'shared-profile-rate';
+const TASK_FAILURE_METADATA_CACHE_TTL_MS = 60 * 60 * 1000;
+const TASK_FAILURE_METADATA_QUERY = `
+  query SharedProfileTaskFailureMetadata($gameMode: GameMode) {
+    tasks(gameMode: $gameMode) {
+      id
+      failConditions {
+        __typename
+        ... on TaskObjectiveTaskStatus {
+          status
+          task {
+            id
+          }
+        }
+      }
+    }
+  }
+`;
 const isTestEnvironment = process.env.NODE_ENV === 'test';
 const isProductionEnvironment = process.env.NODE_ENV === 'production';
+type TaskFailureObjective = {
+  __typename?: string | null;
+  status?: string[] | null;
+  task?: { id?: string | null } | null;
+};
+type TaskFailureMetadataTask = {
+  id?: string | null;
+  failConditions?: TaskFailureObjective[] | null;
+};
+type TaskFailureMetadataQueryResult = {
+  tasks?: TaskFailureMetadataTask[] | null;
+};
 type PreferencesRow = {
   streamer_mode?: boolean | null;
   profile_share_pve_public?: boolean | null;
@@ -98,6 +128,14 @@ type SharedProfilePayload = {
   userId: string;
   visibility: 'owner' | 'public';
 };
+type TaskFailureSourcesMap = Record<string, string[]>;
+type TaskFailureSourcesCacheEntry = {
+  expiresAt: number;
+  value: TaskFailureSourcesMap;
+};
+const taskFailureSourcesCache: Partial<Record<GameMode, TaskFailureSourcesCacheEntry>> = {};
+const taskFailureSourcesPromises: Partial<Record<GameMode, Promise<TaskFailureSourcesMap | null>>> =
+  {};
 const normalizeMode = (value: string | undefined): GameMode | null => {
   if (value === GAME_MODES.PVE) {
     return GAME_MODES.PVE;
@@ -212,6 +250,169 @@ const sanitizeProgressPayload = (
     sanitized.lastApiUpdate = lastApiUpdate;
   }
   return sanitized;
+};
+const normalizeStatusList = (statuses: unknown): string[] => {
+  if (!Array.isArray(statuses)) {
+    return [];
+  }
+  return statuses
+    .filter((status): status is string => typeof status === 'string')
+    .map((status) => status.toLowerCase());
+};
+const hasCompleteStatus = (statuses: unknown): boolean => {
+  const normalizedStatuses = normalizeStatusList(statuses);
+  return normalizedStatuses.includes('complete') || normalizedStatuses.includes('completed');
+};
+const buildTaskFailureSourcesMap = (tasks: TaskFailureMetadataTask[]): TaskFailureSourcesMap => {
+  const sourcesByTarget: TaskFailureSourcesMap = {};
+  for (const task of tasks) {
+    const targetTaskId = toCleanString(task?.id, 128);
+    if (!targetTaskId) {
+      continue;
+    }
+    const failConditions = Array.isArray(task?.failConditions) ? task.failConditions : [];
+    for (const objective of failConditions) {
+      if (objective?.__typename !== 'TaskObjectiveTaskStatus') {
+        continue;
+      }
+      const sourceTaskId = toCleanString(objective.task?.id, 128);
+      if (!sourceTaskId || !hasCompleteStatus(objective.status)) {
+        continue;
+      }
+      if (!sourcesByTarget[targetTaskId]) {
+        sourcesByTarget[targetTaskId] = [];
+      }
+      if (!sourcesByTarget[targetTaskId]!.includes(sourceTaskId)) {
+        sourcesByTarget[targetTaskId]!.push(sourceTaskId);
+      }
+    }
+  }
+  return sourcesByTarget;
+};
+const getTaskFailureSources = async (mode: GameMode): Promise<TaskFailureSourcesMap | null> => {
+  const cached = taskFailureSourcesCache[mode];
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) {
+    return cached.value;
+  }
+  const pending = taskFailureSourcesPromises[mode];
+  if (pending) {
+    return pending;
+  }
+  const requestPromise = (async () => {
+    try {
+      const fetchFailureMetadata = createTarkovFetcher<{ data?: TaskFailureMetadataQueryResult }>(
+        TASK_FAILURE_METADATA_QUERY,
+        {
+          gameMode: API_GAME_MODES[mode],
+        }
+      );
+      const response = await fetchFailureMetadata();
+      const tasks = response?.data?.tasks;
+      if (!Array.isArray(tasks)) {
+        return null;
+      }
+      const sourcesByTarget = buildTaskFailureSourcesMap(tasks);
+      taskFailureSourcesCache[mode] = {
+        expiresAt: now + TASK_FAILURE_METADATA_CACHE_TTL_MS,
+        value: sourcesByTarget,
+      };
+      return sourcesByTarget;
+    } catch (error) {
+      logger.warn('Failed to fetch task failure metadata', {
+        error: error instanceof Error ? error.message : String(error),
+        mode,
+      });
+      return null;
+    } finally {
+      taskFailureSourcesPromises[mode] = undefined;
+    }
+  })();
+  taskFailureSourcesPromises[mode] = requestPromise;
+  return requestPromise;
+};
+const getCompletionTimestamp = (
+  completion: SanitizedTaskCompletion | undefined
+): number | undefined =>
+  typeof completion?.timestamp === 'number' ? completion.timestamp : undefined;
+const isTaskSuccessfullyCompleted = (completion: SanitizedTaskCompletion | undefined): boolean =>
+  completion?.complete === true && completion?.failed !== true;
+const applyDerivedTaskFailures = (
+  taskCompletions: Record<string, SanitizedTaskCompletion>,
+  failureSourcesByTask: TaskFailureSourcesMap
+): { changed: boolean; value: Record<string, SanitizedTaskCompletion> } => {
+  let changed = false;
+  const mergedTaskCompletions: Record<string, SanitizedTaskCompletion> = Object.fromEntries(
+    Object.entries(taskCompletions).map(([taskId, completion]) => [taskId, { ...completion }])
+  );
+  for (const [targetTaskId, sourceTaskIds] of Object.entries(failureSourcesByTask)) {
+    const targetCompletion = mergedTaskCompletions[targetTaskId];
+    if (
+      targetCompletion?.failed === true ||
+      !Array.isArray(sourceTaskIds) ||
+      sourceTaskIds.length === 0
+    ) {
+      continue;
+    }
+    let triggerTimestamp: number | undefined;
+    let shouldFailTarget = false;
+    for (const sourceTaskId of sourceTaskIds) {
+      const sourceCompletion = mergedTaskCompletions[sourceTaskId];
+      if (!isTaskSuccessfullyCompleted(sourceCompletion)) {
+        continue;
+      }
+      if (targetCompletion?.complete === true) {
+        const targetTimestamp = getCompletionTimestamp(targetCompletion);
+        const sourceTimestamp = getCompletionTimestamp(sourceCompletion);
+        if (targetTimestamp === undefined || sourceTimestamp === undefined) {
+          continue;
+        }
+        if (targetTimestamp < sourceTimestamp) {
+          continue;
+        }
+      }
+      triggerTimestamp = getCompletionTimestamp(sourceCompletion);
+      shouldFailTarget = true;
+      break;
+    }
+    if (!shouldFailTarget) {
+      continue;
+    }
+    const nextCompletion: SanitizedTaskCompletion = {
+      ...(targetCompletion ?? {}),
+      complete: true,
+      failed: true,
+    };
+    if (nextCompletion.timestamp === undefined && triggerTimestamp !== undefined) {
+      nextCompletion.timestamp = triggerTimestamp;
+    }
+    mergedTaskCompletions[targetTaskId] = nextCompletion;
+    changed = true;
+  }
+  return { changed, value: mergedTaskCompletions };
+};
+const enrichProgressTaskFailures = async (
+  progressData: SanitizedProgressData | null,
+  mode: GameMode
+): Promise<SanitizedProgressData | null> => {
+  if (!progressData?.taskCompletions || Object.keys(progressData.taskCompletions).length === 0) {
+    return progressData;
+  }
+  const failureSourcesByTask = await getTaskFailureSources(mode);
+  if (!failureSourcesByTask || Object.keys(failureSourcesByTask).length === 0) {
+    return progressData;
+  }
+  const { changed, value } = applyDerivedTaskFailures(
+    progressData.taskCompletions,
+    failureSourcesByTask
+  );
+  if (!changed) {
+    return progressData;
+  }
+  return {
+    ...progressData,
+    taskCompletions: value,
+  };
 };
 const isAbortError = (error: unknown): boolean => {
   return (
@@ -546,8 +747,11 @@ export default defineEventHandler(async (event) => {
   const profileData =
     mode === GAME_MODES.PVE ? (progressRow.pve_data ?? null) : (progressRow.pvp_data ?? null);
   const hideDisplayName = !isOwner && preferencesRow?.streamer_mode === true;
+  const sanitizedData = sanitizeProgressPayload(profileData, {
+    includeDisplayName: !hideDisplayName,
+  });
   const payload: SharedProfilePayload = {
-    data: sanitizeProgressPayload(profileData, { includeDisplayName: !hideDisplayName }),
+    data: await enrichProgressTaskFailures(sanitizedData, mode),
     gameEdition: typeof progressRow.game_edition === 'number' ? progressRow.game_edition : 1,
     mode,
     userId,

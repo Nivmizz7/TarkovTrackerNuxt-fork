@@ -948,6 +948,7 @@
    */
   const actionButtonState = computed((): ActionButtonState => {
     if (!isOurFaction.value) return 'none';
+    if (isFailed.value) return 'complete';
     if (isLocked.value) return 'locked';
     if (isComplete.value) return 'complete';
     if (showHotWheelsFail.value) return 'hotwheels';
