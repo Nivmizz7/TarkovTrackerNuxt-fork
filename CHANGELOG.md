@@ -1,3 +1,10 @@
+## [1.13.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.1...v1.13.2) (2026-02-22)
+
+
+### Bug Fixes
+
+* **tasks:** block complete action on failed tasks and derive branch failures ([a6f9e23](https://github.com/tarkovtracker-org/TarkovTracker/commit/a6f9e23307a4d03b74c30620091349678e97abd9))
+
 ## [1.13.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.0...v1.13.1) (2026-02-22)
 
 
