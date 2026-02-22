@@ -1204,6 +1204,8 @@
     },
     log_import: {
       upload_hint: 'Wähle deinen Escape from Tarkov Logs-Ordner aus, um Quest-Fortschritt zu importieren.',
+      deleted_logs_hint: 'Wenn alte Logsitzungen gelöscht wurden, können sie nicht importiert werden.',
+      deleted_logs_hint_tooltip: 'Der Log-Import liest nur Quest-Ereignisse, die noch in deinem aktuellen Logs-Ordner vorhanden sind.',
       logs_folder_required: 'Wähle den obersten Logs-Ordner aus, nicht einen einzelnen log_*-Sitzungsordner.',
       default_path_label: 'Typischer Standardpfad:',
       default_path_value: 'C:\\Battlestate Games\\Escape from Tarkov\\Logs',
@@ -1251,6 +1253,8 @@
       success_title: 'EFT-Protokolle importiert',
       success_description: '{complete_count} Aufgaben als abgeschlossen und {active_count} Aufgaben als aktiv aus den Spielprotokollen markiert.',
       error_title: 'Import der EFT-Protokolle fehlgeschlagen',
+      cleared_logs_toast_title: 'Alte Logs wurden wahrscheinlich gelöscht',
+      cleared_logs_toast_description: 'Der Log-Import kann nur Questverlauf lesen, der noch in deinem Logs-Ordner vorhanden ist. Gelöschte Sitzungen können nicht wiederhergestellt werden.',
       errors: {
         apply_import_failed: 'Importierte Aufgabenabschlüsse konnten nicht angewendet werden.',
         archive_log_file_too_large: 'Logdatei im Archiv ist zu groß: {path}',

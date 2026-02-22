@@ -1204,6 +1204,8 @@
     },
     log_import: {
       upload_hint: 'Select your Escape from Tarkov Logs folder to import quest progress.',
+      deleted_logs_hint: 'If old log sessions were deleted, they cannot be imported.',
+      deleted_logs_hint_tooltip: 'Log import only reads quest events still present in your current Logs folder.',
       logs_folder_required: 'Select the top-level Logs folder, not an individual log_* session folder.',
       default_path_label: 'Typical default path:',
       default_path_value: 'C:\\Battlestate Games\\Escape from Tarkov\\Logs',
@@ -1251,6 +1253,8 @@
       success_title: 'EFT Logs Imported',
       success_description: 'Marked {complete_count} tasks completed and {active_count} tasks active from game logs.',
       error_title: 'EFT Logs Import Failed',
+      cleared_logs_toast_title: 'Old logs were likely cleared',
+      cleared_logs_toast_description: 'Log import can only read quest history still in your Logs folder. Deleted sessions cannot be recovered.',
       errors: {
         apply_import_failed: 'Failed to apply imported task completion data.',
         archive_log_file_too_large: 'Log file is too large in archive: {path}',

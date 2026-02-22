@@ -259,6 +259,50 @@ describe('DataManagementCard', () => {
     asVm<{ resetEftLogsImport: () => void }>(wrapper.vm).resetEftLogsImport();
     expect(eftLogsFns.reset).toHaveBeenCalledTimes(1);
   });
+  it('shows info toast when EFT logs import has no quest events', async () => {
+    eftLogsFns.parseFiles.mockImplementation(async () => {
+      eftLogsState.importState.value = 'error';
+      eftLogsState.importError.value = 'settings.log_import.errors.no_quest_events_found';
+    });
+    const wrapper = createWrapper();
+    await asVm<{ handleEftLogsFolderChange: (event: Event) => Promise<void> }>(
+      wrapper.vm
+    ).handleEftLogsFolderChange({
+      target: {
+        files: [new File(['mock-log'], 'push-notifications_000.log', { type: 'text/plain' })],
+        value: 'selected',
+      },
+    } as unknown as Event);
+    expect(toastAddMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        color: 'info',
+        title: 'settings.log_import.cleared_logs_toast_title',
+        description: 'settings.log_import.cleared_logs_toast_description',
+      })
+    );
+  });
+  it('shows info toast when EFT logs import has no notification logs', async () => {
+    eftLogsFns.parseFiles.mockImplementation(async () => {
+      eftLogsState.importState.value = 'error';
+      eftLogsState.importError.value = 'settings.log_import.errors.no_notification_logs_found';
+    });
+    const wrapper = createWrapper();
+    await asVm<{ handleEftLogsFolderChange: (event: Event) => Promise<void> }>(
+      wrapper.vm
+    ).handleEftLogsFolderChange({
+      target: {
+        files: [new File(['mock-log'], 'backend_000.log', { type: 'text/plain' })],
+        value: 'selected',
+      },
+    } as unknown as Event);
+    expect(toastAddMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        color: 'info',
+        title: 'settings.log_import.cleared_logs_toast_title',
+        description: 'settings.log_import.cleared_logs_toast_description',
+      })
+    );
+  });
   it('hides EFT mode toggle when all matched events are auto-detected', () => {
     eftLogsState.importState.value = 'preview';
     eftLogsState.previewData.value = {

@@ -20,3 +20,7 @@ logs
 graphql.config.js
 schema.graphql
 .lighthouseci*
+
+# Local EFT log archives (can contain sensitive data)
+Logs.zip
+Logs - Copy.zip

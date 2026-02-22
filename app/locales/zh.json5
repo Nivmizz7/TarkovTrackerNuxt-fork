@@ -1204,6 +1204,8 @@
     },
     log_import: {
       upload_hint: '选择你的 Escape from Tarkov Logs 文件夹以导入任务进度。',
+      deleted_logs_hint: '如果旧日志会话已删除，就无法导入。',
+      deleted_logs_hint_tooltip: '日志导入只能读取当前 Logs 文件夹中仍存在的任务事件。',
       logs_folder_required: '请选择顶层 Logs 文件夹，而不是单个 log_* 会话文件夹。',
       default_path_label: '常见默认路径：',
       default_path_value: 'C:\\Battlestate Games\\Escape from Tarkov\\Logs',
@@ -1251,6 +1253,8 @@
       success_title: 'EFT 日志已导入',
       success_description: '已根据游戏日志将 {complete_count} 个任务标记为已完成，并将 {active_count} 个任务标记为进行中。',
       error_title: 'EFT 日志导入失败',
+      cleared_logs_toast_title: '旧日志可能已被清理',
+      cleared_logs_toast_description: '日志导入只能读取 Logs 文件夹里仍保留的任务历史。已删除的会话无法恢复。',
       errors: {
         apply_import_failed: '无法应用导入的任务完成数据。',
         archive_log_file_too_large: '压缩包中的日志文件过大：{path}',

@@ -1204,6 +1204,8 @@
     },
     log_import: {
       upload_hint: 'Selecciona la carpeta Logs de Escape from Tarkov para importar el progreso de misiones.',
+      deleted_logs_hint: 'Si se eliminaron sesiones antiguas de logs, no se pueden importar.',
+      deleted_logs_hint_tooltip: 'La importación de logs solo lee eventos de misiones que aún existen en tu carpeta Logs actual.',
       logs_folder_required: 'Selecciona la carpeta Logs de nivel superior, no una carpeta de sesión log_* individual.',
       default_path_label: 'Ruta predeterminada habitual:',
       default_path_value: 'C:\\Battlestate Games\\Escape from Tarkov\\Logs',
@@ -1251,6 +1253,8 @@
       success_title: 'Registros de EFT importados',
       success_description: 'Se marcaron {complete_count} misiones como completadas y {active_count} misiones como activas desde los registros del juego.',
       error_title: 'Error al importar registros de EFT',
+      cleared_logs_toast_title: 'Es probable que se hayan limpiado logs antiguos',
+      cleared_logs_toast_description: 'La importación de logs solo puede leer historial de misiones que aún está en tu carpeta Logs. Las sesiones eliminadas no se pueden recuperar.',
       errors: {
         apply_import_failed: 'No se pudieron aplicar los datos importados de finalización de misiones.',
         archive_log_file_too_large: 'El archivo de registro dentro del archivo comprimido es demasiado grande: {path}',

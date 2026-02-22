@@ -1204,6 +1204,8 @@
     },
     log_import: {
       upload_hint: "Sélectionnez votre dossier Logs d'Escape from Tarkov pour importer la progression des quêtes.",
+      deleted_logs_hint: "Si d'anciennes sessions de journaux ont été supprimées, elles ne peuvent pas être importées.",
+      deleted_logs_hint_tooltip: "L'importation des journaux lit uniquement les événements de quêtes encore présents dans votre dossier Logs actuel.",
       logs_folder_required: 'Sélectionnez le dossier Logs racine, pas un dossier de session log_* individuel.',
       default_path_label: 'Chemin par défaut habituel :',
       default_path_value: 'C:\\Battlestate Games\\Escape from Tarkov\\Logs',
@@ -1251,6 +1253,8 @@
       success_title: 'Journaux EFT importés',
       success_description: '{complete_count} quêtes marquées terminées et {active_count} quêtes marquées actives depuis les journaux du jeu.',
       error_title: "Échec de l'importation des journaux EFT",
+      cleared_logs_toast_title: 'D’anciens journaux ont probablement été nettoyés',
+      cleared_logs_toast_description: "L'importation des journaux ne peut lire que l'historique des quêtes encore présent dans votre dossier Logs. Les sessions supprimées ne peuvent pas être récupérées.",
       errors: {
         apply_import_failed: "Impossible d'appliquer les données importées de progression des quêtes.",
         archive_log_file_too_large: "Le fichier journal dans l'archive est trop volumineux : {path}",

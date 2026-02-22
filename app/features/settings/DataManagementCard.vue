@@ -107,6 +107,14 @@
                     {{ eftSessionFolderExamplePath }}
                   </code>
                 </li>
+                <li>
+                  <span class="inline-flex items-center gap-1">
+                    {{ $t('settings.log_import.deleted_logs_hint') }}
+                    <UTooltip :text="$t('settings.log_import.deleted_logs_hint_tooltip')">
+                      <UIcon name="i-mdi-information" class="text-surface-500 h-3.5 w-3.5" />
+                    </UTooltip>
+                  </span>
+                </li>
               </ul>
             </div>
             <!-- Tarkov.dev linked profile info -->
@@ -706,6 +714,18 @@
   );
   const eftLogsFolderInputRef = ref<HTMLInputElement | null>(null);
   const eftLogsTargetMode = ref<GameMode>(tarkovStore.getCurrentGameMode());
+  const eftLogsNoQuestEventsError = computed(() =>
+    t('settings.log_import.errors.no_quest_events_found')
+  );
+  const eftLogsNoNotificationLogsError = computed(() =>
+    t('settings.log_import.errors.no_notification_logs_found')
+  );
+  const shouldShowEftLogsCleanupHelpToast = computed(
+    () =>
+      eftLogsImportState.value === 'error' &&
+      (eftLogsImportError.value === eftLogsNoQuestEventsError.value ||
+        eftLogsImportError.value === eftLogsNoNotificationLogsError.value)
+  );
   const tarkovUid = computed(() => tarkovStore.getTarkovUid());
   const isLinked = computed(() => tarkovUid.value !== null);
   const linkedProfileMode = computed<GameMode | null>(() => {
@@ -773,6 +793,13 @@
       const files = input.files ? Array.from(input.files) : [];
       if (files.length === 0) return;
       await parseEftLogsFiles(files);
+      if (shouldShowEftLogsCleanupHelpToast.value) {
+        toast.add({
+          title: t('settings.log_import.cleared_logs_toast_title'),
+          description: t('settings.log_import.cleared_logs_toast_description'),
+          color: 'info',
+        });
+      }
       input.value = '';
     } catch (err) {
       logger.error('DataManagementCard: parseEftLogsFiles failed', err, eftLogsImportError.value);

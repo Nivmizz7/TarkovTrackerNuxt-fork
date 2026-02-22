@@ -1204,6 +1204,8 @@
     },
     log_import: {
       upload_hint: 'Виберіть теку Logs гри Escape from Tarkov, щоб імпортувати прогрес завдань.',
+      deleted_logs_hint: 'Якщо старі сесії логів видалені, їх не можна імпортувати.',
+      deleted_logs_hint_tooltip: 'Імпорт логів читає лише події завдань, які ще є у вашій поточній теці Logs.',
       logs_folder_required: 'Виберіть кореневу теку Logs, а не окрему теку сесії log_*.',
       default_path_label: 'Типовий стандартний шлях:',
       default_path_value: 'C:\\Battlestate Games\\Escape from Tarkov\\Logs',
@@ -1251,6 +1253,8 @@
       success_title: 'Логи EFT імпортовано',
       success_description: 'Позначено {complete_count} завдань як виконані та {active_count} завдань як активні з ігрових логів.',
       error_title: 'Помилка імпорту логів EFT',
+      cleared_logs_toast_title: 'Ймовірно, старі логи було очищено',
+      cleared_logs_toast_description: 'Імпорт логів може зчитати лише історію завдань, що лишилась у теці Logs. Видалені сесії відновити неможливо.',
       errors: {
         apply_import_failed: 'Не вдалося застосувати імпортовані дані про завершення завдань.',
         archive_log_file_too_large: 'Файл логу в архіві завеликий: {path}',
