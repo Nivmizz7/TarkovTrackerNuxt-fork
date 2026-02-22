@@ -1,3 +1,10 @@
+## [1.12.6](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.12.5...v1.12.6) (2026-02-22)
+
+
+### Bug Fixes
+
+* **tasks:** handle merged map ids in objective visibility ([#197](https://github.com/tarkovtracker-org/TarkovTracker/issues/197)) ([877cfd3](https://github.com/tarkovtracker-org/TarkovTracker/commit/877cfd3c3f7366dd6695e5fc7e9458b552731d8f))
+
 ## [1.12.5](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.12.4...v1.12.5) (2026-02-22)
 
 
