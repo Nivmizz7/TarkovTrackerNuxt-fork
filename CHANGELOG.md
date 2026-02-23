@@ -1,3 +1,10 @@
+## [1.13.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.3...v1.13.4) (2026-02-23)
+
+
+### Bug Fixes
+
+* **app:** clarify sync/local toast causes and add integration coverage ([#199](https://github.com/tarkovtracker-org/TarkovTracker/issues/199)) ([8bba503](https://github.com/tarkovtracker-org/TarkovTracker/commit/8bba503042a37869334c00c1bc1fda1436e6d87d))
+
 ## [1.13.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.2...v1.13.3) (2026-02-23)
 
 
