@@ -1,3 +1,10 @@
+## [1.13.5](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.4...v1.13.5) (2026-02-23)
+
+
+### Bug Fixes
+
+* **hideout:** stabilize route sync watcher and es copy ([16775ce](https://github.com/tarkovtracker-org/TarkovTracker/commit/16775ce4af27e478a1ee6b98f36b07551808c414))
+
 ## [1.13.4](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.3...v1.13.4) (2026-02-23)
 
 
