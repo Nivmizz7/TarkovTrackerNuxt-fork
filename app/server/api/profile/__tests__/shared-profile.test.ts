@@ -15,6 +15,11 @@ const runtimeConfig = {
   supabaseServiceKey: 'service-key',
   supabaseUrl: 'https://test.supabase.co',
 };
+const createAbortError = (): Error => {
+  const error = new Error('aborted');
+  error.name = 'AbortError';
+  return error;
+};
 vi.mock('h3', async () => {
   const actual = await vi.importActual('h3');
   return {
@@ -86,6 +91,75 @@ describe('Shared Profile API', () => {
     });
     const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
     await expect(handler(mockEvent as H3Event)).rejects.toThrow('Invalid profile mode');
+  });
+  it('returns 500 when Supabase config is missing', async () => {
+    runtimeConfig.supabaseUrl = '';
+    const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
+    await expect(handler(mockEvent as H3Event)).rejects.toMatchObject({
+      statusCode: 500,
+      statusMessage: 'Missing Supabase configuration for shared profiles',
+    });
+  });
+  it('returns 504 when auth context resolution times out', async () => {
+    runtimeConfig.supabaseServiceKey = '';
+    mockGetRequestHeader.mockImplementation((_, key: string) => {
+      if (key === 'authorization') return 'Bearer owner-token';
+      return undefined;
+    });
+    mockFetch.mockRejectedValueOnce(createAbortError());
+    const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
+    await expect(handler(mockEvent as H3Event)).rejects.toMatchObject({
+      statusCode: 504,
+      statusMessage: 'Timed out while validating shared profile access',
+    });
+  });
+  it('returns 504 when shared profile resource loading times out', async () => {
+    mockFetch.mockRejectedValueOnce(createAbortError());
+    const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
+    await expect(handler(mockEvent as H3Event)).rejects.toMatchObject({
+      statusCode: 504,
+      statusMessage: 'Timed out while loading shared profile data',
+    });
+  });
+  it('returns 502 when shared profile resources cannot be loaded', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('upstream failure'));
+    const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
+    await expect(handler(mockEvent as H3Event)).rejects.toMatchObject({
+      statusCode: 502,
+      statusMessage: 'Failed to load shared profile data',
+    });
+  });
+  it('returns 500 when profile query fails', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      });
+    const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
+    await expect(handler(mockEvent as H3Event)).rejects.toMatchObject({
+      statusCode: 500,
+      statusMessage: 'Failed to load profile data',
+    });
+  });
+  it('returns 404 when profile does not exist', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      });
+    const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
+    await expect(handler(mockEvent as H3Event)).rejects.toMatchObject({
+      statusCode: 404,
+      statusMessage: 'Profile not found',
+    });
   });
   it('returns public shared profile when mode is public', async () => {
     mockFetch
