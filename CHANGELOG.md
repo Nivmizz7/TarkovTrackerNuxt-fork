@@ -1,3 +1,10 @@
+## [1.13.7](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.6...v1.13.7) (2026-02-23)
+
+
+### Bug Fixes
+
+* **auth:** stabilize OAuth loading lifecycle ([a21914b](https://github.com/tarkovtracker-org/TarkovTracker/commit/a21914b620b9543bfd64325cca04ef202de6354c))
+
 ## [1.13.6](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.5...v1.13.6) (2026-02-23)
 
 
