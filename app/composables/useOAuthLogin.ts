@@ -4,7 +4,7 @@ export type OAuthProvider = 'twitch' | 'discord' | 'google' | 'github';
 interface UseOAuthLoginOptions {
   buildCallbackUrl: () => string;
   loading: Ref<Record<OAuthProvider, boolean>>;
-  openPopupOrRedirect: (url: string, provider: OAuthProvider) => void;
+  openPopupOrRedirect: (url: string, provider: OAuthProvider) => boolean;
 }
 const toProviderLabel = (provider: OAuthProvider): string => {
   return provider.charAt(0).toUpperCase() + provider.slice(1);
@@ -18,6 +18,7 @@ export function useOAuthLogin({
 } {
   const { $supabase } = useNuxtApp();
   const signInWithProvider = async (provider: OAuthProvider): Promise<void> => {
+    let isLoadingManagedExternally = false;
     try {
       loading.value[provider] = true;
       const callbackUrl = buildCallbackUrl();
@@ -26,11 +27,14 @@ export function useOAuthLogin({
         redirectTo: callbackUrl,
       });
       if (data?.url) {
-        openPopupOrRedirect(data.url, provider);
+        isLoadingManagedExternally = openPopupOrRedirect(data.url, provider) === true;
       }
     } catch (error) {
       logger.error(`[Login] ${toProviderLabel(provider)} sign in error:`, error);
-      loading.value[provider] = false;
+    } finally {
+      if (!isLoadingManagedExternally) {
+        loading.value[provider] = false;
+      }
     }
   };
   return { signInWithProvider };

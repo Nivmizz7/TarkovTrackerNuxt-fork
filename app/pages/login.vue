@@ -239,9 +239,9 @@
   const openPopupOrRedirect = (
     url: string,
     provider: 'twitch' | 'discord' | 'google' | 'github'
-  ) => {
+  ): boolean => {
     if (loginPageUnmounted) {
-      return;
+      return false;
     }
     const width = 600;
     const height = 700;
@@ -256,7 +256,7 @@
       );
     } catch {
       fallbackToRedirect(url, provider);
-      return;
+      return true;
     }
     const isPopupClosed = () => {
       try {
@@ -268,7 +268,7 @@
     };
     if (isPopupClosed()) {
       fallbackToRedirect(url, provider);
-      return;
+      return true;
     }
     let didCleanup = false;
     const isOAuthSuccessMessage = (event: MessageEvent) => {
@@ -358,6 +358,7 @@
     };
     activePopupCleanups.add(cleanup);
     window.addEventListener('message', messageHandler);
+    return true;
   };
   const { signInWithProvider } = useOAuthLogin({
     buildCallbackUrl,
