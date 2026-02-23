@@ -114,7 +114,7 @@ describe('Shared Profile API', () => {
     });
   });
   it('returns 504 when shared profile resource loading times out', async () => {
-    mockFetch.mockRejectedValue(createAbortError());
+    mockFetch.mockRejectedValueOnce(createAbortError());
     const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
     await expect(handler(mockEvent as H3Event)).rejects.toMatchObject({
       statusCode: 504,
@@ -122,7 +122,7 @@ describe('Shared Profile API', () => {
     });
   });
   it('returns 502 when shared profile resources cannot be loaded', async () => {
-    mockFetch.mockRejectedValue(new Error('upstream failure'));
+    mockFetch.mockRejectedValueOnce(new Error('upstream failure'));
     const { default: handler } = await import('@/server/api/profile/[userId]/[mode].get');
     await expect(handler(mockEvent as H3Event)).rejects.toMatchObject({
       statusCode: 502,
