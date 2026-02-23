@@ -1,4 +1,3 @@
-import { storeToRefs } from 'pinia';
 import { useRouteFilters } from '@/composables/useRouteFilters';
 import { usePreferencesStore } from '@/stores/usePreferences';
 import type { HideoutPrimaryView } from '@/composables/useHideoutFiltering';
@@ -10,7 +9,9 @@ type HideoutRouteParams = {
 };
 export function useHideoutRouteSync() {
   const preferencesStore = usePreferencesStore();
-  const { getHideoutPrimaryView } = storeToRefs(preferencesStore);
+  const hideoutPrimaryView = computed(
+    () => (preferencesStore.getHideoutPrimaryView as HideoutPrimaryView | undefined) ?? 'available'
+  );
   return useRouteFilters<HideoutRouteParams>({
     configs: {
       view: {
@@ -22,13 +23,13 @@ export function useHideoutRouteSync() {
       },
     },
     onRouteToStore: (values) => {
-      if (values.view !== preferencesStore.getHideoutPrimaryView) {
+      if (values.view !== hideoutPrimaryView.value) {
         preferencesStore.setHideoutPrimaryView(values.view);
       }
     },
     onStoreToRoute: () => ({
-      view: getHideoutPrimaryView.value,
+      view: hideoutPrimaryView.value,
     }),
-    watchSources: [getHideoutPrimaryView],
+    watchSources: [hideoutPrimaryView],
   });
 }
