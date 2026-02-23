@@ -1,3 +1,10 @@
+## [1.13.3](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.2...v1.13.3) (2026-02-23)
+
+
+### Bug Fixes
+
+* **tasks:** avoid collector grouping spam while preserving quest-item splits ([#198](https://github.com/tarkovtracker-org/TarkovTracker/issues/198)) ([4968d5e](https://github.com/tarkovtracker-org/TarkovTracker/commit/4968d5ee3b1b6c19bad848f0041e72df17d95890))
+
 ## [1.13.2](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.1...v1.13.2) (2026-02-22)
 
 
