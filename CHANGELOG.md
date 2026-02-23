@@ -1,3 +1,10 @@
+## [1.13.6](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.5...v1.13.6) (2026-02-23)
+
+
+### Bug Fixes
+
+* always restore original mode after tarkov.dev import failure ([#218](https://github.com/tarkovtracker-org/TarkovTracker/issues/218)) ([597b5d4](https://github.com/tarkovtracker-org/TarkovTracker/commit/597b5d4db6344032e7a9a4a808e137b977e1de78))
+
 ## [1.13.5](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.4...v1.13.5) (2026-02-23)
 
 
