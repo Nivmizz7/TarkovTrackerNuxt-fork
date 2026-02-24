@@ -647,32 +647,27 @@ export default defineEventHandler(async (event): Promise<ChangelogResponse> => {
     const releaseItems = Array.isArray(releases)
       ? await buildReleaseItems(releases, releaseLimit, baseUrl, githubToken, timeoutMs)
       : [];
-    if (releaseItems.length) {
-      const response: ChangelogResponse = {
-        source: 'releases',
-        items: releaseItems,
-        hasMore: false,
-      };
-      const entry = { response, timestamp: Date.now() };
-      setLocalResponseCacheEntry(responseCacheKey, entry);
-      await setSharedResponseCacheEntry(responseCacheKey, entry);
-      return response;
-    }
-    const fetchLimit = limit + 1;
-    const commits = await fetchCommitCandidates(fetchLimit, baseUrl, githubToken, timeoutMs);
-    if (releaseFetchFailed && !commits.length) {
+    const commitLimit = Math.max(limit - releaseItems.length, 0);
+    const fetchLimit = commitLimit + 1;
+    const commits =
+      commitLimit > 0
+        ? await fetchCommitCandidates(fetchLimit, baseUrl, githubToken, timeoutMs)
+        : [];
+    if (releaseFetchFailed && !releaseItems.length && !commits.length) {
       return { source: 'commits', items: [], hasMore: false, error: 'Failed to fetch changelog' };
     }
-    const commitItems = await buildCommitItems(
-      commits,
-      fetchLimit,
-      baseUrl,
-      githubToken,
-      timeoutMs
-    );
-    const hasMore = limit < changelogConfig.MAX_LIMIT && commitItems.length > limit;
-    const items = hasMore ? commitItems.slice(0, limit) : commitItems;
-    const response: ChangelogResponse = { source: 'commits', items, hasMore };
+    const commitItems =
+      commitLimit > 0
+        ? await buildCommitItems(commits, fetchLimit, baseUrl, githubToken, timeoutMs)
+        : [];
+    const mergedItems = sortByDateDesc([...releaseItems, ...commitItems]);
+    const hasMore = mergedItems.length > limit;
+    const items = hasMore ? mergedItems.slice(0, limit) : mergedItems;
+    const response: ChangelogResponse = {
+      source: releaseItems.length ? 'releases' : 'commits',
+      items,
+      hasMore,
+    };
     const entry = { response, timestamp: Date.now() };
     setLocalResponseCacheEntry(responseCacheKey, entry);
     await setSharedResponseCacheEntry(responseCacheKey, entry);

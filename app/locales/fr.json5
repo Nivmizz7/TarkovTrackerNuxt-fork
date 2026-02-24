@@ -148,10 +148,14 @@
       title: 'Tableau de bord',
     },
     dashboard: {
-      notice: {
-        message: "L'UI/UX vient d'être mise à jour et est en cours de perfectionnement ; signalez les problèmes sur Discord ou GitHub. Soutenez le développement gratuit via le lien Ko-fi dans le pied de page.",
-        dismiss: 'Ignorer',
-        show: 'Afficher la notification de mise à jour',
+      birthday_banner: {
+        title: 'Célébrons TarkovTracker — 24 février 2026',
+        message: "C'est l'anniversaire de Dys aujourd'hui, et le mois prochain marquera 1 an de maintenance de TarkovTracker. Depuis la reconstruction complète du site au début de l'année, Dys a livré plus de 575 mises à jour et écrit près d'un demi-million de lignes de code pour faire de TarkovTracker ce qu'il est aujourd'hui. Si ce site t'aide dans tes raids et que tu veux le voir continuer à s'améliorer, un don serait d'une grande aide pour maintenir le projet. Merci d'utiliser TarkovTracker ; sans vous, ce projet n'existerait pas.",
+        shoutout: 'Un immense merci à notre équipe, à nos contributeurs et à nos bêta-testeurs qui rendent ce projet possible.',
+        credits_link: "Voir l'équipe",
+        support_button: 'Soutenir sur Ko-fi',
+        dismiss: 'Masquer',
+        show: 'Afficher la célébration',
       },
       changelog: {
         title: 'Nouveautés',
@@ -705,15 +709,25 @@
         staff: 'Équipe de TarkovTracker.org :',
         support_members: 'Membres du support :',
         beta_testers: 'Nuxt - Testeurs de bêta fermée :',
+        contributors: 'Contributeurs open source :',
       },
       labels: {
         creators: 'Créateurs',
         staff: 'Équipe principale',
         support: 'Soutien',
         testers: 'Testeurs bêta',
+        contributors: 'Contributeurs',
       },
       notes: {
         alphabetical: 'Classés par ordre alphabétique ; l’ordre ne reflète pas la contribution.',
+        contributors: 'Les contributeurs GitHub sont triés par nombre de contributions ; les comptes bots sont exclus.',
+      },
+      contributors: {
+        loading: 'Chargement des contributeurs...',
+        error: 'Impossible de charger les contributeurs pour le moment.',
+        retry: 'Réessayer',
+        empty: 'Aucun contributeur trouvé pour le moment.',
+        contributions: '{count} contributions',
       },
     },
     login: {

@@ -1,6 +1,7 @@
 <template>
   <div class="min-h-[calc(100vh-250px)] px-3 py-6 sm:px-6">
     <div class="mx-auto max-w-[1400px]">
+      <DashboardBirthdayBanner />
       <DashboardChangelog />
       <!-- Progress Breakdown Section -->
       <div class="content-visibility-auto-280 mb-8">

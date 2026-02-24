@@ -148,10 +148,14 @@
       title: '总览面板',
     },
     dashboard: {
-      notice: {
-        message: 'UI/UX 刚刚更新并正在完善中；请在 Discord 或 GitHub 上报告问题。通过页脚的 Ko-fi 链接支持免费开发。',
+      birthday_banner: {
+        title: '庆祝 TarkovTracker — 2026年2月24日',
+        message: '今天是 Dys 的生日，下个月也正好是他维护 TarkovTracker 满一周年。自今年年初从零重建网站以来，Dys 已提交 575+ 次更新，写下近 50 万行代码，才有了今天的 TarkovTracker。如果这个网站帮助过你的每一次突袭，并且你希望它继续变得更好，一份捐助将意义重大，也能帮助项目持续运行。感谢你选择 TarkovTracker，没有你就没有这个项目。',
+        shoutout: '特别感谢我们的核心团队、贡献者和封测成员，是你们让这个项目成为可能。',
+        credits_link: '查看团队',
+        support_button: '在 Ko-fi 支持',
         dismiss: '关闭',
-        show: '显示更新通知',
+        show: '显示庆祝横幅',
       },
       changelog: {
         title: '更新日志',
@@ -705,15 +709,25 @@
         staff: 'Tarkov Tracker 运营团队：',
         support_members: '支持人员：',
         beta_testers: 'Nuxt封闭测试人员：',
+        contributors: '开源贡献者：',
       },
       labels: {
         creators: '开发者',
         staff: '核心团队',
         support: '支持团队',
         testers: '测试人员',
+        contributors: '贡献者',
       },
       notes: {
         alphabetical: '按字母顺序排列，排名不代表贡献度',
+        contributors: 'GitHub 贡献者按贡献次数排序，机器人账号已排除。',
+      },
+      contributors: {
+        loading: '正在加载贡献者...',
+        error: '当前无法加载贡献者。',
+        retry: '重试',
+        empty: '暂未找到贡献者。',
+        contributions: '{count} 次贡献',
       },
     },
     login: {

@@ -105,6 +105,7 @@ export interface PreferencesState {
   // XP and Level settings
   useAutomaticLevelCalculation: boolean;
   dashboardNoticeDismissed: boolean;
+  birthdayBannerDismissed: boolean;
   // Map display settings
   showMapExtracts: boolean;
   mapMarkerColors: MapMarkerColors;
@@ -185,6 +186,7 @@ export const preferencesDefaultState: PreferencesState = {
   // XP and Level settings
   useAutomaticLevelCalculation: false,
   dashboardNoticeDismissed: false,
+  birthdayBannerDismissed: false,
   // Map display settings
   showMapExtracts: true,
   mapMarkerColors: { ...MAP_MARKER_COLORS },
@@ -444,6 +446,9 @@ export const usePreferencesStore = defineStore('preferences', {
     getDashboardNoticeDismissed: (state) => {
       return state.dashboardNoticeDismissed ?? false;
     },
+    getBirthdayBannerDismissed: (state) => {
+      return state.birthdayBannerDismissed ?? false;
+    },
     // Map display getters
     getShowMapExtracts: (state) => {
       return state.showMapExtracts ?? true;
@@ -675,6 +680,9 @@ export const usePreferencesStore = defineStore('preferences', {
     setDashboardNoticeDismissed(dismissed: boolean) {
       this.dashboardNoticeDismissed = dismissed;
     },
+    setBirthdayBannerDismissed(dismissed: boolean) {
+      this.birthdayBannerDismissed = dismissed;
+    },
     // Map display actions
     setShowMapExtracts(show: boolean) {
       this.showMapExtracts = show;
@@ -785,6 +793,7 @@ export const usePreferencesStore = defineStore('preferences', {
       'showFailedFilter',
       'useAutomaticLevelCalculation',
       'dashboardNoticeDismissed',
+      'birthdayBannerDismissed',
       'hideoutCollapseCompleted',
       'hideoutSortReadyFirst',
       'hideoutRequireStationLevels',

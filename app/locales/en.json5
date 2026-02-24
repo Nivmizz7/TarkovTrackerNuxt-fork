@@ -148,10 +148,14 @@
       title: 'Dashboard',
     },
     dashboard: {
-      notice: {
-        message: 'UI/UX just updated and being polished; report issues on Discord or GitHub. Support free development via the Ko-fi link in the footer.',
+      birthday_banner: {
+        title: 'Celebrating TarkovTracker — February 24, 2026',
+        message: "It's Dys's birthday today, and next month marks 1 year of maintaining TarkovTracker! Since rebuilding the site from scratch at the start of this year, Dys has pushed over 575 updates and written nearly half a million lines of code to make TarkovTracker what it is today. If this site has helped your raids and you'd like to see it keep improving, a donation would mean the world and help keep things running. Thank you for choosing TarkovTracker — it wouldn't be here without you.",
+        shoutout: 'Huge thanks to our staff, contributors, and beta testers who make this project possible.',
+        credits_link: 'See the team',
+        support_button: 'Support on Ko-fi',
         dismiss: 'Dismiss',
-        show: 'Show update notice',
+        show: 'Show celebration',
       },
       changelog: {
         title: "What's new",
@@ -705,15 +709,25 @@
         staff: 'TarkovTracker.org Staff:',
         support_members: 'Support Members:',
         beta_testers: 'Nuxt - Closed Beta Testers:',
+        contributors: 'Open source contributors:',
       },
       labels: {
         creators: 'Creators',
         staff: 'Core Team',
         support: 'Support',
         testers: 'Beta Testers',
+        contributors: 'Contributors',
       },
       notes: {
         alphabetical: 'Listed alphabetically; order does not reflect contribution.',
+        contributors: 'GitHub contributors are sorted by contribution count; bot accounts are excluded.',
+      },
+      contributors: {
+        loading: 'Loading contributors...',
+        error: 'Unable to load contributors right now.',
+        retry: 'Retry',
+        empty: 'No contributors found yet.',
+        contributions: '{count} contributions',
       },
     },
     login: {

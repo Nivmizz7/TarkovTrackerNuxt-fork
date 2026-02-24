@@ -32,7 +32,7 @@
   toast: {
     hideout_updated: {
       title: 'Escondite actualizado',
-      description: 'Tu escondite se actualizó correctamente.',
+      description: 'Se eliminaron {count} mejoras de estación que ya no cumplen los requisitos.',
     },
     api_updated: {
       title: 'Actualización desde la API',
@@ -148,10 +148,14 @@
       title: 'Panel',
     },
     dashboard: {
-      notice: {
-        message: 'La interfaz UI/UX acaba de actualizarse y está siendo pulida; reporta problemas en Discord o GitHub. Apoya el desarrollo gratuito a través del enlace de Ko-fi en el pie de página.',
-        dismiss: 'Descartar',
-        show: 'Mostrar aviso de actualización',
+      birthday_banner: {
+        title: 'Celebrando TarkovTracker — 24 de febrero de 2026',
+        message: 'Hoy es el cumpleaños de Dys, y el próximo mes se cumple 1 año desde que mantiene TarkovTracker. Desde reconstruir el sitio desde cero al inicio de este año, Dys ha publicado más de 575 actualizaciones y escrito casi medio millón de líneas de código para llevar TarkovTracker a donde está hoy. Si este sitio te ha ayudado en tus incursiones y quieres que siga mejorando, una donación significaría muchísimo y ayudaría a mantenerlo en marcha. Gracias por elegir TarkovTracker; sin ti no existiría.',
+        shoutout: 'Un enorme gracias a nuestro equipo, colaboradores y beta testers que hacen posible este proyecto.',
+        credits_link: 'Ver el equipo',
+        support_button: 'Apoyar en Ko-fi',
+        dismiss: 'Cerrar',
+        show: 'Mostrar celebración',
       },
       changelog: {
         title: 'Novedades',
@@ -705,15 +709,25 @@
         staff: 'Personal de TarkovTracker.org:',
         support_members: 'Miembros de soporte:',
         beta_testers: 'Nuxt - Probadores de beta cerrada:',
+        contributors: 'Colaboradores de código abierto:',
       },
       labels: {
         creators: 'Creadores',
         staff: 'Equipo principal',
         support: 'Soporte',
         testers: 'Probadores beta',
+        contributors: 'Colaboradores',
       },
       notes: {
         alphabetical: 'Listado alfabéticamente; el orden no refleja la contribución.',
+        contributors: 'Los colaboradores de GitHub se ordenan por número de contribuciones; las cuentas bot se excluyen.',
+      },
+      contributors: {
+        loading: 'Cargando colaboradores...',
+        error: 'No se pueden cargar los colaboradores ahora mismo.',
+        retry: 'Reintentar',
+        empty: 'Aún no se encontraron colaboradores.',
+        contributions: '{count} contribuciones',
       },
     },
     login: {
