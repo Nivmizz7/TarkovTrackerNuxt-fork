@@ -21,6 +21,11 @@ export default defineNuxtConfig({
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SB_SERVICE_ROLE_KEY || '',
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '',
     githubToken: process.env.GITHUB_TOKEN || process.env.GITHUB_PAT || '',
+    githubContributorsExclude:
+      process.env.GITHUB_CONTRIBUTORS_EXCLUDE ||
+      'claude,claude[bot],semantic-release-bot,semantic-release[bot]',
+    githubContributorsCacheTtlMs:
+      Number(process.env.GITHUB_CONTRIBUTORS_CACHE_TTL_MS || '1800000') || 1800000,
     githubTimeoutMs: Number(process.env.GITHUB_TIMEOUT_MS || '8000') || 8000,
     logSinkUrl: process.env.LOG_SINK_URL || '',
     teamMembersCacheTtlMs: Number(process.env.TEAM_MEMBERS_CACHE_TTL_MS || '5000') || 5000,
@@ -42,7 +47,7 @@ export default defineNuxtConfig({
       // e.g., "/api/tarkov/*" for public data endpoints
       publicRoutes:
         process.env.API_PUBLIC_ROUTES?.trim() ||
-        '/api/tarkov/*,/api/changelog,/api/logs/client,/api/profile/*,/api/streamer/*',
+        '/api/tarkov/*,/api/changelog,/api/contributors,/api/logs/client,/api/profile/*,/api/streamer/*',
       // Whether to trust proxy headers (X-Forwarded-For, etc.)
       // ONLY enable this if the server is behind a trusted proxy like Cloudflare
       trustProxy: process.env.API_TRUST_PROXY === 'true',

@@ -247,6 +247,7 @@ export default defineEventHandler(async (event) => {
   const defaultPublicRoutes = [
     '/api/tarkov/*',
     '/api/changelog',
+    '/api/contributors',
     '/api/profile/*',
     '/api/streamer/*',
   ];
