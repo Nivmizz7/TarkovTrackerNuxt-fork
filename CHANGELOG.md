@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.7...v1.14.0) (2026-02-24)
+
+
+### Features
+
+* resolve TT-203 through TT-217 issue batch ([cf5c2c1](https://github.com/tarkovtracker-org/TarkovTracker/commit/cf5c2c1d1b3fe164c049bd162eb74349781ddcdd))
+
 ## [1.13.7](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.6...v1.13.7) (2026-02-23)
 
 
