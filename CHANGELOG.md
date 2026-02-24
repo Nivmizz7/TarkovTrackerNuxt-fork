@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.14.0...v1.14.1) (2026-02-24)
+
+
+### Bug Fixes
+
+* **contributors:** cache GitHub contributors server-side ([8226f62](https://github.com/tarkovtracker-org/TarkovTracker/commit/8226f62fcb3801a3a6fb942f7a4dd776493dfb3d))
+
 # [1.14.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.13.7...v1.14.0) (2026-02-24)
 
 
