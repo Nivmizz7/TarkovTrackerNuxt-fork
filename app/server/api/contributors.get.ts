@@ -17,6 +17,8 @@ const MIN_TIMEOUT_MS = 1000;
 const DEFAULT_CACHE_TTL_MS = 30 * 60 * 1000;
 const MIN_CACHE_TTL_MS = 60 * 1000;
 const MAX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const GITHUB_API_VERSION = '2022-11-28';
+const GITHUB_USER_AGENT = 'TarkovTracker-Contributors';
 const EXCLUDED_LOGIN_SUBSTRINGS = ['semantic-release'];
 const DEFAULT_EXCLUDED_LOGINS = [
   'claude',
@@ -76,16 +78,16 @@ const fetchContributorPage = async (
   timeoutMs: number
 ): Promise<GitHubContributor[] | null> => {
   try {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': GITHUB_USER_AGENT,
+      'X-GitHub-Api-Version': GITHUB_API_VERSION,
+    };
+    if (githubToken) {
+      headers.Authorization = `Bearer ${githubToken}`;
+    }
     const response = await fetch(url, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        ...(githubToken
-          ? {
-              Authorization: `Bearer ${githubToken}`,
-              'X-GitHub-Api-Version': '2022-11-28',
-            }
-          : {}),
-      },
+      headers,
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!response.ok) {
