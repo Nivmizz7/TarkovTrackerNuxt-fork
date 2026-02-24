@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.14.1...v1.15.0) (2026-02-24)
+
+
+### Features
+
+* **app:** add birthday dashboard banner and contributor credits ([f16454c](https://github.com/tarkovtracker-org/TarkovTracker/commit/f16454c23ba31580d8c2ac4c3936420c0c8b7d82))
+
 ## [1.14.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.14.0...v1.14.1) (2026-02-24)
 
 
