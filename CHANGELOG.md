@@ -1,3 +1,11 @@
+## [1.15.1](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.15.0...v1.15.1) (2026-02-24)
+
+
+### Bug Fixes
+
+* add required github headers for contributors api ([f2a35cd](https://github.com/tarkovtracker-org/TarkovTracker/commit/f2a35cd11a0e32b64f75caefb4489fcafbd95dca))
+* update credits retry click handler and contributor fetch flow ([a3bbfbb](https://github.com/tarkovtracker-org/TarkovTracker/commit/a3bbfbb1dc6f712f9922fffc33198b05c853dc58))
+
 # [1.15.0](https://github.com/tarkovtracker-org/TarkovTracker/compare/v1.14.1...v1.15.0) (2026-02-24)
 
 
