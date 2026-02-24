@@ -197,7 +197,7 @@
     {
       key: 'support_members',
       pretitle: t('page.credits.labels.support'),
-      members: sortMembers([{ name: 'Dio' }, { name: 'MrBreachie' }]),
+      members: sortMembers([{ name: 'Dio' }, { name: 'MrBreachie' }, { name: 'Adealia', avatar: githubAvatar('adealia'), link: githubProfile('adealia') }]),
       fullWidth: true,
     },
     {
