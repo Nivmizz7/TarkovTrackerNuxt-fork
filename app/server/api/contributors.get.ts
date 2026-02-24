@@ -8,10 +8,6 @@ type GitHubContributor = {
   login?: string | null;
   type?: string | null;
 };
-type ContributorsCacheEntry = {
-  items: ContributorApiItem[];
-  timestamp: number;
-};
 const logger = createLogger('Contributors');
 const CONTRIBUTORS_PER_PAGE = 100;
 const DEFAULT_TIMEOUT_MS = 8000;
@@ -21,8 +17,6 @@ const MIN_TIMEOUT_MS = 1000;
 const DEFAULT_CACHE_TTL_MS = 30 * 60 * 1000;
 const MIN_CACHE_TTL_MS = 60 * 1000;
 const MAX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const FETCH_FAILURE_COOLDOWN_MS = 60 * 1000;
-const MAX_LOCAL_CACHE_KEYS = 10;
 const EXCLUDED_LOGIN_SUBSTRINGS = ['semantic-release'];
 const DEFAULT_EXCLUDED_LOGINS = [
   'claude',
@@ -30,9 +24,6 @@ const DEFAULT_EXCLUDED_LOGINS = [
   'semantic-release-bot',
   'semantic-release[bot]',
 ];
-const contributorsCache = new Map<string, ContributorsCacheEntry>();
-const contributorsFetchInFlight = new Map<string, Promise<ContributorsResponse>>();
-const contributorsFetchFailureTimestamps = new Map<string, number>();
 const clamp = (value: number, min: number, max: number): number => {
   return Math.max(min, Math.min(max, value));
 };
@@ -58,38 +49,6 @@ const parseString = (value: unknown, fallback: string): string => {
   if (typeof value !== 'string') return fallback;
   const trimmed = value.trim();
   return trimmed || fallback;
-};
-const buildContributorsCacheKey = (
-  owner: string,
-  repo: string,
-  excludedLogins: Set<string>
-): string => {
-  return [
-    normalizeLogin(owner),
-    normalizeLogin(repo),
-    [...excludedLogins].sort((a, b) => a.localeCompare(b)).join(','),
-  ].join(':');
-};
-const readCachedContributors = (
-  cacheKey: string,
-  cacheTtlMs: number
-): { isFresh: boolean; items: ContributorApiItem[] | null } => {
-  const cached = contributorsCache.get(cacheKey);
-  if (!cached) return { isFresh: false, items: null };
-  return {
-    isFresh: Date.now() - cached.timestamp < cacheTtlMs,
-    items: cached.items,
-  };
-};
-const writeCachedContributors = (cacheKey: string, items: ContributorApiItem[]): void => {
-  if (contributorsCache.size >= MAX_LOCAL_CACHE_KEYS && !contributorsCache.has(cacheKey)) {
-    const oldestKey = contributorsCache.keys().next().value as string | undefined;
-    if (oldestKey) {
-      contributorsCache.delete(oldestKey);
-      contributorsFetchFailureTimestamps.delete(oldestKey);
-    }
-  }
-  contributorsCache.set(cacheKey, { items, timestamp: Date.now() });
 };
 const toBooleanBotType = (contributor: GitHubContributor): boolean => {
   return String(contributor.type ?? '').toLowerCase() === 'bot';
@@ -156,26 +115,12 @@ const sortContributors = (items: ContributorApiItem[]): ContributorApiItem[] => 
     return a.login.localeCompare(b.login, undefined, { sensitivity: 'base' });
   });
 };
-const fetchContributors = async (
-  baseUrl: string,
-  githubToken: string,
-  timeoutMs: number,
+const normalizeContributors = (
+  contributors: GitHubContributor[],
   excludedLogins: Set<string>
-): Promise<ContributorApiItem[] | null> => {
-  const allContributors: GitHubContributor[] = [];
-  for (let page = 1; page <= MAX_TOTAL_PAGES; page++) {
-    const pageUrl = `${baseUrl}/contributors?per_page=${CONTRIBUTORS_PER_PAGE}&page=${page}`;
-    const contributors = await fetchContributorPage(pageUrl, githubToken, timeoutMs);
-    if (!contributors) {
-      return null;
-    }
-    allContributors.push(...contributors);
-    if (contributors.length < CONTRIBUTORS_PER_PAGE) {
-      break;
-    }
-  }
+): ContributorApiItem[] => {
   const dedupedContributors = new Map<string, ContributorApiItem>();
-  for (const contributor of allContributors) {
+  for (const contributor of contributors) {
     if (shouldExcludeContributor(contributor, excludedLogins)) continue;
     const rawLogin = String(contributor.login || '');
     const login = normalizeLogin(rawLogin);
@@ -192,8 +137,34 @@ const fetchContributors = async (
   }
   return sortContributors(Array.from(dedupedContributors.values()));
 };
+const fetchContributors = async (
+  baseUrl: string,
+  githubToken: string,
+  timeoutMs: number,
+  excludedLogins: Set<string>
+): Promise<ContributorApiItem[] | null> => {
+  const allContributors: GitHubContributor[] = [];
+  for (let page = 1; page <= MAX_TOTAL_PAGES; page++) {
+    const pageUrl = `${baseUrl}/contributors?per_page=${CONTRIBUTORS_PER_PAGE}&page=${page}`;
+    const contributors = await fetchContributorPage(pageUrl, githubToken, timeoutMs);
+    if (!contributors) {
+      if (!allContributors.length) {
+        return null;
+      }
+      logger.warn('GitHub contributors pagination failed; returning partial results.', {
+        page,
+        url: pageUrl,
+      });
+      break;
+    }
+    allContributors.push(...contributors);
+    if (contributors.length < CONTRIBUTORS_PER_PAGE) {
+      break;
+    }
+  }
+  return normalizeContributors(allContributors, excludedLogins);
+};
 export default defineEventHandler(async (event): Promise<ContributorsResponse> => {
-  setResponseHeaders(event, { 'Cache-Control': 'public, max-age=300, s-maxage=300' });
   const runtimeConfig = useRuntimeConfig(event);
   const owner = parseString(runtimeConfig.public.githubOwner, 'tarkovtracker-org');
   const repo = parseString(runtimeConfig.public.githubRepo, 'TarkovTracker');
@@ -207,53 +178,20 @@ export default defineEventHandler(async (event): Promise<ContributorsResponse> =
     MIN_CACHE_TTL_MS,
     MAX_CACHE_TTL_MS
   );
+  const cacheTtlSeconds = Math.max(1, Math.floor(cacheTtlMs / 1000));
+  setResponseHeaders(event, {
+    'Cache-Control': `public, max-age=${cacheTtlSeconds}, s-maxage=${cacheTtlSeconds}`,
+  });
   const githubToken = parseString(runtimeConfig.githubToken, '');
   const configuredExcludedLogins = parseCommaSeparated(runtimeConfig.githubContributorsExclude);
   const excludedLogins = new Set(
     [...DEFAULT_EXCLUDED_LOGINS, ...configuredExcludedLogins].map(normalizeLogin)
   );
-  const cacheKey = buildContributorsCacheKey(owner, repo, excludedLogins);
-  const cached = readCachedContributors(cacheKey, cacheTtlMs);
-  if (cached.isFresh && cached.items) {
-    return { items: cached.items };
-  }
-  const staleCachedItems = cached.items;
-  const lastFailureTimestamp = contributorsFetchFailureTimestamps.get(cacheKey);
-  const withinCooldown =
-    typeof lastFailureTimestamp === 'number' &&
-    Date.now() - lastFailureTimestamp < FETCH_FAILURE_COOLDOWN_MS;
-  if (withinCooldown) {
-    if (staleCachedItems) {
-      return { items: staleCachedItems };
-    }
-    return { items: [], error: 'Failed to fetch contributors' };
-  }
-  const inFlightRequest = contributorsFetchInFlight.get(cacheKey);
-  if (inFlightRequest) {
-    return inFlightRequest;
-  }
   const baseUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
-  const requestPromise = (async (): Promise<ContributorsResponse> => {
-    const fetchedItems = await fetchContributors(baseUrl, githubToken, timeoutMs, excludedLogins);
-    if (fetchedItems) {
-      writeCachedContributors(cacheKey, fetchedItems);
-      contributorsFetchFailureTimestamps.delete(cacheKey);
-      return { items: fetchedItems };
-    }
-    contributorsFetchFailureTimestamps.set(cacheKey, Date.now());
-    if (staleCachedItems) {
-      logger.warn('Using stale contributors cache after GitHub fetch failure.', { owner, repo });
-      return { items: staleCachedItems };
-    }
-    return { items: [], error: 'Failed to fetch contributors' };
-  })();
-  contributorsFetchInFlight.set(cacheKey, requestPromise);
-  try {
-    return await requestPromise;
-  } finally {
-    const activeRequest = contributorsFetchInFlight.get(cacheKey);
-    if (activeRequest === requestPromise) {
-      contributorsFetchInFlight.delete(cacheKey);
-    }
+  const fetchedItems = await fetchContributors(baseUrl, githubToken, timeoutMs, excludedLogins);
+  if (fetchedItems) {
+    return { items: fetchedItems };
   }
+  logger.warn('Failed to fetch contributors from GitHub.', { owner, repo });
+  return { items: [], error: 'Failed to fetch contributors' };
 });

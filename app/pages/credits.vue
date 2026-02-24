@@ -76,7 +76,7 @@
             <p class="text-error-300 text-sm">
               {{ t('page.credits.contributors.error') }}
             </p>
-            <UButton size="sm" color="neutral" variant="soft" @click="refreshContributors">
+            <UButton size="sm" color="neutral" variant="soft" @click="() => refreshContributors()">
               {{ t('page.credits.contributors.retry') }}
             </UButton>
           </div>
